@@ -1,7 +1,7 @@
 {
   "name": "my-app",
   "version": "0.1.0",
-  "homepage": "/",
+  "homepage": "https://delta-pos-codearson.netlify.app/",
   "private": true,
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.0.0",
