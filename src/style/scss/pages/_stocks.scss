@@ -164,7 +164,7 @@ table {
     &.low-stock-top-head {
         @include respond-below(custom575) {
             flex-wrap: wrap;  
-           justify-content: start;
+           justify-content: flex-start;
         }
         li {
             margin-bottom: 10px;
