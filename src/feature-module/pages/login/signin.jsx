@@ -25,7 +25,7 @@ const Signin = () => {
                   </h4>
                 </div>
                 <div className="form-login mb-3">
-                  <label className="form-label">User Name</label>
+                  <label className="form-label">First Name</label>
                   <div className="form-addons">
                     <input type="text" className="form- control" />
                     <ImageWithBasePath
