@@ -1,16 +1,47 @@
-import React from "react";
+import React, { useState } from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 
 const Signin = () => {
   const route = all_routes;
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+
+  const validateForm = () => {
+    let formErrors = {};
+
+    if (!username) {
+      formErrors.username = "Username is required.";
+    } else if (/\s/.test(username)) {
+      formErrors.username = "Username should not contain spaces.";
+    }
+
+    if (!password) {
+      formErrors.password = "Password is required.";
+    } else if (password.length < 6) {
+      formErrors.password = "Password must be at least 6 characters.";
+    }
+
+    setErrors(formErrors);
+    return Object.keys(formErrors).length === 0;
+  };
+
+  const handleSignIn = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      window.location.href = route.dashboard;
+    }
+  };
+
   return (
     <div className="main-wrapper">
       <div className="account-content">
         <div className="login-wrapper bg-img">
           <div className="login-content">
-            <form action="index">
+             <form onSubmit={handleSignIn}>
               <div className="login-userset">
                 <div className="login-logo logo-normal">
                   <ImageWithBasePath src="assets/img/logo.png" alt="img" />
@@ -25,24 +56,38 @@ const Signin = () => {
                   </h4>
                 </div>
                 <div className="form-login mb-3">
-                  <label className="form-label">First Name</label>
+                  <label className="form-label">Username Or Email</label>
                   <div className="form-addons">
-                    <input type="text" className="form- control" />
+                    <input 
+                    type="text"
+                    className="form-control"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
                     <ImageWithBasePath
                       src="assets/img/icons/mail.svg"
                       alt="img"
                     />
                   </div>
+                  {errors.username && <p className="error-text">{errors.username}</p>}
                 </div>
+
                 <div className="form-login mb-3">
                   <label className="form-label">Password</label>
                   <div className="pass-group">
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       className="pass-input form-control"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                     />
-                    <span className="fas toggle-password fa-eye-slash" />
+                    <span 
+                    className={`fas ${showPassword ? "fa-eye" : "fa-eye-slash"} toggle-password`}
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{ cursor: "pointer" }}
+                  />
                   </div>
+                  {errors.password && <p className="error-text">{errors.password}</p>}
                 </div>
                 <div className="form-login authentication-check">
                   <div className="row">
@@ -62,11 +107,21 @@ const Signin = () => {
                     </div>
                   </div>
                 </div>
-                <div className="form-login">
+                
+
+
+                {/* old signin btn */}
+                {/* <div className="form-login">
                   <Link to={route.dashboard} className="btn btn-login">
                     Sign In
                   </Link>
+                </div> */}
+                <div className="form-login">
+                  <button type="submit" className="btn btn-login">
+                    Sign In
+                  </button>
                 </div>
+
                 {/* <div className="signinform">
                   <h4>
                     New on our platform?
