@@ -69,7 +69,7 @@ const Signin = () => {
                       alt="img"
                     />
                   </div>
-                  {errors.username && <p className="error-text">{errors.username}</p>}
+                  {errors.username && <p className="text-danger">{errors.username}</p>}
                 </div>
 
                 <div className="form-login mb-3">
@@ -87,7 +87,7 @@ const Signin = () => {
                     style={{ cursor: "pointer" }}
                   />
                   </div>
-                  {errors.password && <p className="error-text">{errors.password}</p>}
+                  {errors.password && <p className="text-danger">{errors.password}</p>}
                 </div>
                 <div className="form-login authentication-check">
                   <div className="row">
