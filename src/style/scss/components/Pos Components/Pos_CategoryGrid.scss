@@ -1,0 +1,106 @@
+$pos-blue: #35b6e3;
+$blue-500: #3b82f6;
+$radius: 0.5rem; /* Border radius value */
+
+.grid {
+  display: grid;
+}
+
+.grid-cols-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.gap-2 {
+  gap: 0.5rem; /* 8px */
+}
+
+.bg-pos-blue {
+  background-color: $pos-blue;
+}
+
+.hover\:bg-blue-500:hover {
+  background-color: $blue-500;
+}
+
+.p-2 {
+  padding: 0.5rem; /* 8px */
+}
+
+.rounded-lg {
+  border-radius: $radius;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.shadow-lg {
+  --tw-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--tw-shadow);
+}
+
+.text-2xl {
+  font-size: 1.5rem; /* 24px */
+  line-height: 2rem; /* 32px */
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem; /* 4px */
+}
+
+.group {
+  &.group-hover\:scale-110:hover {
+    --tw-scale-x: 1.1;
+    --tw-scale-y: 1.1;
+    transform: translate(var(--tw-translate-x), var(--tw-translate-y))
+      rotate(var(--tw-rotate))
+      skewX(var(--tw-skew-x))
+      skewY(var(--tw-skew-y))
+      scaleX(var(--tw-scale-x))
+      scaleY(var(--tw-scale-y));
+  }
+}
+
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.text-sm {
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem; /* 20px */
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.px-1 {
+  padding-left: 0.25rem; /* 4px */
+  padding-right: 0.25rem; /* 4px */
+}
+
+@media (max-width: 768px) {
+  .grid-cols-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* Adjust to 3 columns */
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-cols-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* Adjust to 2 columns */
+  }
+}

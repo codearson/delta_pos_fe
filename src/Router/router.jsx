@@ -41,10 +41,10 @@ const AllRoutes = () => {
 
   const Pospages = () => (
     <div>
-      <Header />
+      {/* <Header /> */}
       <Outlet />
-      <Loader />
-      <ThemeSettings />
+      {/* <Loader /> */}
+      {/* <ThemeSettings /> */}
     </div>
   );
 
