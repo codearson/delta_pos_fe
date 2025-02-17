@@ -23,7 +23,7 @@ const Pos = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-pos-dark text-white flex">
+    <div className="h-screen bg-pos-dark text-white flex">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <Header currentTime={currentTime} />
