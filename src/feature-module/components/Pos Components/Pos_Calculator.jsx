@@ -1,21 +1,21 @@
 import React from "react";
-import { Search } from "lucide-react";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 
 export const Pos_Calculator = () => {
     return (
         <div className="col-span-4 bg-gray-800 rounded-xl p-4 shadow-xl">
-            <div className="relative mb-4">
+            <div className="search-set relative mb-4">
                 <input
-                    type="text"
-                    placeholder="Search products..."
+                    type="search"
+                    placeholder="Search ..."
                     className="w-full pl-10 py-2 text-base bg-gray-700 border-gray-600 rounded-lg"
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <span className="search-icon absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <i className="feather-search" />
+                </span>
             </div>
 
             <div className="bg-gray-700 p-4 rounded-lg mb-4 min-h-100 flex items-center justify-end">
-                {/* Display default text as placeholder */}
                 <div className="text-right text-3xl font-mono text-white w-full">
                     {"No item selected"}
                 </div>

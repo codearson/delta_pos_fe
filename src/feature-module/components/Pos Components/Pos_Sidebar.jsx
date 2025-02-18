@@ -1,5 +1,6 @@
 import React from "react";
-import { LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
+import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import "../../../style/scss/components/Pos Components/Pos_Sidebar.scss";
 
 const Pos_Sidebar = () => {
@@ -13,7 +14,13 @@ const Pos_Sidebar = () => {
           A
         </div>
         <button className="text-red-500 w-14 h-14 hover:bg-gray-800">
-          <LogOut size={24} />
+          <Link className="logout pb-0" to="/signIn">
+            <ImageWithBasePath
+              src="assets/img/icons/log-out.svg"
+              alt="img"
+              className="me-2"
+            />
+          </Link>
         </button>
       </div>
     </aside>
