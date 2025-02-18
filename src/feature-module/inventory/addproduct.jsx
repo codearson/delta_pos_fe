@@ -1,14 +1,14 @@
-import React, { useState } from "react";
+//import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
 import { all_routes } from "../../Router/all_routes";
-import { DatePicker } from "antd";
+//import { DatePicker } from "antd";
 import Addunits from "../../core/modals/inventory/addunits";
 import AddCategory from "../../core/modals/inventory/addcategory";
 import AddBrand from "../../core/modals/addbrand";
 import {
   ArrowLeft,
-  Calendar,
+  //Calendar,
   ChevronDown,
   ChevronUp,
   Info,
@@ -16,12 +16,12 @@ import {
   List,
   PlusCircle,
   Trash2,
-  X,
+  //X,
 } from "feather-icons-react/build/IconComponents";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
+//import ImageWithBasePath from "../../core/img/imagewithbasebath";
 
 const AddProduct = () => {
   const route = all_routes;
@@ -29,94 +29,98 @@ const AddProduct = () => {
 
   const data = useSelector((state) => state.toggle_header);
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-  };
-  const [selectedDate1, setSelectedDate1] = useState(new Date());
-  const handleDateChange1 = (date) => {
-    setSelectedDate1(date);
-  };
+  // const [selectedDate, setSelectedDate] = useState(new Date());
+  // const handleDateChange = (date) => {
+  //   setSelectedDate(date);
+  // };
+  
+  // const [selectedDate1, setSelectedDate1] = useState(new Date());
+  // const handleDateChange1 = (date) => {
+  //   setSelectedDate1(date);
+  // };
   const renderCollapseTooltip = (props) => (
     <Tooltip id="refresh-tooltip" {...props}>
       Collapse
     </Tooltip>
   );
-  const store = [
-    { value: "choose", label: "Choose" },
-    { value: "thomas", label: "Thomas" },
-    { value: "rasmussen", label: "Rasmussen" },
-    { value: "fredJohn", label: "Fred John" },
-  ];
-  const warehouse = [
-    { value: "choose", label: "Choose" },
-    { value: "legendary", label: "Legendary" },
-    { value: "determined", label: "Determined" },
-    { value: "sincere", label: "Sincere" },
-  ];
+  // const store = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "thomas", label: "Thomas" },
+  //   { value: "rasmussen", label: "Rasmussen" },
+  //   { value: "fredJohn", label: "Fred John" },
+  // ];
+  // const warehouse = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "legendary", label: "Legendary" },
+  //   { value: "determined", label: "Determined" },
+  //   { value: "sincere", label: "Sincere" },
+  // ];
   const category = [
     { value: "choose", label: "Choose" },
     { value: "lenovo", label: "Lenovo" },
     { value: "electronics", label: "Electronics" },
   ];
-  const subcategory = [
-    { value: "choose", label: "Choose" },
-    { value: "lenovo", label: "Lenovo" },
-    { value: "electronics", label: "Electronics" },
-  ];
-  const subsubcategories = [
-    { value: "Fruits", label: "Fruits" },
-    { value: "Computer", label: "Computer" },
-    { value: "Shoes", label: "Shoes" },
-  ];
-  const brand = [
-    { value: "choose", label: "Choose" },
-    { value: "nike", label: "Nike" },
-    { value: "bolt", label: "Bolt" },
-  ];
-  const unit = [
-    { value: "choose", label: "Choose" },
-    { value: "kg", label: "Kg" },
-    { value: "pc", label: "Pc" },
-  ];
-  const sellingtype = [
-    { value: "choose", label: "Choose" },
-    { value: "transactionalSelling", label: "Transactional selling" },
-    { value: "solutionSelling", label: "Solution selling" },
-  ];
-  const barcodesymbol = [
-    { value: "choose", label: "Choose" },
-    { value: "code34", label: "Code34" },
-    { value: "code35", label: "Code35" },
-    { value: "code36", label: "Code36" },
-  ];
+  // const subcategory = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "lenovo", label: "Lenovo" },
+  //   { value: "electronics", label: "Electronics" },
+  // ];
+  // const subsubcategories = [
+  //   { value: "Fruits", label: "Fruits" },
+  //   { value: "Computer", label: "Computer" },
+  //   { value: "Shoes", label: "Shoes" },
+  // ];
+  // const brand = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "nike", label: "Nike" },
+  //   { value: "bolt", label: "Bolt" },
+  // ];
+  // const unit = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "kg", label: "Kg" },
+  //   { value: "pc", label: "Pc" },
+  // ];
+  
+  // const sellingtype = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "transactionalSelling", label: "Transactional selling" },
+  //   { value: "solutionSelling", label: "Solution selling" },
+  // ];
+  // const barcodesymbol = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "code34", label: "Code34" },
+  //   { value: "code35", label: "Code35" },
+  //   { value: "code36", label: "Code36" },
+  // ];
   const taxtype = [
     { value: "exclusive", label: "Exclusive" },
     { value: "salesTax", label: "Sales Tax" },
   ];
-  const discounttype = [
-    { value: "choose", label: "Choose" },
-    { value: "percentage", label: "Percentage" },
-    { value: "cash", label: "Cash" },
-  ];
-  const discounttype1 = [
-    { value: "choose", label: "Choose" },
-    { value: "percentage", label: "Percentage" },
-    { value: "cash", label: "Cash" },
-  ];
-  const [isImageVisible, setIsImageVisible] = useState(true);
+  // const discounttype = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "percentage", label: "Percentage" },
+  //   { value: "cash", label: "Cash" },
+  // ];
+  // const discounttype1 = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "percentage", label: "Percentage" },
+  //   { value: "cash", label: "Cash" },
+  // ];
+  
+  //const [isImageVisible, setIsImageVisible] = useState(true);
 
-  const handleRemoveProduct = () => {
-    setIsImageVisible(false);
-  };
-  const [isImageVisible1, setIsImageVisible1] = useState(true);
+  // const handleRemoveProduct = () => {
+  //   setIsImageVisible(false);
+  // };
+  // const [isImageVisible1, setIsImageVisible1] = useState(true);
 
-  const handleRemoveProduct1 = () => {
-    setIsImageVisible1(false);
-  };
+  // const handleRemoveProduct1 = () => {
+  //   setIsImageVisible1(false);
+  // };
   return (
     <div className="page-wrapper">
       <div className="content">
+        {/* header part */}
         <div className="page-header">
           <div className="add-item d-flex">
             <div className="page-title">
@@ -151,10 +155,13 @@ const AddProduct = () => {
             </li>
           </ul>
         </div>
+
         {/* /add */}
         <form>
           <div className="card">
             <div className="card-body add-product pb-0">
+              
+            {/* Product Information */}
               <div
                 className="accordion-card-one accordion"
                 id="accordionExample"
@@ -187,7 +194,8 @@ const AddProduct = () => {
                   >
                     <div className="accordion-body">
                       <div className="row">
-                        <div className="col-lg-4 col-sm-6 col-12">
+                        {/* Store */}
+                        {/* <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Store</label>
                             <Select
@@ -196,8 +204,10 @@ const AddProduct = () => {
                               placeholder="Choose"
                             />
                           </div>
-                        </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
+                        // </div>  */}
+
+                        {/* Warehouse */}
+                         {/* <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Warehouse</label>
                             <Select
@@ -206,35 +216,42 @@ const AddProduct = () => {
                               placeholder="Choose"
                             />
                           </div>
-                        </div>
+                        </div>  */}
                       </div>
                       <div className="row">
                         <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Product Name</label>
-                            <input type="text" className="form-control" />
+                            <input type="text" 
+                            className="form-control"
+                            placeholder="Product Name" />
                           </div>
                         </div>
-                        <div className="col-lg-4 col-sm-6 col-12">
+
+                         {/* Slug */}
+                        {/* <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Slug</label>
                             <input type="text" className="form-control" />
                           </div>
-                        </div>
+                        </div> */}
                         <div className="col-lg-4 col-sm-6 col-12">
                           <div className="input-blocks add-product list">
-                            <label>SKU</label>
+                            <label>Barcode</label>
                             <input
                               type="text"
                               className="form-control list"
-                              placeholder="Enter SKU"
+                              placeholder="Enter Barcode"
+                              onInput={(e) => {
+                                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                              }}
                             />
-                            <Link
+                            {/* <Link
                               to={route.addproduct}
                               className="btn btn-primaryadd"
                             >
                               Generate Code
-                            </Link>
+                            </Link> */}
                           </div>
                         </div>
                       </div>
@@ -260,7 +277,31 @@ const AddProduct = () => {
                               />
                             </div>
                           </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
+                          
+                          {/* Unit */}
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
+                          <div className="mb-3 add-product">
+                              <div className="add-newplus">
+                                <label className="form-label">Unit</label>
+                                <Link
+                                  to="#"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#add-unit"
+                                >
+                                  <PlusCircle className="plus-down-add" />
+                                  <span>Add New</span>
+                                </Link>
+                              </div>
+                              <Select
+                                className="select"
+                                options={unit}
+                                placeholder="Choose"
+                              />
+                            </div>
+                          </div> */}
+
+                          {/* Sub Category */}
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
                             <div className="mb-3 add-product">
                               <label className="form-label">Sub Category</label>
                               <Select
@@ -269,8 +310,10 @@ const AddProduct = () => {
                                 placeholder="Choose"
                               />
                             </div>
-                          </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
+                          </div> */}
+
+                          {/*Sub Sub Category */}
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
                             <div className="mb-3 add-product">
                               <label className="form-label">
                                 Sub Sub Category
@@ -281,13 +324,14 @@ const AddProduct = () => {
                                 placeholder="Choose"
                               />
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                       <div className="add-product-new">
                         <div className="row">
                           <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="mb-3 add-product">
+                            
+                            {/* <div className="mb-3 add-product">
                               <div className="add-newplus">
                                 <label className="form-label">Brand</label>
                                 <Link
@@ -304,9 +348,9 @@ const AddProduct = () => {
                                 options={brand}
                                 placeholder="Choose"
                               />
-                            </div>
+                            </div> */}
                           </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
                             <div className="mb-3 add-product">
                               <div className="add-newplus">
                                 <label className="form-label">Unit</label>
@@ -325,8 +369,8 @@ const AddProduct = () => {
                                 placeholder="Choose"
                               />
                             </div>
-                          </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
+                          </div> */}
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
                             <div className="mb-3 add-product">
                               <label className="form-label">Selling Type</label>
                               <Select
@@ -335,11 +379,11 @@ const AddProduct = () => {
                                 placeholder="Choose"
                               />
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                       <div className="row">
-                        <div className="col-lg-6 col-sm-6 col-12">
+                        {/* <div className="col-lg-6 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">
                               Barcode Symbology
@@ -350,8 +394,8 @@ const AddProduct = () => {
                               placeholder="Choose"
                             />
                           </div>
-                        </div>
-                        <div className="col-lg-6 col-sm-6 col-12">
+                        </div> */}
+                        {/* <div className="col-lg-6 col-sm-6 col-12">
                           <div className="input-blocks add-product list">
                             <label>Item Code</label>
                             <input
@@ -366,10 +410,10 @@ const AddProduct = () => {
                               Generate Code
                             </Link>
                           </div>
-                        </div>
+                        </div> */}
                       </div>
                       {/* Editor */}
-                      <div className="col-lg-12">
+                      {/* <div className="col-lg-12">
                         <div className="input-blocks summer-description-box transfer mb-3">
                           <label>Description</label>
                           <textarea
@@ -379,16 +423,17 @@ const AddProduct = () => {
                           />
                           <p className="mt-1">Maximum 60 Characters</p>
                         </div>
-                      </div>
+                      </div> */}
                       {/* /Editor */}
                     </div>
                   </div>
                 </div>
               </div>
+              
+              {/* Pricing and Stocks */}
               <div
                 className="accordion-card-one accordion"
-                id="accordionExample2"
-              >
+                id="accordionExample2">                
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingTwo">
                     <div
@@ -417,7 +462,7 @@ const AddProduct = () => {
                     data-bs-parent="#accordionExample2"
                   >
                     <div className="accordion-body">
-                      <div className="input-blocks add-products">
+                      {/* <div className="input-blocks add-products">
                         <label className="d-block">Product Type</label>
                         <div className="single-pill-product">
                           <ul
@@ -463,7 +508,7 @@ const AddProduct = () => {
                             </li>
                           </ul>
                         </div>
-                      </div>
+                      </div> */}
                       <div className="tab-content" id="pills-tabContent">
                         <div
                           className="tab-pane fade show active"
@@ -475,18 +520,53 @@ const AddProduct = () => {
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Quantity</label>
-                                <input type="text" className="form-control" />
+                                <input type="text" 
+                                className="form-control"
+                                placeholder="Quantity" 
+                                onInput={(e) => {
+                                  e.target.value = e.target.value.replace(/[^0-9]/g, '');
+                                  const quantity = parseInt(e.target.value, 10);
+                                  if (!isNaN(quantity) && quantity < 10) {
+                                    alert("Quantity should be at least 10!");
+                                  }
+                                }}
+                                />
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
-                                <label>Price</label>
-                                <input type="text" className="form-control" />
+                                <label>Purchased Price</label>
+                                <input type="text" 
+                                className="form-control" 
+                                placeholder="Enter Price"
+                                onInput={(e) => {
+                                  e.target.value = e.target.value.replace(/[^0-9.]/g, '');
+                                  if ((e.target.value.match(/\./g) || []).length > 1) {
+                                    e.target.value = e.target.value.replace(/\.(?=.*\.)/, '');
+                                  }
+                                }}
+                                />
+                              </div>
+                            </div>
+                            <div className="row">
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Price Per Unit</label>
+                                <input type="text" 
+                                className="form-control" 
+                                placeholder="Enter Price"
+                                onInput={(e) => {
+                                  e.target.value = e.target.value.replace(/[^0-9.]/g, '');
+                                  if ((e.target.value.match(/\./g) || []).length > 1) {
+                                    e.target.value = e.target.value.replace(/\.(?=.*\.)/, '');
+                                  }
+                                }}
+                                />
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
-                                <label>Tax Type</label>
+                                <label>Tax Percentage</label>
                                 <Select
                                   className="select"
                                   options={taxtype}
@@ -494,8 +574,9 @@ const AddProduct = () => {
                                 />
                               </div>
                             </div>
+                            </div>
                           </div>
-                          <div className="row">
+                          {/* <div className="row">
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Discount Type</label>
@@ -518,8 +599,9 @@ const AddProduct = () => {
                                 <input type="text" className="form-control" />
                               </div>
                             </div>
-                          </div>
-                          <div
+                          </div> */}
+                          
+                          {/* <div
                             className="accordion-card-one accordion"
                             id="accordionExample3"
                           >
@@ -601,7 +683,7 @@ const AddProduct = () => {
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                         <div
                           className="tab-pane fade"
@@ -879,10 +961,11 @@ const AddProduct = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Custom Fields */}
               <div
                 className="accordion-card-one accordion"
-                id="accordionExample4"
-              >
+                id="accordionExample4">
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingFour">
                     <div
@@ -932,7 +1015,7 @@ const AddProduct = () => {
                           </div>
                         </div>
                         <div className="row">
-                          <div className="col-lg-4 col-sm-6 col-12">
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
                             <div className="input-blocks add-product">
                               <label>Discount Type</label>
                               <Select
@@ -941,16 +1024,25 @@ const AddProduct = () => {
                                 placeholder="Choose"
                               />
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                         <div className="row">
                           <div className="col-lg-4 col-sm-6 col-12">
                             <div className="input-blocks add-product">
-                              <label>Quantity Alert</label>
-                              <input type="text" className="form-control" />
+                              <label>Low Stock</label>
+                              <input type="text" 
+                                className="form-control" 
+                                placeholder="Enter Price"
+                                onInput={(e) => {
+                                  e.target.value = e.target.value.replace(/[^0-9.]/g, '');
+                                  if ((e.target.value.match(/\./g) || []).length > 1) {
+                                    e.target.value = e.target.value.replace(/\.(?=.*\.)/, '');
+                                  }
+                                }}
+                                />
                             </div>
                           </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
                             <div className="input-blocks">
                               <label>Manufactured Date</label>
                               <div className="input-groupicon calender-input">
@@ -965,8 +1057,9 @@ const AddProduct = () => {
                                 />
                               </div>
                             </div>
-                          </div>
-                          <div className="col-lg-4 col-sm-6 col-12">
+                          </div> */}
+
+                          {/* <div className="col-lg-4 col-sm-6 col-12">
                             <div className="input-blocks">
                               <label>Expiry On</label>
                               <div className="input-groupicon calender-input">
@@ -981,7 +1074,7 @@ const AddProduct = () => {
                                 />
                               </div>
                             </div>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
                     </div>
