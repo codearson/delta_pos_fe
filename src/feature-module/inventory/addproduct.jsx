@@ -1,11 +1,12 @@
-//import React, { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
 import { all_routes } from "../../Router/all_routes";
+
 //import { DatePicker } from "antd";
-import Addunits from "../../core/modals/inventory/addunits";
+//import Addunits from "../../core/modals/inventory/addunits";
 import AddCategory from "../../core/modals/inventory/addcategory";
-import AddBrand from "../../core/modals/addbrand";
+//import AddBrand from "../../core/modals/addbrand";
 import {
   ArrowLeft,
   //Calendar,
@@ -13,9 +14,9 @@ import {
   ChevronUp,
   Info,
   LifeBuoy,
-  List,
+  //List,
   PlusCircle,
-  Trash2,
+  //Trash2,
   //X,
 } from "feather-icons-react/build/IconComponents";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,11 +24,24 @@ import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 //import ImageWithBasePath from "../../core/img/imagewithbasebath";
 
+
 const AddProduct = () => {
   const route = all_routes;
   const dispatch = useDispatch();
 
   const data = useSelector((state) => state.toggle_header);
+
+  const [productName, setProductName] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [category, setCategory] = useState(null);
+  const [quantity, setQuantity] = useState("");
+  const [purchasedPrice, setPurchasedPrice] = useState("");
+  const [pricePerUnit, setPricePerUnit] = useState("");
+  const [taxPercentage, setTaxPercentage] = useState(null);
+  const [lowStock, setLowStock] = useState("");
+  const [errors, setErrors] = useState({});
+
+
 
   // const [selectedDate, setSelectedDate] = useState(new Date());
   // const handleDateChange = (date) => {
@@ -55,7 +69,7 @@ const AddProduct = () => {
   //   { value: "determined", label: "Determined" },
   //   { value: "sincere", label: "Sincere" },
   // ];
-  const category = [
+  const categoryOptions = [
     { value: "choose", label: "Choose" },
     { value: "lenovo", label: "Lenovo" },
     { value: "electronics", label: "Electronics" },
@@ -93,8 +107,9 @@ const AddProduct = () => {
   //   { value: "code36", label: "Code36" },
   // ];
   const taxtype = [
-    { value: "exclusive", label: "Exclusive" },
-    { value: "salesTax", label: "Sales Tax" },
+    { value: "choose", label: "Choose" },
+    { value: "gst", label: "GST" },
+    { value: "vat", label: "VAT" },
   ];
   // const discounttype = [
   //   { value: "choose", label: "Choose" },
@@ -117,6 +132,30 @@ const AddProduct = () => {
   // const handleRemoveProduct1 = () => {
   //   setIsImageVisible1(false);
   // };
+  
+  const validate = () => {
+    let formErrors = {};
+    if (!productName) formErrors.productName = "Product name is required.";
+    if (!barcode) formErrors.barcode = "Barcode is required.";
+    if (!category || category.value === "choose") formErrors.category = "Please select a category.";
+    if (!quantity) formErrors.quantity = "Quantity is required.";
+    if (!purchasedPrice) formErrors.purchasedPrice = "Purchased Price is required.";
+    if (!pricePerUnit) formErrors.pricePerUnit = "Price Per Unit is required.";
+    if (!taxPercentage || taxPercentage.value === "choose") formErrors.taxPercentage = "Please select a tax option.";
+    if (!lowStock) formErrors.lowStock = "Low Stock is required.";
+    
+    setErrors(formErrors);
+    return Object.keys(formErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validate()) {
+      // proceed with the form submission
+      console.log("Form submitted");
+    }
+  };
+  
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -224,7 +263,12 @@ const AddProduct = () => {
                             <label className="form-label">Product Name</label>
                             <input type="text" 
                             className="form-control"
-                            placeholder="Product Name" />
+                            placeholder="Enter Product Name"
+                            value={productName}
+                            onChange={(e) => setProductName(e.target.value)}
+                            />
+                            {errors.productName && (<small className="text-danger">{errors.productName}</small>
+                            )}
                           </div>
                         </div>
 
@@ -245,7 +289,12 @@ const AddProduct = () => {
                               onInput={(e) => {
                                 e.target.value = e.target.value.replace(/[^0-9]/g, '');
                               }}
+                              value={barcode}
+                              onChange={(e) => setBarcode(e.target.value.replace(/[^0-9]/g, ''))}
                             />
+                            {errors.barcode && (
+                              <small className="text-danger">{errors.barcode}</small>
+                            )}
                             {/* <Link
                               to={route.addproduct}
                               className="btn btn-primaryadd"
@@ -272,9 +321,14 @@ const AddProduct = () => {
                               </div>
                               <Select
                                 className="select"
-                                options={category}
+                                options={categoryOptions}
                                 placeholder="Choose"
-                              />
+                                value={category}
+                                onChange={setCategory}
+                                />
+                                {errors.category && (
+                                  <small className="text-danger">{errors.category}</small>
+                                )}                             
                             </div>
                           </div>
                           
@@ -522,15 +576,14 @@ const AddProduct = () => {
                                 <label>Quantity</label>
                                 <input type="text" 
                                 className="form-control"
-                                placeholder="Quantity" 
+                                placeholder="Enter Quantity"
+                                value={quantity} 
                                 onInput={(e) => {
                                   e.target.value = e.target.value.replace(/[^0-9]/g, '');
-                                  const quantity = parseInt(e.target.value, 10);
-                                  if (!isNaN(quantity) && quantity < 10) {
-                                    alert("Quantity should be at least 10!");
-                                  }
                                 }}
+                                onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, ''))}                             
                                 />
+                                {errors.quantity && <small className="text-danger">{errors.quantity}</small>}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
@@ -538,14 +591,11 @@ const AddProduct = () => {
                                 <label>Purchased Price</label>
                                 <input type="text" 
                                 className="form-control" 
-                                placeholder="Enter Price"
-                                onInput={(e) => {
-                                  e.target.value = e.target.value.replace(/[^0-9.]/g, '');
-                                  if ((e.target.value.match(/\./g) || []).length > 1) {
-                                    e.target.value = e.target.value.replace(/\.(?=.*\.)/, '');
-                                  }
-                                }}
+                                placeholder="Enter Purchased Price"
+                                value={purchasedPrice}
+                                onChange={(e) => setPurchasedPrice(e.target.value.replace(/[^0-9]/g, ''))}
                                 />
+                                 {errors.purchasedPrice && <small className="text-danger">{errors.purchasedPrice}</small>}
                               </div>
                             </div>
                             <div className="row">
@@ -554,14 +604,11 @@ const AddProduct = () => {
                                 <label>Price Per Unit</label>
                                 <input type="text" 
                                 className="form-control" 
-                                placeholder="Enter Price"
-                                onInput={(e) => {
-                                  e.target.value = e.target.value.replace(/[^0-9.]/g, '');
-                                  if ((e.target.value.match(/\./g) || []).length > 1) {
-                                    e.target.value = e.target.value.replace(/\.(?=.*\.)/, '');
-                                  }
-                                }}
+                                placeholder="Enter Price Per Unit"
+                                value={pricePerUnit}
+                                onChange={(e) => setPricePerUnit(e.target.value.replace(/[^0-9]/g, ''))}
                                 />
+                                {errors.pricePerUnit && <small className="text-danger">{errors.pricePerUnit}</small>}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
@@ -571,10 +618,27 @@ const AddProduct = () => {
                                   className="select"
                                   options={taxtype}
                                   placeholder="Select Option"
+                                  value={taxPercentage}
+                                  onChange={setTaxPercentage}
                                 />
+                                  {errors.taxPercentage && <small className="text-danger">{errors.taxPercentage}</small>}
                               </div>
                             </div>
                             </div>
+                          </div>
+                          <div className="row">
+                          <div className="col-lg-4 col-sm-6 col-12">
+                            <div className="input-blocks add-product">
+                              <label>Low Stock</label>
+                              <input type="text" 
+                                className="form-control" 
+                                placeholder="Enter Low Stock"
+                                value={lowStock}
+                                onChange={(e) => setLowStock(e.target.value.replace(/[^0-9]/g, ''))}
+                                />
+                                 {errors.lowStock && <small className="text-danger">{errors.lowStock}</small>}
+                            </div>
+                          </div>
                           </div>
                           {/* <div className="row">
                             <div className="col-lg-4 col-sm-6 col-12">
@@ -691,7 +755,7 @@ const AddProduct = () => {
                           role="tabpanel"
                           aria-labelledby="pills-profile-tab"
                         >
-                          <div className="row select-color-add">
+                          {/* <div className="row select-color-add">
                             <div className="col-lg-6 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Variant Attribute</label>
@@ -747,13 +811,13 @@ const AddProduct = () => {
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </div> */}
                           <div
                             className="modal-body-table variant-table"
                             id="variant-table"
                           >
                             <div className="table-responsive">
-                              <table className="table">
+                              {/* <table className="table">
                                 <thead>
                                   <tr>
                                     <th>Variantion</th>
@@ -952,7 +1016,7 @@ const AddProduct = () => {
                                     </td>
                                   </tr>
                                 </tbody>
-                              </table>
+                              </table> */}
                             </div>
                           </div>
                         </div>
@@ -962,8 +1026,8 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              {/* Custom Fields */}
-              <div
+              {/*................................................................ Custom Fields ................................*/}
+              {/* <div
                 className="accordion-card-one accordion"
                 id="accordionExample4">
                 <div className="accordion-item">
@@ -1015,7 +1079,7 @@ const AddProduct = () => {
                           </div>
                         </div>
                         <div className="row">
-                          {/* <div className="col-lg-4 col-sm-6 col-12">
+                          <div className="col-lg-4 col-sm-6 col-12">
                             <div className="input-blocks add-product">
                               <label>Discount Type</label>
                               <Select
@@ -1024,7 +1088,7 @@ const AddProduct = () => {
                                 placeholder="Choose"
                               />
                             </div>
-                          </div> */}
+                          </div>
                         </div>
                         <div className="row">
                           <div className="col-lg-4 col-sm-6 col-12">
@@ -1032,17 +1096,14 @@ const AddProduct = () => {
                               <label>Low Stock</label>
                               <input type="text" 
                                 className="form-control" 
-                                placeholder="Enter Price"
-                                onInput={(e) => {
-                                  e.target.value = e.target.value.replace(/[^0-9.]/g, '');
-                                  if ((e.target.value.match(/\./g) || []).length > 1) {
-                                    e.target.value = e.target.value.replace(/\.(?=.*\.)/, '');
-                                  }
-                                }}
+                                placeholder="Low Stock"
+                                value={lowStock}
+                                onChange={(e) => setLowStock(e.target.value.replace(/[^0-9]/g, ''))}
                                 />
+                                 {errors.lowStock && <small className="text-danger">{errors.lowStock}</small>}
                             </div>
                           </div>
-                          {/* <div className="col-lg-4 col-sm-6 col-12">
+                          <div className="col-lg-4 col-sm-6 col-12">
                             <div className="input-blocks">
                               <label>Manufactured Date</label>
                               <div className="input-groupicon calender-input">
@@ -1057,9 +1118,9 @@ const AddProduct = () => {
                                 />
                               </div>
                             </div>
-                          </div> */}
+                          </div>
 
-                          {/* <div className="col-lg-4 col-sm-6 col-12">
+                          <div className="col-lg-4 col-sm-6 col-12">
                             <div className="input-blocks">
                               <label>Expiry On</label>
                               <div className="input-groupicon calender-input">
@@ -1074,13 +1135,13 @@ const AddProduct = () => {
                                 />
                               </div>
                             </div>
-                          </div> */}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
           <div className="col-lg-12">
@@ -1088,17 +1149,25 @@ const AddProduct = () => {
               <button type="button" className="btn btn-cancel me-2">
                 Cancel
               </button>
-              <Link to={route.addproduct} className="btn btn-submit">
+
+              <button
+                type="button"
+                className="btn btn-submit"
+                onClick={handleSubmit}
+              >
                 Save Product
-              </Link>
+              </button>
+              {/* <Link to={route.addproduct} className="btn btn-submit">
+                Save Product
+              </Link> */}
             </div>
           </div>
         </form>
         {/* /add */}
       </div>
-      <Addunits />
+      {/* <Addunits /> */}
       <AddCategory />
-      <AddBrand />
+      {/* <AddBrand /> */}
     </div>
   );
 };
