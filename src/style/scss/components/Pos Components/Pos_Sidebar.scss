@@ -58,8 +58,8 @@ $pos-rad-blue-end: #00DBD8;
 // Apply linear gradient to text-pos-rad-blue and bg-pos-rad-blue
 .text-pos-rad-blue {
   background: linear-gradient(90deg, $pos-rad-blue-start 0%, $pos-rad-blue-end 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  --webkit-background-clip: text;
+  --webkit-text-fill-color: transparent;
 }
 
 .bg-pos-rad-blue {
@@ -74,10 +74,6 @@ $pos-rad-blue-end: #00DBD8;
   --tw-space-y-reverse: 0;
   margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
   margin-bottom: calc(1rem * var(--tw-space-y-reverse));
-}
-
-.w-14 {
-  width: 3.5rem; /* 56px */
 }
 
 .h-14 {
@@ -99,10 +95,6 @@ $pos-rad-blue-end: #00DBD8;
 
 .text-white {
   color: $white;
-}
-
-.text-red-500 {
-  color: $red-500;
 }
 
 .hover\:bg-gray-800:hover {

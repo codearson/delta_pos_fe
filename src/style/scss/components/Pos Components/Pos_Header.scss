@@ -2,6 +2,10 @@ $pos-dark: #212121;
 $gray-700: #374151;
 $gray-300: #d1d5db;
 $pos-blue: #35b6e3;
+$light-bg: white;
+$light-text: black;
+$dark-bg: #212121;
+$dark-text: white;
 
 .flex {
   display: flex;
@@ -16,16 +20,16 @@ $pos-blue: #35b6e3;
 }
 
 .gap-4 {
-  gap: 1rem; /* 16px */
+  gap: 1rem; 
 }
 
 .h-16 {
-  height: 4rem; /* 64px */
+  height: 4rem; 
 }
 
 .px-4 {
-  padding-left: 1rem; /* 16px */
-  padding-right: 1rem; /* 16px */
+  padding-left: 1rem;
+  padding-right: 1rem; 
 }
 
 .border-b {
@@ -45,8 +49,8 @@ $pos-blue: #35b6e3;
 }
 
 .text-base {
-  font-size: 1rem; /* 16px */
-  line-height: 1.5rem; /* 24px */
+  font-size: 1rem; 
+  line-height: 1.5rem; 
 }
 
 .font-semibold {
@@ -58,8 +62,8 @@ $pos-blue: #35b6e3;
 }
 
 .text-2xl {
-  font-size: 1.5rem; /* 24px */
-  line-height: 2rem; /* 32px */
+  font-size: 1.5rem; 
+  line-height: 2rem; 
 }
 
 .font-bold {
@@ -72,18 +76,72 @@ $pos-blue: #35b6e3;
 
 @media (max-width: 768px) {
   .text-2xl {
-    font-size: 1.25rem; /* 20px */
-    line-height: 1.75rem; /* 28px */
+    font-size: 1.25rem; 
+    line-height: 1.75rem; 
   }
 }
 
 @media (max-width: 480px) {
   .text-base {
-    font-size: 0.875rem; /* 14px */
-    line-height: 1.25rem; /* 20px */
+    font-size: 0.875rem;
+    line-height: 1.25rem; 
   }
 
   .gap-4 {
-    gap: 0.5rem; /* 8px */
+    gap: 0.5rem; 
   }
 }
+
+.dark-mode {
+  background-color: $dark-bg;
+  color: $dark-text;
+}
+
+.toggle-mode-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  transition: 0.3s;
+
+  &:hover {
+      transform: scale(1.1);
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 4rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid #ccc;
+  transition: background 0.3s, color 0.3s;
+}
+
+.light-header {
+  background-color: $light-bg;
+  color: $light-text;
+}
+
+.dark-header {
+  background-color: $dark-bg;
+  color: $dark-text;
+}
+
+.toggle-mode-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  background: none;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  transition: 0.3s;
+
+  &:hover {
+      transform: scale(1.1);
+  }
+}
+
