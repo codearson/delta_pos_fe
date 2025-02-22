@@ -1,21 +1,30 @@
 import React from "react";
+import PropTypes from "prop-types"; // Import PropTypes
 import "../../../style/scss/components/Pos Components/Pos_Numpad.scss";
 
-const Pos_Numpad = () => {
+const Pos_Numpad = ({ darkMode }) => {
   return (
-    <div className="col-span-5 p-2 rounded-lg bg-custom backdrop-blur-sm">
-      <div className="grid grid-cols-3 gap-1">
+    <div className={`numpad-container ${darkMode ? "dark-mode" : "light-mode"}`}>
+      <div className="numpad-grid">
         {[7, 8, 9, 4, 5, 6, 1, 2, 3, "00", 0, "."].map((num) => (
-          <button key={num} className="bg-white text-gray-900 hover-bg-light p-15 rounded-md text-sm font-bold transition-colors shadow-sm hover-shadow-md">
+          <button
+            key={num}
+            className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
+          >
             {num}
           </button>
         ))}
-        <button className="bg-red text-white p-15 rounded-md text-sm font-bold transition-colors shadow-sm hover-shadow-md">C</button>
-        <button className="bg-blue text-white p-15 rounded-md text-sm font-bold transition-colors shadow-sm hover-shadow-md">×</button>
-        <button className="bg-green text-white p-15 rounded-md text-sm font-bold transition-colors shadow-sm hover-shadow-md">Enter</button>
+        <button className="numpad-button clear-button">C</button>
+        <button className="numpad-button multiply-button">×</button>
+        <button className="numpad-button enter-button">Enter</button>
       </div>
     </div>
   );
+};
+
+// Add PropTypes validation
+Pos_Numpad.propTypes = {
+  darkMode: PropTypes.bool.isRequired, // Validate darkMode as a required boolean
 };
 
 export default Pos_Numpad;

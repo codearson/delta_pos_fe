@@ -27,6 +27,7 @@
     "chartjs": "^0.3.24",
     "clipboard-copy": "^4.0.1",
     "datatables.net": "^1.13.4",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.10",
     "dragula": "^3.7.3",
     "feather-icons-react": "^0.6.2",

@@ -1,57 +1,59 @@
 import React from "react";
+import PropTypes from "prop-types"; // Import PropTypes
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 
-export const Pos_Calculator = () => {
-    return (
-      <div className="col-span-4 bg-gray-800 rounded-xl p-4 shadow-xl">
-        <div className="w-full search-set relative mb-2 bar flex items-center  bg-white rounded-lg overflow-hidden">
-          <input
-              type="search"
-              placeholder="Search"
-            />
-            <span className="search-icon px-3 text-gray-400">
-              <i className="feather-search" />
-            </span>
-        </div>
+export const Pos_Calculator = ({ darkMode }) => {
+  return (
+    <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
+      <div className="search-bar">
+        <input
+          type="search"
+          placeholder="Search"
+          className="search-input"
+        />
+        <span className="search-icon">
+          <i className="feather-search" />
+        </span>
+      </div>
 
-        <div className="bg-white text-black p-4 mb-2 rounded-lg shadow-inner w-10">
-            
-        </div>
+      <div className="display-box">
+        {/* Placeholder for display content */}
+      </div>
 
-        <div className="bg-white text-black p-4 rounded-lg shadow-inner">
-          <div className="space-y-3 ">
-            <div className="flex justify-between">
-              <span className="font-medium">QTY</span>
-              <span>N/A</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Sub Total</span>
-              <span>$0.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Cash Back</span>
-              <span>$0.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Discount</span>
-              <span>$0.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-medium">Balance</span>
-              <span>$0.00</span>
-            </div>
-            <div className="line" >
-                </div> 
-            <div className="border-t border-gray-200 pt-3">
-              <div className="flex justify-between text-xl font-bold text-gray-900">
-                <span>Total</span>
-                <span>$0.00</span>
-              </div>
-            </div>
-          </div>
+      <div className="summary-box">
+        <div className="summary-item">
+          <span className="label">QTY</span>
+          <span className="value">N/A</span>
+        </div>
+        <div className="summary-item">
+          <span className="label">Sub Total</span>
+          <span className="value">$0.00</span>
+        </div>
+        <div className="summary-item">
+          <span className="label">Cash Back</span>
+          <span className="value">$0.00</span>
+        </div>
+        <div className="summary-item">
+          <span className="label">Discount</span>
+          <span className="value">$0.00</span>
+        </div>
+        <div className="summary-item">
+          <span className="label">Balance</span>
+          <span className="value">$0.00</span>
+        </div>
+        <div className="divider" />
+        <div className="total-summary">
+          <span className="label">Total</span>
+          <span className="value">$0.00</span>
         </div>
       </div>
-    );
+    </div>
+  );
+};
+
+// Add PropTypes validation
+Pos_Calculator.propTypes = {
+  darkMode: PropTypes.bool.isRequired, // Validate darkMode as a required boolean
 };
 
 export default Pos_Calculator;

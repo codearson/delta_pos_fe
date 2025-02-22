@@ -1,30 +1,34 @@
 import React from "react";
+import PropTypes from "prop-types"; // Import PropTypes
 import { Link } from "react-router-dom";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import "../../../style/scss/components/Pos Components/Pos_Sidebar.scss";
 
-const Pos_Sidebar = () => {
+const Pos_Sidebar = ({ darkMode }) => {
   return (
-    <aside className="h-screen w-20 bg-blue-123 flex flex-col items-center py-4 shadow-lg">
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-pos-blue">Delta POS</h1>
+    <aside className={`sidebar-container ${darkMode ? "dark-mode" : "light-mode"}`}>
+      <div className="logo-container">
+        <h1 className="logo-text">Delta POS</h1>
       </div>
-      <div className="mt-auto space-y-4">
-        <div className="w-14 h-14 rounded-full bg-pos-blue flex items-center justify-center text-xl font-bold shadow-lg text-white">
+      <div className="sidebar-footer">
+        <div className="profile-circle">
           A
         </div>
-        <button className="w-14 h-14 rounded-full bg-pos-blue flex items-center justify-center text-xl font-bold shadow-lg text-white">
-          <Link className="logout pb-0" to="/signIn">
-            <ImageWithBasePath
-              src="assets/img/icons/log-out.svg"
-              alt="img"
-              className="me-2"
-            />
-          </Link>
-        </button>
+        <Link to="/signIn" className="logout-button">
+          <ImageWithBasePath
+            src="assets/img/icons/log-out.svg"
+            alt="Logout"
+            className="logout-icon"
+          />
+        </Link>
       </div>
     </aside>
   );
+};
+
+// Add PropTypes validation
+Pos_Sidebar.propTypes = {
+  darkMode: PropTypes.bool.isRequired, // Validate darkMode as a required boolean
 };
 
 export default Pos_Sidebar;
