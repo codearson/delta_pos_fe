@@ -5,124 +5,107 @@ $green-color: #22c55e;
 $hover-light: #f3f4f6;
 $text-color-dark: #111827;
 $text-color-light: #ffffff;
+$dark-bg: #ffffff;
+$dark-text: #ffffff;
+$light-bg: #ffffff;
+$light-text: #000000;
 
-.col-span-5 {
-  grid-column: span 5 / span 5;
-}
-
-.p-2 {
+.numpad-container {
+  grid-column: span 5;
   padding: 0.5rem;
-}
-
-.rounded-lg {
   border-radius: 0.5rem;
-}
-
-.bg-custom {
   background-color: rgba(155, 135, 245, 0.1);
   backdrop-filter: blur(4px);
+
+  &.dark-mode {
+    background-color: rgba(31, 41, 55, 0.1);
+  }
 }
 
-.grid {
+.numpad-grid {
   display: grid;
-}
-
-.grid-cols-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.gap-1 {
   gap: 0.25rem;
 }
 
-.bg-white {
-  background-color: #ffffff;
-}
-
-.text-gray-900 {
-  color: $text-color-dark;
-}
-
-.hover-bg-light:hover {
-  background-color: $hover-light;
-}
-
-.p-15 {
-  padding: 0.375rem;
-}
-
-.rounded-md {
+.numpad-button {
+  padding: 0.5rem; // Reduced padding
   border-radius: 0.375rem;
-}
-
-.text-sm {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-}
-
-.font-bold {
+  font-size: 0.75rem; // Reduced font size
   font-weight: 700;
-}
-
-.transition-colors {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-.shadow-sm {
+  transition: all 0.2s ease;
   box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  color: $text-color-dark; // Numbers always have dark text
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 10px -3px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  }
 }
 
-.hover-shadow-md:hover {
-  box-shadow: 0 6px 10px -3px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+.light-button {
+  background-color: $light-bg;
+
+  &:hover {
+    background-color: $hover-light;
+  }
 }
 
-.bg-red {
+.dark-button {
+  background-color: $dark-bg;
+  color: $text-color-dark; // Numbers retain dark text in dark mode
+
+  &:hover {
+    background-color: lighten($dark-bg, 10%);
+  }
+}
+
+.clear-button {
   background-color: $red-color;
-}
-
-.hover-bg-red:hover {
-  background-color: darken($red-color, 10%);
-}
-
-.text-white {
   color: $text-color-light;
+
+  &:hover {
+    background-color: darken($red-color, 10%);
+  }
 }
 
-.bg-blue {
+.multiply-button {
   background-color: $blue-color;
+  color: $text-color-light;
+
+  &:hover {
+    background-color: darken($blue-color, 10%);
+  }
 }
 
-.hover-bg-blue:hover {
-  background-color: darken($blue-color, 10%);
-}
-
-.bg-green {
+.enter-button {
   background-color: $green-color;
+  color: $text-color-light;
+
+  &:hover {
+    background-color: darken($green-color, 10%);
+  }
 }
 
-.hover-bg-green:hover {
-  background-color: darken($green-color, 10%);
-}
-
+/* Responsive Styles */
 @media (max-width: 768px) {
-  .grid-cols-3 {
+  .numpad-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .numpad-button {
+    padding: 0.375rem; // Further reduced padding
+    font-size: 0.625rem; // Further reduced font size
   }
 }
 
 @media (max-width: 480px) {
-  .grid-cols-3 {
+  .numpad-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .p-15 {
-    padding: 0.25rem;
-  }
-
-  .text-sm {
-    font-size: 0.75rem;
-    line-height: 1rem;
+  .numpad-button {
+    padding: 0.25rem; // Even smaller padding
+    font-size: 0.5rem; // Even smaller font size
   }
 }

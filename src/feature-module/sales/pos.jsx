@@ -9,7 +9,6 @@ import Numpad from "../components/Pos Components/Pos_Numpad"
 import PaymentButtons from "../components/Pos Components/Pos_Payment"
 import FunctionButtons from "../components/Pos Components/Pos_Function"
 
-
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState("category");
@@ -41,18 +40,29 @@ const Pos = () => {
   };
 
   return (
-    <div className={`h-screen ${darkMode ? "bg-dark-mode text-white" : "bg-light-mode text-black"} flex`}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col">
-      <Header currentTime={currentTime} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-      <div className="flex-1 p-6">
-          <div className="grid grid-cols-12 gap-6 h-full">
-            <Calculator />
-            <div className="col-span-8 space-y-6">
-              <CategoryTabs activeTab={activeTab} onTabChange={setActiveTab} />
-              <CategoryGrid items={activeTab === "category" ? categories : quickAccess} />
-              <div className="grid grid-cols-12 gap-4">
-                <Numpad />
+    <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
+      <Sidebar darkMode={darkMode} />
+      <div className="main-content">
+        <Header
+          currentTime={currentTime}
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+        />
+        <div className="content">
+          <div className="grid-container">
+            <Calculator darkMode={darkMode} />
+            <div className="category-section">
+              <CategoryTabs
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                darkMode={darkMode}
+              />
+              <CategoryGrid
+                items={activeTab === "category" ? categories : quickAccess}
+                darkMode={darkMode}
+              />
+              <div className="action-buttons">
+                <Numpad darkMode={darkMode} />
                 <PaymentButtons />
                 <FunctionButtons activeTab={activeTab} />
               </div>

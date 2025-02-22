@@ -2,133 +2,114 @@ $blue-123: #BDECFF;
 $red-500: #ef4444;
 $gray-800: #1f2937;
 $white: #ffffff;
-
-// Updated pos-rad-blue with a linear gradient
 $pos-rad-blue-start: #001C6F;
 $pos-rad-blue-end: #00DBD8;
 
-.h-screen {
+.sidebar-container {
   height: 100vh;
-}
-
-.w-20 {
-  width: 5rem; /* 80px */
-}
-
-.bg-blue-123 {
+  width: 5rem; // 80px
   background-color: $blue-123;
-}
-
-.flex {
   display: flex;
-}
-
-.flex-col {
   flex-direction: column;
-}
-
-.items-center {
   align-items: center;
+  padding: 1rem 0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  &.dark-mode {
+    background-color: $blue-123;
+  }
 }
 
-.py-4 {
-  padding-top: 1rem; /* 16px */
-  padding-bottom: 1rem; /* 16px */
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; // 12px
 }
 
-.shadow-lg {
-  --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
-  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-}
-
-.gap-3 {
-  gap: 0.75rem; /* 12px */
-}
-
-.text-2xl {
-  font-size: 1.5rem; /* 24px */
-  line-height: 2rem; /* 32px */
-}
-
-.font-bold {
+.logo-text {
+  font-size: 1.5rem; // 24px
   font-weight: 700;
-}
-
-// Apply linear gradient to text-pos-rad-blue and bg-pos-rad-blue
-.text-pos-rad-blue {
   background: linear-gradient(90deg, $pos-rad-blue-start 0%, $pos-rad-blue-end 100%);
-  --webkit-background-clip: text;
-  --webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.bg-pos-rad-blue {
-  background: linear-gradient(90deg, $pos-rad-blue-start 0%, $pos-rad-blue-end 100%);
-}
-
-.mt-auto {
+.sidebar-footer {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem; // 16px
+  background-color: transparent;
 }
 
-.space-y-4 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-y-reverse: 0;
-  margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
-  margin-bottom: calc(1rem * var(--tw-space-y-reverse));
-}
-
-.h-14 {
-  height: 3.5rem; /* 56px */
-}
-
-.rounded-full {
-  border-radius: 9999px;
-}
-
-.justify-center {
+.profile-circle,
+.logout-button {
+  width: 3.5rem; // 56px
+  height: 3.5rem; // 56px
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
   justify-content: center;
-}
-
-.text-xl {
-  font-size: 1.25rem; /* 20px */
-  line-height: 1.75rem; /* 28px */
-}
-
-.text-white {
+  background: linear-gradient(90deg, $pos-rad-blue-start 0%, $pos-rad-blue-end 100%);
   color: $white;
+  font-size: 1.25rem; // 20px
+  font-weight: 700;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 8px -1px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  }
 }
 
-.hover\:bg-gray-800:hover {
-  background-color: $gray-800;
+.logout-icon {
+  width: 1.5rem; // 24px
+  height: 1.5rem; // 24px
 }
 
-.h-6 {
-  height: 1.5rem; /* 24px */
-}
-
-.w-6 {
-  width: 1.5rem; /* 24px */
-}
-
+/* Responsive Styles */
 @media (max-width: 768px) {
-  .text-2xl {
-    font-size: 1.25rem; /* 20px */
-    line-height: 1.75rem; /* 28px */
+  .sidebar-container {
+    width: 4rem; // 64px
   }
 
-  .w-14,
-  .h-14 {
-    width: 3rem; /* 48px */
-    height: 3rem; /* 48px */
+  .logo-text {
+    font-size: 1.25rem; // 20px
   }
 
-  .text-xl {
-    font-size: 1rem; /* 16px */
+  .profile-circle,
+  .logout-button {
+    width: 3rem; // 48px
+    height: 3rem; // 48px
+    font-size: 1rem; // 16px
+  }
+
+  .logout-icon {
+    width: 1.25rem; // 20px
+    height: 1.25rem; // 20px
   }
 }
 
 @media (max-width: 480px) {
-  .text-2xl {
-    font-size: 1.125rem; /* 18px */
-    line-height: 1.5rem; /* 24px */
+  .sidebar-container {
+    width: 3.5rem; // 56px
+  }
+
+  .logo-text {
+    font-size: 1.125rem; // 18px
+  }
+
+  .profile-circle,
+  .logout-button {
+    width: 2.5rem; // 40px
+    height: 2.5rem; // 40px
+    font-size: 0.875rem; // 14px
+  }
+
+  .logout-icon {
+    width: 1rem; // 16px
+    height: 1rem; // 16px
   }
 }
