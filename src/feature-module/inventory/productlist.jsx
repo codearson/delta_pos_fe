@@ -11,7 +11,7 @@ import {
   StopCircle,
   Trash2,
 } from "feather-icons-react/build/IconComponents";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import Select from "react-select";
@@ -24,9 +24,12 @@ import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import Table from "../../core/pagination/datatable";
 import { setToogleHeader } from "../../core/redux/action";
 import { Download } from "react-feather";
+import { fetchProducts } from '../Api/productApi'
 
 const ProductList = () => {
-  const dataSource = useSelector((state) => state.product_list);
+  const [products, setProducts] = useState([]);
+
+  // const dataSource = useSelector((state) => state.product_list);
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
 
@@ -34,6 +37,15 @@ const ProductList = () => {
   const toggleFilterVisibility = () => {
     setIsFilterVisible((prevVisibility) => !prevVisibility);
   };
+
+  useEffect(() => {
+    fetchProducts()
+      .then((data) => setProducts(data))
+      .catch((error) => {
+        console.error("Error fetching products:", error.message);
+      });
+  }, []);
+
   const route = all_routes;
   const options = [
     { value: "sortByDate", label: "Sort by Date" },
@@ -68,64 +80,61 @@ const ProductList = () => {
 
   const columns = [
     {
-      title: "Product",
-      dataIndex: "product",
-      render: (text, record) => (
-        <span className="productimgname">
-          <Link to="/profile" className="product-img stock-img">
-            <ImageWithBasePath alt="" src={record.productImage} />
-          </Link>
-          <Link to="/profile">{text}</Link>
-        </span>
-      ),
-      sorter: (a, b) => a.product.length - b.product.length,
+      title: "Product Name",
+      dataIndex: "name",
+      sorter: (a, b) => a.name.length - b.name.length,
     },
     {
-      title: "SKU",
-      dataIndex: "sku",
-      sorter: (a, b) => a.sku.length - b.sku.length,
+      title: "Bar Code",
+      dataIndex: "barcode",
+      sorter: (a, b) => a.barcode.length - b.barcode.length,
     },
 
     {
       title: "Category",
-      dataIndex: "category",
-      sorter: (a, b) => a.category.length - b.category.length,
+      dataIndex: "productCategoryDto",
+      sorter: (a, b) => a.productCategoryDto.length - b.productCategoryDto.length,
     },
 
     {
-      title: "Brand",
-      dataIndex: "brand",
-      sorter: (a, b) => a.brand.length - b.brand.length,
+      title: "Tax Percentage",
+      dataIndex: "taxDto",
+      sorter: (a, b) => a.taxDto.length - b.taxDto.length,
     },
     {
-      title: "Price",
-      dataIndex: "price",
-      sorter: (a, b) => a.price.length - b.price.length,
+      title: "Purchase Price",
+      dataIndex: "purchasePrice",
+      sorter: (a, b) => a.purchasePrice.length - b.purchasePrice.length,
     },
     {
-      title: "Unit",
-      dataIndex: "unit",
-      sorter: (a, b) => a.unit.length - b.unit.length,
+      title: "Price Per Unit",
+      dataIndex: "pricePerUnit",
+      sorter: (a, b) => a.pricePerUnit.length - b.pricePerUnit.length,
     },
     {
       title: "Qty",
-      dataIndex: "qty",
-      sorter: (a, b) => a.qty.length - b.qty.length,
+      dataIndex: "quantity",
+      sorter: (a, b) => a.quantity.length - b.quantity.length,
+    },
+    {
+      title: "Low Stock",
+      dataIndex: "lowStock",
+      sorter: (a, b) => a.lowStock.length - b.lowStock.length,
     },
 
-    {
-      title: "Created By",
-      dataIndex: "createdby",
-      render: (text, record) => (
-        <span className="userimgname">
-          <Link to="/profile" className="product-img">
-            <ImageWithBasePath alt="" src={record.img} />
-          </Link>
-          <Link to="/profile">{text}</Link>
-        </span>
-      ),
-      sorter: (a, b) => a.createdby.length - b.createdby.length,
-    },
+    // {
+    //   title: "Expiry Date",
+    //   dataIndex: "expiryDate",
+    //   render: (text, record) => (
+    //     <span className="userimgname">
+    //       <Link to="/profile" className="product-img">
+    //         <ImageWithBasePath alt="" src={record.img} />
+    //       </Link>
+    //       <Link to="/profile">{text}</Link>
+    //     </span>
+    //   ),
+    //   sorter: (a, b) => a.expiryDate.length - b.expiryDate.length,
+    // },
     {
       title: "Action",
       dataIndex: "action",
@@ -406,7 +415,7 @@ const ProductList = () => {
             </div>
             {/* /Filter */}
             <div className="table-responsive">
-              <Table columns={columns} dataSource={dataSource} />
+              <Table columns={columns} dataSource={products} />
             </div>
           </div>
         </div>

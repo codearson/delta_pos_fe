@@ -11,3 +11,13 @@ export const createProduct = async (productData) => {
   }
 };
 
+export const fetchProducts = async () => {
+  try {
+    const response = await fetch(`${BASE_BACKEND_URL}/product/getAll`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    throw error;
+  }
+};

@@ -68,8 +68,6 @@ const AddProduct = () => {
         [name]: name === "pricePerUnit" || name === "purchasePrice" || name === "quantity" || name === "lowStock" ? parseFloat(value) : value,
       }));
     }
-
-    console.log("Updated Form Data:", formData);
   };
 
   const handleSubmit = async (e) => {
