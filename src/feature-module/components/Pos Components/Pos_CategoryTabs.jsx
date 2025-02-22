@@ -3,15 +3,16 @@ import clsx from "clsx";
 import "../../../style/scss/components/Pos Components/Pos_CategoryTabs.scss";
 import PropTypes from "prop-types";
 
-const Pos_CategoryTabs = ({ activeTab, onTabChange }) => {
+const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode }) => {
   return (
-    <div className="flex rounded-lg overflow-hidden shadow-lg">
+    <div className="category-tabs-container">
       <button
         className={clsx(
-          "flex-1 py-3 text-lg font-bold transition-colors",
+          "category-tab",
           activeTab === "category"
-            ? "bg-pos-green text-white category-tab-active"
-            : "bg-gray-700 text-gray-300 hover:bg-gray-500"
+            ? "active-tab category-tab-active"
+            : "inactive-tab",
+          darkMode ? "dark-mode" : "light-mode"
         )}
         onClick={() => onTabChange("category")}
       >
@@ -19,10 +20,11 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange }) => {
       </button>
       <button
         className={clsx(
-          "flex-1 py-3 text-lg font-bold transition-colors",
+          "category-tab",
           activeTab === "quick"
-            ? "bg-pos-purple text-white category-tab-active"
-            : "bg-gray-700 text-gray-300"
+            ? "active-tab quick-access-tab"
+            : "inactive-tab",
+          darkMode ? "dark-mode" : "light-mode"
         )}
         onClick={() => onTabChange("quick")}
       >
@@ -35,6 +37,7 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange }) => {
 Pos_CategoryTabs.propTypes = {
   activeTab: PropTypes.oneOf(["category", "quick"]).isRequired,
   onTabChange: PropTypes.func.isRequired,
+  darkMode: PropTypes.bool.isRequired,
 };
 
 export default Pos_CategoryTabs;

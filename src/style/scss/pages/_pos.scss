@@ -1,102 +1,71 @@
 $pos-dark: #212121;
 $text-white: #ffffff;
+$light-bg: #ffffff;
+$light-text: #000000;
+$dark-bg: #212121;
+$dark-text: #ffffff;
 
-.h-screen{
+.pos-container {
   height: 100vh;
-}
-
-.bg-pos-dark {
-  background-color: $pos-dark;
-}
-
-.text-white {
-  color: $text-white;
-}
-
-.flex {
   display: flex;
+  background-color: $light-bg;
+  color: $light-text;
+
+  &.dark-mode {
+    background-color: $dark-bg;
+    color: $dark-text;
+  }
 }
 
-.flex-1 {
-  flex: 1 1 0%;
-}
-
-.flex-col {
+.main-content {
+  flex: 1;
+  display: flex;
   flex-direction: column;
 }
 
-.p-6 {
-  padding: 1.5rem; /* 24px */
+.content {
+  flex: 1;
+  padding: 1.5rem;
 }
 
-.grid {
+.grid-container {
   display: grid;
-}
-
-.grid-cols-12 {
   grid-template-columns: repeat(12, minmax(0, 1fr));
-}
-
-.gap-6 {
-  gap: 1.5rem; /* 24px */
-}
-
-.h-full {
+  gap: 1.5rem;
   height: 100%;
 }
 
-.col-span-8 {
-  grid-column: span 8 / span 8;
+.category-section {
+  grid-column: span 8;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.space-y-6 > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-y-reverse: 0;
-  margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
-  margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
-}
-
-.gap-4 {
-  gap: 1rem; /* 16px */
-}
-
-.col-span-6 {
-  grid-column: span 6 / span 6;
-}
-
-.col-span-3 {
-  grid-column: span 3 / span 3;
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 @media (max-width: 768px) {
-  .grid-cols-12 {
-    grid-template-columns: repeat(6, 1fr); /* Reduce columns for smaller screens */
+  .grid-container {
+    grid-template-columns: repeat(6, 1fr);
   }
 
-  .col-span-8,
-  .col-span-6,
-  .col-span-3 {
-    grid-column: span 6 / span 6; /* Make all items span 6 columns on small screens */
-  }
-
-  .space-y-6 {
-    margin-top: 1rem; /* Adjust spacing on small screens */
-    margin-bottom: 1rem;
+  .category-section,
+  .action-buttons {
+    grid-column: span 6;
   }
 }
 
 @media (max-width: 480px) {
-  .grid-cols-12 {
-    grid-template-columns: 1fr; /* One column layout for very small screens */
+  .grid-container {
+    grid-template-columns: 1fr;
   }
 
-  .col-span-8,
-  .col-span-6,
-  .col-span-3 {
-    grid-column: span 1 / span 1; /* Each item takes full width on very small screens */
-  }
-
-  .space-y-6 {
-    margin-top: 0.5rem; /* Further reduce spacing on smaller screens */
-    margin-bottom: 0.5rem;
+  .category-section,
+  .action-buttons {
+    grid-column: span 1;
   }
 }
