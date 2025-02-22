@@ -13,6 +13,9 @@ import FunctionButtons from "../components/Pos Components/Pos_Function"
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState("category");
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("theme") === "dark"
+  );
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -22,12 +25,27 @@ const Pos = () => {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add("dark-mode");
+    } else {
+      document.body.classList.remove("dark-mode");
+    }
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem("theme", newMode ? "dark" : "light");
+    document.body.classList.toggle("dark-mode", newMode);
+  };
+
   return (
-    <div className="h-screen bg-pos-dark text-white flex">
+    <div className={`h-screen ${darkMode ? "bg-dark-mode text-white" : "bg-light-mode text-black"} flex`}>
       <Sidebar />
       <div className="flex-1 flex flex-col">
-        <Header currentTime={currentTime} />
-        <div className="flex-1 p-6">
+      <Header currentTime={currentTime} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <div className="flex-1 p-6">
           <div className="grid grid-cols-12 gap-6 h-full">
             <Calculator />
             <div className="col-span-8 space-y-6">

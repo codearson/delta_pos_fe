@@ -13,28 +13,25 @@ $text-black: #000000;
   
     input[type="search"] {
       height: 38px;
-      border: 1px solid rgba(145, 158, 171, 0.30);
-      background-color: #374151; /* Equivalent to $bg-gray-700 */
       width: 100%;
-      border-radius: 8px;
-      padding: 10px 10px 10px 40px; /* Padding to accommodate the icon */
+      padding: 10px 10px 10px 40px;
       color: #ffffff;
-      font-size: 1rem; /* 16px */
-      line-height: 1.5rem; /* 24px */
+      font-size: 1rem; 
+      border-color: #ffffff;
   
       &::placeholder {
-        color: #9ca3af; /* Equivalent to $text-gray-400 */
+        color: #000000; 
       }
     }
   
     .search-icon {
-      color: #9ca3af;
-      font-size: 1rem; /* 16px */
+      color: #000000;
+      font-size: 1rem; 
     }
   
     .feather-search {
-      font-size: 1rem; /* Custom size for the search icon */
-      content: "\1F50D"; /* Unicode for magnifying glass */
+      font-size: 1rem; 
+      content: "\1F50D"; 
     }
   }
   
@@ -54,10 +51,6 @@ $text-black: #000000;
 
 .bg-gray-600 {
     border-color: $bg-gray-600;
-}
-
-.bg-white {
-    background-color: $text-white;
 }
 
 .text-black {
@@ -92,6 +85,10 @@ $text-black: #000000;
     padding: 1rem; /* 16px */
 }
 
+.line {
+    border: 1px solid rgb(0, 0, 0);
+  }
+
 .shadow-xl {
     --tw-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     --tw-shadow-colored: 0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);
@@ -109,7 +106,12 @@ $text-black: #000000;
 }
 
 .mb-4 {
-    margin-bottom: 1rem; /* 16px */
+    margin-bottom: 1rem; 
+}
+
+.w-10{
+    width: 100%;
+    height: 60%;
 }
 
 .w-full {
@@ -117,32 +119,32 @@ $text-black: #000000;
 }
 
 .pl-10 {
-    padding-left: 2.5rem; /* 40px */
+    padding-left: 2.5rem;
 }
 
 .py-2 {
-    padding-top: 0.5rem; /* 8px */
-    padding-bottom: 0.5rem; /* 8px */
+    padding-top: 0.5rem; 
+    padding-bottom: 0.5rem; 
 }
 
 .text-base {
-    font-size: 1rem; /* 16px */
-    line-height: 1.5rem; /* 24px */
+    font-size: 1rem;
+    line-height: 1.5rem; 
 }
 
 .text-xl {
-    font-size: 1.25rem; /* 20px */
-    line-height: 1.75rem; /* 28px */
+    font-size: 1.25rem; 
+    line-height: 1.75rem; 
 }
 
 .text-2xl {
-    font-size: 1.5rem; /* 24px */
-    line-height: 2rem; /* 32px */
+    font-size: 1.5rem; 
+    line-height: 2rem; 
 }
 
 .text-3xl {
-    font-size: 1.875rem; /* 30px */
-    line-height: 2.25rem; /* 36px */
+    font-size: 1.800rem;
+    line-height: 20rem;
 }
 
 .font-medium {
@@ -179,7 +181,7 @@ $text-black: #000000;
 }
 
 .space-y-3 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));
+    margin-top: calc(1.00rem * calc(1 - var(--tw-space-y-reverse)));
     margin-bottom: calc(0.75rem * var(--tw-space-y-reverse));
 }
 
@@ -195,8 +197,9 @@ $text-black: #000000;
     border-color: #e5e7eb;
 }
 
+
 .pt-3 {
-    padding-top: 0.75rem; /* 12px */
+    padding-top: 0.75rem; 
 }
 
 .font-bold {
@@ -205,37 +208,37 @@ $text-black: #000000;
 
 @media (max-width: 768px) {
     .col-span-4 {
-        grid-column: span 6 / span 6; /* Adjust for smaller screens */
+        grid-column: span 6 / span 6;
     }
 
     .space-y-2 {
-        margin-top: 0.25rem; /* Reduce spacing on smaller screens */
+        margin-top: 0.25rem;
         margin-bottom: 0.25rem;
     }
 
     .text-xl {
-        font-size: 1rem; /* Adjust font size for better readability */
+        font-size: 1rem; 
     }
 
     .text-3xl {
-        font-size: 1.5rem; /* Adjust for better scaling on smaller devices */
+        font-size: 1.5rem; 
     }
 }
 
 @media (max-width: 480px) {
     .col-span-4 {
-        grid-column: span 12 / span 12; /* Full width on very small screens */
+        grid-column: span 12 / span 12; 
     }
 
     .text-xl {
-        font-size: 0.875rem; /* Adjust font size for smaller devices */
+        font-size: 0.875rem; 
     }
 
     .text-3xl {
-        font-size: 1.25rem; /* Adjust font size for mobile screens */
+        font-size: 1.25rem;
     }
 
     .pl-10 {
-        padding-left: 1rem; /* Reduce padding for small screens */
+        padding-left: 1rem;
     }
 }
