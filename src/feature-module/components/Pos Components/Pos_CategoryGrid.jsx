@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../../style/scss/components/Pos Components/Pos_CategoryGrid.scss";
 import PropTypes from "prop-types";
 import { categories } from "../../../core/json/Posdata";
@@ -7,6 +7,10 @@ const PAGE_SIZE = 14;
 
 const Pos_CategoryGrid = ({ items = categories }) => {
   const [pageIndex, setPageIndex] = useState(0);
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [items]);
 
   const start = pageIndex * PAGE_SIZE;
   const end = start + PAGE_SIZE;
@@ -51,7 +55,6 @@ const Pos_CategoryGrid = ({ items = categories }) => {
       <div className="grid grid-cols-5 gap-2">
         {paginatedItems.map(renderCategoryButton)}
 
-        {/* More Button */}
         {end < items.length && (
           <button
             className="category-btn group"

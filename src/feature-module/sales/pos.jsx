@@ -12,9 +12,8 @@ import FunctionButtons from "../components/Pos Components/Pos_Function"
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState("category");
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("theme") === "dark"
-  );
+  const [darkMode, setDarkMode] = useState(localStorage.getItem("theme") === "dark");
+  const [pageIndex, setPageIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -39,6 +38,11 @@ const Pos = () => {
     document.body.classList.toggle("dark-mode", newMode);
   };
 
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setPageIndex(0);
+  };
+
   return (
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <Sidebar darkMode={darkMode} />
@@ -54,12 +58,14 @@ const Pos = () => {
             <div className="category-section">
               <CategoryTabs
                 activeTab={activeTab}
-                onTabChange={setActiveTab}
+                onTabChange={handleTabChange}
                 darkMode={darkMode}
               />
               <CategoryGrid
                 items={activeTab === "category" ? categories : quickAccess}
                 darkMode={darkMode}
+                pageIndex={pageIndex}
+                onPageChange={setPageIndex}
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} />
