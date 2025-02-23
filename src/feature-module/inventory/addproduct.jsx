@@ -320,7 +320,7 @@ const AddProduct = () => {
                                 <div className="input-blocks add-product">
                                   <label>Price Per Unit</label>
                                   <input
-                                    type="floct"
+                                    type="float"
                                     className="form-control"
                                     placeholder="Price Per Unit"
                                     name="pricePerUnit"
