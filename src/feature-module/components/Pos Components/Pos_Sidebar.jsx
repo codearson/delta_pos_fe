@@ -6,20 +6,32 @@ import "../../../style/scss/components/Pos Components/Pos_Sidebar.scss";
 
 const Pos_Sidebar = ({ darkMode }) => {
   return (
-    <aside className={`sidebar-container ${darkMode ? "dark-mode" : "light-mode"}`}>
-      <div className="logo-container">
-        <h1 className="logo-text">Delta POS</h1>
+    <aside className={`sidebar-container ${darkMode ? 'dark-mode' : ''}`}>
+      <div className="logo-section">
+        <div className="logo-text">
+          <span className="delta">Delta</span>
+          <span className="pos">POS</span>
+        </div>
       </div>
-      <div className="sidebar-footer">
-        <div className="profile-circle">
-          A
+
+      <nav className="nav-section">
+        <Link to="/home" className="nav-item active">
+          <div className="nav-icon home-icon">🏠</div>
+        </Link>
+      </nav>
+
+      <div className="user-section">
+        <div className="user-avatar">
+          <div className="avatar-circle">A</div>
+          <span className="user-role">Admin</span>
         </div>
         <Link to="/signIn" className="logout-button">
-          <ImageWithBasePath
-            src="assets/img/icons/log-out.svg"
-            alt="Logout"
-            className="logout-icon"
-          />
+          <div className="logout-icon">
+            <ImageWithBasePath
+              src="assets/img/icons/log-out.svg"
+              alt="Logout"
+            />
+          </div>
         </Link>
       </div>
     </aside>
