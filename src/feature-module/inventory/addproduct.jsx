@@ -14,7 +14,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { saveProduct } from "../Api/productApi"; // Ensure this path is correct
+import { saveProduct } from "../Api/productApi"; 
 
 const AddProduct = () => {
   const route = all_routes;
@@ -30,7 +30,7 @@ const AddProduct = () => {
   const [pricePerUnit, setPricePerUnit] = useState("");
   const [taxType, setTaxType] = useState(null);
   const [lowStock, setLowStock] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
+  //const [expiryDate, setExpiryDate] = useState("");
 
   const renderCollapseTooltip = (props) => (
     <Tooltip id="refresh-tooltip" {...props}>
@@ -40,32 +40,29 @@ const AddProduct = () => {
 
   // Options for dropdowns
   const categoryOptions = [
-    { value: 1, label: "Electronics" }, // Ensure value is a number
+    { value: 1, label: "Electronics" }, 
     { value: 2, label: "Groceries" },
     { value: 3, label: "Beverages" },
   ];
 
   const taxtype = [
-    { value: 1, label: "GST" }, // Ensure value is a number
+    { value: 1, label: "GST" }, 
     { value: 2, label: "VAT" },
   ];
 
   // Handle saving the product
   const handleSaveProduct = async () => {
     // Validate required fields
-    if (!productName || !barcode || !category || !taxType || !expiryDate) {
-      alert("Please fill out all required fields.");
+    if (!productName || !barcode || !category || !taxType ) {
+      console.error("Please fill out all required fields.");
       return;
     }
 
     // Validate numeric fields
     if (isNaN(quantity) || isNaN(purchasePrice) || isNaN(pricePerUnit) || isNaN(lowStock)) {
-      alert("Please enter valid numbers for quantity, purchase price, price per unit, and low stock.");
+      console.error("Please enter valid numbers for quantity, purchase price, price per unit, and low stock.");
       return;
     }
-
-    // Format expiry date
-    const formattedExpiryDate = new Date(expiryDate).toISOString();
 
     // Prepare the payload
     const productData = {
@@ -79,13 +76,11 @@ const AddProduct = () => {
       productCategoryDto: {
         id: parseInt(category.value), // Ensure it's a number
       },
-      expiryDate: formattedExpiryDate,
+      expiryDate:"2025-12-31T23:59:59",
       lowStock: parseInt(lowStock),
       purchasePrice: parseFloat(purchasePrice),
       quantity: parseInt(quantity),
     };
-
-    console.log("Sending payload:", productData); // Debugging
 
     // Send the request
     const response = await saveProduct(productData);
@@ -302,7 +297,7 @@ const AddProduct = () => {
                                 />
                               </div>
                             </div>
-                            <div className="col-lg-4 col-sm-6 col-12">
+                            {/* <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Expiry Date</label>
                                 <input
@@ -313,7 +308,7 @@ const AddProduct = () => {
                                   required
                                 />
                               </div>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>

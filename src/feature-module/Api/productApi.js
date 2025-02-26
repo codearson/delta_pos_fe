@@ -1,8 +1,6 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-
-
 export const fetchProducts = async () => {
   try {
     const accessToken = localStorage.getItem("accessToken");
@@ -17,7 +15,8 @@ export const fetchProducts = async () => {
     const userRole = decodedToken?.roles[0]?.authority;
 
     if (userRole !== "ROLE_ADMIN") {
-      return []; 
+      console.error("Access denied. Only admins can fetch products.");
+      return [];
     }
 
     const response = await axios.get(`${BASE_BACKEND_URL}/product/getAll`, {
@@ -42,6 +41,15 @@ export const saveProduct = async (productData) => {
       return null;
     }
 
+    // Decode the JWT token and check the role
+    const decodedToken = decodeJwt(accessToken);
+    const userRole = decodedToken?.roles[0]?.authority;
+
+    if (userRole !== "ROLE_ADMIN") {
+      console.error("Access denied. Only admins can save products.");
+      return null;
+    }
+
     const response = await axios.post(`${BASE_BACKEND_URL}/product/save`, productData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -54,7 +62,6 @@ export const saveProduct = async (productData) => {
     return null;
   }
 };
-
 
 function decodeJwt(token) {
   try {
