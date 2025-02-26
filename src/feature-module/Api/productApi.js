@@ -33,6 +33,29 @@ export const fetchProducts = async () => {
   }
 };
 
+export const saveProduct = async (productData) => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      console.error("No access token found. Please log in.");
+      return null;
+    }
+
+    const response = await axios.post(`${BASE_BACKEND_URL}/product/save`, productData, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Error saving product:", error.response?.status, error.response?.data);
+    return null;
+  }
+};
+
+
 function decodeJwt(token) {
   try {
     return JSON.parse(atob(token.split('.')[1])); // Decode the token payload

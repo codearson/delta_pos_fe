@@ -1,4 +1,4 @@
-import React, { } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
 import { all_routes } from "../../Router/all_routes";
@@ -9,50 +9,98 @@ import {
   ChevronUp,
   Info,
   LifeBuoy,
-  PlusCircle, 
+  PlusCircle,
 } from "feather-icons-react/build/IconComponents";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-
+import { saveProduct } from "../Api/productApi"; // Ensure this path is correct
 
 const AddProduct = () => {
   const route = all_routes;
   const dispatch = useDispatch();
-
   const data = useSelector((state) => state.toggle_header);
 
-  
-  
-  
+  // State for form inputs
+  const [productName, setProductName] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [category, setCategory] = useState(null);
+  const [quantity, setQuantity] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [pricePerUnit, setPricePerUnit] = useState("");
+  const [taxType, setTaxType] = useState(null);
+  const [lowStock, setLowStock] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+
   const renderCollapseTooltip = (props) => (
     <Tooltip id="refresh-tooltip" {...props}>
       Collapse
     </Tooltip>
   );
-  
+
+  // Options for dropdowns
   const categoryOptions = [
-    { value: "choose", label: "Choose" },
-    { value: "lenovo", label: "Lenovo" },
-    { value: "electronics", label: "Electronics" },
+    { value: 1, label: "Electronics" }, // Ensure value is a number
+    { value: 2, label: "Groceries" },
+    { value: 3, label: "Beverages" },
   ];
- 
+
   const taxtype = [
-    { value: "choose", label: "Choose" },
-    { value: "gst", label: "GST" },
-    { value: "vat", label: "VAT" },
+    { value: 1, label: "GST" }, // Ensure value is a number
+    { value: 2, label: "VAT" },
   ];
-  // const discounttype = [
-  //   { value: "choose", label: "Choose" },
-  //   { value: "percentage", label: "Percentage" },
-  //   { value: "cash", label: "Cash" },
-  // ];
-  
-  
+
+  // Handle saving the product
+  const handleSaveProduct = async () => {
+    // Validate required fields
+    if (!productName || !barcode || !category || !taxType || !expiryDate) {
+      alert("Please fill out all required fields.");
+      return;
+    }
+
+    // Validate numeric fields
+    if (isNaN(quantity) || isNaN(purchasePrice) || isNaN(pricePerUnit) || isNaN(lowStock)) {
+      alert("Please enter valid numbers for quantity, purchase price, price per unit, and low stock.");
+      return;
+    }
+
+    // Format expiry date
+    const formattedExpiryDate = new Date(expiryDate).toISOString();
+
+    // Prepare the payload
+    const productData = {
+      name: productName,
+      barcode: barcode,
+      pricePerUnit: parseFloat(pricePerUnit),
+      taxDto: {
+        id: parseInt(taxType.value), // Ensure it's a number
+      },
+      isActive: true,
+      productCategoryDto: {
+        id: parseInt(category.value), // Ensure it's a number
+      },
+      expiryDate: formattedExpiryDate,
+      lowStock: parseInt(lowStock),
+      purchasePrice: parseFloat(purchasePrice),
+      quantity: parseInt(quantity),
+    };
+
+    console.log("Sending payload:", productData); // Debugging
+
+    // Send the request
+    const response = await saveProduct(productData);
+    if (response) {
+      alert("Product saved successfully!");
+      // Optionally, reset the form or redirect
+    } else {
+      alert("Failed to save product.");
+    }
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content">
-        {/* header part */}
+        {/* Header part */}
         <div className="page-header">
           <div className="add-item d-flex">
             <div className="page-title">
@@ -88,28 +136,18 @@ const AddProduct = () => {
           </ul>
         </div>
 
-        {/* /add */}
+        {/* Form */}
         <form>
           <div className="card">
             <div className="card-body add-product pb-0">
-              
-            {/* Product Information */}
-              <div
-                className="accordion-card-one accordion"
-                id="accordionExample"
-              >
+              {/* Product Information */}
+              <div className="accordion-card-one accordion" id="accordionExample">
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingOne">
-                    <div
-                      className="accordion-button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#collapseOne"
-                      aria-controls="collapseOne"
-                    >
+                    <div className="accordion-button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-controls="collapseOne">
                       <div className="addproduct-icon">
                         <h5>
                           <Info className="add-info" />
-
                           <span>Product Information</span>
                         </h5>
                         <Link to="#">
@@ -118,23 +156,20 @@ const AddProduct = () => {
                       </div>
                     </div>
                   </div>
-                  <div
-                    id="collapseOne"
-                    className="accordion-collapse collapse show"
-                    aria-labelledby="headingOne"
-                    data-bs-parent="#accordionExample"
-                  >
+                  <div id="collapseOne" className="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                     <div className="accordion-body">
-                     <div className="row">
+                      <div className="row">
                         <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Product Name</label>
-                            <input type="text" 
-                            className="form-control"
-                            placeholder="Enter Product Name"
-                            
+                            <input
+                              type="text"
+                              className="form-control"
+                              placeholder="Enter Product Name"
+                              value={productName}
+                              onChange={(e) => setProductName(e.target.value)}
+                              required
                             />
-                            
                           </div>
                         </div>
                         <div className="col-lg-4 col-sm-6 col-12">
@@ -144,14 +179,10 @@ const AddProduct = () => {
                               type="text"
                               className="form-control list"
                               placeholder="Enter Barcode"
-                              />
-                            
-                            {/* <Link
-                              to={route.addproduct}
-                              className="btn btn-primaryadd"
-                            >
-                              Generate Code
-                            </Link> */}
+                              value={barcode}
+                              onChange={(e) => setBarcode(e.target.value)}
+                              required
+                            />
                           </div>
                         </div>
                       </div>
@@ -161,11 +192,7 @@ const AddProduct = () => {
                             <div className="mb-3 add-product">
                               <div className="add-newplus">
                                 <label className="form-label">Category</label>
-                                <Link
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#add-units-category"
-                                >
+                                <Link to="#" data-bs-toggle="modal" data-bs-target="#add-units-category">
                                   <PlusCircle className="plus-down-add" />
                                   <span>Add New</span>
                                 </Link>
@@ -174,9 +201,10 @@ const AddProduct = () => {
                                 className="select"
                                 options={categoryOptions}
                                 placeholder="Choose"
-                                
-                                />
-                                                           
+                                value={category}
+                                onChange={setCategory}
+                                required
+                              />
                             </div>
                           </div>
                         </div>
@@ -185,19 +213,12 @@ const AddProduct = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Pricing and Stocks */}
-              <div
-                className="accordion-card-one accordion"
-                id="accordionExample2">                
+              <div className="accordion-card-one accordion" id="accordionExample2">
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingTwo">
-                    <div
-                      className="accordion-button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#collapseTwo"
-                      aria-controls="collapseTwo"
-                    >
+                    <div className="accordion-button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-controls="collapseTwo">
                       <div className="text-editor add-list">
                         <div className="addproduct-icon list icon">
                           <h5>
@@ -211,48 +232,49 @@ const AddProduct = () => {
                       </div>
                     </div>
                   </div>
-                  <div
-                    id="collapseTwo"
-                    className="accordion-collapse collapse show"
-                    aria-labelledby="headingTwo"
-                    data-bs-parent="#accordionExample2"
-                  >
+                  <div id="collapseTwo" className="accordion-collapse collapse show" aria-labelledby="headingTwo" data-bs-parent="#accordionExample2">
                     <div className="accordion-body">
-                       <div className="tab-content" id="pills-tabContent">
-                        <div
-                          className="tab-pane fade show active"
-                          id="pills-home"
-                          role="tabpanel"
-                          aria-labelledby="pills-home-tab"
-                        >
+                      <div className="tab-content" id="pills-tabContent">
+                        <div className="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab">
                           <div className="row">
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Quantity</label>
-                                <input type="text" 
-                                className="form-control"
-                                placeholder="Enter Quantity"
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  placeholder="Enter Quantity"
+                                  value={quantity}
+                                  onChange={(e) => setQuantity(e.target.value)}
+                                  required
                                 />
-                               </div>
+                              </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Purchased Price</label>
-                                <input type="text" 
-                                className="form-control" 
-                                placeholder="Enter Purchased Price"
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  placeholder="Enter Purchased Price"
+                                  value={purchasePrice}
+                                  onChange={(e) => setPurchasePrice(e.target.value)}
+                                  required
                                 />
-                                 </div>
+                              </div>
                             </div>
-                            <div className="row">
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Price Per Unit</label>
-                                <input type="text" 
-                                className="form-control" 
-                                placeholder="Enter Price Per Unit"
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  placeholder="Enter Price Per Unit"
+                                  value={pricePerUnit}
+                                  onChange={(e) => setPricePerUnit(e.target.value)}
+                                  required
                                 />
-                                </div>
+                              </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
@@ -261,35 +283,37 @@ const AddProduct = () => {
                                   className="select"
                                   options={taxtype}
                                   placeholder="Select Option"
-                                  />
-                                  </div>
-                            </div>
-                            </div>
-                          </div>
-                          <div className="row">
-                          <div className="col-lg-4 col-sm-6 col-12">
-                            <div className="input-blocks add-product">
-                              <label>Low Stock</label>
-                              <input type="text" 
-                                className="form-control" 
-                                placeholder="Enter Low Stock"
+                                  value={taxType}
+                                  onChange={setTaxType}
+                                  required
                                 />
-                                </div>
-                          </div>
-                          </div>
-                         </div>
-                        <div
-                          className="tab-pane fade"
-                          id="pills-profile"
-                          role="tabpanel"
-                          aria-labelledby="pills-profile-tab"
-                        >
-                         
-                          <div
-                            className="modal-body-table variant-table"
-                            id="variant-table"
-                          >
-                            
+                              </div>
+                            </div>
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Low Stock</label>
+                                <input
+                                  type="number"
+                                  className="form-control"
+                                  placeholder="Enter Low Stock"
+                                  value={lowStock}
+                                  onChange={(e) => setLowStock(e.target.value)}
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Expiry Date</label>
+                                <input
+                                  type="date"
+                                  className="form-control"
+                                  value={expiryDate}
+                                  onChange={(e) => setExpiryDate(e.target.value)}
+                                  required
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -304,24 +328,19 @@ const AddProduct = () => {
               <button type="button" className="btn btn-cancel me-2">
                 Cancel
               </button>
-
               <button
                 type="button"
                 className="btn btn-submit"
+                onClick={handleSaveProduct}
               >
                 Save Product
               </button>
-              {/* <Link to={route.addproduct} className="btn btn-submit">
-                Save Product
-              </Link> */}
             </div>
           </div>
         </form>
         {/* /add */}
       </div>
-      {/* <Addunits /> */}
       <AddCategory />
-      {/* <AddBrand /> */}
     </div>
   );
 };
