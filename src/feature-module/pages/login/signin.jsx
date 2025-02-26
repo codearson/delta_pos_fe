@@ -1,47 +1,62 @@
 import React, { useState } from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
+import { getAccessToken, getUserByEmail } from "../../Api/config";
 
 const Signin = () => {
   const route = all_routes;
-  const [username, setUsername] = useState("");
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState({});
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const validateForm = () => {
-    let formErrors = {};
+  // Function to handle login and fetch user details
+  const handleSignIn = async (e) => {
+    e.preventDefault(); 
 
-    if (!username) {
-      formErrors.username = "Username is required.";
-    } else if (/\s/.test(username)) {
-      formErrors.username = "Username should not contain spaces.";
+    setError("");
+
+    console.log("Fetching access token...");
+
+    const token = await getAccessToken(email, password);
+
+    if (!token) {
+      setError("Invalid username or password!");
+      return;
     }
 
-    if (!password) {
-      formErrors.password = "Password is required.";
-    } else if (password.length < 6) {
-      formErrors.password = "Password must be at least 6 characters.";
+    console.log("Access Token Retrieved:", token);
+
+    // Fetch user details after getting token
+    const user = await getUserByEmail(email);
+
+    if (!user) {
+      setError("Failed to fetch user details. Please try again.");
+      return;
     }
 
-    setErrors(formErrors);
-    return Object.keys(formErrors).length === 0;
-  };
+    console.log("User Details:", user);
 
-  const handleSignIn = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      window.location.href = route.dashboard;
+    // Redirect based on role
+    if (user.userRoleDto?.userRole === "ADMIN") {
+      navigate(route.dashboard);
+    } else if (user.userRoleDto?.userRole === "USER") {
+      navigate(route.pos);
+    } else if (user.userRoleDto?.userRole === "MANAGER") {
+      navigate(route.dashboard);
+    } else {
+      setError("Unknown role. Please contact support.");
     }
-  };
+  }; 
 
   return (
     <div className="main-wrapper">
       <div className="account-content">
         <div className="login-wrapper bg-img">
           <div className="login-content">
-             <form onSubmit={handleSignIn}>
+            <form onSubmit={handleSignIn}>
               <div className="login-userset">
                 <div className="login-logo logo-normal">
                   <ImageWithBasePath src="assets/img/logo.png" alt="img" />
@@ -58,36 +73,34 @@ const Signin = () => {
                 <div className="form-login mb-3">
                   <label className="form-label">Username Or Email</label>
                   <div className="form-addons">
-                    <input 
-                    type="text"
-                    className="form-control"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                  />
+                  <input
+                      type="text"
+                      className="form-control"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
                     <ImageWithBasePath
                       src="assets/img/icons/mail.svg"
                       alt="img"
                     />
                   </div>
-                  {errors.username && <p className="text-danger">{errors.username}</p>}
                 </div>
-
                 <div className="form-login mb-3">
                   <label className="form-label">Password</label>
                   <div className="pass-group">
-                    <input
+                  <input
                       type={showPassword ? "text" : "password"}
                       className="pass-input form-control"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      required
                     />
-                    <span 
-                    className={`fas ${showPassword ? "fa-eye" : "fa-eye-slash"} toggle-password`}
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ cursor: "pointer" }}
-                  />
+                    <span
+                      className={`fas toggle-password ${showPassword ? "fa-eye" : "fa-eye-slash"}`}
+                      onClick={() => setShowPassword(!showPassword)}
+                    />
                   </div>
-                  {errors.password && <p className="text-danger">{errors.password}</p>}
                 </div>
                 <div className="form-login authentication-check">
                   <div className="row">
@@ -107,21 +120,12 @@ const Signin = () => {
                     </div>
                   </div>
                 </div>
-                
-
-
-                {/* old signin btn */}
-                {/* <div className="form-login">
-                  <Link to={route.dashboard} className="btn btn-login">
-                    Sign In
-                  </Link>
-                </div> */}
+                {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
                 <div className="form-login">
-                  <button type="submit" className="btn btn-login">
+                <button type="submit" className="btn btn-login">
                     Sign In
                   </button>
                 </div>
-
                 {/* <div className="signinform">
                   <h4>
                     New on our platform?
@@ -174,5 +178,4 @@ const Signin = () => {
     </div>
   );
 };
-
 export default Signin;

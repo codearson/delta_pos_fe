@@ -97,9 +97,9 @@ const Header = () => {
     const handleFullscreenChange = () => {
       setIsFullscreen(
         document.fullscreenElement ||
-          document.mozFullScreenElement ||
-          document.webkitFullscreenElement ||
-          document.msFullscreenElement
+        document.mozFullScreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement
       );
     };
 
@@ -180,8 +180,8 @@ const Header = () => {
               display: pathname.includes("tasks")
                 ? "none"
                 : pathname.includes("compose")
-                ? "none"
-                : "",
+                  ? "none"
+                  : "",
             }}
             onClick={handlesidebar}
           >
@@ -644,7 +644,23 @@ const Header = () => {
                   Settings
                 </Link>
                 <hr className="m-0" />
-                <Link className="dropdown-item logout pb-0" to="/signIn">
+                {/* <Link className="dropdown-item logout pb-0" to="/signIn">
+                  <ImageWithBasePath
+                    src="assets/img/icons/log-out.svg"
+                    alt="img"
+                    className="me-2"
+                  />
+                  Logout
+                </Link> */}
+                <Link
+                  className="dropdown-item logout pb-0"
+                  to="/signIn"
+                  onClick={() => {
+                    localStorage.removeItem("accessToken"); // Remove the access token
+                    localStorage.removeItem("userRole"); // Optionally remove the user role
+                    console.log("User logged out. Access token removed.");
+                  }}
+                >
                   <ImageWithBasePath
                     src="assets/img/icons/log-out.svg"
                     alt="img"
