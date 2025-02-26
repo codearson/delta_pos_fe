@@ -25,7 +25,6 @@ export const fetchProducts = async () => {
     const userRole = decodedToken?.roles[0]?.authority;
 
     if (userRole !== "ROLE_ADMIN") {
-      console.log("Access Denied: Only admins can fetch products.");
       return []; 
     }
 
@@ -35,7 +34,6 @@ export const fetchProducts = async () => {
       },
     });
 
-    console.log("Fetched Products:", response.data);
     return response.data.responseDto || [];
   } catch (error) {
     console.error("Error fetching products:", error.response?.status, error.response?.data);

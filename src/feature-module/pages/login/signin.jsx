@@ -15,30 +15,18 @@ const Signin = () => {
   // Function to handle login and fetch user details
   const handleSignIn = async (e) => {
     e.preventDefault(); 
-
     setError("");
-
-    console.log("Fetching access token...");
-
     const token = await getAccessToken(email, password);
-
     if (!token) {
       setError("Invalid username or password!");
       return;
     }
-
-    console.log("Access Token Retrieved:", token);
-
     // Fetch user details after getting token
     const user = await getUserByEmail(email);
-
     if (!user) {
       setError("Failed to fetch user details. Please try again.");
       return;
     }
-
-    console.log("User Details:", user);
-
     // Redirect based on role
     if (user.userRoleDto?.userRole === "ADMIN") {
       navigate(route.dashboard);

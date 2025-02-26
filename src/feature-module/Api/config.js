@@ -9,11 +9,9 @@ export const getAccessToken = async (username, password) => {
       username,
       password,
     });
-
     if (response.data.responseDto?.accessToken) {
       const accessToken = response.data.responseDto.accessToken;
       localStorage.setItem("accessToken", accessToken);
-      console.log("New Access Token:", accessToken);
       return accessToken;
     }
   } catch (err) {
@@ -25,14 +23,10 @@ export const getAccessToken = async (username, password) => {
 export const getUserByEmail = async (email) => {
     try {
       const accessToken = localStorage.getItem("accessToken");
-  
       if (!accessToken) {
         console.error("No access token found.");
         return null;
       }
-  
-      console.log(" Using Access Token:", accessToken);
-  
       const response = await axios.get(
         `${BASE_BACKEND_URL}/user/getByEmailAddress?emailAddress=${email}`,
         {
@@ -41,17 +35,12 @@ export const getUserByEmail = async (email) => {
           },
         }
       );
-  
-      console.log("User API Response:", response.data);
-  
       if (response.data.responseDto?.length > 0) {
         return response.data.responseDto[0];
       }
-  
       return null;
     } catch (err) {
       console.error("Error fetching user details:", err.response?.status, err.response?.data);
       return null;
     }
   };
-  
