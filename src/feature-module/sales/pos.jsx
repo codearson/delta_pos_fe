@@ -3,11 +3,11 @@ import { categories, quickAccess } from "../../core/json/Posdata";
 import Header from "../components/Pos Components/Pos_Header";
 import Sidebar from "../components/Pos Components/Pos_Sidebar";
 import Calculator from "../components/Pos Components/Pos_Calculator";
-import CategoryTabs from "../components/Pos Components/Pos_CategoryTabs"
-import CategoryGrid from "../components/Pos Components/Pos_CategoryGrid"
-import Numpad from "../components/Pos Components/Pos_Numpad"
-import PaymentButtons from "../components/Pos Components/Pos_Payment"
-import FunctionButtons from "../components/Pos Components/Pos_Function"
+import CategoryTabs from "../components/Pos Components/Pos_CategoryTabs";
+import CategoryGrid from "../components/Pos Components/Pos_CategoryGrid";
+import Numpad from "../components/Pos Components/Pos_Numpad";
+import PaymentButtons from "../components/Pos Components/Pos_Payment";
+import FunctionButtons from "../components/Pos Components/Pos_Function";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -19,7 +19,6 @@ const Pos = () => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
 

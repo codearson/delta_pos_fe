@@ -40,10 +40,10 @@ const Pos_Payment = () => {
         className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg text-base font-bold transition-colors shadow-md hover:shadow-lg border-0"
         onClick={() => setShowPopup(true)}
       >
-        Cash
+        💵 Cash
       </button>
       <button className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg text-base font-bold transition-colors shadow-md hover:shadow-lg border-0">
-        Card
+        💳 Card
       </button>
 
       {showPopup && (
