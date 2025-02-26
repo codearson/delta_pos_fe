@@ -1,128 +1,58 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import React, { } from "react";
+import { Link } from "react-router-dom";
 import Select from "react-select";
-import { createProduct } from "../Api/productApi";
 import { all_routes } from "../../Router/all_routes";
+import AddCategory from "../../core/modals/inventory/addcategory";
 import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
   Info,
   LifeBuoy,
-  PlusCircle,
+  PlusCircle, 
 } from "feather-icons-react/build/IconComponents";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
-import { OverlayTrigger } from "react-bootstrap";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+
 
 const AddProduct = () => {
   const route = all_routes;
   const dispatch = useDispatch();
+
   const data = useSelector((state) => state.toggle_header);
-  const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: "",
-    barcode: "",
-    pricePerUnit: "",
-    taxDto: { id: null },
-    isActive: 1,
-    productCategoryDto: { id: null },
-    expiryDate: "2025-12-31T23:59:59",
-    lowStock: "",
-    purchasePrice: "",
-    quantity: "",
-  });
-
-  const [errors, setErrors] = useState({});
-
-  const categoryOptions = [
-    { value: null, label: "Choose" },
-    { value: 1, label: "Lenovo" },
-    { value: 2, label: "Electronics" },
-  ];
-
-  const taxOptions = [
-    { value: null, label: "Choose" },
-    { value: 1, label: "10%" },
-    { value: 2, label: "20%" },
-  ];
-
+  
+  
+  
   const renderCollapseTooltip = (props) => (
-    <div id="collapse-tooltip" {...props}>
+    <Tooltip id="refresh-tooltip" {...props}>
       Collapse
-    </div>
+    </Tooltip>
   );
-
-  const handleChange = (e, field) => {
-    if (field === "taxDto" || field === "productCategoryDto") {
-      setFormData((prevData) => ({
-        ...prevData,
-        [field]: { id: e.value },
-      }));
-    } else {
-      const { name, value } = e.target;
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: name === "pricePerUnit" || name === "purchasePrice" || name === "quantity" || name === "lowStock" ? parseFloat(value) : value,
-      }));
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
   
-    console.log("Form Data before validation:", formData);
+  const categoryOptions = [
+    { value: "choose", label: "Choose" },
+    { value: "lenovo", label: "Lenovo" },
+    { value: "electronics", label: "Electronics" },
+  ];
+ 
+  const taxtype = [
+    { value: "choose", label: "Choose" },
+    { value: "gst", label: "GST" },
+    { value: "vat", label: "VAT" },
+  ];
+  // const discounttype = [
+  //   { value: "choose", label: "Choose" },
+  //   { value: "percentage", label: "Percentage" },
+  //   { value: "cash", label: "Cash" },
+  // ];
   
-    let formErrors = {};
-    
-    if (!formData.name.trim()) formErrors.productName = "Product name is required.";
-    if (!formData.barcode.trim()) formErrors.barcode = "Barcode is required.";
-    if (!formData.productCategoryDto?.id) formErrors.category = "Please select a category.";
-    
-    if (!formData.quantity?.toString().trim()) formErrors.quantity = "Quantity is required.";
-    
-
-    if (!formData.purchasePrice?.toString().trim()) formErrors.purchasePrice = "Purchased price is required.";
-    if (!formData.pricePerUnit?.toString().trim()) formErrors.pricePerUnit = "Price per unit is required.";
-    
-    if (!formData.taxDto?.id) formErrors.taxPercentage = "Please select a tax percentage.";
-   
-    if (!formData.lowStock?.toString().trim()) formErrors.lowStock = "Low stock alert value is required.";
   
-    setErrors(formErrors);
-  
-    console.log("Validation Errors:", formErrors);
-  
-    if (Object.keys(formErrors).length > 0) return;
-  
-    try {
-      const createdProduct = await createProduct(formData);
-      console.log("Product added successfully:", createdProduct);
-      toast.success("Stock Added Successfully!");
-      navigate("/products");
-    } catch (error) {
-      console.error("Error adding product:", error);
-      if (error.response?.data?.message) {
-        const errorMessage = error.response.data.message;
-        if (errorMessage.includes("Item with the same name already exists")) {
-          toast.error("Error: Stock with the same name already exists");
-        } else if (errorMessage.includes("Same Item code already exists")) {
-          toast.error("Error: Same Item code already exists");
-        } else {
-          toast.error("Error Adding Stock");
-        }
-      } else {
-        toast.error("Error Adding Stock");
-      }
-    }
-  };
-  
-
   return (
     <div className="page-wrapper">
       <div className="content">
+        {/* header part */}
         <div className="page-header">
           <div className="add-item d-flex">
             <div className="page-title">
@@ -158,10 +88,16 @@ const AddProduct = () => {
           </ul>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        {/* /add */}
+        <form>
           <div className="card">
             <div className="card-body add-product pb-0">
-              <div className="accordion-card-one accordion" id="accordionExample">
+              
+            {/* Product Information */}
+              <div
+                className="accordion-card-one accordion"
+                id="accordionExample"
+              >
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingOne">
                     <div
@@ -173,6 +109,7 @@ const AddProduct = () => {
                       <div className="addproduct-icon">
                         <h5>
                           <Info className="add-info" />
+
                           <span>Product Information</span>
                         </h5>
                         <Link to="#">
@@ -188,19 +125,16 @@ const AddProduct = () => {
                     data-bs-parent="#accordionExample"
                   >
                     <div className="accordion-body">
-                      <div className="row">
+                     <div className="row">
                         <div className="col-lg-4 col-sm-6 col-12">
                           <div className="mb-3 add-product">
                             <label className="form-label">Product Name</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              placeholder="Product Name"
-                              name="name"
-                              value={formData.name}
-                              onChange={handleChange}
+                            <input type="text" 
+                            className="form-control"
+                            placeholder="Enter Product Name"
+                            
                             />
-                            {errors.productName && <span className="text-danger">{errors.productName}</span>}
+                            
                           </div>
                         </div>
                         <div className="col-lg-4 col-sm-6 col-12">
@@ -209,12 +143,15 @@ const AddProduct = () => {
                             <input
                               type="text"
                               className="form-control list"
-                              placeholder="Barcode"
-                              name="barcode"
-                              value={formData.barcode}
-                              onChange={handleChange}
-                            />
-                            {errors.barcode && <span className="text-danger">{errors.barcode}</span>}
+                              placeholder="Enter Barcode"
+                              />
+                            
+                            {/* <Link
+                              to={route.addproduct}
+                              className="btn btn-primaryadd"
+                            >
+                              Generate Code
+                            </Link> */}
                           </div>
                         </div>
                       </div>
@@ -236,11 +173,10 @@ const AddProduct = () => {
                               <Select
                                 className="select"
                                 options={categoryOptions}
-                                placeholder="Select Category"
-                                value={categoryOptions.find((option) => option.value === formData.productCategoryDto.id)}
-                                onChange={(e) => handleChange(e, "productCategoryDto")}
-                              />
-                              {errors.category && <span className="text-danger">{errors.category}</span>}
+                                placeholder="Choose"
+                                
+                                />
+                                                           
                             </div>
                           </div>
                         </div>
@@ -249,8 +185,11 @@ const AddProduct = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="accordion-card-one accordion" id="accordionExample2">
+              
+              {/* Pricing and Stocks */}
+              <div
+                className="accordion-card-one accordion"
+                id="accordionExample2">                
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingTwo">
                     <div
@@ -279,7 +218,7 @@ const AddProduct = () => {
                     data-bs-parent="#accordionExample2"
                   >
                     <div className="accordion-body">
-                      <div className="tab-content" id="pills-tabContent">
+                       <div className="tab-content" id="pills-tabContent">
                         <div
                           className="tab-pane fade show active"
                           id="pills-home"
@@ -290,75 +229,67 @@ const AddProduct = () => {
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Quantity</label>
-                                <input
-                                  type="integer"
-                                  className="form-control"
-                                  placeholder="Quantity"
-                                  name="quantity"
-                                  value={formData.quantity}
-                                  onChange={handleChange}
+                                <input type="text" 
+                                className="form-control"
+                                placeholder="Enter Quantity"
                                 />
-                                {errors.quantity && <span className="text-danger">{errors.quantity}</span>}
-                              </div>
+                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Purchased Price</label>
-                                <input
-                                  type="float"
-                                  className="form-control"
-                                  placeholder="Purchased Price"
-                                  name="purchasePrice"
-                                  value={formData.purchasePrice}
-                                  onChange={handleChange}
+                                <input type="text" 
+                                className="form-control" 
+                                placeholder="Enter Purchased Price"
                                 />
-                                {errors.purchasePrice && <span className="text-danger">{errors.purchasePrice}</span>}
-                              </div>
+                                 </div>
                             </div>
                             <div className="row">
-                              <div className="col-lg-4 col-sm-6 col-12">
-                                <div className="input-blocks add-product">
-                                  <label>Price Per Unit</label>
-                                  <input
-                                    type="float"
-                                    className="form-control"
-                                    placeholder="Price Per Unit"
-                                    name="pricePerUnit"
-                                    value={formData.pricePerUnit}
-                                    onChange={handleChange}
-                                  />
-                                  {errors.pricePerUnit && <span className="text-danger">{errors.pricePerUnit}</span>}
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Price Per Unit</label>
+                                <input type="text" 
+                                className="form-control" 
+                                placeholder="Enter Price Per Unit"
+                                />
                                 </div>
-                              </div>
-                              <div className="col-lg-4 col-sm-6 col-12">
-                                <div className="input-blocks add-product">
-                                  <label>Tax Percentage</label>
-                                  <Select
-                                    options={taxOptions}
-                                    placeholder="Select Tax Percentage"
-                                    value={taxOptions.find((option) => option.value === formData.taxDto.id)}
-                                    onChange={(e) => handleChange(e, "taxDto")}
+                            </div>
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Tax Percentage</label>
+                                <Select
+                                  className="select"
+                                  options={taxtype}
+                                  placeholder="Select Option"
                                   />
-                                  {errors.taxPercentage && <span className="text-danger">{errors.taxPercentage}</span>}
-                                </div>
-                              </div>
+                                  </div>
+                            </div>
                             </div>
                           </div>
                           <div className="row">
-                            <div className="col-lg-4 col-sm-6 col-12">
-                              <div className="input-blocks add-product">
-                                <label>Low Stock</label>
-                                <input
-                                  type="integer"
-                                  className="form-control"
-                                  placeholder="Low Stock"
-                                  name="lowStock"
-                                  value={formData.lowStock}
-                                  onChange={handleChange}
+                          <div className="col-lg-4 col-sm-6 col-12">
+                            <div className="input-blocks add-product">
+                              <label>Low Stock</label>
+                              <input type="text" 
+                                className="form-control" 
+                                placeholder="Enter Low Stock"
                                 />
-                                {errors.lowStock && <span className="text-danger">{errors.lowStock}</span>}
-                              </div>
-                            </div>
+                                </div>
+                          </div>
+                          </div>
+                         </div>
+                        <div
+                          className="tab-pane fade"
+                          id="pills-profile"
+                          role="tabpanel"
+                          aria-labelledby="pills-profile-tab"
+                        >
+                         
+                          <div
+                            className="modal-body-table variant-table"
+                            id="variant-table"
+                          >
+                            
                           </div>
                         </div>
                       </div>
@@ -373,13 +304,24 @@ const AddProduct = () => {
               <button type="button" className="btn btn-cancel me-2">
                 Cancel
               </button>
-              <button type="submit" className="btn btn-submit">
+
+              <button
+                type="button"
+                className="btn btn-submit"
+              >
                 Save Product
               </button>
+              {/* <Link to={route.addproduct} className="btn btn-submit">
+                Save Product
+              </Link> */}
             </div>
           </div>
         </form>
+        {/* /add */}
       </div>
+      {/* <Addunits /> */}
+      <AddCategory />
+      {/* <AddBrand /> */}
     </div>
   );
 };

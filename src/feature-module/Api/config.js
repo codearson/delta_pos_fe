@@ -1,7 +1,6 @@
 import axios from "axios";
 
 export const BASE_BACKEND_URL = "http://localhost:8080";
-export const BASE_BACKEND_URL_P = "http://localhost:6000";
 
 export const getAccessToken = async (username, password) => {
   try {
