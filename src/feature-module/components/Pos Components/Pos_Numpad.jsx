@@ -1,5 +1,5 @@
 import React from "react";
-import PropTypes from "prop-types"; // Import PropTypes
+import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Numpad.scss";
 
 const Pos_Numpad = ({ darkMode }) => {
@@ -22,9 +22,8 @@ const Pos_Numpad = ({ darkMode }) => {
   );
 };
 
-// Add PropTypes validation
 Pos_Numpad.propTypes = {
-  darkMode: PropTypes.bool.isRequired, // Validate darkMode as a required boolean
+  darkMode: PropTypes.bool.isRequired,
 };
 
 export default Pos_Numpad;

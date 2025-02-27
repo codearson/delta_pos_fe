@@ -10,6 +10,7 @@ $dark-text: #ffffff;
   display: flex;
   background-color: $light-bg;
   color: $light-text;
+  overflow: hidden;
 
   &.dark-mode {
     background-color: $dark-bg;
@@ -21,18 +22,22 @@ $dark-text: #ffffff;
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .content {
   flex: 1;
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .grid-container {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1.5rem;
-  height: 100%;
+  gap: 0.5rem;
+  flex: 1;
+  overflow: hidden;
 }
 
 .category-section {
@@ -40,30 +45,69 @@ $dark-text: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding-bottom: 1rem;
+  height: 100%;
 }
 
 .action-buttons {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 1rem;
+  flex-grow: 1;
+  max-height: 40vh;
+  overflow: hidden;
+}
+
+@media (max-width: 1366px) {
+  .grid-container {
+    grid-template-columns: repeat(10, 1fr);
+  }
+  .category-section {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 1200px) {
+  .grid-container {
+    grid-template-columns: repeat(10, 1fr);
+  }
+  .category-section {
+    grid-column: span 7;
+  }
+  .action-buttons {
+    grid-column: span 5;
+  }
+}
+
+@media (max-width: 1024px) {
+  .grid-container {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  .category-section {
+    grid-column: span 6;
+  }
+  .action-buttons {
+    grid-column: span 6;
+  }
 }
 
 @media (max-width: 768px) {
   .grid-container {
     grid-template-columns: repeat(6, 1fr);
   }
-
-  .category-section,
+  .category-section {
+    grid-column: span 6;
+  }
   .action-buttons {
     grid-column: span 6;
   }
 }
 
+
 @media (max-width: 480px) {
   .grid-container {
     grid-template-columns: 1fr;
   }
-
   .category-section,
   .action-buttons {
     grid-column: span 1;

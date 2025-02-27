@@ -1,5 +1,5 @@
 import React from "react";
-import PropTypes from "prop-types"; // Import PropTypes
+import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 
 export const Pos_Calculator = ({ darkMode }) => {
@@ -51,9 +51,8 @@ export const Pos_Calculator = ({ darkMode }) => {
   );
 };
 
-// Add PropTypes validation
 Pos_Calculator.propTypes = {
-  darkMode: PropTypes.bool.isRequired, // Validate darkMode as a required boolean
+  darkMode: PropTypes.bool.isRequired,
 };
 
 export default Pos_Calculator;
