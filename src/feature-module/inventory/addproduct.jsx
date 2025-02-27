@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Select from "react-select";
 import { all_routes } from "../../Router/all_routes";
 import AddCategory from "../../core/modals/inventory/addcategory";
+import AddTax from "../../core/modals/inventory/addtax"
 import {
   ArrowLeft,
   ChevronDown,
@@ -14,21 +15,43 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { saveProduct } from "../Api/productApi"; 
+import { saveProduct } from "../Api/productApi";
+import { fetchProductCategories } from "../Api/ProductCategoryApi";
+import { fetchTaxes } from "../Api/TaxApi";
 
 const AddProduct = () => {
   const route = all_routes;
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingTaxes, setLoadingTaxes] = useState(true);
 
-  // State for form inputs
+  useEffect(() => {
+    const loadCategories = async () => {
+      const data = await fetchProductCategories();
+      setCategories(data.map((cat) => ({ value: cat.id, label: cat.name })));
+      setLoadingCategories(false);
+    };
+
+    const loadTaxes = async () => {
+      const data = await fetchTaxes();
+      setTaxes(data.map((tax) => ({ value: tax.id, label: `${tax.name} (${tax.percentage}%)` })));
+      setLoadingTaxes(false);
+    };
+
+    loadCategories();
+    loadTaxes();
+  }, []);
+
   const [productName, setProductName] = useState("");
   const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [quantity, setQuantity] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [pricePerUnit, setPricePerUnit] = useState("");
   const [taxType, setTaxType] = useState(null);
+  const [taxes, setTaxes] = useState([]);
   const [lowStock, setLowStock] = useState("");
   //const [expiryDate, setExpiryDate] = useState("");
 
@@ -38,57 +61,64 @@ const AddProduct = () => {
     </Tooltip>
   );
 
-  // Options for dropdowns
-  const categoryOptions = [
-    { value: 1, label: "Electronics" }, 
-    { value: 2, label: "Groceries" },
-    { value: 3, label: "Beverages" },
-  ];
+  useEffect(() => {
+    const loadCategories = async () => {
+      const data = await fetchProductCategories();
+      setCategories(data.map((cat) => ({
+        value: cat.id,
+        label: cat.productCategoryName
+      })));
+    };
 
-  const taxtype = [
-    { value: 1, label: "GST" }, 
-    { value: 2, label: "VAT" },
-  ];
+    const loadTaxes = async () => {
+      const data = await fetchTaxes();
+      setTaxes(data.map((tax) => ({
+        value: tax.id,
+        label: `${tax.taxPercentage}%`
+      })));
+    };
 
-  // Handle saving the product
+    loadCategories();
+    loadTaxes();
+  }, []);
+
   const handleSaveProduct = async () => {
-    // Validate required fields
-    if (!productName || !barcode || !category || !taxType ) {
+    if (!productName || !barcode || !category || !taxType) {
       console.error("Please fill out all required fields.");
       return;
     }
 
-    // Validate numeric fields
     if (isNaN(quantity) || isNaN(purchasePrice) || isNaN(pricePerUnit) || isNaN(lowStock)) {
       console.error("Please enter valid numbers for quantity, purchase price, price per unit, and low stock.");
       return;
     }
 
-    // Prepare the payload
     const productData = {
       name: productName,
       barcode: barcode,
       pricePerUnit: parseFloat(pricePerUnit),
-      taxDto: {
-        id: parseInt(taxType.value), // Ensure it's a number
-      },
+      taxDto: { id: parseInt(taxType.value) },
       isActive: true,
-      productCategoryDto: {
-        id: parseInt(category.value), // Ensure it's a number
-      },
-      expiryDate:"2025-12-31T23:59:59",
+      productCategoryDto: { id: parseInt(category.value) },
+      expiryDate: "",
       lowStock: parseInt(lowStock),
       purchasePrice: parseFloat(purchasePrice),
       quantity: parseInt(quantity),
     };
 
-    // Send the request
     const response = await saveProduct(productData);
     if (response) {
-      alert("Product saved successfully!");
-      // Optionally, reset the form or redirect
+      console.error("Product saved successfully!");
+      setProductName("");
+      setBarcode("");
+      setCategory(null);
+      setQuantity("");
+      setPurchasePrice("");
+      setPricePerUnit("");
+      setTaxType(null);
+      setLowStock("");
     } else {
-      alert("Failed to save product.");
+      console.error("Failed to save product.");
     }
   };
 
@@ -192,14 +222,17 @@ const AddProduct = () => {
                                   <span>Add New</span>
                                 </Link>
                               </div>
-                              <Select
-                                className="select"
-                                options={categoryOptions}
-                                placeholder="Choose"
-                                value={category}
-                                onChange={setCategory}
-                                required
-                              />
+                              {loadingCategories ? (
+                                <p>Loading categories...</p>
+                              ) : (
+                                <Select
+                                  options={categories}
+                                  placeholder="Choose"
+                                  value={category}
+                                  onChange={setCategory}
+                                  required
+                                />
+                              )}
                             </div>
                           </div>
                         </div>
@@ -250,10 +283,11 @@ const AddProduct = () => {
                                 <label>Purchased Price</label>
                                 <input
                                   type="number"
+                                  step="0.01"
                                   className="form-control"
                                   placeholder="Enter Purchased Price"
                                   value={purchasePrice}
-                                  onChange={(e) => setPurchasePrice(e.target.value)}
+                                  onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}  // Ensure it is parsed as a float
                                   required
                                 />
                               </div>
@@ -263,25 +297,34 @@ const AddProduct = () => {
                                 <label>Price Per Unit</label>
                                 <input
                                   type="number"
+                                  step="0.01"
                                   className="form-control"
                                   placeholder="Enter Price Per Unit"
                                   value={pricePerUnit}
-                                  onChange={(e) => setPricePerUnit(e.target.value)}
+                                  onChange={(e) => setPricePerUnit(parseFloat(e.target.value) || 0)}  // Ensure it is parsed as a float
                                   required
                                 />
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
-                                <label>Tax Percentage</label>
-                                <Select
-                                  className="select"
-                                  options={taxtype}
-                                  placeholder="Select Option"
-                                  value={taxType}
-                                  onChange={setTaxType}
-                                  required
-                                />
+                                <div className="add-newplus">
+                                  <label>Tax Percentage</label>
+                                  <Link to="#" data-bs-toggle="modal" data-bs-target="#add-units-tax">
+                                    <PlusCircle className="plus-down-add" />
+                                    <span>Add New</span>
+                                  </Link>
+                                </div>
+                                {loadingTaxes ? (
+                                  <p>Loading taxes...</p>
+                                ) : (
+                                  <Select
+                                    options={taxes}
+                                    placeholder="Select Option"
+                                    value={taxType}
+                                    onChange={setTaxType}
+                                    required />
+                                )}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
@@ -336,6 +379,7 @@ const AddProduct = () => {
         {/* /add */}
       </div>
       <AddCategory />
+      <AddTax />
     </div>
   );
 };
