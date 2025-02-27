@@ -51,19 +51,3 @@ export const quickAccess = [
   { id: 13, name: "Quick 13", icon: "✨" },
   { id: 14, name: "Quick 14", icon: "🌟" }
 ];
-
-export const confect = [
-  { id: 1, name: "item 1", price: "5000" },
-  { id: 2, name: "item 2", price: "5000" },
-  { id: 3, name: "item 3", price: "5000" },
-  { id: 4, name: "item 4", price: "5000" },
-  { id: 5, name: "item 5", price: "5000" },
-];
-
-export const houseHold = [
-  { id: 1, name: "item 1", price: "5000" },
-  { id: 2, name: "item 2", price: "5000" },
-  { id: 3, name: "item 3", price: "5000" },
-  { id: 4, name: "item 4", price: "5000" },
-  { id: 5, name: "item 5", price: "5000" },
-];

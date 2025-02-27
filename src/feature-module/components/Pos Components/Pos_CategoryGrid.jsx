@@ -5,7 +5,7 @@ import { categories } from "../../../core/json/Posdata";
 
 const PAGE_SIZE = 14;
 
-const Pos_CategoryGrid = ({ items = categories }) => {
+const Pos_CategoryGrid = ({ items = categories, onCategorySelect}) => {
   const [pageIndex, setPageIndex] = useState(0);
 
   useEffect(() => {
@@ -43,9 +43,11 @@ const Pos_CategoryGrid = ({ items = categories }) => {
     }
 
     return (
-      <button key={item.id} className="category-btn group">
+      <button key={item.id} className="category-btn group" onClick={() => onCategorySelect(item)} >
+         
         <div className="text-2xl mb-1 transition-transform">{item.icon}</div>
         <div className="font-medium text-sm truncate px-1">{item.name}</div>
+        
       </button>
     );
   };
@@ -77,6 +79,8 @@ Pos_CategoryGrid.propTypes = {
       icon: PropTypes.string.isRequired,
     })
   ),
+  onCategorySelect: PropTypes.func.isRequired, // Ensure onCategorySelect is validated as a function
 };
+
 
 export default Pos_CategoryGrid;

@@ -1,8 +1,8 @@
 import React from "react";
-import PropTypes from "prop-types"; // Import PropTypes
+import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Numpad.scss";
 
-const Pos_Numpad = ({ darkMode }) => {
+const Pos_Numpad = ({ darkMode, onNumpadClick }) => {
   return (
     <div className={`numpad-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <div className="numpad-grid">
@@ -10,21 +10,41 @@ const Pos_Numpad = ({ darkMode }) => {
           <button
             key={num}
             className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
+            onClick={() => onNumpadClick({ type: "number", value: num })}
+            onKeyUp={(e) => e.key === num.toString() && onNumpadClick({ type: "number", value: num })}
           >
             {num}
           </button>
         ))}
-        <button className="numpad-button clear-button">C</button>
-        <button className="numpad-button multiply-button">×</button>
-        <button className="numpad-button enter-button">Enter</button>
+        <button
+          className="numpad-button clear-button"
+          onClick={() => onNumpadClick({ type: "clear" })}
+          onKeyUp={(e) => e.key === "C" && onNumpadClick({ type: "clear" })}
+        >
+          C
+        </button>
+        <button
+          className="numpad-button multiply-button"
+          onClick={() => onNumpadClick({ type: "multiply" })}
+          onKeyUp={(e) => e.key === "×" && onNumpadClick({ type: "multiply" })}
+        >
+          ×
+        </button>
+        <button
+          className="numpad-button enter-button"
+          onClick={() => onNumpadClick({ type: "enter" })}
+          onKeyUp={(e) => e.key === "Enter" && onNumpadClick({ type: "enter" })}
+        >
+          Enter
+        </button>
       </div>
     </div>
   );
 };
 
-// Add PropTypes validation
 Pos_Numpad.propTypes = {
-  darkMode: PropTypes.bool.isRequired, // Validate darkMode as a required boolean
+  darkMode: PropTypes.bool.isRequired,
+  onNumpadClick: PropTypes.func.isRequired,
 };
 
 export default Pos_Numpad;
