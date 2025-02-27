@@ -160,7 +160,7 @@ export const SidebarData = [
         showSubRoute: false,
         submenuHdr: "HRM",
         submenuItems: [
-          { label: "Employees", link: "/employees-grid", icon:  <Icon.Users />,showSubRoute: false },
+          // { label: "Employees", link: "/employees-grid", icon:  <Icon.Users />,showSubRoute: false },
           // { label: "Departments", link: "/department-grid", icon:  <Icon.User />,showSubRoute: false },
           // { label: "Designations", link: "/designation", icon:  <Icon.UserCheck />,showSubRoute: false },
           { label: "Shifts", link: "/shift", icon: <Icon.Shuffle />,showSubRoute: false },
@@ -214,7 +214,7 @@ export const SidebarData = [
         submenuHdr: "User Management",
         submenuItems: [
           { label: "Users", link: "/users", icon:  <Icon.UserCheck />,showSubRoute: false },
-          { label: "Roles & Permissions", link: "/roles-permissions", icon:  <Icon.UserCheck />,showSubRoute: false },
+          // { label: "Roles & Permissions", link: "/roles-permissions", icon:  <Icon.UserCheck />,showSubRoute: false },
           // { label: "Delete Account Request", link: "/delete-account", icons:  <Icon.Lock />,showSubRoute: false }
         ]
       },
@@ -314,9 +314,9 @@ export const SidebarData = [
           //     { label: "States", link: "states",showSubRoute: false }
           //   ]
           // },
-          { label: "Blank Page", link: "/blank-page", icon:  <Icon.File />,showSubRoute: false },
+          // { label: "Blank Page", link: "/blank-page", icon:  <Icon.File />,showSubRoute: false },
           // { label: "Coming Soon", link: "/coming-soon", icon:  <Icon.Send />,showSubRoute: false },
-          { label: "Under Maintenance", link: "/under-maintenance", icon:  <Icon.AlertTriangle />,showSubRoute: false }
+          // { label: "Under Maintenance", link: "/under-maintenance", icon:  <Icon.AlertTriangle />,showSubRoute: false }
         ]
       },
 
