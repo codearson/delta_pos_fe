@@ -135,3 +135,15 @@ button {
     outline: none;
   }
 }
+
+@media (max-width: 1300px){
+  .text-xs {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 1100px){
+  .text-xs {
+    font-size: 0.6rem;
+  }
+}
