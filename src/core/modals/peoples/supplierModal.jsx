@@ -1,26 +1,66 @@
-import React from "react";
-import Select from "react-select";
-import ImageWithBasePath from "../../img/imagewithbasebath";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
-const SupplierModal = () => {
-  const options1 = [
-    { value: "Choose", label: "Choose" },
-    { value: "Varrel", label: "Varrel" },
-  ];
+const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
+  const [formData, setFormData] = useState({
+    id: "",
+    name: "",
+    emailAddress: "",
+    mobileNumber: "",
+    whatsappNumber: "",
+    isActive: 1,
+  });
 
-  const options2 = [
-    { value: "Choose", label: "Choose" },
-    { value: "Germany", label: "Germany" },
-    { value: "Mexico", label: "Mexico" },
-  ];
+  // Populate form data when selectedSupplier changes (for editing)
+  useEffect(() => {
+    if (selectedSupplier) {
+      setFormData({
+        id: selectedSupplier.id || "",
+        name: selectedSupplier.name || "",
+        emailAddress: selectedSupplier.emailAddress || "",
+        mobileNumber: selectedSupplier.mobileNumber || "",
+        whatsappNumber: selectedSupplier.whatsappNumber || "",
+        isActive: selectedSupplier.isActive || 1,
+      });
+    } else {
+      setFormData({
+        id: "",
+        name: "",
+        emailAddress: "",
+        mobileNumber: "",
+        whatsappNumber: "",
+        isActive: 1,
+      });
+    }
+  }, [selectedSupplier]);
 
-  const options3 = [{ value: "Varrel", label: "Varrel" }];
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-  const options4 = [
-    { value: "Germany", label: "Germany" },
-    { value: "France", label: "France" },
-    { value: "Mexico", label: "Mexico" },
-  ];
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    const supplierData = {
+      ...formData,
+      isActive: 1,
+    };
+    onSave(supplierData);
+    setFormData({ name: "", emailAddress: "", mobileNumber: "", whatsappNumber: "" });
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    const supplierData = {
+      id: formData.id,
+      name: formData.name,
+      emailAddress: formData.emailAddress,
+      mobileNumber: formData.mobileNumber,
+      whatsappNumber: formData.whatsappNumber,
+      isActive: formData.isActive,
+    };
+    onUpdate(supplierData); // Call onUpdate with the updated supplier data
+  };
+
   return (
     <div>
       {/* Add Supplier */}
@@ -43,76 +83,58 @@ const SupplierModal = () => {
                   </button>
                 </div>
                 <div className="modal-body custom-modal-body">
-                  <form>
+                  <form onSubmit={handleAddSubmit}>
                     <div className="row">
                       <div className="col-lg-12">
-                        <div className="new-employee-field">
-                          <span>Avatar</span>
-                          <div className="profile-pic-upload mb-2">
-                            <div className="profile-pic">
-                              <span>
-                                <i
-                                  data-feather="plus-circle"
-                                  className="plus-down-add"
-                                />{" "}
-                                Profile Photo
-                              </span>
-                            </div>
-                            <div className="input-blocks mb-0">
-                              <div className="image-upload mb-0">
-                                <input type="file" />
-                                <div className="image-uploads">
-                                  <h4>Change Image</h4>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
                         <div className="input-blocks">
                           <label>Supplier Name</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
-                        <div className="input-blocks">
-                          <label>Email</label>
-                          <input type="email" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
-                        <div className="input-blocks">
-                          <label>Phone</label>
-                          <input type="text" className="form-control" />
+                          <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Address</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
-                        <div className="input-blocks">
-                          <label>City</label>
-                          <Select className="select" options={options1} />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
-                        <div className="input-blocks">
-                          <label>Country</label>
-                          <Select className="select" options={options2} />
-                        </div>
-                      </div>
-                      <div className="col-md-12">
-                        <div className="mb-0 input-blocks">
-                          <label className="form-label">Descriptions</label>
-                          <textarea
-                            className="form-control mb-1"
-                            defaultValue={""}
+                          <label>Email</label>
+                          <input
+                            type="email"
+                            name="emailAddress"
+                            value={formData.emailAddress}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
                           />
-                          <p>Maximum 600 Characters</p>
+                        </div>
+                      </div>
+                      <div className="col-lg-12">
+                        <div className="input-blocks">
+                          <label>Mobile Number</label>
+                          <input
+                            type="text"
+                            name="mobileNumber"
+                            value={formData.mobileNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="col-lg-12">
+                        <div className="input-blocks">
+                          <label>WhatsApp Number</label>
+                          <input
+                            type="text"
+                            name="whatsappNumber"
+                            value={formData.whatsappNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
                         </div>
                       </div>
                     </div>
@@ -124,7 +146,11 @@ const SupplierModal = () => {
                       >
                         Cancel
                       </button>
-                      <button type="submit" className="btn btn-submit">
+                      <button
+                        type="submit"
+                        className="btn btn-submit"
+                        data-bs-dismiss="modal"
+                      >
                         Submit
                       </button>
                     </div>
@@ -135,7 +161,6 @@ const SupplierModal = () => {
           </div>
         </div>
       </div>
-      {/* /Add Supplier */}
       {/* Edit Supplier */}
       <div className="modal fade" id="edit-units">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
@@ -156,83 +181,59 @@ const SupplierModal = () => {
                   </button>
                 </div>
                 <div className="modal-body custom-modal-body">
-                  <form>
+                  <form onSubmit={handleEditSubmit}>
                     <div className="row">
                       <div className="col-lg-12">
-                        <div className="new-employee-field">
-                          <span>Avatar</span>
-                          <div className="profile-pic-upload edit-pic">
-                            <div className="profile-pic">
-                              <span>
-                                <ImageWithBasePath
-                                  src="assets/img/supplier/edit-supplier.jpg"
-                                  alt
-                                />
-                              </span>
-                              <div className="close-img">
-                                <i data-feather="x" className="info-img" />
-                              </div>
-                            </div>
-                            <div className="input-blocks mb-0">
-                              <div className="image-upload mb-0">
-                                <input type="file" />
-                                <div className="image-uploads">
-                                  <h4>Change Image</h4>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
                         <div className="input-blocks">
                           <label>Supplier Name</label>
-                          <input type="text" placeholder="Apex Computers" />
+                          <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
                         </div>
                       </div>
-                      <div className="col-lg-4">
+                      <div className="col-lg-12">
                         <div className="input-blocks">
                           <label>Email</label>
                           <input
                             type="email"
-                            placeholder="apexcomputers@example.com"
+                            name="emailAddress"
+                            value={formData.emailAddress}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
                           />
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
-                        <div className="input-blocks">
-                          <label>Phone</label>
-                          <input type="text" placeholder={+12163547758} />
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Address</label>
+                          <label>Mobile Number</label>
                           <input
                             type="text"
-                            placeholder="Budapester Strasse 2027259 "
+                            name="mobileNumber"
+                            value={formData.mobileNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
                           />
                         </div>
                       </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
+                      <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>City</label>
-                          <Select className="select" options={options3} />
+                          <label>WhatsApp Number</label>
+                          <input
+                            type="text"
+                            name="whatsappNumber"
+                            value={formData.whatsappNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
                         </div>
-                      </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
-                        <div className="input-blocks">
-                          <label>Country</label>
-                          <Select className="select" options={options4} />
-                        </div>
-                      </div>
-                      <div className="mb-0 input-blocks">
-                        <label className="form-label">Descriptions</label>
-                        <textarea
-                          className="form-control mb-1"
-                          defaultValue={""}
-                        />
-                        <p>Maximum 600 Characters</p>
                       </div>
                     </div>
                     <div className="modal-footer-btn">
@@ -243,7 +244,11 @@ const SupplierModal = () => {
                       >
                         Cancel
                       </button>
-                      <button type="submit" className="btn btn-submit">
+                      <button
+                        type="submit"
+                        className="btn btn-submit"
+                        data-bs-dismiss="modal"
+                      >
                         Submit
                       </button>
                     </div>
@@ -254,9 +259,15 @@ const SupplierModal = () => {
           </div>
         </div>
       </div>
-      {/* /Edit Supplier */}
     </div>
   );
+};
+
+// Define prop types
+SupplierModal.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func,
+  selectedSupplier: PropTypes.object,
 };
 
 export default SupplierModal;

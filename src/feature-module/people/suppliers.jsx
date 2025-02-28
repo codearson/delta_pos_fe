@@ -1,127 +1,103 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
 import { Link } from "react-router-dom";
-import { Filter, Sliders, User, Globe, Edit, Eye, Trash2 } from "react-feather";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
+import { Sliders, Edit, Eye, Trash2 } from "react-feather";
 import Select from "react-select";
-import { useSelector } from "react-redux";
 import { Table } from "antd";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import SupplierModal from "../../core/modals/peoples/supplierModal";
+import { format } from 'date-fns';
+import { fetchSuppliers, saveSupplier, updateSupplier, updateSupplierStatus, getSuppliersByName } from '../Api/supplierApi';
 
 const Suppliers = () => {
-  const data = useSelector((state) => state.supplierdata);
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
+  useEffect(() => {
+    fetchSuppliers()
+      .then((data) => setSuppliers(data));
+  }, []);
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = suppliers.map((supplier) => supplier.id);
+      setSelectedRows(allIds);
+    } else {
+      setSelectedRows([]);
+    }
   };
 
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
-  ];
-  const optionsTwo = [
-    { label: "Choose Customer Name", value: "" },
-    { label: "Benjamin", value: "Benjamin" },
-    { label: "Ellen", value: "Ellen" },
-    { label: "Freda", value: "Freda" },
-    { label: "Kaitlin", value: "Kaitlin" },
-  ];
+  const handleRowSelect = (id) => {
+    if (selectedRows.includes(id)) {
+      setSelectedRows(selectedRows.filter((rowId) => rowId !== id));
+    } else {
+      setSelectedRows([...selectedRows, id]);
+    }
+  };
 
-  const countries = [
-    { label: "Choose Country", value: "" },
-    { label: "India", value: "India" },
-    { label: "USA", value: "USA" },
-  ];
+  const handleSaveSupplier = async (supplierData) => {
+    const result = await saveSupplier(supplierData);
+    if (result) {
+      const updatedSuppliers = await fetchSuppliers();
+      setSuppliers(updatedSuppliers);
+      MySwal.fire({
+        title: "Success!",
+        text: "Supplier has been added successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-success",
+        },
+      });
+    } else {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to add supplier.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-danger",
+        },
+      });
+    }
+  };
 
-  const columns = [
-    {
-      render: () => (
-        <label className="checkboxs">
-          <input type="checkbox" />
-          <span className="checkmarks" />
-        </label>
-      ),
-    },
+  const handleUpdateSupplier = async (supplierData) => {
+    const result = await updateSupplier(supplierData);
+    if (result) {
+      const updatedSuppliers = await fetchSuppliers();
+      setSuppliers(updatedSuppliers);
+      MySwal.fire({
+        title: "Success!",
+        text: "Supplier has been updated successfully.",
+        icon: "success",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-success",
+        },
+      });
+    } else {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to update supplier.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-danger",
+        },
+      });
+    }
+  };
 
-    {
-      title: "Supplier Name",
-      dataIndex: "supplierName",
-      render: (text, record) => (
-        <span className="productimgname">
-          <Link to="#" className="product-img stock-img">
-            <ImageWithBasePath alt="" src={record.image} />
-          </Link>
-          <Link to="#">{text}</Link>
-        </span>
-      ),
-      sorter: (a, b) => a.supplierName.length - b.supplierName.length,
-    },
-    {
-      title: "Code",
-      dataIndex: "code",
-      sorter: (a, b) => a.code.length - b.code.length,
-    },
+  const handleUpdateStatus = async (supplierId) => {
+    // Show confirmation alert before deleting
+    showConfirmationAlert(supplierId);
+  };
 
-    {
-      title: "Email",
-      dataIndex: "email",
-      sorter: (a, b) => a.email.length - b.email.length,
-    },
-
-    {
-      title: "Phone",
-      dataIndex: "phone",
-      sorter: (a, b) => a.phone.length - b.phone.length,
-    },
-
-    {
-      title: "Country",
-      dataIndex: "country",
-      sorter: (a, b) => a.country.length - b.country.length,
-    },
-
-    {
-      title: "Action",
-      dataIndex: "action",
-      render: () => (
-        <td className="action-table-data">
-          <div className="edit-delete-action">
-            <div className="input-block add-lists"></div>
-
-            <Link className="me-2 p-2" to="#">
-              <Eye className="feather-view" />
-            </Link>
-
-            <Link
-              className="me-2 p-2"
-              to="#"
-              data-bs-toggle="modal"
-              data-bs-target="#edit-units"
-            >
-              <Edit className="feather-edit" />
-            </Link>
-
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={showConfirmationAlert}
-            >
-              <Trash2 className="feather-trash-2" />
-            </Link>
-          </div>
-        </td>
-      ),
-      sorter: (a, b) => a.createdby.length - b.createdby.length,
-    },
-  ];
-
-  const MySwal = withReactContent(Swal);
-
-  const showConfirmationAlert = () => {
+  const showConfirmationAlert = (supplierId) => {
     MySwal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -132,29 +108,148 @@ const Suppliers = () => {
       cancelButtonText: "Cancel",
     }).then((result) => {
       if (result.isConfirmed) {
-        MySwal.fire({
-          title: "Deleted!",
-          text: "Your file has been deleted.",
-          className: "btn btn-success",
-          confirmButtonText: "OK",
-          customClass: {
-            confirmButton: "btn btn-success",
-          },
-        });
+        deleteSupplier(supplierId); // Call delete supplier function if confirmed
       } else {
         MySwal.close();
       }
     });
   };
+
+  const deleteSupplier = async (supplierId) => {
+    const result = await updateSupplierStatus(supplierId, 0); // setting status to 0 (delete status)
+    if (result) {
+      const updatedSuppliers = await fetchSuppliers();
+      setSuppliers(updatedSuppliers);
+      MySwal.fire({
+        title: "Deleted!",
+        text: "Supplier has been deleted.",
+        icon: "success",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-success",
+        },
+      });
+    } else {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to delete supplier.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-danger",
+        },
+      });
+    }
+  };
+
+  const handleSearch = async (e) => {
+    setSearchTerm(e.target.value);
+    if (e.target.value.trim() !== "") {
+      const searchResults = await getSuppliersByName(e.target.value);
+      setSuppliers(searchResults);
+    } else {
+      // If search is cleared, fetch all suppliers
+      fetchSuppliers()
+        .then((data) => setSuppliers(data));
+    }
+  };
+
+  const columns = [
+    {
+      title: (
+        <label className="checkboxs">
+          <input
+            type="checkbox"
+            checked={selectedRows.length === suppliers.length && suppliers.length > 0}
+            onChange={handleSelectAll}
+          />
+          <span className="checkmarks" />
+        </label>
+      ),
+      render: (record) => (
+        <label className="checkboxs">
+          <input
+            type="checkbox"
+            checked={selectedRows.includes(record.id)}
+            onChange={() => handleRowSelect(record.id)}
+          />
+          <span className="checkmarks" />
+        </label>
+      ),
+      width: 50,
+    },
+    {
+      title: "Supplier Name",
+      dataIndex: "name",
+      render: (text) => <Link to="#">{text}</Link>,
+      sorter: (a, b) => a.name.length - b.name.length,
+    },
+    {
+      title: "Email",
+      dataIndex: "emailAddress",
+      sorter: (a, b) => a.emailAddress.length - b.emailAddress.length,
+    },
+    {
+      title: "Mobile Number",
+      dataIndex: "mobileNumber",
+      sorter: (a, b) => a.mobileNumber.length - b.mobileNumber.length,
+    },
+    {
+      title: "WhatsApp Number",
+      dataIndex: "whatsappNumber",
+      sorter: (a, b) => a.whatsappNumber.length - b.whatsappNumber.length,
+    },
+    {
+      title: "Created Date",
+      dataIndex: "createdDate",
+      render: (text) => {
+        const formattedDate = format(new Date(text), 'dd/MM/yyyy HH:mm:ss');
+        return <span>{formattedDate}</span>;
+      },
+      sorter: (a, b) => new Date(a.createdDate) - new Date(b.createdDate),
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: (_, record) => (
+        <td className="action-table-data">
+          <div className="edit-delete-action">
+            <Link className="me-2 p-2" to="#">
+              <Eye className="feather-view" />
+            </Link>
+            <Link
+              className="me-2 p-2"
+              to="#"
+              data-bs-toggle="modal"
+              data-bs-target="#edit-units"
+              onClick={() => setSelectedSupplier(record)}
+            >
+              <Edit className="feather-edit" />
+            </Link>
+            <Link
+              className="confirm-text p-2"
+              to="#"
+              onClick={() => handleUpdateStatus(record.id)}
+            >
+              <Trash2 className="feather-trash-2" />
+            </Link>
+          </div>
+        </td>
+      ),
+    },
+  ];
+
+  const MySwal = withReactContent(Swal);
+
   return (
     <div className="page-wrapper">
       <div className="content">
         <Breadcrumbs
-          maintitle="Supplier List "
-          subtitle="Manage Your Supplier"
+          maintitle="Supplier List"
+          subtitle="Manage Your Suppliers"
           addButton="Add New Supplier"
+          addButtonAttributes={{ "data-bs-toggle": "modal", "data-bs-target": "#add-units" }}
         />
-        {/* /product list */}
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">
@@ -164,98 +259,35 @@ const Suppliers = () => {
                     type="text"
                     placeholder="Search"
                     className="form-control form-control-sm formsearch"
+                    value={searchTerm}
+                    onChange={handleSearch}
                   />
-                  <Link to className="btn btn-searchset">
+                  <Link to="#" className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
               </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                >
-                  <Filter
-                    className="filter-icon"
-                    onClick={toggleFilterVisibility}
-                  />
-                  <span onClick={toggleFilterVisibility}>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
-                    />
-                  </span>
-                </Link>
-              </div>
               <div className="form-sort stylewidth">
                 <Sliders className="info-img" />
-
-                <Select
-                  className="select "
-                  options={options}
-                  placeholder="Sort by Date"
-                />
+                <Select className="select" options={[]} placeholder="Sort by Date" />
               </div>
             </div>
-            {/* /Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <User className="info-img" />
-                      <Select
-                        options={optionsTwo}
-                        placeholder="Choose Customer Name"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Globe className="info-img" />
-                      <Select
-                        options={countries}
-                        placeholder="Choose Country"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12 ms-auto">
-                    <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto">
-                        {" "}
-                        <i
-                          data-feather="search"
-                          className="feather-search"
-                        />{" "}
-                        Search{" "}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* /Filter */}
             <div className="table-responsive">
               <Table
                 className="table datanew"
                 columns={columns}
-                dataSource={data}
+                dataSource={suppliers}
                 rowKey={(record) => record.id}
-                // pagination={true}
               />
             </div>
           </div>
         </div>
-        {/* /product list */}
       </div>
-
-      <SupplierModal />
+      <SupplierModal
+        onSave={handleSaveSupplier}
+        onUpdate={handleUpdateSupplier}
+        selectedSupplier={selectedSupplier}
+      />
     </div>
   );
 };
