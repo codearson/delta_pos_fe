@@ -5,7 +5,7 @@ import Sidebar from "../InitialPage/Sidebar/Sidebar";
 import { pagesRoute, posRoutes, publicRoutes } from "./router.link";
 import { Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
-import ThemeSettings from "../InitialPage/themeSettings";
+//import ThemeSettings from "../InitialPage/themeSettings";
 // import CollapsedSidebar from "../InitialPage/Sidebar/collapsedSidebar";
 import Loader from "../feature-module/loader/loader";
 // import HorizontalSidebar from "../InitialPage/Sidebar/horizontalSidebar";
@@ -26,7 +26,7 @@ const AllRoutes = () => {
       )} */}
       <Sidebar />
       <Outlet />
-      <ThemeSettings />
+      {/* <ThemeSettings /> */}
       <Loader />
     </div>
   );
@@ -35,7 +35,7 @@ const AllRoutes = () => {
     <div className={data ? "header-collapse" : ""}>
       <Outlet />
       <Loader />
-      <ThemeSettings />
+      {/* <ThemeSettings /> */}
     </div>
   );
 

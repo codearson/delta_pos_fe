@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Select from "react-select";
-import { createProduct } from "../Api/productApi";
 import { all_routes } from "../../Router/all_routes";
+import AddCategory from "../../core/modals/inventory/addcategory";
+import AddTax from "../../core/modals/inventory/addtax"
 import {
   ArrowLeft,
   ChevronDown,
@@ -14,115 +14,118 @@ import {
 } from "feather-icons-react/build/IconComponents";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
-import { OverlayTrigger } from "react-bootstrap";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { saveProduct } from "../Api/productApi";
+import { fetchProductCategories } from "../Api/ProductCategoryApi";
+import { fetchTaxes } from "../Api/TaxApi";
 
 const AddProduct = () => {
   const route = all_routes;
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
-  const navigate = useNavigate();
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingTaxes, setLoadingTaxes] = useState(true);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    barcode: "",
-    pricePerUnit: "",
-    taxDto: { id: null },
-    isActive: 1,
-    productCategoryDto: { id: null },
-    expiryDate: "2025-12-31T23:59:59",
-    lowStock: "",
-    purchasePrice: "",
-    quantity: "",
-  });
+  useEffect(() => {
+    const loadCategories = async () => {
+      const data = await fetchProductCategories();
+      setCategories(data.map((cat) => ({ value: cat.id, label: cat.name })));
+      setLoadingCategories(false);
+    };
 
-  const [errors, setErrors] = useState({});
+    const loadTaxes = async () => {
+      const data = await fetchTaxes();
+      setTaxes(data.map((tax) => ({ value: tax.id, label: `${tax.name} (${tax.percentage}%)` })));
+      setLoadingTaxes(false);
+    };
 
-  const categoryOptions = [
-    { value: null, label: "Choose" },
-    { value: 1, label: "Lenovo" },
-    { value: 2, label: "Electronics" },
-  ];
+    loadCategories();
+    loadTaxes();
+  }, []);
 
-  const taxOptions = [
-    { value: null, label: "Choose" },
-    { value: 1, label: "10%" },
-    { value: 2, label: "20%" },
-  ];
+  const [productName, setProductName] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [category, setCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [quantity, setQuantity] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [pricePerUnit, setPricePerUnit] = useState("");
+  const [taxType, setTaxType] = useState(null);
+  const [taxes, setTaxes] = useState([]);
+  const [lowStock, setLowStock] = useState("");
+  //const [expiryDate, setExpiryDate] = useState("");
 
   const renderCollapseTooltip = (props) => (
-    <div id="collapse-tooltip" {...props}>
+    <Tooltip id="refresh-tooltip" {...props}>
       Collapse
-    </div>
+    </Tooltip>
   );
 
-  const handleChange = (e, field) => {
-    if (field === "taxDto" || field === "productCategoryDto") {
-      setFormData((prevData) => ({
-        ...prevData,
-        [field]: { id: e.value },
-      }));
+  useEffect(() => {
+    const loadCategories = async () => {
+      const data = await fetchProductCategories();
+      setCategories(data.map((cat) => ({
+        value: cat.id,
+        label: cat.productCategoryName
+      })));
+    };
+
+    const loadTaxes = async () => {
+      const data = await fetchTaxes();
+      setTaxes(data.map((tax) => ({
+        value: tax.id,
+        label: `${tax.taxPercentage}%`
+      })));
+    };
+
+    loadCategories();
+    loadTaxes();
+  }, []);
+
+  const handleSaveProduct = async () => {
+    if (!productName || !barcode || !category || !taxType) {
+      console.error("Please fill out all required fields.");
+      return;
+    }
+
+    if (isNaN(quantity) || isNaN(purchasePrice) || isNaN(pricePerUnit) || isNaN(lowStock)) {
+      console.error("Please enter valid numbers for quantity, purchase price, price per unit, and low stock.");
+      return;
+    }
+
+    const productData = {
+      name: productName,
+      barcode: barcode,
+      pricePerUnit: parseFloat(pricePerUnit),
+      taxDto: { id: parseInt(taxType.value) },
+      isActive: true,
+      productCategoryDto: { id: parseInt(category.value) },
+      expiryDate: "",
+      lowStock: parseInt(lowStock),
+      purchasePrice: parseFloat(purchasePrice),
+      quantity: parseInt(quantity),
+    };
+
+    const response = await saveProduct(productData);
+    if (response) {
+      console.error("Product saved successfully!");
+      setProductName("");
+      setBarcode("");
+      setCategory(null);
+      setQuantity("");
+      setPurchasePrice("");
+      setPricePerUnit("");
+      setTaxType(null);
+      setLowStock("");
     } else {
-      const { name, value } = e.target;
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: name === "pricePerUnit" || name === "purchasePrice" || name === "quantity" || name === "lowStock" ? parseFloat(value) : value,
-      }));
+      console.error("Failed to save product.");
     }
   };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    console.log("Form Data before validation:", formData);
-  
-    let formErrors = {};
-    
-    if (!formData.name.trim()) formErrors.productName = "Product name is required.";
-    if (!formData.barcode.trim()) formErrors.barcode = "Barcode is required.";
-    if (!formData.productCategoryDto?.id) formErrors.category = "Please select a category.";
-    
-    if (!formData.quantity?.toString().trim()) formErrors.quantity = "Quantity is required.";
-    
-
-    if (!formData.purchasePrice?.toString().trim()) formErrors.purchasePrice = "Purchased price is required.";
-    if (!formData.pricePerUnit?.toString().trim()) formErrors.pricePerUnit = "Price per unit is required.";
-    
-    if (!formData.taxDto?.id) formErrors.taxPercentage = "Please select a tax percentage.";
-   
-    if (!formData.lowStock?.toString().trim()) formErrors.lowStock = "Low stock alert value is required.";
-  
-    setErrors(formErrors);
-  
-    console.log("Validation Errors:", formErrors);
-  
-    if (Object.keys(formErrors).length > 0) return;
-  
-    try {
-      const createdProduct = await createProduct(formData);
-      console.log("Product added successfully:", createdProduct);
-      toast.success("Stock Added Successfully!");
-      navigate("/products");
-    } catch (error) {
-      console.error("Error adding product:", error);
-      if (error.response?.data?.message) {
-        const errorMessage = error.response.data.message;
-        if (errorMessage.includes("Item with the same name already exists")) {
-          toast.error("Error: Stock with the same name already exists");
-        } else if (errorMessage.includes("Same Item code already exists")) {
-          toast.error("Error: Same Item code already exists");
-        } else {
-          toast.error("Error Adding Stock");
-        }
-      } else {
-        toast.error("Error Adding Stock");
-      }
-    }
-  };
-  
 
   return (
     <div className="page-wrapper">
       <div className="content">
+        {/* Header part */}
         <div className="page-header">
           <div className="add-item d-flex">
             <div className="page-title">
@@ -158,18 +161,15 @@ const AddProduct = () => {
           </ul>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        {/* Form */}
+        <form>
           <div className="card">
             <div className="card-body add-product pb-0">
+              {/* Product Information */}
               <div className="accordion-card-one accordion" id="accordionExample">
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingOne">
-                    <div
-                      className="accordion-button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#collapseOne"
-                      aria-controls="collapseOne"
-                    >
+                    <div className="accordion-button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-controls="collapseOne">
                       <div className="addproduct-icon">
                         <h5>
                           <Info className="add-info" />
@@ -181,12 +181,7 @@ const AddProduct = () => {
                       </div>
                     </div>
                   </div>
-                  <div
-                    id="collapseOne"
-                    className="accordion-collapse collapse show"
-                    aria-labelledby="headingOne"
-                    data-bs-parent="#accordionExample"
-                  >
+                  <div id="collapseOne" className="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                     <div className="accordion-body">
                       <div className="row">
                         <div className="col-lg-4 col-sm-6 col-12">
@@ -195,12 +190,11 @@ const AddProduct = () => {
                             <input
                               type="text"
                               className="form-control"
-                              placeholder="Product Name"
-                              name="name"
-                              value={formData.name}
-                              onChange={handleChange}
+                              placeholder="Enter Product Name"
+                              value={productName}
+                              onChange={(e) => setProductName(e.target.value)}
+                              required
                             />
-                            {errors.productName && <span className="text-danger">{errors.productName}</span>}
                           </div>
                         </div>
                         <div className="col-lg-4 col-sm-6 col-12">
@@ -209,12 +203,11 @@ const AddProduct = () => {
                             <input
                               type="text"
                               className="form-control list"
-                              placeholder="Barcode"
-                              name="barcode"
-                              value={formData.barcode}
-                              onChange={handleChange}
+                              placeholder="Enter Barcode"
+                              value={barcode}
+                              onChange={(e) => setBarcode(e.target.value)}
+                              required
                             />
-                            {errors.barcode && <span className="text-danger">{errors.barcode}</span>}
                           </div>
                         </div>
                       </div>
@@ -224,23 +217,22 @@ const AddProduct = () => {
                             <div className="mb-3 add-product">
                               <div className="add-newplus">
                                 <label className="form-label">Category</label>
-                                <Link
-                                  to="#"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#add-units-category"
-                                >
+                                <Link to="#" data-bs-toggle="modal" data-bs-target="#add-units-category">
                                   <PlusCircle className="plus-down-add" />
                                   <span>Add New</span>
                                 </Link>
                               </div>
-                              <Select
-                                className="select"
-                                options={categoryOptions}
-                                placeholder="Select Category"
-                                value={categoryOptions.find((option) => option.value === formData.productCategoryDto.id)}
-                                onChange={(e) => handleChange(e, "productCategoryDto")}
-                              />
-                              {errors.category && <span className="text-danger">{errors.category}</span>}
+                              {loadingCategories ? (
+                                <p>Loading categories...</p>
+                              ) : (
+                                <Select
+                                  options={categories}
+                                  placeholder="Choose"
+                                  value={category}
+                                  onChange={setCategory}
+                                  required
+                                />
+                              )}
                             </div>
                           </div>
                         </div>
@@ -250,15 +242,11 @@ const AddProduct = () => {
                 </div>
               </div>
 
+              {/* Pricing and Stocks */}
               <div className="accordion-card-one accordion" id="accordionExample2">
                 <div className="accordion-item">
                   <div className="accordion-header" id="headingTwo">
-                    <div
-                      className="accordion-button"
-                      data-bs-toggle="collapse"
-                      data-bs-target="#collapseTwo"
-                      aria-controls="collapseTwo"
-                    >
+                    <div className="accordion-button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-controls="collapseTwo">
                       <div className="text-editor add-list">
                         <div className="addproduct-icon list icon">
                           <h5>
@@ -272,93 +260,98 @@ const AddProduct = () => {
                       </div>
                     </div>
                   </div>
-                  <div
-                    id="collapseTwo"
-                    className="accordion-collapse collapse show"
-                    aria-labelledby="headingTwo"
-                    data-bs-parent="#accordionExample2"
-                  >
+                  <div id="collapseTwo" className="accordion-collapse collapse show" aria-labelledby="headingTwo" data-bs-parent="#accordionExample2">
                     <div className="accordion-body">
                       <div className="tab-content" id="pills-tabContent">
-                        <div
-                          className="tab-pane fade show active"
-                          id="pills-home"
-                          role="tabpanel"
-                          aria-labelledby="pills-home-tab"
-                        >
+                        <div className="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab">
                           <div className="row">
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Quantity</label>
                                 <input
-                                  type="integer"
+                                  type="number"
                                   className="form-control"
-                                  placeholder="Quantity"
-                                  name="quantity"
-                                  value={formData.quantity}
-                                  onChange={handleChange}
+                                  placeholder="Enter Quantity"
+                                  value={quantity}
+                                  onChange={(e) => setQuantity(e.target.value)}
+                                  required
                                 />
-                                {errors.quantity && <span className="text-danger">{errors.quantity}</span>}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Purchased Price</label>
                                 <input
-                                  type="float"
+                                  type="number"
+                                  step="0.01"
                                   className="form-control"
-                                  placeholder="Purchased Price"
-                                  name="purchasePrice"
-                                  value={formData.purchasePrice}
-                                  onChange={handleChange}
+                                  placeholder="Enter Purchased Price"
+                                  value={purchasePrice}
+                                  onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}  // Ensure it is parsed as a float
+                                  required
                                 />
-                                {errors.purchasePrice && <span className="text-danger">{errors.purchasePrice}</span>}
                               </div>
                             </div>
-                            <div className="row">
-                              <div className="col-lg-4 col-sm-6 col-12">
-                                <div className="input-blocks add-product">
-                                  <label>Price Per Unit</label>
-                                  <input
-                                    type="float"
-                                    className="form-control"
-                                    placeholder="Price Per Unit"
-                                    name="pricePerUnit"
-                                    value={formData.pricePerUnit}
-                                    onChange={handleChange}
-                                  />
-                                  {errors.pricePerUnit && <span className="text-danger">{errors.pricePerUnit}</span>}
-                                </div>
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Price Per Unit</label>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  className="form-control"
+                                  placeholder="Enter Price Per Unit"
+                                  value={pricePerUnit}
+                                  onChange={(e) => setPricePerUnit(parseFloat(e.target.value) || 0)}  // Ensure it is parsed as a float
+                                  required
+                                />
                               </div>
-                              <div className="col-lg-4 col-sm-6 col-12">
-                                <div className="input-blocks add-product">
+                            </div>
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <div className="add-newplus">
                                   <label>Tax Percentage</label>
-                                  <Select
-                                    options={taxOptions}
-                                    placeholder="Select Tax Percentage"
-                                    value={taxOptions.find((option) => option.value === formData.taxDto.id)}
-                                    onChange={(e) => handleChange(e, "taxDto")}
-                                  />
-                                  {errors.taxPercentage && <span className="text-danger">{errors.taxPercentage}</span>}
+                                  <Link to="#" data-bs-toggle="modal" data-bs-target="#add-units-tax">
+                                    <PlusCircle className="plus-down-add" />
+                                    <span>Add New</span>
+                                  </Link>
                                 </div>
+                                {loadingTaxes ? (
+                                  <p>Loading taxes...</p>
+                                ) : (
+                                  <Select
+                                    options={taxes}
+                                    placeholder="Select Option"
+                                    value={taxType}
+                                    onChange={setTaxType}
+                                    required />
+                                )}
                               </div>
                             </div>
-                          </div>
-                          <div className="row">
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Low Stock</label>
                                 <input
-                                  type="integer"
+                                  type="number"
                                   className="form-control"
-                                  placeholder="Low Stock"
-                                  name="lowStock"
-                                  value={formData.lowStock}
-                                  onChange={handleChange}
+                                  placeholder="Enter Low Stock"
+                                  value={lowStock}
+                                  onChange={(e) => setLowStock(e.target.value)}
+                                  required
                                 />
-                                {errors.lowStock && <span className="text-danger">{errors.lowStock}</span>}
                               </div>
                             </div>
+                            {/* <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Expiry Date</label>
+                                <input
+                                  type="date"
+                                  className="form-control"
+                                  value={expiryDate}
+                                  onChange={(e) => setExpiryDate(e.target.value)}
+                                  required
+                                />
+                              </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -373,13 +366,20 @@ const AddProduct = () => {
               <button type="button" className="btn btn-cancel me-2">
                 Cancel
               </button>
-              <button type="submit" className="btn btn-submit">
+              <button
+                type="button"
+                className="btn btn-submit"
+                onClick={handleSaveProduct}
+              >
                 Save Product
               </button>
             </div>
           </div>
         </form>
+        {/* /add */}
       </div>
+      <AddCategory />
+      <AddTax />
     </div>
   );
 };

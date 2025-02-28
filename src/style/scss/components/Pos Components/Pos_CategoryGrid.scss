@@ -1,4 +1,4 @@
-$pos-blue: #2eb6e8;
+$pos-blue: #2EB6E8;
 $blue-500: #0095ff;
 $blue-900: #2eb6e8;
 $radius: 0.5rem;
@@ -22,7 +22,7 @@ $radius: 0.5rem;
 .category-btn {
   padding: 1rem;
   min-width: 6rem;
-  min-height: 4rem;
+  min-height: 13vh;
   border-radius: $radius;
   text-align: center;
   background-color: $pos-blue;
@@ -61,7 +61,7 @@ $radius: 0.5rem;
 }
 
 .text-sm {
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.25rem;
 }
 
@@ -85,5 +85,23 @@ $radius: 0.5rem;
 @media (max-width: 480px) {
   .grid-cols-5 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1400px) {
+  .text-2xl {
+    font-size: 1.2rem ;
+  }
+  .text-sm {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 1100px) {
+  .text-2xl {
+    font-size: 1rem ;
+  }
+  .text-sm {
+    font-size: 0.8rem;
   }
 }

@@ -61,8 +61,8 @@ export const SidebarData = [
           // { label: "Create Product", link: "/add-product", icon:  <Icon.PlusSquare />,showSubRoute: false, submenu: false },
           { label: "Expired Products", link: "/expired-products", icon:  <Icon.Codesandbox  />,showSubRoute: false,submenu: false },
           { label: "Low Stocks", link: "/low-stocks", icon: <Icon.TrendingDown  />,showSubRoute: false,submenu: false },
-          // { label: "Category", link: "/category-list", icon:  <Icon.Codepen />,showSubRoute: false,submenu: false },
-          // { label: "Sub Category", link: "/sub-categories", icon:  <Icon.Speaker  />,showSubRoute: false,submenu: false },
+          { label: "Category", link: "/category-list", icon:  <Icon.Codepen />,showSubRoute: false,submenu: false },
+          { label: "Tax", link: "/sub-categories", icon:  <Icon.Speaker  />,showSubRoute: false,submenu: false },
           // { label: "Brands", link: "/brand-list", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
           // { label: "Units", link: "/units", icon:  <Icon.Speaker />,showSubRoute: false,submenu: false },
           // { label: "Variant Attributes", link: "/variant-attributes", icon:  <Icon.Layers />,showSubRoute: false,submenu: false },
@@ -160,7 +160,7 @@ export const SidebarData = [
         showSubRoute: false,
         submenuHdr: "HRM",
         submenuItems: [
-          { label: "Employees", link: "/employees-grid", icon:  <Icon.Users />,showSubRoute: false },
+          // { label: "Employees", link: "/employees-grid", icon:  <Icon.Users />,showSubRoute: false },
           // { label: "Departments", link: "/department-grid", icon:  <Icon.User />,showSubRoute: false },
           // { label: "Designations", link: "/designation", icon:  <Icon.UserCheck />,showSubRoute: false },
           { label: "Shifts", link: "/shift", icon: <Icon.Shuffle />,showSubRoute: false },
@@ -214,7 +214,7 @@ export const SidebarData = [
         submenuHdr: "User Management",
         submenuItems: [
           { label: "Users", link: "/users", icon:  <Icon.UserCheck />,showSubRoute: false },
-          { label: "Roles & Permissions", link: "/roles-permissions", icon:  <Icon.UserCheck />,showSubRoute: false },
+          // { label: "Roles & Permissions", link: "/roles-permissions", icon:  <Icon.UserCheck />,showSubRoute: false },
           // { label: "Delete Account Request", link: "/delete-account", icons:  <Icon.Lock />,showSubRoute: false }
         ]
       },
@@ -314,9 +314,9 @@ export const SidebarData = [
           //     { label: "States", link: "states",showSubRoute: false }
           //   ]
           // },
-          { label: "Blank Page", link: "/blank-page", icon:  <Icon.File />,showSubRoute: false },
+          // { label: "Blank Page", link: "/blank-page", icon:  <Icon.File />,showSubRoute: false },
           // { label: "Coming Soon", link: "/coming-soon", icon:  <Icon.Send />,showSubRoute: false },
-          { label: "Under Maintenance", link: "/under-maintenance", icon:  <Icon.AlertTriangle />,showSubRoute: false }
+          // { label: "Under Maintenance", link: "/under-maintenance", icon:  <Icon.AlertTriangle />,showSubRoute: false }
         ]
       },
 

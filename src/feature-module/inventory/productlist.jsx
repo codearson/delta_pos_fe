@@ -1,14 +1,12 @@
 import {
-  Box,
+  //Box,
   ChevronUp,
   Edit,
   Eye,
   Filter,
-  GitMerge,
   PlusCircle,
   RotateCcw,
-  Sliders,
-  StopCircle,
+
   Trash2,
 } from "feather-icons-react/build/IconComponents";
 import React, { useState, useEffect } from "react";
@@ -23,7 +21,6 @@ import { all_routes } from "../../Router/all_routes";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import Table from "../../core/pagination/datatable";
 import { setToogleHeader } from "../../core/redux/action";
-import { Download } from "react-feather";
 import { fetchProducts } from '../Api/productApi'
 
 const ProductList = () => {
@@ -47,21 +44,7 @@ const ProductList = () => {
   }, []);
 
   const route = all_routes;
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
-  ];
-  const productlist = [
-    { value: "choose", label: "Choose Product" },
-    { value: "lenovo", label: "Lenovo 3rd Generation" },
-    { value: "nike", label: "Nike Jordan" },
-  ];
-  const categorylist = [
-    { value: "choose", label: "Choose Category" },
-    { value: "laptop", label: "Laptop" },
-    { value: "shoe", label: "Shoe" },
-  ];
+
   const subcategorylist = [
     { value: "choose", label: "Choose Sub Category" },
     { value: "computers", label: "Computers" },
@@ -71,11 +54,6 @@ const ProductList = () => {
     { value: "all", label: "All Brand" },
     { value: "lenovo", label: "Lenovo" },
     { value: "nike", label: "Nike" },
-  ];
-  const price = [
-    { value: "price", label: "Price" },
-    { value: "12500", label: "$12,500.00" },
-    { value: "13000", label: "$13,000.00" }, // Replace with your actual values
   ];
 
   const columns = [
@@ -121,20 +99,6 @@ const ProductList = () => {
       dataIndex: "lowStock",
       sorter: (a, b) => a.lowStock.length - b.lowStock.length,
     },
-
-    // {
-    //   title: "Expiry Date",
-    //   dataIndex: "expiryDate",
-    //   render: (text, record) => (
-    //     <span className="userimgname">
-    //       <Link to="/profile" className="product-img">
-    //         <ImageWithBasePath alt="" src={record.img} />
-    //       </Link>
-    //       <Link to="/profile">{text}</Link>
-    //     </span>
-    //   ),
-    //   sorter: (a, b) => a.expiryDate.length - b.expiryDate.length,
-    // },
     {
       title: "Action",
       dataIndex: "action",
@@ -199,11 +163,6 @@ const ProductList = () => {
       Excel
     </Tooltip>
   );
-  const renderPrinterTooltip = (props) => (
-    <Tooltip id="printer-tooltip" {...props}>
-      Printer
-    </Tooltip>
-  );
   const renderRefreshTooltip = (props) => (
     <Tooltip id="refresh-tooltip" {...props}>
       Refresh
@@ -243,13 +202,6 @@ const ProductList = () => {
               </OverlayTrigger>
             </li>
             <li>
-              <OverlayTrigger placement="top" overlay={renderPrinterTooltip}>
-                <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                  <i data-feather="printer" className="feather-printer" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
               <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
                 <Link data-bs-toggle="tooltip" data-bs-placement="top">
                   <RotateCcw />
@@ -279,17 +231,7 @@ const ProductList = () => {
               Add New Product
             </Link>
           </div>
-          <div className="page-btn import">
-            <Link
-              to="#"
-              className="btn btn-added color"
-              data-bs-toggle="modal"
-              data-bs-target="#view-notes"
-            >
-              <Download className="me-2" />
-              Import Product
-            </Link>
-          </div>
+        
         </div>
         {/* /product list */}
         <div className="card table-list-card">
@@ -306,7 +248,11 @@ const ProductList = () => {
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
+                
+                  
+
               </div>
+              
               <div className="search-path">
                 <Link
                   className={`btn btn-filter ${
@@ -326,14 +272,14 @@ const ProductList = () => {
                   </span>
                 </Link>
               </div>
-              <div className="form-sort">
+              {/* <div className="form-sort">
                 <Sliders className="info-img" />
                 <Select
                   className="select"
                   options={options}
                   placeholder="14 09 23"
                 />
-              </div>
+              </div> */}
             </div>
             {/* /Filter */}
             <div
@@ -345,58 +291,25 @@ const ProductList = () => {
                 <div className="row">
                   <div className="col-lg-12 col-sm-12">
                     <div className="row">
+                      
                       <div className="col-lg-2 col-sm-6 col-12">
                         <div className="input-blocks">
-                          <Box className="info-img" />
-                          <Select
+                         <Select
                             className="select"
-                            options={productlist}
-                            placeholder="Choose Product"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <StopCircle className="info-img" />
-                          <Select
-                            className="select"
-                            options={categorylist}
+                            options={subcategorylist}
                             placeholder="Choose Category"
                           />
                         </div>
                       </div>
                       <div className="col-lg-2 col-sm-6 col-12">
                         <div className="input-blocks">
-                          <GitMerge className="info-img" />
-                          <Select
-                            className="select"
-                            options={subcategorylist}
-                            placeholder="Choose Sub Category"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <StopCircle className="info-img" />
+                          {/* <StopCircle className="info-img" /> */}
                           <Select
                             className="select"
                             options={brandlist}
-                            placeholder="Nike"
+                            placeholder="Tax"
                           />
                         </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <i className="fas fa-money-bill info-img" />
-
-                          <Select
-                            className="select"
-                            options={price}
-                            placeholder="Price"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
                         <div className="input-blocks">
                           <Link className="btn btn-filters ms-auto">
                             {" "}
@@ -407,6 +320,9 @@ const ProductList = () => {
                             Search{" "}
                           </Link>
                         </div>
+                      </div>
+                      <div className="col-lg-2 col-sm-6 col-12">
+                      
                       </div>
                     </div>
                   </div>

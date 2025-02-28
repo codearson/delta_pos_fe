@@ -1,5 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
+import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 
 export const Pos_Calculator = ({ darkMode, selectedItems, currentItem, totalValue, inputScreenText }) => {

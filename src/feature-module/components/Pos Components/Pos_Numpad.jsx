@@ -1,5 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
+import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Numpad.scss";
 
 const Pos_Numpad = ({ darkMode, onNumpadClick }) => {
@@ -45,6 +46,7 @@ const Pos_Numpad = ({ darkMode, onNumpadClick }) => {
 Pos_Numpad.propTypes = {
   darkMode: PropTypes.bool.isRequired,
   onNumpadClick: PropTypes.func.isRequired,
+  darkMode: PropTypes.bool.isRequired,
 };
 
 export default Pos_Numpad;
