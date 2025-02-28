@@ -24,7 +24,8 @@ const Suppliers = () => {
   const fetchSuppliersData = async () => {
     try {
       const data = await fetchSuppliers();
-      setSuppliers(data);
+      const reversedData = data.reverse();
+      setSuppliers(reversedData);
     } catch (error) {
       console.error("Error fetching suppliers:", error);
     }

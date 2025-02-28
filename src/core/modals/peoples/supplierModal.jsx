@@ -22,48 +22,39 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
         emailAddress: selectedSupplier.emailAddress || "",
         mobileNumber: selectedSupplier.mobileNumber || "",
         whatsappNumber: selectedSupplier.whatsappNumber || "",
-        isActive: selectedSupplier.isActive || 1,
+        isActive: selectedSupplier.isActive ?? 1,
       });
-    } else {
-      setFormData(initialFormState);
-      setErrors({});
     }
   }, [selectedSupplier]);
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = "Supplier name is required";
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.emailAddress || !emailRegex.test(formData.emailAddress)) {
       newErrors.emailAddress = "Please enter a valid email address";
     }
 
-    const phoneRegex = /^\d{10}$/;
-    if (!formData.mobileNumber || !phoneRegex.test(formData.mobileNumber)) {
-      newErrors.mobileNumber = "Please enter a valid 10-digit mobile number";
+    if (!formData.mobileNumber.trim()) {
+      newErrors.mobileNumber = "Mobile number is required";
     }
-    
-    if (!formData.whatsappNumber || !phoneRegex.test(formData.whatsappNumber)) {
-      newErrors.whatsappNumber = "Please enter a valid 10-digit WhatsApp number";
+
+    if (!formData.whatsappNumber.trim()) {
+      newErrors.whatsappNumber = "WhatsApp number is required";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "mobileNumber" || name === "whatsappNumber") {
-      if (/^\d{0,10}$/.test(value)) {
-        setFormData({ ...formData, [name]: value });
-      }
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleAddSubmit = (e) => {
@@ -86,17 +77,10 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
     }
   };
 
-  const handleModalOpen = () => {
-    if (!selectedSupplier) {
-      setFormData(initialFormState);
-      setErrors({});
-    }
-  };
-
   return (
     <div>
       {/* Add Supplier */}
-      <div className="modal fade" id="add-units" onClick={handleModalOpen}>
+      <div className="modal fade" id="add-units" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="page-wrapper-new p-0">
@@ -136,7 +120,7 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                         <div className="input-blocks">
                           <label>Email <span className="text-danger">*</span></label>
                           <input
-                            type="email"
+                            type="text" 
                             name="emailAddress"
                             value={formData.emailAddress}
                             onChange={handleChange}
@@ -155,7 +139,6 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                             value={formData.mobileNumber}
                             onChange={handleChange}
                             className="form-control"
-                            maxLength={10}
                             required
                           />
                           {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
@@ -170,7 +153,6 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                             value={formData.whatsappNumber}
                             onChange={handleChange}
                             className="form-control"
-                            maxLength={10}
                             required
                           />
                           {errors.whatsappNumber && <span className="text-danger">{errors.whatsappNumber}</span>}
@@ -203,8 +185,9 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
           </div>
         </div>
       </div>
+
       {/* Edit Supplier */}
-      <div className="modal fade" id="edit-units">
+      <div className="modal fade" id="edit-units" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="page-wrapper-new p-0">
@@ -244,7 +227,7 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                         <div className="input-blocks">
                           <label>Email <span className="text-danger">*</span></label>
                           <input
-                            type="email"
+                            type="text" 
                             name="emailAddress"
                             value={formData.emailAddress}
                             onChange={handleChange}
