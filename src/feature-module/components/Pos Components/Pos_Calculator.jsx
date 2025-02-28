@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 
-export const Pos_Calculator = ({ darkMode, selectedItems, currentItem, totalValue }) => {
+export const Pos_Calculator = ({ darkMode, selectedItems, currentItem, totalValue, inputScreenText }) => {
   return (
     <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <div className="search-bar">
@@ -16,67 +16,34 @@ export const Pos_Calculator = ({ darkMode, selectedItems, currentItem, totalValu
         </span>
       </div>
 
-      <div className="display-box" style={{ maxHeight: "250px", overflowY: "auto", padding: "15px", scrollbarWidth: "thin", scrollbarColor: "#888 #f1f1f1" }}>
-        <div style={{ marginLeft: "15px", marginRight: "15px" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 2fr 1fr 1fr", // Adjusted for balanced spacing
-              fontWeight: "bold",
-              borderBottom: "2px solid #ccc",
-              paddingBottom: "8px",
-              marginBottom: "8px",
-              fontSize: "14px",
-              color: "#333",
-              position: "sticky",
-              top: "0", // Fixed at the very top of the display box
-              background: "#fff",
-              zIndex: "1",
-            }}
-          >
-            <span style={{ paddingRight: "10px" }}>Qty</span>
-            <span style={{ paddingRight: "20px" }}>Item</span>
-            <span style={{ textAlign: "right", paddingRight: "10px" }}>Price</span>
-            <span style={{ textAlign: "right" }}>Total</span>
+      <div className="input-screen-box">
+        {inputScreenText || ""}
+      </div>
+
+      <div className="display-box">
+        <div className="result-table">
+          <div className="result-header">
+            <span className="qty-column">Qty</span>
+            <span className="item-column">Item</span>
+            <span className="price-column">Price</span>
+            <span className="total-column">Total</span>
           </div>
-          {(selectedItems.length > 0 || currentItem) && (
+          {(selectedItems.length > 0 || currentItem) && ( // Show currentItem even if name is "Undefined Item"
             <>
               {selectedItems.map((item, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 2fr 1fr 1fr",
-                    padding: "8px 0",
-                    borderBottom: "1px dashed #eee",
-                    fontSize: "13px",
-                    color: "#555",
-                    lineHeight: "1.5",
-                  }}
-                >
-                  <span style={{ paddingRight: "10px" }}>{item.qty}</span>
-                  <span style={{ paddingRight: "20px" }}>{item.name}</span>
-                  <span style={{ textAlign: "right", paddingRight: "10px" }}>${item.price.toFixed(2)}</span>
-                  <span style={{ textAlign: "right" }}>${(item.qty * item.price).toFixed(2)}</span>
+                <div key={index} className="result-row">
+                  <span className="qty-column">{item.qty}</span>
+                  <span className="item-column">{item.name}</span>
+                  <span className="price-column">${item.price.toFixed(2)}</span>
+                  <span className="total-column">${(item.qty * item.price).toFixed(2)}</span>
                 </div>
               ))}
               {currentItem && (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 2fr 1fr 1fr",
-                    padding: "8px 0",
-                    borderBottom: "1px dashed #eee",
-                    fontSize: "13px",
-                    color: "#777",
-                    lineHeight: "1.5",
-                    background: "#f9f9f9", // Light gray background for in-progress item
-                  }}
-                >
-                  <span style={{ paddingRight: "10px" }}>{currentItem.qty || ""}</span>
-                  <span style={{ paddingRight: "20px" }}>{currentItem.name || "Undefined Item"}</span>
-                  <span style={{ textAlign: "right", paddingRight: "10px" }}>{currentItem.price ? `$${currentItem.price.toFixed(2)}` : ""}</span>
-                  <span style={{ textAlign: "right" }}>{currentItem.qty && currentItem.price ? `$${(currentItem.qty * currentItem.price).toFixed(2)}` : ""}</span>
+                <div className="result-row in-progress">
+                  <span className="qty-column">{currentItem.qty || ""}</span>
+                  <span className="item-column">{currentItem.name || "Undefined Item"}</span>
+                  <span className="price-column">{currentItem.price ? `$${currentItem.price.toFixed(2)}` : ""}</span>
+                  <span className="total-column">{currentItem.qty && currentItem.price ? `$${(currentItem.qty * currentItem.price).toFixed(2)}` : ""}</span>
                 </div>
               )}
             </>
@@ -130,6 +97,7 @@ Pos_Calculator.propTypes = {
     price: PropTypes.number,
   }),
   totalValue: PropTypes.number.isRequired,
+  inputScreenText: PropTypes.string, // Prop type for inputScreenText
 };
 
 export default Pos_Calculator;

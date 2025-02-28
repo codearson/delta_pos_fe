@@ -31,7 +31,7 @@ $light-text: #000000;
 
 .search-bar {
   position: relative;
-  margin-bottom: 1rem;
+  margin-bottom: 12px; // Increased gap from 4px to 8px below search-bar
 
   .search-input {
     width: 100%;
@@ -62,12 +62,11 @@ $light-text: #000000;
   color: $text-black;
   padding: 1rem;
   border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  margin: 12px 0; // Increased gap from 4px to 8px above and below display-box
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
   height: 250px; // Set a fixed height for the display box
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow-y: auto; // Enable scrolling
+  position: relative; // Ensure children position correctly
 
   @media (max-width: 768px) {
     height: 120px; // Adjust height for medium screens
@@ -76,6 +75,53 @@ $light-text: #000000;
   @media (max-width: 480px) {
     height: 100px; // Adjust height for small screens
   }
+
+  .result-header {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    font-weight: bold;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+    position: sticky;
+    top: 0; // Fixed at the very top of the scroll area, overriding padding
+    background: #fff;
+    z-index: 2; // Ensure it stays above content
+  }
+
+  .result-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    padding: 8px 0;
+    border-bottom: 1px dashed #eee;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+
+    &.in-progress {
+      color: #777;
+      background: #f9f9f9; // Light gray background for in-progress item
+    }
+  }
+
+  .qty-column {
+    padding-right: 10px;
+  }
+
+  .item-column {
+    padding-right: 20px;
+  }
+
+  .price-column {
+    text-align: right;
+    padding-right: 10px;
+  }
+
+  .total-column {
+    text-align: right;
+  }
 }
 
 .summary-box {
@@ -83,6 +129,7 @@ $light-text: #000000;
   color: $text-black;
   padding: 1rem;
   border-radius: 0.5rem;
+  margin-top: 12px; // Increased gap from 4px to 8px above summary-box
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
 
   .summary-item {
@@ -126,6 +173,10 @@ $light-text: #000000;
   .total-summary {
     font-size: 1rem;
   }
+
+  .display-box {
+    height: 120px; // Adjust height for medium screens
+  }
 }
 
 @media (max-width: 480px) {
@@ -144,5 +195,25 @@ $light-text: #000000;
 
   .total-summary {
     font-size: 0.875rem;
+  }
+
+  .display-box {
+    height: 100px; // Adjust height for small screens
+  }
+}
+
+.input-screen-box {
+  width: 100%;
+  height: 38px; // Match the search bar height
+  padding: 10px 10px 10px 10px; // Match search bar padding (no icon, so no extra left padding)
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  background-color: #fff;
+  color: #4e4d4d;
+  text-align: left; // Ensure text aligns left like the search bar
+
+  &::placeholder {
+    color: #9ca3af; // Match search bar placeholder color
   }
 }
