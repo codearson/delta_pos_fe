@@ -1,9 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
+import { saveProductCategory } from "../../../feature-module/Api/ProductCategoryApi";
 
 const AddCategory = () => {
   const route = all_routes;
+  const [categoryName, setCategoryName] = useState("");
+
+  const handleSaveCategory = async () => {
+    if (!categoryName) {
+      console.error("Please enter a category name.");
+      return;
+    }
+
+    const response = await saveProductCategory(categoryName);
+    if (response) {
+      console.error("Category saved successfully!");
+      setCategoryName("");
+    } else {
+      console.error("Failed to save category.");
+    }
+  };
+
   return (
     <>
       {/* Add Category */}
@@ -28,7 +46,12 @@ const AddCategory = () => {
                 <div className="modal-body custom-modal-body">
                   <div className="mb-3">
                     <label className="form-label">Name</label>
-                    <input type="text" className="form-control" />
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={categoryName}
+                      onChange={(e) => setCategoryName(e.target.value)}
+                    />
                   </div>
                   <div className="modal-footer-btn">
                     <Link
@@ -38,7 +61,7 @@ const AddCategory = () => {
                     >
                       Cancel
                     </Link>
-                    <Link to={route.addproduct} className="btn btn-submit">
+                    <Link to={route.addproduct} className="btn btn-submit" onClick={handleSaveCategory}>
                       Submit
                     </Link>
                   </div>
