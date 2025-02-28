@@ -99,12 +99,12 @@ const Signin = () => {
                           <span className="checkmarks" />
                           Remember me
                         </label>
-                      </div> 
+                      </div>  */}
                       <div className="text-end">
                         <Link className="forgot-link" to={route.forgotPassword}>
                           Forgot Password?
                         </Link>
-                      </div> */}
+                      </div>
                     </div>
                   </div>
                 </div>

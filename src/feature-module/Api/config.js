@@ -43,3 +43,51 @@ export const getUserByEmail = async (email) => {
       return null;
     }
   };
+
+  export const forgotPassword = async (email) => {
+    try {
+      // console.log("Sending request to:", `${BASE_BACKEND_URL}/auth/forgot-password`);
+      // console.log("Payload:", { email });
+  
+      const response = await axios.post(
+        `${BASE_BACKEND_URL}/auth/forgot-password`,
+        { email },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+  
+      console.log("Response status:", response.status);
+      return response.data; 
+    } catch (error) {
+      console.error("Forgot Password Error:", error);
+      throw error; 
+    }
+  };
+
+  export const resetPassword = async (token, newPassword) => {
+    try {
+      // console.log("Sending request to:", `${BASE_BACKEND_URL}/auth/reset-password`);
+      // console.log("Payload:", { token, newPassword });
+  
+      const response = await axios.post(
+        `${BASE_BACKEND_URL}/auth/reset-password`,
+        { token, newPassword },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        }
+      );
+  
+      console.log("Response status:", response.status);
+      return response.data;
+    } catch (error) {
+      console.error("Reset Password Error:", error);
+      throw error;
+    }
+  };
