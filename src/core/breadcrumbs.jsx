@@ -2,10 +2,9 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Link, useLocation } from "react-router-dom";
 import ImageWithBasePath from "./img/imagewithbasebath";
-import { PlusCircle, Printer } from "react-feather";
+import { PlusCircle } from "react-feather";
 import { Download, RotateCcw } from "feather-icons-react/build/IconComponents";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
-// import { setToogleHeader } from "../../core/redux/action";
 import { useDispatch, useSelector } from "react-redux";
 import { ChevronUp } from "react-feather";
 import { setToogleHeader } from "./redux/action";
@@ -13,35 +12,23 @@ import { setToogleHeader } from "./redux/action";
 const Breadcrumbs = (props) => {
   const location = useLocation();
   const data = useSelector((state) => state.toggle_header);
-
-  let addButton = null;
   const dispatch = useDispatch();
 
   const renderTooltip = (props) => (
-    <Tooltip id="pdf-tooltip" {...props}>
-      Pdf
-    </Tooltip>
+    <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>
   );
   const renderExcelTooltip = (props) => (
-    <Tooltip id="excel-tooltip" {...props}>
-      Excel
-    </Tooltip>
-  );
-  const renderPrinterTooltip = (props) => (
-    <Tooltip id="printer-tooltip" {...props}>
-      Printer
-    </Tooltip>
+    <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
   );
   const renderRefreshTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Refresh
-    </Tooltip>
+    <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
   );
   const renderCollapseTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Collapse
-    </Tooltip>
+    <Tooltip id="collapse-tooltip" {...props}>Collapse</Tooltip>
   );
+
+  let addButton = null;
+
   if (
     location.pathname === "/product-list" ||
     location.pathname === "/stock-transfer"
@@ -56,31 +43,24 @@ const Breadcrumbs = (props) => {
         </div>
         <ul className="table-top-head">
           <li>
-            <Link data-bs-toggle="tooltip" data-bs-placement="top" title="Pdf">
-              <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-            </Link>
+            <OverlayTrigger placement="top" overlay={renderTooltip}>
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadPDF(); }}>
+                <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="PDF" />
+              </a>
+            </OverlayTrigger>
           </li>
           <li>
-            <Link
-              data-bs-toggle="tooltip"
-              data-bs-placement="top"
-              title="Excel"
-            >
-              <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-            </Link>
-          </li>
-          <li>
-            <OverlayTrigger placement="top" overlay={renderPrinterTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                <i data-feather="printer" className="feather-printer" />
-              </Link>
+            <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadExcel(); }}>
+                <ImageWithBasePath src="assets/img/icons/excel.svg" alt="Excel" />
+              </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onRefresh(); }}>
                 <RotateCcw />
-              </Link>
+              </a>
             </OverlayTrigger>
           </li>
         </ul>
@@ -132,42 +112,34 @@ const Breadcrumbs = (props) => {
         <ul className="table-top-head">
           <li>
             <OverlayTrigger placement="top" overlay={renderTooltip}>
-              <Link>
-                <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-              </Link>
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadPDF(); }}>
+                <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="PDF" />
+              </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-              </Link>
-            </OverlayTrigger>
-          </li>
-          <li>
-            <OverlayTrigger placement="top" overlay={renderPrinterTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                <Printer />
-              </Link>
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadExcel(); }}>
+                <ImageWithBasePath src="assets/img/icons/excel.svg" alt="Excel" />
+              </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onRefresh(); }}>
                 <RotateCcw />
-              </Link>
+              </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
               <Link
+                to="#"
                 data-bs-toggle="tooltip"
                 data-bs-placement="top"
                 id="collapse-header"
                 className={data ? "active" : ""}
-                onClick={() => {
-                  dispatch(setToogleHeader(!data));
-                }}
+                onClick={() => dispatch(setToogleHeader(!data))}
               >
                 <ChevronUp />
               </Link>
@@ -177,14 +149,14 @@ const Breadcrumbs = (props) => {
       </div>
     );
   } else if (
-    location.pathname == "/expense-list" ||
-    location.pathname == "/expense-category" ||
-    location.pathname == "/customers" ||
-    location.pathname == "/warehouse" ||
-    location.pathname == "/store-list" ||
-    location.pathname == "/suppliers" ||
-    location.pathname == "/manage-stocks" ||
-    location.pathname == "/stock-adjustment"
+    location.pathname === "/expense-list" ||
+    location.pathname === "/expense-category" ||
+    location.pathname === "/customers" ||
+    location.pathname === "/warehouse" ||
+    location.pathname === "/store-list" ||
+    location.pathname === "/suppliers" ||
+    location.pathname === "/manage-stocks" ||
+    location.pathname === "/stock-adjustment"
   ) {
     addButton = (
       <div className="page-header">
@@ -197,42 +169,34 @@ const Breadcrumbs = (props) => {
         <ul className="table-top-head">
           <li>
             <OverlayTrigger placement="top" overlay={renderTooltip}>
-              <Link>
-                <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-              </Link>
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadPDF(); }}>
+                <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="PDF" />
+              </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-              </Link>
-            </OverlayTrigger>
-          </li>
-          <li>
-            <OverlayTrigger placement="top" overlay={renderPrinterTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                <i data-feather="printer" className="feather-printer" />
-              </Link>
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadExcel(); }}>
+                <ImageWithBasePath src="assets/img/icons/excel.svg" alt="Excel" />
+              </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-              <Link data-bs-toggle="tooltip" data-bs-placement="top">
+              <a href="#" onClick={(e) => { e.preventDefault(); props.onRefresh(); }}>
                 <RotateCcw />
-              </Link>
+              </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
               <Link
+                to="#"
                 data-bs-toggle="tooltip"
                 data-bs-placement="top"
                 id="collapse-header"
                 className={data ? "active" : ""}
-                onClick={() => {
-                  dispatch(setToogleHeader(!data));
-                }}
+                onClick={() => dispatch(setToogleHeader(!data))}
               >
                 <ChevronUp />
               </Link>
@@ -243,8 +207,7 @@ const Breadcrumbs = (props) => {
           <Link
             to="#"
             className="btn btn-added"
-            data-bs-toggle="modal"
-            data-bs-target="#add-units"
+            {...props.addButtonAttributes}
           >
             <PlusCircle className="me-2" />
             {props.addButton}
@@ -262,6 +225,10 @@ Breadcrumbs.propTypes = {
   subtitle: PropTypes.string,
   addButton: PropTypes.string,
   importbutton: PropTypes.string,
+  addButtonAttributes: PropTypes.object,
+  onDownloadPDF: PropTypes.func,
+  onDownloadExcel: PropTypes.func,
+  onRefresh: PropTypes.func, 
 };
 
 export default Breadcrumbs;

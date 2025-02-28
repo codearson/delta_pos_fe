@@ -2,16 +2,18 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
 const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
-  const [formData, setFormData] = useState({
+  const initialFormState = {
     id: "",
     name: "",
     emailAddress: "",
     mobileNumber: "",
     whatsappNumber: "",
     isActive: 1,
-  });
+  };
 
-  // Populate form data when selectedSupplier changes (for editing)
+  const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
+
   useEffect(() => {
     if (selectedSupplier) {
       setFormData({
@@ -23,48 +25,78 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
         isActive: selectedSupplier.isActive || 1,
       });
     } else {
-      setFormData({
-        id: "",
-        name: "",
-        emailAddress: "",
-        mobileNumber: "",
-        whatsappNumber: "",
-        isActive: 1,
-      });
+      setFormData(initialFormState);
+      setErrors({});
     }
   }, [selectedSupplier]);
 
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = "Supplier name is required";
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.emailAddress || !emailRegex.test(formData.emailAddress)) {
+      newErrors.emailAddress = "Please enter a valid email address";
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!formData.mobileNumber || !phoneRegex.test(formData.mobileNumber)) {
+      newErrors.mobileNumber = "Please enter a valid 10-digit mobile number";
+    }
+    
+    if (!formData.whatsappNumber || !phoneRegex.test(formData.whatsappNumber)) {
+      newErrors.whatsappNumber = "Please enter a valid 10-digit WhatsApp number";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "mobileNumber" || name === "whatsappNumber") {
+      if (/^\d{0,10}$/.test(value)) {
+        setFormData({ ...formData, [name]: value });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    const supplierData = {
-      ...formData,
-      isActive: 1,
-    };
-    onSave(supplierData);
-    setFormData({ name: "", emailAddress: "", mobileNumber: "", whatsappNumber: "" });
+    if (validateForm()) {
+      const supplierData = { ...formData, isActive: 1 };
+      onSave(supplierData);
+      setFormData(initialFormState);
+      setErrors({});
+    }
   };
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    const supplierData = {
-      id: formData.id,
-      name: formData.name,
-      emailAddress: formData.emailAddress,
-      mobileNumber: formData.mobileNumber,
-      whatsappNumber: formData.whatsappNumber,
-      isActive: formData.isActive,
-    };
-    onUpdate(supplierData); // Call onUpdate with the updated supplier data
+    if (validateForm()) {
+      const supplierData = { ...formData };
+      onUpdate(supplierData);
+      setFormData(initialFormState);
+      setErrors({});
+    }
+  };
+
+  const handleModalOpen = () => {
+    if (!selectedSupplier) {
+      setFormData(initialFormState);
+      setErrors({});
+    }
   };
 
   return (
     <div>
       {/* Add Supplier */}
-      <div className="modal fade" id="add-units">
+      <div className="modal fade" id="add-units" onClick={handleModalOpen}>
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="page-wrapper-new p-0">
@@ -78,6 +110,7 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                     className="close"
                     data-bs-dismiss="modal"
                     aria-label="Close"
+                    onClick={() => setFormData(initialFormState)}
                   >
                     <span aria-hidden="true">×</span>
                   </button>
@@ -87,7 +120,7 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                     <div className="row">
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Supplier Name</label>
+                          <label>Supplier Name <span className="text-danger">*</span></label>
                           <input
                             type="text"
                             name="name"
@@ -96,11 +129,12 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                             className="form-control"
                             required
                           />
+                          {errors.name && <span className="text-danger">{errors.name}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Email</label>
+                          <label>Email <span className="text-danger">*</span></label>
                           <input
                             type="email"
                             name="emailAddress"
@@ -109,32 +143,37 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                             className="form-control"
                             required
                           />
+                          {errors.emailAddress && <span className="text-danger">{errors.emailAddress}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Mobile Number</label>
+                          <label>Mobile Number <span className="text-danger">*</span></label>
                           <input
                             type="text"
                             name="mobileNumber"
                             value={formData.mobileNumber}
                             onChange={handleChange}
                             className="form-control"
+                            maxLength={10}
                             required
                           />
+                          {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>WhatsApp Number</label>
+                          <label>WhatsApp Number <span className="text-danger">*</span></label>
                           <input
                             type="text"
                             name="whatsappNumber"
                             value={formData.whatsappNumber}
                             onChange={handleChange}
                             className="form-control"
+                            maxLength={10}
                             required
                           />
+                          {errors.whatsappNumber && <span className="text-danger">{errors.whatsappNumber}</span>}
                         </div>
                       </div>
                     </div>
@@ -143,13 +182,16 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                         type="button"
                         className="btn btn-cancel me-2"
                         data-bs-dismiss="modal"
+                        onClick={() => {
+                          setFormData(initialFormState);
+                          setErrors({});
+                        }}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         className="btn btn-submit"
-                        data-bs-dismiss="modal"
                       >
                         Submit
                       </button>
@@ -176,6 +218,7 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                     className="close"
                     data-bs-dismiss="modal"
                     aria-label="Close"
+                    onClick={() => setFormData(initialFormState)}
                   >
                     <span aria-hidden="true">×</span>
                   </button>
@@ -185,7 +228,7 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                     <div className="row">
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Supplier Name</label>
+                          <label>Supplier Name <span className="text-danger">*</span></label>
                           <input
                             type="text"
                             name="name"
@@ -194,11 +237,12 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                             className="form-control"
                             required
                           />
+                          {errors.name && <span className="text-danger">{errors.name}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Email</label>
+                          <label>Email <span className="text-danger">*</span></label>
                           <input
                             type="email"
                             name="emailAddress"
@@ -207,32 +251,37 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                             className="form-control"
                             required
                           />
+                          {errors.emailAddress && <span className="text-danger">{errors.emailAddress}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Mobile Number</label>
+                          <label>Mobile Number <span className="text-danger">*</span></label>
                           <input
                             type="text"
                             name="mobileNumber"
                             value={formData.mobileNumber}
                             onChange={handleChange}
                             className="form-control"
+                            maxLength={10}
                             required
                           />
+                          {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>WhatsApp Number</label>
+                          <label>WhatsApp Number <span className="text-danger">*</span></label>
                           <input
                             type="text"
                             name="whatsappNumber"
                             value={formData.whatsappNumber}
                             onChange={handleChange}
                             className="form-control"
+                            maxLength={10}
                             required
                           />
+                          {errors.whatsappNumber && <span className="text-danger">{errors.whatsappNumber}</span>}
                         </div>
                       </div>
                     </div>
@@ -241,13 +290,16 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
                         type="button"
                         className="btn btn-cancel me-2"
                         data-bs-dismiss="modal"
+                        onClick={() => {
+                          setFormData(initialFormState);
+                          setErrors({});
+                        }}
                       >
                         Cancel
                       </button>
                       <button
                         type="submit"
                         className="btn btn-submit"
-                        data-bs-dismiss="modal"
                       >
                         Submit
                       </button>
@@ -263,7 +315,6 @@ const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
   );
 };
 
-// Define prop types
 SupplierModal.propTypes = {
   onSave: PropTypes.func.isRequired,
   onUpdate: PropTypes.func,

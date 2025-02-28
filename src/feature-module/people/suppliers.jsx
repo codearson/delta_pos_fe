@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
 import { Link } from "react-router-dom";
-import { Sliders, Edit, Eye, Trash2 } from "react-feather";
-import Select from "react-select";
+import { Edit, Trash2 } from "react-feather";
 import { Table } from "antd";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import SupplierModal from "../../core/modals/peoples/supplierModal";
-import { format } from 'date-fns';
 import { fetchSuppliers, saveSupplier, updateSupplier, updateSupplierStatus, getSuppliersByName } from '../Api/supplierApi';
+import jsPDF from "jspdf";
+import autoTable from 'jspdf-autotable';
+import * as XLSX from "xlsx";
 
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -17,9 +18,17 @@ const Suppliers = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchSuppliers()
-      .then((data) => setSuppliers(data));
+    fetchSuppliersData();
   }, []);
+
+  const fetchSuppliersData = async () => {
+    try {
+      const data = await fetchSuppliers();
+      setSuppliers(data);
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+    }
+  };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -39,61 +48,56 @@ const Suppliers = () => {
   };
 
   const handleSaveSupplier = async (supplierData) => {
-    const result = await saveSupplier(supplierData);
-    if (result) {
-      const updatedSuppliers = await fetchSuppliers();
-      setSuppliers(updatedSuppliers);
-      MySwal.fire({
-        title: "Success!",
-        text: "Supplier has been added successfully.",
-        icon: "success",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-success",
-        },
-      });
-    } else {
+    try {
+      const result = await saveSupplier(supplierData);
+      if (result) {
+        const updatedSuppliers = await fetchSuppliers();
+        setSuppliers(updatedSuppliers);
+        MySwal.fire({
+          title: "Success!",
+          text: "Supplier has been added successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-success" },
+        });
+      }
+    } catch (error) {
       MySwal.fire({
         title: "Error!",
-        text: "Failed to add supplier.",
+        text: "Failed to add supplier: " + error.message,
         icon: "error",
         confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-danger",
-        },
+        customClass: { confirmButton: "btn btn-danger" },
       });
     }
   };
 
   const handleUpdateSupplier = async (supplierData) => {
-    const result = await updateSupplier(supplierData);
-    if (result) {
-      const updatedSuppliers = await fetchSuppliers();
-      setSuppliers(updatedSuppliers);
-      MySwal.fire({
-        title: "Success!",
-        text: "Supplier has been updated successfully.",
-        icon: "success",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-success",
-        },
-      });
-    } else {
+    try {
+      const result = await updateSupplier(supplierData);
+      if (result) {
+        const updatedSuppliers = await fetchSuppliers();
+        setSuppliers(updatedSuppliers);
+        MySwal.fire({
+          title: "Success!",
+          text: "Supplier has been updated successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-success" },
+        });
+      }
+    } catch (error) {
       MySwal.fire({
         title: "Error!",
-        text: "Failed to update supplier.",
+        text: "Failed to update supplier: " + error.message,
         icon: "error",
         confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-danger",
-        },
+        customClass: { confirmButton: "btn btn-danger" },
       });
     }
   };
 
   const handleUpdateStatus = async (supplierId) => {
-    // Show confirmation alert before deleting
     showConfirmationAlert(supplierId);
   };
 
@@ -108,7 +112,7 @@ const Suppliers = () => {
       cancelButtonText: "Cancel",
     }).then((result) => {
       if (result.isConfirmed) {
-        deleteSupplier(supplierId); // Call delete supplier function if confirmed
+        deleteSupplier(supplierId);
       } else {
         MySwal.close();
       }
@@ -116,42 +120,133 @@ const Suppliers = () => {
   };
 
   const deleteSupplier = async (supplierId) => {
-    const result = await updateSupplierStatus(supplierId, 0); // setting status to 0 (delete status)
-    if (result) {
-      const updatedSuppliers = await fetchSuppliers();
-      setSuppliers(updatedSuppliers);
-      MySwal.fire({
-        title: "Deleted!",
-        text: "Supplier has been deleted.",
-        icon: "success",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-success",
-        },
-      });
-    } else {
+    try {
+      const result = await updateSupplierStatus(supplierId, 0);
+      if (result) {
+        const updatedSuppliers = await fetchSuppliers();
+        setSuppliers(updatedSuppliers);
+        MySwal.fire({
+          title: "Deleted!",
+          text: "Supplier has been deleted.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-success" },
+        });
+      }
+    } catch (error) {
       MySwal.fire({
         title: "Error!",
-        text: "Failed to delete supplier.",
+        text: "Failed to delete supplier: " + error.message,
         icon: "error",
         confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-danger",
-        },
+        customClass: { confirmButton: "btn btn-danger" },
       });
     }
   };
 
   const handleSearch = async (e) => {
     setSearchTerm(e.target.value);
-    if (e.target.value.trim() !== "") {
-      const searchResults = await getSuppliersByName(e.target.value);
-      setSuppliers(searchResults);
-    } else {
-      // If search is cleared, fetch all suppliers
-      fetchSuppliers()
-        .then((data) => setSuppliers(data));
+    try {
+      if (e.target.value.trim() !== "") {
+        const searchResults = await getSuppliersByName(e.target.value);
+        setSuppliers(searchResults);
+      } else {
+        fetchSuppliersData();
+      }
+    } catch (error) {
+      console.error("Error searching suppliers:", error);
     }
+  };
+
+  const downloadPDF = () => {
+    try {
+      if (!suppliers || suppliers.length === 0) {
+        MySwal.fire({
+          title: "No Data",
+          text: "There are no suppliers to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+
+      const doc = new jsPDF();
+      doc.text("Supplier List", 14, 15);
+      
+      const tableColumn = ["Supplier Name", "Email", "Mobile Number", "WhatsApp Number"];
+      const tableRows = suppliers.map(supplier => [
+        supplier.name || "",
+        supplier.emailAddress || "",
+        supplier.mobileNumber || "",
+        supplier.whatsappNumber || ""
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        theme: 'grid',
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
+
+      doc.save("supplier_list.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to generate PDF: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const downloadExcel = () => {
+    try {
+      if (!suppliers || suppliers.length === 0) {
+        MySwal.fire({
+          title: "No Data",
+          text: "There are no suppliers to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+
+      const worksheetData = suppliers.map(supplier => ({
+        "Supplier Name": supplier.name || "",
+        "Email": supplier.emailAddress || "",
+        "Mobile Number": supplier.mobileNumber || "",
+        "WhatsApp Number": supplier.whatsappNumber || ""
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Suppliers");
+      
+      worksheet["!cols"] = [
+        { wch: 20 },
+        { wch: 30 },
+        { wch: 15 },
+        { wch: 15 }
+      ];
+
+      XLSX.writeFile(workbook, "supplier_list.xlsx");
+    } catch (error) {
+      console.error("Error generating Excel:", error);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to generate Excel: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const handleRefresh = () => {
+    setSearchTerm(""); 
+    fetchSuppliersData(); 
   };
 
   const columns = [
@@ -200,23 +295,11 @@ const Suppliers = () => {
       sorter: (a, b) => a.whatsappNumber.length - b.whatsappNumber.length,
     },
     {
-      title: "Created Date",
-      dataIndex: "createdDate",
-      render: (text) => {
-        const formattedDate = format(new Date(text), 'dd/MM/yyyy HH:mm:ss');
-        return <span>{formattedDate}</span>;
-      },
-      sorter: (a, b) => new Date(a.createdDate) - new Date(b.createdDate),
-    },
-    {
       title: "Action",
       dataIndex: "action",
       render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <Link className="me-2 p-2" to="#">
-              <Eye className="feather-view" />
-            </Link>
             <Link
               className="me-2 p-2"
               to="#"
@@ -249,6 +332,9 @@ const Suppliers = () => {
           subtitle="Manage Your Suppliers"
           addButton="Add New Supplier"
           addButtonAttributes={{ "data-bs-toggle": "modal", "data-bs-target": "#add-units" }}
+          onDownloadPDF={downloadPDF}
+          onDownloadExcel={downloadExcel}
+          onRefresh={handleRefresh}
         />
         <div className="card table-list-card">
           <div className="card-body">
@@ -266,10 +352,6 @@ const Suppliers = () => {
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
-              </div>
-              <div className="form-sort stylewidth">
-                <Sliders className="info-img" />
-                <Select className="select" options={[]} placeholder="Sort by Date" />
               </div>
             </div>
             <div className="table-responsive">

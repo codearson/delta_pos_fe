@@ -32,6 +32,8 @@
     "dragula": "^3.7.3",
     "feather-icons-react": "^0.6.2",
     "fslightbox-react": "^1.7.6",
+    "jspdf": "^3.0.0",
+    "jspdf-autotable": "^5.0.2",
     "lightbox.js-react": "^0.9.9",
     "moment": "^2.30.1",
     "owl.carousel": "^2.3.4",
@@ -78,6 +80,7 @@
     "sweetalert2": "^11.10.4",
     "sweetalert2-react-content": "^5.0.7",
     "weather-icons-react": "^1.2.0",
+    "xlsx": "^0.18.5",
     "yet-another-react-lightbox": "^3.16.0"
   },
   "scripts": {
