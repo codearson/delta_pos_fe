@@ -1,30 +1,86 @@
-import React from "react";
-import Select from "react-select";
-import ImageWithBasePath from "../../img/imagewithbasebath";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
-const SupplierModal = () => {
-  const options1 = [
-    { value: "Choose", label: "Choose" },
-    { value: "Varrel", label: "Varrel" },
-  ];
+const SupplierModal = ({ onSave, onUpdate, selectedSupplier }) => {
+  const initialFormState = {
+    id: "",
+    name: "",
+    emailAddress: "",
+    mobileNumber: "",
+    whatsappNumber: "",
+    isActive: 1,
+  };
 
-  const options2 = [
-    { value: "Choose", label: "Choose" },
-    { value: "Germany", label: "Germany" },
-    { value: "Mexico", label: "Mexico" },
-  ];
+  const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
 
-  const options3 = [{ value: "Varrel", label: "Varrel" }];
+  useEffect(() => {
+    if (selectedSupplier) {
+      setFormData({
+        id: selectedSupplier.id || "",
+        name: selectedSupplier.name || "",
+        emailAddress: selectedSupplier.emailAddress || "",
+        mobileNumber: selectedSupplier.mobileNumber || "",
+        whatsappNumber: selectedSupplier.whatsappNumber || "",
+        isActive: selectedSupplier.isActive ?? 1,
+      });
+    }
+  }, [selectedSupplier]);
 
-  const options4 = [
-    { value: "Germany", label: "Germany" },
-    { value: "France", label: "France" },
-    { value: "Mexico", label: "Mexico" },
-  ];
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Supplier name is required";
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.emailAddress || !emailRegex.test(formData.emailAddress)) {
+      newErrors.emailAddress = "Please enter a valid email address";
+    }
+
+    if (!formData.mobileNumber.trim()) {
+      newErrors.mobileNumber = "Mobile number is required";
+    }
+
+    if (!formData.whatsappNumber.trim()) {
+      newErrors.whatsappNumber = "WhatsApp number is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      const supplierData = { ...formData, isActive: 1 };
+      onSave(supplierData);
+      setFormData(initialFormState);
+      setErrors({});
+    }
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      const supplierData = { ...formData };
+      onUpdate(supplierData);
+      setFormData(initialFormState);
+      setErrors({});
+    }
+  };
+
   return (
     <div>
       {/* Add Supplier */}
-      <div className="modal fade" id="add-units">
+      <div className="modal fade" id="add-units" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="page-wrapper-new p-0">
@@ -38,81 +94,68 @@ const SupplierModal = () => {
                     className="close"
                     data-bs-dismiss="modal"
                     aria-label="Close"
+                    onClick={() => setFormData(initialFormState)}
                   >
                     <span aria-hidden="true">×</span>
                   </button>
                 </div>
                 <div className="modal-body custom-modal-body">
-                  <form>
+                  <form onSubmit={handleAddSubmit}>
                     <div className="row">
                       <div className="col-lg-12">
-                        <div className="new-employee-field">
-                          <span>Avatar</span>
-                          <div className="profile-pic-upload mb-2">
-                            <div className="profile-pic">
-                              <span>
-                                <i
-                                  data-feather="plus-circle"
-                                  className="plus-down-add"
-                                />{" "}
-                                Profile Photo
-                              </span>
-                            </div>
-                            <div className="input-blocks mb-0">
-                              <div className="image-upload mb-0">
-                                <input type="file" />
-                                <div className="image-uploads">
-                                  <h4>Change Image</h4>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
                         <div className="input-blocks">
-                          <label>Supplier Name</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
-                        <div className="input-blocks">
-                          <label>Email</label>
-                          <input type="email" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
-                        <div className="input-blocks">
-                          <label>Phone</label>
-                          <input type="text" className="form-control" />
+                          <label>Supplier Name <span className="text-danger">*</span></label>
+                          <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
+                          {errors.name && <span className="text-danger">{errors.name}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Address</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
-                        <div className="input-blocks">
-                          <label>City</label>
-                          <Select className="select" options={options1} />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
-                        <div className="input-blocks">
-                          <label>Country</label>
-                          <Select className="select" options={options2} />
-                        </div>
-                      </div>
-                      <div className="col-md-12">
-                        <div className="mb-0 input-blocks">
-                          <label className="form-label">Descriptions</label>
-                          <textarea
-                            className="form-control mb-1"
-                            defaultValue={""}
+                          <label>Email <span className="text-danger">*</span></label>
+                          <input
+                            type="text" 
+                            name="emailAddress"
+                            value={formData.emailAddress}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
                           />
-                          <p>Maximum 600 Characters</p>
+                          {errors.emailAddress && <span className="text-danger">{errors.emailAddress}</span>}
+                        </div>
+                      </div>
+                      <div className="col-lg-12">
+                        <div className="input-blocks">
+                          <label>Mobile Number <span className="text-danger">*</span></label>
+                          <input
+                            type="text"
+                            name="mobileNumber"
+                            value={formData.mobileNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
+                          {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
+                        </div>
+                      </div>
+                      <div className="col-lg-12">
+                        <div className="input-blocks">
+                          <label>WhatsApp Number <span className="text-danger">*</span></label>
+                          <input
+                            type="text"
+                            name="whatsappNumber"
+                            value={formData.whatsappNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
+                          {errors.whatsappNumber && <span className="text-danger">{errors.whatsappNumber}</span>}
                         </div>
                       </div>
                     </div>
@@ -121,10 +164,17 @@ const SupplierModal = () => {
                         type="button"
                         className="btn btn-cancel me-2"
                         data-bs-dismiss="modal"
+                        onClick={() => {
+                          setFormData(initialFormState);
+                          setErrors({});
+                        }}
                       >
                         Cancel
                       </button>
-                      <button type="submit" className="btn btn-submit">
+                      <button
+                        type="submit"
+                        className="btn btn-submit"
+                      >
                         Submit
                       </button>
                     </div>
@@ -135,9 +185,9 @@ const SupplierModal = () => {
           </div>
         </div>
       </div>
-      {/* /Add Supplier */}
+
       {/* Edit Supplier */}
-      <div className="modal fade" id="edit-units">
+      <div className="modal fade" id="edit-units" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="page-wrapper-new p-0">
@@ -151,88 +201,71 @@ const SupplierModal = () => {
                     className="close"
                     data-bs-dismiss="modal"
                     aria-label="Close"
+                    onClick={() => setFormData(initialFormState)}
                   >
                     <span aria-hidden="true">×</span>
                   </button>
                 </div>
                 <div className="modal-body custom-modal-body">
-                  <form>
+                  <form onSubmit={handleEditSubmit}>
                     <div className="row">
                       <div className="col-lg-12">
-                        <div className="new-employee-field">
-                          <span>Avatar</span>
-                          <div className="profile-pic-upload edit-pic">
-                            <div className="profile-pic">
-                              <span>
-                                <ImageWithBasePath
-                                  src="assets/img/supplier/edit-supplier.jpg"
-                                  alt
-                                />
-                              </span>
-                              <div className="close-img">
-                                <i data-feather="x" className="info-img" />
-                              </div>
-                            </div>
-                            <div className="input-blocks mb-0">
-                              <div className="image-upload mb-0">
-                                <input type="file" />
-                                <div className="image-uploads">
-                                  <h4>Change Image</h4>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
                         <div className="input-blocks">
-                          <label>Supplier Name</label>
-                          <input type="text" placeholder="Apex Computers" />
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
-                        <div className="input-blocks">
-                          <label>Email</label>
+                          <label>Supplier Name <span className="text-danger">*</span></label>
                           <input
-                            type="email"
-                            placeholder="apexcomputers@example.com"
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
                           />
-                        </div>
-                      </div>
-                      <div className="col-lg-4">
-                        <div className="input-blocks">
-                          <label>Phone</label>
-                          <input type="text" placeholder={+12163547758} />
+                          {errors.name && <span className="text-danger">{errors.name}</span>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Address</label>
+                          <label>Email <span className="text-danger">*</span></label>
+                          <input
+                            type="text" 
+                            name="emailAddress"
+                            value={formData.emailAddress}
+                            onChange={handleChange}
+                            className="form-control"
+                            required
+                          />
+                          {errors.emailAddress && <span className="text-danger">{errors.emailAddress}</span>}
+                        </div>
+                      </div>
+                      <div className="col-lg-12">
+                        <div className="input-blocks">
+                          <label>Mobile Number <span className="text-danger">*</span></label>
                           <input
                             type="text"
-                            placeholder="Budapester Strasse 2027259 "
+                            name="mobileNumber"
+                            value={formData.mobileNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            maxLength={10}
+                            required
                           />
+                          {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
                         </div>
                       </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
+                      <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>City</label>
-                          <Select className="select" options={options3} />
+                          <label>WhatsApp Number <span className="text-danger">*</span></label>
+                          <input
+                            type="text"
+                            name="whatsappNumber"
+                            value={formData.whatsappNumber}
+                            onChange={handleChange}
+                            className="form-control"
+                            maxLength={10}
+                            required
+                          />
+                          {errors.whatsappNumber && <span className="text-danger">{errors.whatsappNumber}</span>}
                         </div>
-                      </div>
-                      <div className="col-lg-6 col-sm-10 col-10">
-                        <div className="input-blocks">
-                          <label>Country</label>
-                          <Select className="select" options={options4} />
-                        </div>
-                      </div>
-                      <div className="mb-0 input-blocks">
-                        <label className="form-label">Descriptions</label>
-                        <textarea
-                          className="form-control mb-1"
-                          defaultValue={""}
-                        />
-                        <p>Maximum 600 Characters</p>
                       </div>
                     </div>
                     <div className="modal-footer-btn">
@@ -240,10 +273,17 @@ const SupplierModal = () => {
                         type="button"
                         className="btn btn-cancel me-2"
                         data-bs-dismiss="modal"
+                        onClick={() => {
+                          setFormData(initialFormState);
+                          setErrors({});
+                        }}
                       >
                         Cancel
                       </button>
-                      <button type="submit" className="btn btn-submit">
+                      <button
+                        type="submit"
+                        className="btn btn-submit"
+                      >
                         Submit
                       </button>
                     </div>
@@ -254,9 +294,14 @@ const SupplierModal = () => {
           </div>
         </div>
       </div>
-      {/* /Edit Supplier */}
     </div>
   );
+};
+
+SupplierModal.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func,
+  selectedSupplier: PropTypes.object,
 };
 
 export default SupplierModal;
