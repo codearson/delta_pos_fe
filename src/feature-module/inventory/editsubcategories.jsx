@@ -1,24 +1,86 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import Select from 'react-select'
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+//import { Link } from 'react-router-dom';
+import { updateTax } from '../Api/TaxApi';
+import Swal from 'sweetalert2';
+//import Select from 'react-select';
 
-const EditSubcategories = () => {
-    const categories = [
-        { value: 'Choose Category', label: 'Choose Category' },
-        { value: 'Category', label: 'Category' },
-    ];
+const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
+    const [taxPercentage, setTaxPercentage] = useState('');
+
+    useEffect(() => {
+        if (selectedTax?.taxPercentage) {
+            setTaxPercentage(selectedTax.taxPercentage);
+        }
+    }, [selectedTax]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!selectedTax?.id) {
+            console.error('No tax selected for update');
+            return;
+        }
+
+        // Add validation
+        const percentage = parseFloat(taxPercentage);
+        if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+            Swal.fire('Error', 'Tax percentage must be between 0 and 100', 'error');
+            return;
+        }
+
+        try {
+            const updatedData = {
+                taxPercentage: Number(taxPercentage),
+                isActive: true
+            };
+
+            const response = await updateTax(selectedTax.id, updatedData);
+            
+            if (response) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Tax has been updated successfully',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+                
+                if (onTaxUpdated) {
+                    onTaxUpdated();
+                }
+                
+                // Close modal
+                document.querySelector('[data-bs-dismiss="modal"]').click();
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to update tax',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        } catch (error) {
+            console.error('Error updating tax:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Something went wrong while updating tax',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    };
 
     return (
         <div>
             {/* Edit Category */}
-            <div className="modal fade" id="edit-category">
+            <div className="modal fade" id="edit-tax">
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
                         <div className="page-wrapper-new p-0">
                             <div className="content">
                                 <div className="modal-header border-0 custom-modal-header">
                                     <div className="page-title">
-                                        <h4>Edit Sub Category</h4>
+                                        <h4>Edit Tax</h4>
                                     </div>
                                     <button
                                         type="button"
@@ -30,24 +92,32 @@ const EditSubcategories = () => {
                                     </button>
                                 </div>
                                 <div className="modal-body custom-modal-body">
-                                    <form>
-                                        <div className="mb-3">
+                                    <form onSubmit={handleSubmit}>
+                                        {/* <div className="mb-3">
                                             <label className="form-label">Parent Category</label>
                                             <Select
                                             className="select"
                                             options={categories}
                                             placeholder="Newest"
                                         />
-                                        </div>
+                                        </div> */}
                                         <div className="mb-3">
-                                            <label className="form-label">Category Name</label>
+                                            <label className="form-label">Tax Percentage</label>
                                             <input
-                                                type="text"
+                                                type="number"
                                                 className="form-control"
-                                                defaultValue="Computers"
+                                                value={taxPercentage}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                                        setTaxPercentage(value);
+                                                    }
+                                                }}
+                                                min="0"
+                                                max="100"
                                             />
                                         </div>
-                                        <div className="mb-3">
+                                        {/* <div className="mb-3">
                                             <label className="form-label">Category Code</label>
                                             <input
                                                 type="text"
@@ -73,7 +143,7 @@ const EditSubcategories = () => {
                                                 />
                                                 <label htmlFor="user3" className="checktoggle" />
                                             </div>
-                                        </div>
+                                        </div> */}
                                         <div className="modal-footer-btn">
                                             <button
                                                 type="button"
@@ -82,9 +152,9 @@ const EditSubcategories = () => {
                                             >
                                                 Cancel
                                             </button>
-                                            <Link to="#" className="btn btn-submit">
+                                            <button type="submit" className="btn btn-submit">
                                                 Save Changes
-                                            </Link>
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
@@ -97,5 +167,18 @@ const EditSubcategories = () => {
         </div>
     )
 }
+
+EditSubcategories.propTypes = {
+    selectedTax: PropTypes.shape({
+        id: PropTypes.number,
+        taxPercentage: PropTypes.number,
+    }),
+    onTaxUpdated: PropTypes.func
+};
+
+EditSubcategories.defaultProps = {
+    selectedTax: null,
+    onTaxUpdated: () => {}
+};
 
 export default EditSubcategories
