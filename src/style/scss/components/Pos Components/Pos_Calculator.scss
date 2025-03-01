@@ -36,17 +36,15 @@ $light-text: #000000;
 .search-bar {
   position: relative;
   margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
 
   .search-input {
-    flex: 1;
+    width: 100%;
     height: 38px;
     padding: 10px 10px 10px 40px;
     font-size: 1rem;
     border: 1px solid $bg-gray-600;
     border-radius: 0.5rem;
-    background-color: $light-bg;
+    background-color: $text-white;
     color: $text-black;
 
     &::placeholder {
@@ -56,81 +54,143 @@ $light-text: #000000;
 
   .search-icon {
     position: absolute;
-    left: 12px;
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: $text-gray-400;
-    font-size: 1.2rem;
   }
 }
 
+.input-screen-box {
+  background-color: $text-white;
+  color: $text-black;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-align: right;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  min-height: 40px;
+}
+
 .display-box {
-  background-color: $light-bg;
+  background-color: $text-white;
   color: $text-black;
   padding: 1rem;
   border-radius: 0.5rem;
   margin-bottom: 1rem;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-grow: 2;
+  height: 250px;
+  overflow-y: auto;
+  position: relative;
+
+  @media (max-width: 768px) {
+    height: 120px;
+  }
+
+  @media (max-width: 480px) {
+    height: 100px;
+  }
+
+  .result-table {
+    width: 100%;
+  }
+
+  .result-header {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    font-weight: bold;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #333;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 2;
+  }
+
+  .result-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    padding: 8px 0;
+    border-bottom: 1px dashed #eee;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+
+    &.in-progress {
+      color: #777;
+      background: #f9f9f9;
+    }
+  }
+
+  .qty-column {
+    padding-right: 10px;
+  }
+
+  .item-column {
+    padding-right: 20px;
+  }
+
+  .price-column {
+    text-align: right;
+    padding-right: 10px;
+  }
+
+  .total-column {
+    text-align: right;
+  }
 }
 
 .summary-box {
-  background-color: $light-bg;
+  background-color: $text-white;
   color: $text-black;
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
 
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
 
-  .label {
-    font-weight: 500;
-    font-size: 15px;
+    .label {
+      font-weight: 500;
+    }
+
+    .value {
+      font-weight: 400;
+    }
   }
 
-  .value {
-    font-weight: 400;
-    font-size: 15px;
+  .divider {
+    border-top: 1px solid $bg-gray-600;
+    margin: 0.75rem 0;
   }
-}
 
-.divider {
-  border-top: 1px solid $bg-gray-600;
-  margin: 0.3rem 0;
-}
-
-.total-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  padding-top: 0.3rem;
+  .total-summary {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding-top: 0.75rem;
+  }
 }
 
 @media (max-width: 768px) {
   .calculator-container {
     grid-column: span 6;
   }
+
   .search-input {
     font-size: 0.875rem;
   }
+
   .total-summary {
     font-size: 1rem;
-  }
-  .display-box {
-    min-height: 150px;
   }
 }
 
@@ -138,17 +198,17 @@ $light-text: #000000;
   .calculator-container {
     grid-column: span 12;
   }
+
   .search-input {
     font-size: 0.75rem;
     padding-left: 30px;
   }
+
   .search-icon {
     left: 5px;
   }
+
   .total-summary {
     font-size: 0.875rem;
-  }
-  .display-box {
-    min-height: 100px;
   }
 }
