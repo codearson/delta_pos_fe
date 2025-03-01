@@ -33,7 +33,10 @@ const ProductList = () => {
 
   useEffect(() => {
     fetchProducts()
-      .then((data) => setProducts(data))
+      .then((data) => {
+        const reversedData = [...data].reverse();
+        setProducts(reversedData);
+      })
       .catch((error) => {
         console.error("Error fetching products:", error.message);
       });

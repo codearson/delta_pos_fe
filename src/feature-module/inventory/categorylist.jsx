@@ -12,7 +12,12 @@ import EditCategoryList from '../../core/modals/inventory/editcategorylist';
 import withReactContent from 'sweetalert2-react-content';
 import Swal from 'sweetalert2';
 import Table from '../../core/pagination/datatable'
-import { fetchProductCategories, updateProductCategoryStatus, saveProductCategory, getProductCategoryByName } from '../Api/ProductCategoryApi';
+import { 
+    fetchProductCategories, 
+    updateProductCategoryStatus, 
+    saveProductCategory, 
+    getProductCategoryByName
+ } from '../Api/ProductCategoryApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -422,7 +427,7 @@ const CategoryList = () => {
                     {/* /product list */}
                 </div>
             </div>
-            <AddCategoryList onAddCategory={handleAddCategory} />
+            <AddCategoryList onAddCategory={handleAddCategory} onUpdate={loadCategories} />
             <EditCategoryList selectedCategory={selectedCategory} onUpdate={loadCategories} />
         </div>
     )

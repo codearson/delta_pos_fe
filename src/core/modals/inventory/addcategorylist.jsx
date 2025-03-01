@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { saveProductCategory } from '../../../feature-module/Api/ProductCategoryApi'
 import Swal from "sweetalert2";
+import PropTypes from 'prop-types';
 
-const AddCategoryList = () => {
+const AddCategoryList = (props) => {
     const [categoryName, setCategoryName] = useState("");
     const [showError, setShowError] = useState(false);
 
-    const handleSaveCategory = async () => {
+    const handleSaveCategory = async (e) => {
+        if (e) e.preventDefault();
+        
         if (!categoryName) {
             setShowError(true);
             return;
@@ -15,11 +17,16 @@ const AddCategoryList = () => {
 
         try {
             const response = await saveProductCategory(categoryName);
-            if (response) {
+            if (response) {         
+                document.querySelector('[data-bs-dismiss="modal"]').click();
                 Swal.fire("Success", "Category saved successfully!", "success");
+                
+                if (props.onUpdate) {
+                    props.onUpdate();
+                }
+
                 setCategoryName("");
                 setShowError(false);
-                document.getElementById("close-add-category").click();
             } else {
                 Swal.fire("Error", "Failed to save category.", "error");
             }
@@ -36,7 +43,7 @@ const AddCategoryList = () => {
     return (
         <div>
             {/* Add Category */}
-            <div className="modal fade" id="add-category">
+            <div className="modal fade" id="add-category" tabIndex="-1" aria-labelledby="addCategoryLabel" aria-hidden="true">
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
                         <div className="page-wrapper-new p-0">
@@ -57,7 +64,7 @@ const AddCategoryList = () => {
                                     </button>
                                 </div>
                                 <div className="modal-body custom-modal-body">
-                                    <form>
+                                    <form onSubmit={handleSaveCategory}>
                                         <div className="mb-3">
                                             <label className="form-label">Category</label>
                                             <input
@@ -98,9 +105,9 @@ const AddCategoryList = () => {
                                             >
                                                 Cancel
                                             </button>
-                                            <Link to="#" className="btn btn-submit" onClick={handleSaveCategory}>
+                                            <button type="submit" className="btn btn-submit">
                                                 Create Category
-                                            </Link>
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
@@ -113,5 +120,10 @@ const AddCategoryList = () => {
         </div>
     )
 }
+
+AddCategoryList.propTypes = {
+    onAddCategory: PropTypes.func,
+    onUpdate: PropTypes.func
+};
 
 export default AddCategoryList

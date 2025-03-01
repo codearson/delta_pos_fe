@@ -10,34 +10,100 @@ const Signin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Function to handle login and fetch user details
+  const validateInputs = () => {
+    let isValid = true;
+
+    setEmailError("");
+    setPasswordError("");
+
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      isValid = false;
+    } else if (!email.includes('@')) {
+      setEmailError("Email must contain @ symbol");
+      isValid = false;
+    }
+
+    if (!password.trim()) {
+      setPasswordError("Password is required");
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
   const handleSignIn = async (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setError("");
-    const token = await getAccessToken(email, password);
-    if (!token) {
-      setError("Invalid username or password!");
+
+    if (!validateInputs()) {
       return;
     }
-    // Fetch user details after getting token
-    const user = await getUserByEmail(email);
-    if (!user) {
-      setError("Failed to fetch user details. Please try again.");
-      return;
+
+    setIsLoading(true);
+
+    try {
+      const token = await getAccessToken(email, password);
+      if (!token) {
+        setError("User not found. Please check your email/username and password.");
+        setIsLoading(false);
+        return;
+      }
+
+      const user = await getUserByEmail(email);
+      if (!user) {
+        setError("Failed to fetch user details. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (user.userRoleDto?.userRole === "ADMIN") {
+        navigate(route.dashboard);
+      } else if (user.userRoleDto?.userRole === "USER") {
+        navigate(route.pos);
+      } else if (user.userRoleDto?.userRole === "MANAGER") {
+        navigate(route.dashboard);
+      } else {
+        setError("Unknown role. Please contact support.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+
+      if (
+        error.message?.includes("Failed to fetch") ||
+        error.message?.includes("NetworkError") ||
+        error.message?.includes("Network Error") ||
+        error.message?.includes("ERR_CONNECTION_REFUSED") ||
+        !navigator.onLine
+      ) {
+        setError("Database connection error. Please check if the server is running.");
+      } else {
+        setError("Connection error. Please check your internet connection or try again later.");
+      }
+    } finally {
+      setIsLoading(false);
     }
-    // Redirect based on role
-    if (user.userRoleDto?.userRole === "ADMIN") {
-      navigate(route.dashboard);
-    } else if (user.userRoleDto?.userRole === "USER") {
-      navigate(route.pos);
-    } else if (user.userRoleDto?.userRole === "MANAGER") {
-      navigate(route.dashboard);
+  };
+
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+
+    if (value.trim()) {
+      if (!value.includes('@')) {
+        setEmailError("Email must contain @ symbol");
+      } else {
+        setEmailError("");
+      }
     } else {
-      setError("Unknown role. Please contact support.");
+      setEmailError("");
     }
-  }; 
+  };
 
   return (
     <div className="main-wrapper">
@@ -61,34 +127,37 @@ const Signin = () => {
                 <div className="form-login mb-3">
                   <label className="form-label">Username Or Email</label>
                   <div className="form-addons">
-                  <input
+                    <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${emailError ? "border-danger" : ""}`}
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
+                      onChange={handleEmailChange}
                     />
                     <ImageWithBasePath
                       src="assets/img/icons/mail.svg"
                       alt="img"
                     />
                   </div>
+                  {emailError && <small className="text-danger">{emailError}</small>}
                 </div>
                 <div className="form-login mb-3">
                   <label className="form-label">Password</label>
                   <div className="pass-group">
-                  <input
+                    <input
                       type={showPassword ? "text" : "password"}
-                      className="pass-input form-control"
+                      className={`pass-input form-control ${passwordError ? "border-danger" : ""}`}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (e.target.value.trim()) setPasswordError("");
+                      }}
                     />
                     <span
                       className={`fas toggle-password ${showPassword ? "fa-eye" : "fa-eye-slash"}`}
                       onClick={() => setShowPassword(!showPassword)}
                     />
                   </div>
+                  {passwordError && <small className="text-danger">{passwordError}</small>}
                 </div>
                 <div className="form-login authentication-check">
                   <div className="row">
@@ -108,10 +177,14 @@ const Signin = () => {
                     </div>
                   </div>
                 </div>
-                {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+                {error && <p className="text-danger text-center mb-3">{error}</p>}
                 <div className="form-login">
-                <button type="submit" className="btn btn-login">
-                    Sign In
+                  <button
+                    type="submit"
+                    className="btn btn-login"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Signing In..." : "Sign In"}
                   </button>
                 </div>
                 {/* <div className="signinform">
@@ -156,8 +229,8 @@ const Signin = () => {
                   
                 </div> */}
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
-                    <p>Copyright © 2025 Codearson POS. All rights reserved</p>
-                  </div>
+                  <p>Copyright © 2025 Codearson POS. All rights reserved</p>
+                </div>
               </div>
             </form>
           </div>
@@ -166,4 +239,5 @@ const Signin = () => {
     </div>
   );
 };
+
 export default Signin;
