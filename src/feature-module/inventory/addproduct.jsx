@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Select from "react-select";
 import { all_routes } from "../../Router/all_routes";
 import AddCategory from "../../core/modals/inventory/addcategory";
@@ -15,6 +15,8 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 import { saveProduct } from "../Api/productApi";
 import { fetchProductCategories } from "../Api/ProductCategoryApi";
 import { fetchTaxes } from "../Api/TaxApi";
@@ -22,27 +24,11 @@ import { fetchTaxes } from "../Api/TaxApi";
 const AddProduct = () => {
   const route = all_routes;
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const data = useSelector((state) => state.toggle_header);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingTaxes, setLoadingTaxes] = useState(true);
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      const data = await fetchProductCategories();
-      setCategories(data.map((cat) => ({ value: cat.id, label: cat.name })));
-      setLoadingCategories(false);
-    };
-
-    const loadTaxes = async () => {
-      const data = await fetchTaxes();
-      setTaxes(data.map((tax) => ({ value: tax.id, label: `${tax.name} (${tax.percentage}%)` })));
-      setLoadingTaxes(false);
-    };
-
-    loadCategories();
-    loadTaxes();
-  }, []);
-
+  const MySwal = withReactContent(Swal);
   const [productName, setProductName] = useState("");
   const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState(null);
@@ -53,7 +39,38 @@ const AddProduct = () => {
   const [taxType, setTaxType] = useState(null);
   const [taxes, setTaxes] = useState([]);
   const [lowStock, setLowStock] = useState("");
-  //const [expiryDate, setExpiryDate] = useState("");
+  
+  const [errors, setErrors] = useState({
+    productName: "",
+    barcode: "",
+    category: "",
+    quantity: "",
+    purchasePrice: "",
+    pricePerUnit: "",
+    taxType: "",
+    lowStock: ""
+  });
+
+  useEffect(() => {
+    loadCategoriesData();
+    loadTaxesData();
+  }, []);
+
+  const loadCategoriesData = async () => {
+    setLoadingCategories(true);
+    const data = await fetchProductCategories();
+    const reversedData = [...data].reverse();
+    setCategories(reversedData.map((cat) => ({ value: cat.id, label: cat.productCategoryName })));
+    setLoadingCategories(false);
+  };
+
+  const loadTaxesData = async () => {
+    setLoadingTaxes(true);
+    const data = await fetchTaxes();
+    const reversedData = [...data].reverse();
+    setTaxes(reversedData.map((tax) => ({ value: tax.id, label: `${tax.taxPercentage}%` })));
+    setLoadingTaxes(false);
+  };
 
   const renderCollapseTooltip = (props) => (
     <Tooltip id="refresh-tooltip" {...props}>
@@ -61,64 +78,207 @@ const AddProduct = () => {
     </Tooltip>
   );
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      const data = await fetchProductCategories();
-      setCategories(data.map((cat) => ({
-        value: cat.id,
-        label: cat.productCategoryName
-      })));
+  const validateForm = () => {
+    const newErrors = {
+      productName: "",
+      barcode: "",
+      category: "",
+      quantity: "",
+      purchasePrice: "",
+      pricePerUnit: "",
+      taxType: "",
+      lowStock: ""
     };
+    
+    let isValid = true;
 
-    const loadTaxes = async () => {
-      const data = await fetchTaxes();
-      setTaxes(data.map((tax) => ({
-        value: tax.id,
-        label: `${tax.taxPercentage}%`
-      })));
-    };
+    if (!productName.trim()) {
+      newErrors.productName = "Product name is required";
+      isValid = false;
+    } else if (productName.length < 2) {
+      newErrors.productName = "Product name must be at least 2 characters";
+      isValid = false;
+    }
 
-    loadCategories();
-    loadTaxes();
-  }, []);
+    if (!barcode.trim()) {
+      newErrors.barcode = "Barcode is required";
+      isValid = false;
+    }
+
+    if (!category) {
+      newErrors.category = "Please select a category";
+      isValid = false;
+    }
+
+    if (!quantity) {
+      newErrors.quantity = "Quantity is required";
+      isValid = false;
+    } else if (isNaN(quantity) || parseInt(quantity) < 0) {
+      newErrors.quantity = "Please enter a valid quantity";
+      isValid = false;
+    }
+
+    if (!purchasePrice) {
+      newErrors.purchasePrice = "Purchase price is required";
+      isValid = false;
+    } else if (isNaN(purchasePrice) || parseFloat(purchasePrice) < 0) {
+      newErrors.purchasePrice = "Please enter a valid purchase price";
+      isValid = false;
+    }
+
+    if (!pricePerUnit) {
+      newErrors.pricePerUnit = "Price per unit is required";
+      isValid = false;
+    } else if (isNaN(pricePerUnit) || parseFloat(pricePerUnit) < 0) {
+      newErrors.pricePerUnit = "Please enter a valid price per unit";
+      isValid = false;
+    }
+
+    if (!taxType) {
+      newErrors.taxType = "Please select a tax percentage";
+      isValid = false;
+    }
+
+    if (!lowStock) {
+      newErrors.lowStock = "Low stock value is required";
+      isValid = false;
+    } else if (isNaN(lowStock) || parseInt(lowStock) < 0) {
+      newErrors.lowStock = "Please enter a valid low stock value";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const resetForm = () => {
+    setProductName("");
+    setBarcode("");
+    setCategory(null);
+    setQuantity("");
+    setPurchasePrice("");
+    setPricePerUnit("");
+    setTaxType(null);
+    setLowStock("");
+    
+    setErrors({
+      productName: "",
+      barcode: "",
+      category: "",
+      quantity: "",
+      purchasePrice: "",
+      pricePerUnit: "",
+      taxType: "",
+      lowStock: ""
+    });
+  };
 
   const handleSaveProduct = async () => {
-    if (!productName || !barcode || !category || !taxType) {
-      console.error("Please fill out all required fields.");
+    if (!validateForm()) {
+      MySwal.fire({
+        title: "Validation Error!",
+        text: "Please check the form for errors.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-primary",
+        },
+      });
       return;
     }
 
-    if (isNaN(quantity) || isNaN(purchasePrice) || isNaN(pricePerUnit) || isNaN(lowStock)) {
-      console.error("Please enter valid numbers for quantity, purchase price, price per unit, and low stock.");
-      return;
+    try {
+      const productData = {
+        name: productName,
+        barcode: barcode,
+        pricePerUnit: parseFloat(pricePerUnit),
+        taxDto: { id: parseInt(taxType.value) },
+        isActive: true,
+        productCategoryDto: { id: parseInt(category.value) },
+        expiryDate: "",
+        lowStock: parseInt(lowStock),
+        purchasePrice: parseFloat(purchasePrice),
+        quantity: parseInt(quantity),
+      };
+
+      const response = await saveProduct(productData);
+      if (response) {
+        MySwal.fire({
+          title: "Success!",
+          text: "Product saved successfully!",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton: "btn btn-primary",
+          },
+        }).then(() => {
+          navigate(route.productlist);
+        });
+
+        resetForm();
+      } else {
+        MySwal.fire({
+          title: "Error!",
+          text: "Failed to save product.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton: "btn btn-primary",
+          },
+        });
+      }
+    } catch (err) {
+      MySwal.fire({
+        title: "Error!",
+        text: "An unexpected error occurred.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-primary",
+        },
+      });
     }
+  };
 
-    const productData = {
-      name: productName,
-      barcode: barcode,
-      pricePerUnit: parseFloat(pricePerUnit),
-      taxDto: { id: parseInt(taxType.value) },
-      isActive: true,
-      productCategoryDto: { id: parseInt(category.value) },
-      expiryDate: "",
-      lowStock: parseInt(lowStock),
-      purchasePrice: parseFloat(purchasePrice),
-      quantity: parseInt(quantity),
-    };
+  const handleProductNameChange = (e) => {
+    const value = e.target.value;
+    if (/^[A-Za-z\s\-_.,&()]+$/.test(value) || value === '') {
+      setProductName(value);
+    }
+  };
 
-    const response = await saveProduct(productData);
-    if (response) {
-      console.error("Product saved successfully!");
-      setProductName("");
-      setBarcode("");
-      setCategory(null);
-      setQuantity("");
-      setPurchasePrice("");
-      setPricePerUnit("");
-      setTaxType(null);
-      setLowStock("");
-    } else {
-      console.error("Failed to save product.");
+  const handleBarcodeChange = (e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setBarcode(value);
+    }
+  };
+
+  const handleQuantityChange = (e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setQuantity(value);
+    }
+  };
+
+  const handlePurchasePriceChange = (e) => {
+    const value = e.target.value;
+    if (/^\d*\.?\d*$/.test(value)) {
+      setPurchasePrice(value);
+    }
+  };
+
+  const handlePricePerUnitChange = (e) => {
+    const value = e.target.value;
+    if (/^\d*\.?\d*$/.test(value)) {
+      setPricePerUnit(value);
+    }
+  };
+
+  const handleLowStockChange = (e) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value)) {
+      setLowStock(value);
     }
   };
 
@@ -189,12 +349,13 @@ const AddProduct = () => {
                             <label className="form-label">Product Name</label>
                             <input
                               type="text"
-                              className="form-control"
+                              className={`form-control ${errors.productName ? 'is-invalid' : ''}`}
                               placeholder="Enter Product Name"
                               value={productName}
-                              onChange={(e) => setProductName(e.target.value)}
+                              onChange={handleProductNameChange}
                               required
                             />
+                            {errors.productName && <div className="invalid-feedback">{errors.productName}</div>}
                           </div>
                         </div>
                         <div className="col-lg-4 col-sm-6 col-12">
@@ -202,12 +363,13 @@ const AddProduct = () => {
                             <label>Barcode</label>
                             <input
                               type="text"
-                              className="form-control list"
+                              className={`form-control list ${errors.barcode ? 'is-invalid' : ''}`}
                               placeholder="Enter Barcode"
                               value={barcode}
-                              onChange={(e) => setBarcode(e.target.value)}
+                              onChange={handleBarcodeChange}
                               required
                             />
+                            {errors.barcode && <div className="invalid-feedback">{errors.barcode}</div>}
                           </div>
                         </div>
                       </div>
@@ -225,13 +387,17 @@ const AddProduct = () => {
                               {loadingCategories ? (
                                 <p>Loading categories...</p>
                               ) : (
-                                <Select
-                                  options={categories}
-                                  placeholder="Choose"
-                                  value={category}
-                                  onChange={setCategory}
-                                  required
-                                />
+                                <div>
+                                  <Select
+                                    options={categories}
+                                    placeholder="Choose"
+                                    value={category}
+                                    onChange={setCategory}
+                                    className={errors.category ? 'is-invalid' : ''}
+                                    required
+                                  />
+                                  {errors.category && <div className="text-danger mt-1" style={{ fontSize: '0.875em' }}>{errors.category}</div>}
+                                </div>
                               )}
                             </div>
                           </div>
@@ -269,41 +435,42 @@ const AddProduct = () => {
                               <div className="input-blocks add-product">
                                 <label>Quantity</label>
                                 <input
-                                  type="number"
-                                  className="form-control"
+                                  type="text"
+                                  className={`form-control ${errors.quantity ? 'is-invalid' : ''}`}
                                   placeholder="Enter Quantity"
                                   value={quantity}
-                                  onChange={(e) => setQuantity(e.target.value)}
+                                  onChange={handleQuantityChange}
                                   required
                                 />
+                                {errors.quantity && <div className="invalid-feedback">{errors.quantity}</div>}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Purchased Price</label>
                                 <input
-                                  type="number"
-                                  step="0.01"
-                                  className="form-control"
+                                  type="text"
+                                  className={`form-control ${errors.purchasePrice ? 'is-invalid' : ''}`}
                                   placeholder="Enter Purchased Price"
                                   value={purchasePrice}
-                                  onChange={(e) => setPurchasePrice(parseFloat(e.target.value) || 0)}  // Ensure it is parsed as a float
+                                  onChange={handlePurchasePriceChange}
                                   required
                                 />
+                                {errors.purchasePrice && <div className="invalid-feedback">{errors.purchasePrice}</div>}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Price Per Unit</label>
                                 <input
-                                  type="number"
-                                  step="0.01"
-                                  className="form-control"
+                                  type="text"
+                                  className={`form-control ${errors.pricePerUnit ? 'is-invalid' : ''}`}
                                   placeholder="Enter Price Per Unit"
                                   value={pricePerUnit}
-                                  onChange={(e) => setPricePerUnit(parseFloat(e.target.value) || 0)}  // Ensure it is parsed as a float
+                                  onChange={handlePricePerUnitChange}
                                   required
                                 />
+                                {errors.pricePerUnit && <div className="invalid-feedback">{errors.pricePerUnit}</div>}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
@@ -318,12 +485,17 @@ const AddProduct = () => {
                                 {loadingTaxes ? (
                                   <p>Loading taxes...</p>
                                 ) : (
-                                  <Select
-                                    options={taxes}
-                                    placeholder="Select Option"
-                                    value={taxType}
-                                    onChange={setTaxType}
-                                    required />
+                                  <div>
+                                    <Select
+                                      options={taxes}
+                                      placeholder="Select Option"
+                                      value={taxType}
+                                      onChange={setTaxType}
+                                      className={errors.taxType ? 'is-invalid' : ''}
+                                      required
+                                    />
+                                    {errors.taxType && <div className="text-danger mt-1" style={{ fontSize: '0.875em' }}>{errors.taxType}</div>}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -331,27 +503,16 @@ const AddProduct = () => {
                               <div className="input-blocks add-product">
                                 <label>Low Stock</label>
                                 <input
-                                  type="number"
-                                  className="form-control"
+                                  type="text"
+                                  className={`form-control ${errors.lowStock ? 'is-invalid' : ''}`}
                                   placeholder="Enter Low Stock"
                                   value={lowStock}
-                                  onChange={(e) => setLowStock(e.target.value)}
+                                  onChange={handleLowStockChange}
                                   required
                                 />
+                                {errors.lowStock && <div className="invalid-feedback">{errors.lowStock}</div>}
                               </div>
                             </div>
-                            {/* <div className="col-lg-4 col-sm-6 col-12">
-                              <div className="input-blocks add-product">
-                                <label>Expiry Date</label>
-                                <input
-                                  type="date"
-                                  className="form-control"
-                                  value={expiryDate}
-                                  onChange={(e) => setExpiryDate(e.target.value)}
-                                  required
-                                />
-                              </div>
-                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -363,7 +524,11 @@ const AddProduct = () => {
           </div>
           <div className="col-lg-12">
             <div className="btn-addproduct mb-4">
-              <button type="button" className="btn btn-cancel me-2">
+              <button 
+                type="button" 
+                className="btn btn-cancel me-2"
+                onClick={resetForm}
+              >
                 Cancel
               </button>
               <button
@@ -378,8 +543,8 @@ const AddProduct = () => {
         </form>
         {/* /add */}
       </div>
-      <AddCategory />
-      <AddTax />
+      <AddCategory refreshCategories={loadCategoriesData} />
+      <AddTax refreshTaxes={loadTaxesData} />
     </div>
   );
 };

@@ -1,24 +1,63 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import Select from 'react-select'
+import React, { useState } from 'react';
+//import { Link } from 'react-router-dom';
+import { saveTax } from '../../../feature-module/Api/TaxApi';
+import Swal from 'sweetalert2';
+import PropTypes from 'prop-types';
+//import Select from 'react-select';
 
-const AddSubcategory = () => {
-    const categories = [
-        { value: 'Choose Category', label: 'Choose Category' },
-        { value: 'Category', label: 'Category' },
-    ];
+const AddSubcategory = ({ onTaxCreated }) => {
+    const [taxPercentage, setTaxPercentage] = useState('');
+    const [showError, setShowError] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!taxPercentage) {
+            setShowError(true);
+            return;
+        }
+        
+        // Add validation
+        const percentage = parseFloat(taxPercentage);
+        if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+            Swal.fire('Error', 'Tax percentage must be between 0 and 100', 'error');
+            return;
+        }
+
+        try {
+            const response = await saveTax(taxPercentage);
+            if (response) {
+                Swal.fire('Success', 'Tax created successfully', 'success');
+                setTaxPercentage('');
+                // Close modal
+                document.querySelector('[data-bs-dismiss="modal"]').click();
+                // Refresh tax list
+                if (onTaxCreated) onTaxCreated();
+            } else {
+                Swal.fire('Error', 'Failed to create tax', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating tax:', error);
+            Swal.fire('Error', 'Something went wrong', 'error');
+        }
+    };
+
+    const handleCancel = () => {
+        setShowError(false);
+        setTaxPercentage('');
+    };
 
     return (
         <div>
             {/* Add Category */}
-            <div className="modal fade" id="add-category">
+            <div className="modal fade" id="add-tax">
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
                         <div className="page-wrapper-new p-0">
                             <div className="content">
                                 <div className="modal-header border-0 custom-modal-header">
                                     <div className="page-title">
-                                        <h4>Create Sub Category</h4>
+                                        <h4>Create Tax</h4>
                                     </div>
                                     <button
                                         type="button"
@@ -30,20 +69,36 @@ const AddSubcategory = () => {
                                     </button>
                                 </div>
                                 <div className="modal-body custom-modal-body">
-                                    <form>
-                                        <div className="mb-3">
+                                    <form onSubmit={handleSubmit}>
+                                        {/* <div className="mb-3">
                                             <label className="form-label">Parent Category</label>
                                             <Select
                                                 className="select"
                                                 options={categories}
                                                 placeholder="Newest"
                                             />
-                                        </div>
+                                        </div> */}
                                         <div className="mb-3">
-                                            <label className="form-label">Category Name</label>
-                                            <input type="text" className="form-control" />
+                                            <label className="form-label">Tax Percentage</label>
+                                            <input 
+                                                type="number" 
+                                                className="form-control" 
+                                                value={taxPercentage}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                                        setTaxPercentage(value);
+                                                        setShowError(false);
+                                                    }
+                                                }}
+                                                min="0"
+                                                max="100"
+                                            />
+                                            {showError && (
+                                                <small className="text-danger">Tax percentage is required</small>
+                                            )}
                                         </div>
-                                        <div className="mb-3">
+                                        {/* <div className="mb-3">
                                             <label className="form-label">Category Code</label>
                                             <input type="text" className="form-control" />
                                         </div>
@@ -62,18 +117,19 @@ const AddSubcategory = () => {
                                                 />
                                                 <label htmlFor="user2" className="checktoggle" />
                                             </div>
-                                        </div>
+                                        </div> */}
                                         <div className="modal-footer-btn">
                                             <button
                                                 type="button"
                                                 className="btn btn-cancel me-2"
                                                 data-bs-dismiss="modal"
+                                                onClick={handleCancel}
                                             >
                                                 Cancel
                                             </button>
-                                            <Link to="#" className="btn btn-submit">
-                                                Create Subcategory
-                                            </Link>
+                                            <button type="submit" className="btn btn-submit">
+                                                Create Tax
+                                            </button>
                                         </div>
                                     </form>
                                 </div>
@@ -86,5 +142,9 @@ const AddSubcategory = () => {
         </div>
     )
 }
+
+AddSubcategory.propTypes = {
+    onTaxCreated: PropTypes.func
+};
 
 export default AddSubcategory

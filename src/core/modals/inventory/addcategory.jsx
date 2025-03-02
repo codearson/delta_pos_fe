@@ -1,24 +1,98 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { all_routes } from "../../../Router/all_routes";
+import PropTypes from 'prop-types';
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
 import { saveProductCategory } from "../../../feature-module/Api/ProductCategoryApi";
 
-const AddCategory = () => {
-  const route = all_routes;
+const AddCategory = ({ refreshCategories }) => {
   const [categoryName, setCategoryName] = useState("");
+  const [error, setError] = useState("");
+  const MySwal = withReactContent(Swal);
+
+  const handleCategoryNameChange = (e) => {
+    const value = e.target.value;
+    if (/^[A-Za-z\s\-_.,&()]+$/.test(value) || value === '') {
+      setCategoryName(value);
+    }
+  };
+
+  const resetForm = () => {
+    setCategoryName("");
+    setError("");
+  };
+
+  const validateInput = () => {
+    setError("");
+    
+    if (!categoryName.trim()) {
+      setError("Please enter a category name");
+      return false;
+    }
+    
+    if (categoryName.length < 2) {
+      setError("Category name must be at least 2 characters");
+      return false;
+    }
+    
+    if (categoryName.length > 50) {
+      setError("Category name cannot exceed 50 characters");
+      return false;
+    }
+    
+    return true;
+  };
 
   const handleSaveCategory = async () => {
-    if (!categoryName) {
-      console.error("Please enter a category name.");
+    if (!validateInput()) {
       return;
     }
 
-    const response = await saveProductCategory(categoryName);
-    if (response) {
-      console.error("Category saved successfully!");
-      setCategoryName("");
-    } else {
-      console.error("Failed to save category.");
+    try {
+      const response = await saveProductCategory(categoryName);
+      if (response) {
+        MySwal.fire({
+          title: "Success!",
+          text: "Category saved successfully!",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton: "btn btn-primary",
+          },
+        });
+        
+        setCategoryName("");
+        
+        document.getElementById('add-units-category').classList.remove('show');
+        document.querySelector('.modal-backdrop').remove();
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+        
+        if (refreshCategories) {
+          refreshCategories();
+        }
+      } else {
+        MySwal.fire({
+          title: "Error!",
+          text: "Failed to save category.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton: "btn btn-primary",
+          },
+        });
+      }
+    } catch (err) {
+      MySwal.fire({
+        title: "Error!",
+        text: "An unexpected error occurred.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: {
+          confirmButton: "btn btn-primary",
+        },
+      });
     }
   };
 
@@ -48,20 +122,22 @@ const AddCategory = () => {
                     <label className="form-label">Name</label>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${error ? 'is-invalid' : ''}`}
                       value={categoryName}
-                      onChange={(e) => setCategoryName(e.target.value)}
+                      onChange={handleCategoryNameChange}
                     />
+                    {error && <div className="invalid-feedback">{error}</div>}
                   </div>
                   <div className="modal-footer-btn">
                     <Link
                       to="#"
                       className="btn btn-cancel me-2"
                       data-bs-dismiss="modal"
+                      onClick={resetForm}
                     >
                       Cancel
                     </Link>
-                    <Link to={route.addproduct} className="btn btn-submit" onClick={handleSaveCategory}>
+                    <Link to="#" className="btn btn-submit" onClick={handleSaveCategory}>
                       Submit
                     </Link>
                   </div>
@@ -74,6 +150,10 @@ const AddCategory = () => {
       {/* /Add Category */}
     </>
   );
+};
+
+AddCategory.propTypes = {
+  refreshCategories: PropTypes.func
 };
 
 export default AddCategory;

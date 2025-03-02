@@ -320,73 +320,73 @@ export const SidebarData = [
         ]
       },
 
-      {
-        label: "Settings",
-        submenu: true,
-        showSubRoute: false,
-        submenuHdr: "Settings",
-        submenuItems: [
-        //   { label: "General Settings", 
-        //   submenu: true, 
-        //   showSubRoute: false,
-        //   icon: <Icon.Settings/>,
-        //   submenuItems: [
-        //     { label: "Profile", link: "/general-settings" },
-        //     { label: "Security", link: "/security-settings" },
-        //     { label: "Notifications", link: "/notification" },
-        //     { label: "Connected Apps", link: "/connected-apps" }
-        //   ]},
-        //   { label: "Website Settings", submenu: true, 
-        //   showSubRoute: false,
-        //   icon: <Icon.Globe/>,
-        //   submenuItems: [
-        //     { label: "System Settings", link: "/system-settings",showSubRoute: false },
-        //     { label: "Company Settings", link: "/company-settings",showSubRoute: false },
-        //     { label: "Localization", link: "/localization-settings",showSubRoute: false },
-        //     { label: "Prefixes", link: "/prefixes" ,showSubRoute: false},
-        //     { label: "Preference", link: "/preference",showSubRoute: false },
-        //     { label: "Appearance", link: "/appearance",showSubRoute: false },
-        //     { label: "Social Authentication", link: "/social-authentication",showSubRoute: false },
-        //     { label: "Language", link: "/language-settings" ,showSubRoute: false}
-        //   ]},
-        //   { label: "App Settings", submenu: true, 
+      //  {
+      //    label: "Settings",
+      //    submenu: true,
+      //    showSubRoute: false,
+      //    submenuHdr: "Settings",
+      //    submenuItems: [
+      //       { label: "General Settings", 
+      //       submenu: true, 
+      //       showSubRoute: false,
+      //       icon: <Icon.Settings/>,
+      //       submenuItems: [
+      //         { label: "Profile", link: "/general-settings" },
+      //         { label: "Security", link: "/security-settings" },
+      //         { label: "Notifications", link: "/notification" },
+      //         { label: "Connected Apps", link: "/connected-apps" }
+      //       ]},
+      //       { label: "Website Settings", submenu: true, 
+      //       showSubRoute: false,
+      //       icon: <Icon.Globe/>,
+      //       submenuItems: [
+      //         { label: "System Settings", link: "/system-settings",showSubRoute: false },
+      //         { label: "Company Settings", link: "/company-settings",showSubRoute: false },
+      //         { label: "Localization", link: "/localization-settings",showSubRoute: false },
+      //         { label: "Prefixes", link: "/prefixes" ,showSubRoute: false},
+      //         { label: "Preference", link: "/preference",showSubRoute: false },
+      //         { label: "Appearance", link: "/appearance",showSubRoute: false },
+      //         { label: "Social Authentication", link: "/social-authentication",showSubRoute: false },
+      //         { label: "Language", link: "/language-settings" ,showSubRoute: false}
+      //       ]},
+      //       { label: "App Settings", submenu: true, 
 
-        //   showSubRoute: false,
-        //   icon: <Icon.Smartphone/>,
-        // submenuItems: [
-        //     { label: "Invoice", link: "/invoice-settings",showSubRoute: false },
-        //     { label: "Printer", link: "/printer-settings",showSubRoute: false },
-        //     { label: "POS", link: "/pos-settings",showSubRoute: false },
-        //     { label: "Custom Fields", link: "/custom-fields",showSubRoute: false }
-        //   ]},
-        //   { label: "System Settings", submenu: true, 
-        //   showSubRoute: false,
-        //   icon: <Icon.Monitor/>,
-        //   submenuItems: [
-        //     { label: "Email", link: "/email-settings",showSubRoute: false },
-        //     { label: "SMS Gateways", link: "/sms-gateway",showSubRoute: false },
-        //     { label: "OTP", link: "/otp-settings",showSubRoute: false },
-        //     { label: "GDPR Cookies", link: "/gdpr-settings",showSubRoute: false }
-        //   ]},
-        //   { label: "Financial Settings", submenu: true, 
-        //   showSubRoute: false,
-        //   icon: <Icon.DollarSign/>,
-        //   submenuItems: [
-        //     { label: "Payment Gateway", link: "/payment-gateway-settings",showSubRoute: false },
-        //     { label: "Bank Accounts", link: "/bank-settings-grid",showSubRoute: false },
-        //     { label: "Tax Rates", link: "/tax-rates",showSubRoute: false },
-        //     { label: "Currencies", link: "/currency-settings",showSubRoute: false }
-        //   ]},
-        //   { label: "Other Settings", submenu: true, 
-        //   showSubRoute: false,
-        //   icon: <Icon.Hexagon/>,
-        //   submenuItems: [
-        //     { label: "Storage", link: "/storage-settings",showSubRoute: false },
-        //     { label: "Ban IP Address", link: "/ban-ip-address",showSubRoute: false }
-        //   ]},
-          { label: "Logout", link: "/signin", icon:  <Icon.LogOut />,showSubRoute: false }
-        ]
-      },
+      //       showSubRoute: false,
+      //       icon: <Icon.Smartphone/>,
+      //     submenuItems: [
+      //         { label: "Invoice", link: "/invoice-settings",showSubRoute: false },
+      //         { label: "Printer", link: "/printer-settings",showSubRoute: false },
+      //         { label: "POS", link: "/pos-settings",showSubRoute: false },
+      //         { label: "Custom Fields", link: "/custom-fields",showSubRoute: false }
+      //       ]},
+      //       { label: "System Settings", submenu: true, 
+      //       showSubRoute: false,
+      //       icon: <Icon.Monitor/>,
+      //       submenuItems: [
+      //         { label: "Email", link: "/email-settings",showSubRoute: false },
+      //         { label: "SMS Gateways", link: "/sms-gateway",showSubRoute: false },
+      //         { label: "OTP", link: "/otp-settings",showSubRoute: false },
+      //         { label: "GDPR Cookies", link: "/gdpr-settings",showSubRoute: false }
+      //       ]},
+      //       { label: "Financial Settings", submenu: true, 
+      //       showSubRoute: false,
+      //       icon: <Icon.DollarSign/>,
+      //       submenuItems: [
+      //         { label: "Payment Gateway", link: "/payment-gateway-settings",showSubRoute: false },
+      //         { label: "Bank Accounts", link: "/bank-settings-grid",showSubRoute: false },
+      //         { label: "Tax Rates", link: "/tax-rates",showSubRoute: false },
+      //         { label: "Currencies", link: "/currency-settings",showSubRoute: false }
+      //       ]},
+      //       { label: "Other Settings", submenu: true, 
+      //       showSubRoute: false,
+      //       icon: <Icon.Hexagon/>,
+      //       submenuItems: [
+      //         { label: "Storage", link: "/storage-settings",showSubRoute: false },
+      //         { label: "Ban IP Address", link: "/ban-ip-address",showSubRoute: false }
+      //       ]},
+      //     { label: "Logout", link: "/signin",  icon:  <Icon.LogOut />,showSubRoute: false }
+      //    ]
+      //  },
       
 
       {

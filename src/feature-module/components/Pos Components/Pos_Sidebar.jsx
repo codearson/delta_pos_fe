@@ -26,20 +26,18 @@ const Pos_Sidebar = ({ darkMode }) => {
           <span className="user-role">Admin</span>
         </div>
         <Link
-          className="dropdown-item logout pb-0"
+          className="logout-button"
           to="/signIn"
           onClick={() => {
-            localStorage.removeItem("accessToken"); // Remove the access token
-            localStorage.removeItem("userRole"); // Optionally remove the user role
-            console.log("User logged out. Access token removed.");
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("userRole");
           }}
         >
           <ImageWithBasePath
             src="assets/img/icons/log-out.svg"
             alt="img"
-            className="me-2"
+            className="logout-icon"
           />
-          Logout
         </Link>
       </div>
     </aside>
