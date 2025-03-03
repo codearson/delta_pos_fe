@@ -1,125 +1,101 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
 import { Link } from "react-router-dom";
-import { Filter, Sliders } from "react-feather";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
-import Select from "react-select";
-import { Edit, Eye, Globe, Trash2, User } from "react-feather";
-import { useSelector } from "react-redux";
+import { Edit, Trash2 } from "react-feather"; // Added Trash2
 import { Table } from "antd";
-import CustomerModal from "../../core/modals/peoples/customerModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import CustomerModal from "../../core/modals/peoples/customerModal";
+import { saveCustomer, fetchCustomers, updateCustomer, getCustomersByName, getCustomersByMobileNumber, updateCustomerStatus } from "../Api/customerApi"; // Added updateCustomerStatus
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const Customers = () => {
-  const data = useSelector((state) => state.customerdata);
+  const [customers, setCustomers] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
+  useEffect(() => {
+    fetchCustomersData();
+  }, []);
+
+  const fetchCustomersData = async () => {
+      const data = await fetchCustomers();
+      const reversedData = data.reverse();
+      setCustomers(reversedData);
   };
 
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
-  ];
-  const optionsTwo = [
-    { label: "Choose Customer Name", value: "" },
-    { label: "Benjamin", value: "Benjamin" },
-    { label: "Ellen", value: "Ellen" },
-    { label: "Freda", value: "Freda" },
-    { label: "Kaitlin", value: "Kaitlin" },
-  ];
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      const allIds = customers.map((customer) => customer.id);
+      setSelectedRows(allIds);
+    } else {
+      setSelectedRows([]);
+    }
+  };
 
-  const countries = [
-    { label: "Choose Country", value: "" },
-    { label: "India", value: "India" },
-    { label: "USA", value: "USA" },
-  ];
+  const handleRowSelect = (id) => {
+    if (selectedRows.includes(id)) {
+      setSelectedRows(selectedRows.filter((rowId) => rowId !== id));
+    } else {
+      setSelectedRows([...selectedRows, id]);
+    }
+  };
 
-  const columns = [
-    {
-      render: () => (
-        <label className="checkboxs">
-          <input type="checkbox" />
-          <span className="checkmarks" />
-        </label>
-      ),
-    },
+  const handleSaveCustomer = async (customerData) => {
+    try {
+      const customerDataWithActive = { ...customerData, isActive: 1 };
+      const result = await saveCustomer(customerDataWithActive);
+      if (result) {
+        await fetchCustomersData();
+        setSelectedCustomer(null);
+        MySwal.fire({
+          title: "Success!",
+          text: "Customer has been added successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-success" },
+        });
+      }
+    } catch (error) {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to add customer: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+    }
+  };
 
-    {
-      title: "Customer Name",
-      dataIndex: "CustomerName",
-      sorter: (a, b) => a.CustomerName.length - b.CustomerName.length,
-    },
-    {
-      title: "Code",
-      dataIndex: "Code",
-      sorter: (a, b) => a.Code.length - b.Code.length,
-    },
-    {
-      title: "Customer",
-      dataIndex: "Customer",
-      sorter: (a, b) => a.Customer.length - b.Customer.length,
-    },
+  const handleUpdateCustomer = async (customerData) => {
+    try {
+      const result = await updateCustomer(customerData);
+      if (result) {
+        await fetchCustomersData();
+        setSelectedCustomer(null);
+        MySwal.fire({
+          title: "Success!",
+          text: "Customer has been updated successfully.",
+          icon: "success",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-success" },
+        });
+      }
+    } catch (error) {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to update customer: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+    }
+  };
 
-    {
-      title: "Email",
-      dataIndex: "Email",
-      sorter: (a, b) => a.Email.length - b.Email.length,
-    },
-
-    {
-      title: "Phone",
-      dataIndex: "Phone",
-      sorter: (a, b) => a.Phone.length - b.Phone.length,
-    },
-
-    {
-      title: "Country",
-      dataIndex: "Country",
-      sorter: (a, b) => a.Country.length - b.Country.length,
-    },
-
-    {
-      title: "Action",
-      dataIndex: "action",
-      render: () => (
-        <td className="action-table-data">
-          <div className="edit-delete-action">
-            <div className="input-block add-lists"></div>
-
-            <Link className="me-2 p-2" to="#">
-              <Eye className="feather-view" />
-            </Link>
-
-            <Link
-              className="me-2 p-2"
-              to="#"
-              data-bs-toggle="modal"
-              data-bs-target="#edit-units"
-            >
-              <Edit className="feather-edit" />
-            </Link>
-
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={showConfirmationAlert}
-            >
-              <Trash2 className="feather-trash-2" />
-            </Link>
-          </div>
-        </td>
-      ),
-      sorter: (a, b) => a.createdby.length - b.createdby.length,
-    },
-  ];
-
-  const MySwal = withReactContent(Swal);
-
-  const showConfirmationAlert = () => {
+  const handleDeleteCustomer = async (customerId) => {
     MySwal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -128,32 +104,225 @@ const Customers = () => {
       confirmButtonText: "Yes, delete it!",
       cancelButtonColor: "#ff0000",
       cancelButtonText: "Cancel",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        MySwal.fire({
-          title: "Deleted!",
-          text: "Your file has been deleted.",
-          className: "btn btn-success",
-          confirmButtonText: "OK",
-          customClass: {
-            confirmButton: "btn btn-success",
-          },
-        });
-      } else {
-        MySwal.close();
+        try {
+          const response = await updateCustomerStatus(customerId, 0);
+          if (response) {
+            await fetchCustomersData();
+            MySwal.fire({
+              title: "Deleted!",
+              text: "Customer has been deleted.",
+              icon: "success",
+              confirmButtonText: "OK",
+              customClass: { confirmButton: "btn btn-success" },
+            });
+          }
+        } catch (error) {
+          MySwal.fire({
+            title: "Error!",
+            text: "Failed to delete customer: " + error.message,
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+        }
       }
     });
   };
+
+  const handleSearch = async (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    try {
+      if (value.trim() !== "") {
+        const [nameResults, mobileResults] = await Promise.all([
+          getCustomersByName(value),
+          getCustomersByMobileNumber(value),
+        ]);
+
+        const combinedResults = [
+          ...nameResults,
+          ...mobileResults.filter(mobileCustomer => 
+            !nameResults.some(nameCustomer => nameCustomer.id === mobileCustomer.id)
+          ),
+        ];
+
+        setCustomers(combinedResults.reverse());
+      } else {
+        fetchCustomersData();
+      }
+    } catch (error) {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to search customers: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const downloadPDF = () => {
+    try {
+      if (!customers || customers.length === 0) {
+        MySwal.fire({
+          title: "No Data",
+          text: "There are no customers to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+      const doc = new jsPDF();
+      doc.text("Customer List", 14, 15);
+      const tableColumn = ["Customer Name", "Mobile Number"];
+      const tableRows = customers.map((customer) => [
+        customer.name || "",
+        customer.mobileNumber || "",
+      ]);
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        theme: "grid",
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
+      doc.save("customer_list.pdf");
+    } catch (error) {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to generate PDF: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const downloadExcel = () => {
+    try {
+      if (!customers || customers.length === 0) {
+        MySwal.fire({
+          title: "No Data",
+          text: "There are no customers to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+      const worksheetData = customers.map((customer) => ({
+        "Customer Name": customer.name || "",
+        "Mobile Number": customer.mobileNumber || "",
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
+      worksheet["!cols"] = [{ wch: 20 }, { wch: 15 }];
+      XLSX.writeFile(workbook, "customer_list.xlsx");
+    } catch (error) {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to generate Excel: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const handleRefresh = () => {
+    setSearchTerm("");
+    fetchCustomersData();
+  };
+
+  const handleAddClick = () => {
+    setSelectedCustomer(null);
+  };
+
+  const handleEditClick = (record) => {
+    setSelectedCustomer(record);
+  };
+
+  const columns = [
+    {
+      title: (
+        <label className="checkboxs">
+          <input
+            type="checkbox"
+            checked={selectedRows.length === customers.length && customers.length > 0}
+            onChange={handleSelectAll}
+          />
+          <span className="checkmarks" />
+        </label>
+      ),
+      render: (record) => (
+        <label className="checkboxs">
+          <input
+            type="checkbox"
+            checked={selectedRows.includes(record.id)}
+            onChange={() => handleRowSelect(record.id)}
+          />
+          <span className="checkmarks" />
+        </label>
+      ),
+      width: 50,
+    },
+    {
+      title: "Customer Name",
+      dataIndex: "name",
+      render: (text) => <Link to="#">{text}</Link>,
+      sorter: (a, b) => a.name.length - b.name.length,
+    },
+    {
+      title: "Mobile Number",
+      dataIndex: "mobileNumber",
+      sorter: (a, b) => a.mobileNumber.length - b.mobileNumber.length,
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: (_, record) => (
+        <td className="action-table-data">
+          <div className="edit-delete-action">
+            <Link
+              className="me-2 p-2"
+              to="#"
+              data-bs-toggle="modal"
+              data-bs-target="#edit-units"
+              onClick={() => handleEditClick(record)}
+            >
+              <Edit className="feather-edit" />
+            </Link>
+            <Link
+              className="confirm-text p-2"
+              to="#"
+              onClick={() => handleDeleteCustomer(record.id)}
+            >
+              <Trash2 className="feather-trash-2" />
+            </Link>
+          </div>
+        </td>
+      ),
+    },
+  ];
+
+  const MySwal = withReactContent(Swal);
+
   return (
     <div className="page-wrapper">
       <div className="content">
         <Breadcrumbs
           maintitle="Customer List"
-          subtitle="Manage Your Expense Category"
+          subtitle="Manage Your Customers"
           addButton="Add New Customer"
+          addButtonAttributes={{
+            "data-bs-toggle": "modal",
+            "data-bs-target": "#add-units",
+            onClick: handleAddClick,
+          }}
+          onDownloadPDF={downloadPDF}
+          onDownloadExcel={downloadExcel}
+          onRefresh={handleRefresh}
         />
-
-        {/* /product list */}
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">
@@ -161,99 +330,33 @@ const Customers = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search"
+                    placeholder="Search by Name or Mobile Number"
                     className="form-control form-control-sm formsearch"
+                    value={searchTerm}
+                    onChange={handleSearch}
                   />
-                  <Link to className="btn btn-searchset">
+                  <Link to="#" className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
               </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                >
-                  <Filter
-                    className="filter-icon"
-                    onClick={toggleFilterVisibility}
-                  />
-                  <span onClick={toggleFilterVisibility}>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
-                    />
-                  </span>
-                </Link>
-              </div>
-              <div className="form-sort stylewidth">
-                <Sliders className="info-img" />
-
-                <Select
-                  className="select "
-                  options={options}
-                  placeholder="Sort by Date"
-                />
-              </div>
             </div>
-            {/* /Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <User className="info-img" />
-                      <Select
-                        options={optionsTwo}
-                        placeholder="Choose Customer Name"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Globe className="info-img" />
-                      <Select
-                        options={countries}
-                        placeholder="Choose Country"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12 ms-auto">
-                    <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto">
-                        {" "}
-                        <i
-                          data-feather="search"
-                          className="feather-search"
-                        />{" "}
-                        Search{" "}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* /Filter */}
             <div className="table-responsive">
               <Table
                 className="table datanew"
                 columns={columns}
-                dataSource={data}
+                dataSource={customers}
                 rowKey={(record) => record.id}
-                // pagination={true}
               />
             </div>
           </div>
         </div>
-        {/* /product list */}
       </div>
-      <CustomerModal />
+      <CustomerModal
+        onSave={handleSaveCustomer}
+        onUpdate={handleUpdateCustomer}
+        selectedCustomer={selectedCustomer}
+      />
     </div>
   );
 };
