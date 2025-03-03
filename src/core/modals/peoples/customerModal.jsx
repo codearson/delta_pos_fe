@@ -1,280 +1,204 @@
-import React from "react";
-import Select from "react-select";
-import ImageWithBasePath from "../../img/imagewithbasebath";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 
-const CustomerModal = () => {
-  const countriesOptions = [
-    { value: "choose", label: "Choose" },
-    { value: "unitedKingdom", label: "United Kingdom" },
-    { value: "unitedStates", label: "United States" },
-  ];
+const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
+  const initialFormState = {
+    id: "",
+    name: "",
+    mobileNumber: "",
+    isActive: 1,
+  };
 
-  const varrelOptions = [{ value: "varrel", label: "Varrel" }];
+  const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
 
-  const germanyOptions = [
-    { value: "germany", label: "Germany" },
-    { value: "unitedStates", label: "United States" },
-  ];
+  useEffect(() => {
+    if (selectedCustomer) {
+      setFormData({
+        id: selectedCustomer.id || "",
+        name: selectedCustomer.name || "",
+        mobileNumber: selectedCustomer.mobileNumber || "",
+        isActive: selectedCustomer.isActive ?? 1,
+      });
+    } else {
+      setFormData(initialFormState);
+    }
+  }, [selectedCustomer]);
+
+  useEffect(() => {
+    const editModal = document.getElementById("edit-units");
+    const handleShow = () => {
+      if (selectedCustomer) {
+        setFormData({
+          id: selectedCustomer.id || "",
+          name: selectedCustomer.name || "",
+          mobileNumber: selectedCustomer.mobileNumber || "",
+          isActive: selectedCustomer.isActive ?? 1,
+        });
+      }
+    };
+
+    const addModal = document.getElementById("add-units");
+    const handleAddShow = () => {
+      setFormData(initialFormState);
+      setErrors({});
+    };
+
+    editModal?.addEventListener("show.bs.modal", handleShow);
+    addModal?.addEventListener("show.bs.modal", handleAddShow);
+
+    return () => {
+      editModal?.removeEventListener("show.bs.modal", handleShow);
+      addModal?.removeEventListener("show.bs.modal", handleAddShow);
+    };
+  }, [selectedCustomer]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Customer name is required";
+    if (!formData.mobileNumber.trim()) newErrors.mobileNumber = "Mobile number is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSave({ ...formData, isActive: 1 });
+      setFormData(initialFormState);
+      setErrors({});
+      document.querySelector("#add-units .close").click();
+    }
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onUpdate(formData);
+      setFormData(initialFormState);
+      setErrors({});
+      document.querySelector("#edit-units .close").click();
+    }
+  };
+
   return (
-    <>
-      {/* Add Customer */}
-      <div className="modal fade" id="add-units">
+    <div>
+      {/* Add Customer Modal */}
+      <div className="modal fade" id="add-units" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
-            <div className="page-wrapper-new p-0">
-              <div className="content">
-                <div className="modal-header border-0 custom-modal-header">
-                  <div className="page-title">
-                    <h4>Add Customer</h4>
+            <div className="modal-header border-0 custom-modal-header">
+              <h4 className="page-title">Add Customer</h4>
+              <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div className="modal-body custom-modal-body">
+              <form onSubmit={handleAddSubmit}>
+                <div className="row">
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Customer Name <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="form-control"
+                        placeholder="Enter customer name"
+                      />
+                      {errors.name && <span className="text-danger">{errors.name}</span>}
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    className="close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Mobile Number <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="mobileNumber"
+                        value={formData.mobileNumber}
+                        onChange={handleChange}
+                        className="form-control"
+                        placeholder="Enter mobile number"
+                      />
+                      {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
+                    </div>
+                  </div>
                 </div>
-                <div className="modal-body custom-modal-body">
-                  <form>
-                    <div className="modal-title-head people-cust-avatar">
-                      <h6>Avatar</h6>
-                    </div>
-                    <div className="new-employee-field">
-                      <div className="profile-pic-upload">
-                        <div className="profile-pic">
-                          <span>
-                            <i
-                              data-feather="plus-circle"
-                              className="plus-down-add"
-                            />{" "}
-                            Add Image
-                          </span>
-                        </div>
-                        <div className="mb-3">
-                          <div className="image-upload mb-0">
-                            <input type="file" />
-                            <div className="image-uploads">
-                              <h4>Change Image</h4>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-lg-4 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Customer Name</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-4 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Email</label>
-                          <input type="email" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-4 pe-0">
-                        <div className="input-blocks">
-                          <label className="mb-2">Phone</label>
-                          <input
-                            className="form-control form-control-lg group_formcontrol"
-                            id="phone"
-                            name="phone"
-                            type="text"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Address</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">City</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Country</label>
-                          <Select
-                            className="select"
-                            options={countriesOptions}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="mb-3 input-blocks">
-                          <label className="form-label">Descriptions</label>
-                          <textarea
-                            className="form-control mb-1"
-                            defaultValue={""}
-                          />
-                          <p>Maximum 60 Characters</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="modal-footer-btn">
-                      <button
-                        type="button"
-                        className="btn btn-cancel me-2"
-                        data-bs-dismiss="modal"
-                      >
-                        Cancel
-                      </button>
-                      <button type="submit" className="btn btn-submit">
-                        Submit
-                      </button>
-                    </div>
-                  </form>
+                <div className="modal-footer-btn">
+                  <button type="button" className="btn btn-cancel me-2" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" className="btn btn-submit">Submit</button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>
       </div>
-      {/* /Add Customer */}
 
-      {/* Edit Customer */}
-      <div className="modal fade" id="edit-units">
+      {/* Edit Customer Modal */}
+      <div className="modal fade" id="edit-units" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
-            <div className="page-wrapper-new p-0">
-              <div className="content">
-                <div className="modal-header border-0 custom-modal-header">
-                  <div className="page-title">
-                    <h4>Edit Customer</h4>
+            <div className="modal-header border-0 custom-modal-header">
+              <h4 className="page-title">Edit Customer</h4>
+              <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div className="modal-body custom-modal-body">
+              <form onSubmit={handleEditSubmit}>
+                <div className="row">
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Customer Name <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="form-control"
+                        placeholder="Enter customer name"
+                      />
+                      {errors.name && <span className="text-danger">{errors.name}</span>}
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    className="close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Mobile Number <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="mobileNumber"
+                        value={formData.mobileNumber}
+                        onChange={handleChange}
+                        className="form-control"
+                        placeholder="Enter mobile number"
+                      />
+                      {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
+                    </div>
+                  </div>
                 </div>
-                <div className="modal-body custom-modal-body">
-                  <form>
-                    <div className="modal-title-head people-cust-avatar">
-                      <h6>Avatar</h6>
-                    </div>
-                    <div className="new-employee-field">
-                      <div className="profile-pic-upload">
-                        <div className="profile-pic people-profile-pic">
-                          <ImageWithBasePath
-                            src="assets/img/profiles/profile.png"
-                            alt="Img"
-                          />
-                          <Link to="#">
-                            <i
-                              data-feather="x-square"
-                              className="x-square-add"
-                            />
-                          </Link>
-                        </div>
-                        <div className="mb-3">
-                          <div className="image-upload mb-0">
-                            <input type="file" />
-                            <div className="image-uploads">
-                              <h4>Change Image</h4>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="row">
-                      <div className="col-lg-4 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Customer Name</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            defaultValue="Thomas"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-4 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Email</label>
-                          <input
-                            type="email"
-                            className="form-control"
-                            defaultValue="thomas@example.com"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-4 pe-0">
-                        <div className="input-blocks">
-                          <label className="mb-2">Phone</label>
-                          <input
-                            className="form-control form-control-lg group_formcontrol"
-                            id="phone2"
-                            name="phone2"
-                            type="text"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Address</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            defaultValue="Budapester Strasse 2027259 "
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">City</label>
-                          <Select className="select" options={varrelOptions} />
-                        </div>
-                      </div>
-                      <div className="col-lg-6 pe-0">
-                        <div className="mb-3">
-                          <label className="form-label">Country</label>
-                          <Select className="select" options={germanyOptions} />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="mb-0 input-blocks">
-                          <label className="form-label">Descriptions</label>
-                          <textarea
-                            className="form-control mb-1"
-                            defaultValue={""}
-                          />
-                          <p>Maximum 60 Characters</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="modal-footer-btn">
-                      <button
-                        type="button"
-                        className="btn btn-cancel me-2"
-                        data-bs-dismiss="modal"
-                      >
-                        Cancel
-                      </button>
-                      <button type="submit" className="btn btn-submit">
-                        Save Changes
-                      </button>
-                    </div>
-                  </form>
+                <div className="modal-footer-btn">
+                  <button type="button" className="btn btn-cancel me-2" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" className="btn btn-submit">Submit</button>
                 </div>
-              </div>
+              </form>
             </div>
           </div>
         </div>
       </div>
-      {/* /Edit Customer */}
-    </>
+    </div>
   );
+};
+
+CustomerModal.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func,
+  selectedCustomer: PropTypes.object,
 };
 
 export default CustomerModal;

@@ -54,6 +54,7 @@ const Suppliers = () => {
       if (result) {
         const updatedSuppliers = await fetchSuppliers();
         setSuppliers(updatedSuppliers);
+        setSelectedSupplier(null);
         MySwal.fire({
           title: "Success!",
           text: "Supplier has been added successfully.",
@@ -79,6 +80,7 @@ const Suppliers = () => {
       if (result) {
         const updatedSuppliers = await fetchSuppliers();
         setSuppliers(updatedSuppliers);
+        setSelectedSupplier(null);
         MySwal.fire({
           title: "Success!",
           text: "Supplier has been updated successfully.",
@@ -170,10 +172,8 @@ const Suppliers = () => {
         });
         return;
       }
-
       const doc = new jsPDF();
       doc.text("Supplier List", 14, 15);
-      
       const tableColumn = ["Supplier Name", "Email", "Mobile Number", "WhatsApp Number"];
       const tableRows = suppliers.map(supplier => [
         supplier.name || "",
@@ -181,7 +181,6 @@ const Suppliers = () => {
         supplier.mobileNumber || "",
         supplier.whatsappNumber || ""
       ]);
-
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
@@ -190,7 +189,6 @@ const Suppliers = () => {
         styles: { fontSize: 10 },
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       });
-
       doc.save("supplier_list.pdf");
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -214,25 +212,16 @@ const Suppliers = () => {
         });
         return;
       }
-
       const worksheetData = suppliers.map(supplier => ({
         "Supplier Name": supplier.name || "",
         "Email": supplier.emailAddress || "",
         "Mobile Number": supplier.mobileNumber || "",
         "WhatsApp Number": supplier.whatsappNumber || ""
       }));
-
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Suppliers");
-      
-      worksheet["!cols"] = [
-        { wch: 20 },
-        { wch: 30 },
-        { wch: 15 },
-        { wch: 15 }
-      ];
-
+      worksheet["!cols"] = [{ wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 }];
       XLSX.writeFile(workbook, "supplier_list.xlsx");
     } catch (error) {
       console.error("Error generating Excel:", error);
@@ -246,8 +235,17 @@ const Suppliers = () => {
   };
 
   const handleRefresh = () => {
-    setSearchTerm(""); 
-    fetchSuppliersData(); 
+    setSearchTerm("");
+    fetchSuppliersData();
+  };
+
+  const handleAddClick = () => {
+    setSelectedSupplier(null);
+  };
+
+  const handleEditClick = (record) => {
+    console.log("Setting selectedSupplier:", record);
+    setSelectedSupplier(record);
   };
 
   const columns = [
@@ -306,7 +304,7 @@ const Suppliers = () => {
               to="#"
               data-bs-toggle="modal"
               data-bs-target="#edit-units"
-              onClick={() => setSelectedSupplier(record)}
+              onClick={() => handleEditClick(record)}
             >
               <Edit className="feather-edit" />
             </Link>
@@ -332,7 +330,11 @@ const Suppliers = () => {
           maintitle="Supplier List"
           subtitle="Manage Your Suppliers"
           addButton="Add New Supplier"
-          addButtonAttributes={{ "data-bs-toggle": "modal", "data-bs-target": "#add-units" }}
+          addButtonAttributes={{
+            "data-bs-toggle": "modal",
+            "data-bs-target": "#add-units",
+            onClick: handleAddClick,
+          }}
           onDownloadPDF={downloadPDF}
           onDownloadExcel={downloadExcel}
           onRefresh={handleRefresh}
