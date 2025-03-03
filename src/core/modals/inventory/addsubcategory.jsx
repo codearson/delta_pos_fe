@@ -17,7 +17,6 @@ const AddSubcategory = ({ onTaxCreated }) => {
             return;
         }
         
-        // Add validation
         const percentage = parseFloat(taxPercentage);
         if (isNaN(percentage) || percentage < 0 || percentage > 100) {
             Swal.fire('Error', 'Tax percentage must be between 0 and 100', 'error');
@@ -29,15 +28,13 @@ const AddSubcategory = ({ onTaxCreated }) => {
             if (response) {
                 Swal.fire('Success', 'Tax created successfully', 'success');
                 setTaxPercentage('');
-                // Close modal
                 document.querySelector('[data-bs-dismiss="modal"]').click();
-                // Refresh tax list
                 if (onTaxCreated) onTaxCreated();
             } else {
                 Swal.fire('Error', 'Failed to create tax', 'error');
             }
         } catch (error) {
-            console.error('Error creating tax:', error);
+            //console.error('Error creating tax:', error);
             Swal.fire('Error', 'Something went wrong', 'error');
         }
     };

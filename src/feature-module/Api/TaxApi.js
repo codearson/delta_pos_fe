@@ -47,6 +47,13 @@ export const fetchTaxes = async () => {
             return [];
         }
 
+        const decodedToken = decodeJwt(accessToken);
+        const userRole = decodedToken?.roles[0]?.authority;
+        if (userRole !== "ROLE_ADMIN") {
+            //console.error("Access denied. Only admins can save tax.");
+            return null;
+        }
+
         const response = await axios.get(`${BASE_BACKEND_URL}/tax/getAll`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -163,7 +170,7 @@ export const updateTaxStatus = async (taxId, status = 0) => {
 // Token Convert
 function decodeJwt(token) {
     try {
-        return JSON.parse(atob(token.split('.')[1])); // Decode the token payload
+        return JSON.parse(atob(token.split('.')[1]));
     } catch (error) {
         //console.error("Error decoding JWT:", error);
         return null;

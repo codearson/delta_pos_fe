@@ -40,6 +40,8 @@ const Signin = () => {
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError("");
+    setEmailError("");
+    setPasswordError("");
 
     if (!validateInputs()) {
       return;
@@ -48,9 +50,19 @@ const Signin = () => {
     setIsLoading(true);
 
     try {
-      const token = await getAccessToken(email, password);
-      if (!token) {
-        setError("User not found. Please check your email/username and password.");
+      const loginResult = await getAccessToken(email, password);
+      //console.log("Login Result:", loginResult);
+      
+      if (!loginResult.success) {
+        if (loginResult.error === "email_not_found") {
+          setEmailError("Email not found");
+        } else if (loginResult.error === "incorrect_password") {
+          setPasswordError("Incorrect password");
+        } else if (loginResult.error === "network_error") {
+          setError("Connection error. Please check your internet connection or try again later.");
+        } else {
+          setError("An error occurred. Please try again.");
+        }
         setIsLoading(false);
         return;
       }
@@ -72,19 +84,8 @@ const Signin = () => {
         setError("Unknown role. Please contact support.");
       }
     } catch (error) {
-      console.error("Login error:", error);
-
-      if (
-        error.message?.includes("Failed to fetch") ||
-        error.message?.includes("NetworkError") ||
-        error.message?.includes("Network Error") ||
-        error.message?.includes("ERR_CONNECTION_REFUSED") ||
-        !navigator.onLine
-      ) {
-        setError("Database connection error. Please check if the server is running.");
-      } else {
-        setError("Connection error. Please check your internet connection or try again later.");
-      }
+      //console.error("Login error:", error);
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -161,6 +162,7 @@ const Signin = () => {
                 </div>
                 <div className="form-login authentication-check">
                   <div className="row">
+                  {error && <p className="text-danger text-center mb-3">{error}</p>}
                     <div className="col-12 d-flex align-items-center justify-content-between">
                       {/* <div className="custom-control custom-checkbox">
                         <label className="checkboxs ps-4 mb-0 pb-0 line-height-1">
@@ -177,7 +179,6 @@ const Signin = () => {
                     </div>
                   </div>
                 </div>
-                {error && <p className="text-danger text-center mb-3">{error}</p>}
                 <div className="form-login">
                   <button
                     type="submit"

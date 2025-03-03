@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { saveProductCategory } from "../../../feature-module/Api/ProductCategoryApi";
 
-const AddCategory = ({ refreshCategories }) => {
+const AddCategory = ({ refreshCategories, onCategoryAdded }) => {
   const [categoryName, setCategoryName] = useState("");
   const [error, setError] = useState("");
   const MySwal = withReactContent(Swal);
@@ -50,7 +50,7 @@ const AddCategory = ({ refreshCategories }) => {
 
     try {
       const response = await saveProductCategory(categoryName);
-      if (response) {
+      if (response && response.responseDto) {
         MySwal.fire({
           title: "Success!",
           text: "Category saved successfully!",
@@ -60,6 +60,13 @@ const AddCategory = ({ refreshCategories }) => {
             confirmButton: "btn btn-primary",
           },
         });
+        
+        if (onCategoryAdded) {
+          onCategoryAdded({
+            value: response.responseDto.id,
+            label: response.responseDto.productCategoryName
+          });
+        }
         
         setCategoryName("");
         
@@ -153,7 +160,8 @@ const AddCategory = ({ refreshCategories }) => {
 };
 
 AddCategory.propTypes = {
-  refreshCategories: PropTypes.func
+  refreshCategories: PropTypes.func,
+  onCategoryAdded: PropTypes.func
 };
 
 export default AddCategory;

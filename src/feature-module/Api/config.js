@@ -1,5 +1,6 @@
 import axios from "axios";
 
+//export const BASE_BACKEND_URL = "https://grateful-playfulness-production.up.railway.app";
 export const BASE_BACKEND_URL = "http://localhost:8080";
 
 export const getAccessToken = async (username, password) => {
@@ -8,86 +9,74 @@ export const getAccessToken = async (username, password) => {
       username,
       password,
     });
+
     if (response.data.responseDto?.accessToken) {
       const accessToken = response.data.responseDto.accessToken;
       localStorage.setItem("accessToken", accessToken);
-      return accessToken;
+      return { success: true, token: accessToken };
     }
+
+    const errorMessage = response.data.responseDto || response.data.errorDescription;
+
+    if (errorMessage) {
+      if (errorMessage.toLowerCase().includes("not exists")) {
+        return { success: false, error: "email_not_found" };
+      } else if (errorMessage.toLowerCase().includes("bad credentials")) {
+        return { success: false, error: "incorrect_password" };
+      }
+    }
+
+    return { success: false, error: "general_error" };
   } catch (err) {
-    console.error("Login Error:", err.message);
-    return null;
+    return { success: false, error: "general_error" };
   }
 };
 
 export const getUserByEmail = async (email) => {
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
-        console.error("No access token found.");
-        return null;
-      }
-      const response = await axios.get(
-        `${BASE_BACKEND_URL}/user/getByEmailAddress?emailAddress=${email}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-      if (response.data.responseDto?.length > 0) {
-        return response.data.responseDto[0];
-      }
-      return null;
-    } catch (err) {
-      console.error("Error fetching user details:", err.response?.status, err.response?.data);
-      return null;
+  const accessToken = localStorage.getItem("accessToken");
+  if (!accessToken) {
+    return null;
+  }
+  
+  const response = await axios.get(
+    `${BASE_BACKEND_URL}/user/getByEmailAddress?emailAddress=${email}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     }
-  };
+  );
+  
+  if (response.data.responseDto?.length > 0) {
+    return response.data.responseDto[0];
+  }
+  return null;
+};
 
-  export const forgotPassword = async (email) => {
-    try {
-      // console.log("Sending request to:", `${BASE_BACKEND_URL}/auth/forgot-password`);
-      // console.log("Payload:", { email });
-  
-      const response = await axios.post(
-        `${BASE_BACKEND_URL}/auth/forgot-password`,
-        { email },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 10000,
-        }
-      );
-  
-      console.log("Response status:", response.status);
-      return response.data; 
-    } catch (error) {
-      console.error("Forgot Password Error:", error);
-      throw error; 
+export const forgotPassword = async (email) => {
+  const response = await axios.post(
+    `${BASE_BACKEND_URL}/auth/forgot-password`,
+    { email },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 10000,
     }
-  };
+  );
+  return response.data;
+};
 
-  export const resetPassword = async (token, newPassword) => {
-    try {
-      // console.log("Sending request to:", `${BASE_BACKEND_URL}/auth/reset-password`);
-      // console.log("Payload:", { token, newPassword });
-  
-      const response = await axios.post(
-        `${BASE_BACKEND_URL}/auth/reset-password`,
-        { token, newPassword },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 10000,
-        }
-      );
-  
-      console.log("Response status:", response.status);
-      return response.data;
-    } catch (error) {
-      console.error("Reset Password Error:", error);
-      throw error;
+export const resetPassword = async (token, newPassword) => {
+  const response = await axios.post(
+    `${BASE_BACKEND_URL}/auth/reset-password`,
+    { token, newPassword },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 10000,
     }
-  };
+  );
+  return response.data;
+};
