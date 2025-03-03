@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { saveTax } from "../../../feature-module/Api/TaxApi";
 
-const AddTax = ({ refreshTaxes }) => {
+const AddTax = ({ refreshTaxes, onTaxAdded }) => {
     const [tax, setTax] = useState("");
     const [error, setError] = useState("");
     const MySwal = withReactContent(Swal);
@@ -58,7 +58,7 @@ const AddTax = ({ refreshTaxes }) => {
             const taxValue = parseFloat(tax);
             const response = await saveTax(taxValue);
             
-            if (response) {
+            if (response && response.responseDto) {
                 MySwal.fire({
                     title: "Success!",
                     text: "Tax saved successfully!",
@@ -68,6 +68,13 @@ const AddTax = ({ refreshTaxes }) => {
                         confirmButton: "btn btn-primary",
                     },
                 });
+                
+                if (onTaxAdded) {
+                    onTaxAdded({
+                        value: response.responseDto.id,
+                        label: `${response.responseDto.taxPercentage}%`
+                    });
+                }
                 
                 setTax("");
                 document.getElementById('add-units-tax').classList.remove('show');
@@ -161,7 +168,8 @@ const AddTax = ({ refreshTaxes }) => {
 };
 
 AddTax.propTypes = {
-    refreshTaxes: PropTypes.func
+    refreshTaxes: PropTypes.func,
+    onTaxAdded: PropTypes.func
 };
 
 export default AddTax;

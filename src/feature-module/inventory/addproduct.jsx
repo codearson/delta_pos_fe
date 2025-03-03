@@ -282,6 +282,14 @@ const AddProduct = () => {
     }
   };
 
+  const handleCategoryAdded = (newCategory) => {
+    setCategory(newCategory);
+  };
+
+  const handleTaxAdded = (newTax) => {
+    setTaxType(newTax);
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -543,8 +551,14 @@ const AddProduct = () => {
         </form>
         {/* /add */}
       </div>
-      <AddCategory refreshCategories={loadCategoriesData} />
-      <AddTax refreshTaxes={loadTaxesData} />
+      <AddCategory 
+        refreshCategories={loadCategoriesData} 
+        onCategoryAdded={handleCategoryAdded}
+      />
+      <AddTax 
+        refreshTaxes={loadTaxesData} 
+        onTaxAdded={handleTaxAdded}
+      />
     </div>
   );
 };
