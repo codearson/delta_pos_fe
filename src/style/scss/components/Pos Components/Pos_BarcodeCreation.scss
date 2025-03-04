@@ -1,4 +1,3 @@
-// Variables
 $bg-gray-800: #1f2937;
 $bg-gray-700: #374151;
 $bg-gray-600: #4b5563;
@@ -13,7 +12,6 @@ $dark-text: #ffffff;
 $light-bg: #ffffff;
 $light-text: #000000;
 
-// Colors
 $blue-600: rgb(37, 99, 235);
 $blue-700: rgb(29, 78, 216);
 $green-500: rgb(34, 197, 94);
@@ -26,7 +24,6 @@ $orange-600: #dd6b20;
 $red-500: #ef4444;
 $red-600: #dc2626;
 
-// Main styles
 .barcode-popup-overlay {
   position: fixed;
   inset: 0;
@@ -190,7 +187,6 @@ $red-600: #dc2626;
   }
 }
 
-// Media Queries
 @media screen and (max-width: 768px) {
   .barcode-popup {
     width: 90%;
@@ -248,7 +244,6 @@ $red-600: #dc2626;
   }
 }
 
-// Dark mode media query
 @media (prefers-color-scheme: dark) {
   .barcode-popup {
     background-color: #ffffff;
