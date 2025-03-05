@@ -116,7 +116,7 @@ const ResetPassword = () => {
                   </h4>
                 </div>
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
-                  <p>Copyright © 2023 DreamsPOS. All rights reserved</p>
+                  <p>Copyright © 2025 Codearson POS. All rights reserved</p>
                 </div>
               </div>
             </form>
