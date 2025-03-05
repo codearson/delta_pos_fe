@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_CategoryGrid.scss";
-import { categories } from "../../../core/json/Posdata";
+import { categories, quickAccess } from "../../../core/json/Posdata";
+import Pos_BarcodeCreation from "./Pos_BarcodeCreation";
 
-const PAGE_SIZE = 14;
+const PAGE_SIZE = 15; 
 
 const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
   const [pageIndex, setPageIndex] = useState(0);
+  const [showBarcodePopup, setShowBarcodePopup] = useState(false);
 
   useEffect(() => {
     setPageIndex(0);
@@ -14,7 +16,37 @@ const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
 
   const start = pageIndex * PAGE_SIZE;
   const end = start + PAGE_SIZE;
-  let paginatedItems = items.slice(start, end);
+
+  const filteredCategories = items === categories
+    ? categories.filter((item) => item.id !== 15) 
+    : items;
+
+  let paginatedItems = filteredCategories.slice(start, end);
+
+  if (items === categories && end >= filteredCategories.length) {
+    paginatedItems = [
+      ...paginatedItems,
+      { id: "label-print", name: "Label Print", icon: "🏷️", isLabelPrint: true },
+    ];
+  }
+
+  if (items === quickAccess) {
+    if (pageIndex === 0) {
+      const modifiedItems = [...quickAccess];
+      const quick14Index = modifiedItems.findIndex((item) => item.id === 14);
+      if (quick14Index !== -1) {
+        modifiedItems[quick14Index] = { id: "label-print", name: "Label Print", icon: "🏷️", isLabelPrint: true };
+      }
+      paginatedItems = modifiedItems.slice(start, end);
+    } else if (pageIndex > 0 && end > quickAccess.length) {
+      const quick14 = { id: 14, name: "Quick 14", icon: "🌟" };
+      paginatedItems = [
+        ...paginatedItems,
+        quick14,
+        { id: "label-print", name: "Label Print", icon: "🏷️", isLabelPrint: true },
+      ];
+    }
+  }
 
   if (pageIndex > 0) {
     paginatedItems = [
@@ -28,10 +60,26 @@ const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
     ];
   }
 
+  if (items === categories && end < filteredCategories.length) {
+    paginatedItems = [
+      ...paginatedItems.slice(0, 14), 
+      {
+        id: "more",
+        name: "More",
+        icon: "➡️",
+        isMore: true,
+      },
+    ];
+  }
+
   const renderCategoryButton = (item) => {
     const handleClick = () => {
       if (item.isPrev) {
         setPageIndex(pageIndex - 1);
+      } else if (item.isMore) {
+        setPageIndex(pageIndex + 1);
+      } else if (item.isLabelPrint) {
+        setShowBarcodePopup(true);
       } else {
         onCategorySelect(item);
       }
@@ -43,7 +91,9 @@ const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
         className="category-btn group"
         onClick={handleClick}
       >
-        <div className="text-2xl mb-1 transition-transform">{item.icon}</div>
+        <div className="text-2xl mb-1 transition-transform group-hover:scale-110">
+          {item.icon}
+        </div>
         <div className="font-medium text-sm truncate px-1">{item.name}</div>
       </button>
     );
@@ -53,16 +103,10 @@ const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
     <div className="size">
       <div className="grid grid-cols-5 gap-2">
         {paginatedItems.map(renderCategoryButton)}
-        {end < items.length && (
-          <button
-            className="category-btn group"
-            onClick={() => setPageIndex(pageIndex + 1)}
-          >
-            <div className="text-2xl mb-1 transition-transform">➡️</div>
-            <div className="font-medium text-sm truncate px-1">More</div>
-          </button>
-        )}
       </div>
+      {showBarcodePopup && (
+        <Pos_BarcodeCreation onClose={() => setShowBarcodePopup(false)} />
+      )}
     </div>
   );
 };
