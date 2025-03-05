@@ -64,7 +64,7 @@ const Header = () => {
     return () => {
       document.removeEventListener("mouseover", handleMouseover);
     };
-  }, []); // Empty dependency array ensures that the effect runs only once on mount
+  }, []);
 
   const handlesidebar = () => {
     document.body.classList.toggle("mini-sidebar");
@@ -154,6 +154,11 @@ const Header = () => {
       }
     }
   };
+
+  const firstName = localStorage.getItem("firstName") || "Guest";
+  const lastName = localStorage.getItem("lastName") || "";
+  const userRole = localStorage.getItem("userRole") || "Unknown Role";
+  const fullName = `${firstName} ${lastName}`.trim();
 
   return (
     <>
@@ -369,7 +374,6 @@ const Header = () => {
               onClick={() => toggleFullscreen()}
               className={isFullscreen ? "Exit Fullscreen" : "Go Fullscreen"}
             >
-              {/* <i data-feather="maximize" /> */}
               <FeatherIcon icon="maximize" />
             </Link>
           </li>
@@ -380,52 +384,44 @@ const Header = () => {
               data-bs-toggle="dropdown"
             >
               <span className="user-info">
-                <span className="user-letter">
+                {/* <span className="user-letter">
                   <ImageWithBasePath
                     src="assets/img/profiles/avator1.jpg"
                     alt="img"
                     className="img-fluid"
                   />
-                </span>
+                </span> */}
                 <span className="user-detail">
-                  <span className="user-name">John Smilga</span>
-                  <span className="user-role">Super Admin</span>
+                  <span className="user-name">{fullName}</span>
+                  <span className="user-role">{userRole}</span>
                 </span>
               </span>
             </Link>
             <div className="dropdown-menu menu-drop-user">
               <div className="profilename">
                 <div className="profileset">
-                  <span className="user-img">
+                  {/* <span className="user-img">
                     <ImageWithBasePath
                       src="assets/img/profiles/avator1.jpg"
                       alt="img"
                     />
                     <span className="status online" />
-                  </span>
+                  </span> */}
                   <div className="profilesets">
-                    <h6>John Smilga</h6>
-                    <h5>Super Admin</h5>
+                    <h6>{fullName}</h6>
+                    <h5>{userRole}</h5>
                   </div>
                 </div>
                 <hr className="m-0" />
-                
-                <hr className="m-0" />
-                {/* <Link className="dropdown-item logout pb-0" to="/signIn">
-                  <ImageWithBasePath
-                    src="assets/img/icons/log-out.svg"
-                    alt="img"
-                    className="me-2"
-                  />
-                  Logout
-                </Link> */}
                 <Link
                   className="dropdown-item logout pb-0"
                   to="/signIn"
                   onClick={() => {
-                    localStorage.removeItem("accessToken"); // Remove the access token
-                    localStorage.removeItem("userRole"); // Optionally remove the user role
-                    console.log("User logged out. Access token removed.");
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("firstName");
+                    localStorage.removeItem("lastName");
+                    localStorage.removeItem("userRole");
+                    console.log("User logged out. Access token and user details removed.");
                   }}
                 >
                   <ImageWithBasePath

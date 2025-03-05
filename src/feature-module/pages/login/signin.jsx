@@ -51,8 +51,6 @@ const Signin = () => {
 
     try {
       const loginResult = await getAccessToken(email, password);
-      //console.log("Login Result:", loginResult);
-      
       if (!loginResult.success) {
         if (loginResult.error === "email_not_found") {
           setEmailError("Email not found");
@@ -74,6 +72,10 @@ const Signin = () => {
         return;
       }
 
+      localStorage.setItem("firstName", user.firstName || "");
+      localStorage.setItem("lastName", user.lastName || "");
+      localStorage.setItem("userRole", user.userRoleDto?.userRole || "");
+
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
       } else if (user.userRoleDto?.userRole === "USER") {
@@ -84,7 +86,6 @@ const Signin = () => {
         setError("Unknown role. Please contact support.");
       }
     } catch (error) {
-      //console.error("Login error:", error);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
