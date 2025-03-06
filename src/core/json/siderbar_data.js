@@ -148,7 +148,7 @@ export const SidebarData = [
         submenuItems: [
           { label: "Customers", link: "/customers", icon:<Icon.User />,showSubRoute: false,submenu: false },
           { label: "Suppliers", link: "/suppliers", icon:  <Icon.Users />,showSubRoute: false, submenu: false },
-          { label: "Stores", link: "/store-list", icon:  <Icon.Home  />,showSubRoute: false,submenu: false },
+          { label: "Branches", link: "/store-list", icon:  <Icon.Home  />,showSubRoute: false,submenu: false },
           // { label: "Warehouses", link: "/warehouse", icon: <Icon.Archive />,showSubRoute: false,submenu: false },
      
         ]
