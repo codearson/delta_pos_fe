@@ -8,26 +8,36 @@ const Forgotpassword = () => {
   const route = all_routes;
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
-    setMessage(""); 
-    setLoading(true); 
+    setMessage("");
+    setLoading(true);
 
     try {
-      await forgotPassword(email);
-      setMessage("Reset code sent successfully to your email!");
-      setLoading(false); 
-      setTimeout(() => navigate(route.resetpassword), 1000);
+      const response = await forgotPassword(email);
+      if (response == "Password reset email sent successfully") {
+        setMessage(response);
+        setLoading(false);
+        setTimeout(() => navigate(route.resetpassword), 1000);
+      } else {
+        throw new Error(response);
+      }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to connect to the server";
+      let errorMessage = "Failed to connect to the server";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       setMessage(errorMessage);
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
@@ -69,9 +79,10 @@ const Forgotpassword = () => {
                 </div>
                 {message && (
                   <div
-                    className={`text-center ${
+                    className={`text-center mb-3 ${
                       message.includes("success") ? "text-success" : "text-danger"
                     }`}
+                    style={message.includes("Access Denied") ? { lineHeight: "1.5" } : {}}
                   >
                     {message}
                   </div>
@@ -94,39 +105,8 @@ const Forgotpassword = () => {
                     </Link>
                   </h4>
                 </div>
-                {/* <div className="form-setlogin or-text">
-                  <h4>OR</h4>
-                </div>
-                <div className="form-sociallink">
-                  <ul className="d-flex justify-content-center">
-                    <li>
-                      <Link to="#" className="facebook-logo">
-                        <ImageWithBasePath
-                          src="assets/img/icons/facebook-logo.svg"
-                          alt="Facebook"
-                        />
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="#">
-                        <ImageWithBasePath
-                          src="assets/img/icons/google.png"
-                          alt="Google"
-                        />
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="#" className="apple-logo">
-                        <ImageWithBasePath
-                          src="assets/img/icons/apple-logo.svg"
-                          alt="Apple"
-                        />
-                      </Link>
-                    </li>
-                  </ul>
-                </div> */}
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
-                  <p>Copyright © 2023 DreamsPOS. All rights reserved</p>
+                  <p>Copyright © 2025 Codearson POS. All rights reserved</p>
                 </div>
               </div>
             </form>
