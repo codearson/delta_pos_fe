@@ -8,6 +8,10 @@ import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { ChevronUp } from "react-feather";
 import { setToogleHeader } from "./redux/action";
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import Swal from "sweetalert2";
 
 const Breadcrumbs = (props) => {
   const location = useLocation();
@@ -29,6 +33,79 @@ const Breadcrumbs = (props) => {
 
   let addButton = null;
 
+  const handleExportPDF = () => {
+    try {
+      const data = props.onDownloadPDF();
+      if (!data || data.length === 0) {
+        Swal.fire({
+          title: "No Data",
+          text: "There is no data to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+
+      const doc = new jsPDF();
+      doc.text(props.maintitle, 14, 15);
+      
+      const tableColumn = Object.keys(data[0]);
+      const tableRows = data.map(item => Object.values(item));
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
+
+      doc.save(`${props.maintitle.toLowerCase().replace(/\s+/g, '_')}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to generate PDF: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const data = props.onDownloadExcel();
+      if (!data || data.length === 0) {
+        Swal.fire({
+          title: "No Data",
+          text: "There is no data to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+      
+      // Set column widths
+      const colWidths = Object.keys(data[0]).map(() => ({ wch: 20 }));
+      worksheet["!cols"] = colWidths;
+
+      XLSX.writeFile(workbook, `${props.maintitle.toLowerCase().replace(/\s+/g, '_')}.xlsx`);
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to export to Excel: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
   if (
     location.pathname === "/product-list" ||
     location.pathname === "/stock-transfer"
@@ -44,14 +121,20 @@ const Breadcrumbs = (props) => {
         <ul className="table-top-head">
           <li>
             <OverlayTrigger placement="top" overlay={renderTooltip}>
-              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadPDF(); }}>
+              <a href="#" onClick={(e) => { 
+                e.preventDefault(); 
+                handleExportPDF(); 
+              }}>
                 <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="PDF" />
               </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadExcel(); }}>
+              <a href="#" onClick={(e) => { 
+                e.preventDefault(); 
+                handleExportExcel(); 
+              }}>
                 <ImageWithBasePath src="assets/img/icons/excel.svg" alt="Excel" />
               </a>
             </OverlayTrigger>
@@ -112,14 +195,20 @@ const Breadcrumbs = (props) => {
         <ul className="table-top-head">
           <li>
             <OverlayTrigger placement="top" overlay={renderTooltip}>
-              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadPDF(); }}>
+              <a href="#" onClick={(e) => { 
+                e.preventDefault(); 
+                handleExportPDF(); 
+              }}>
                 <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="PDF" />
               </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadExcel(); }}>
+              <a href="#" onClick={(e) => { 
+                e.preventDefault(); 
+                handleExportExcel(); 
+              }}>
                 <ImageWithBasePath src="assets/img/icons/excel.svg" alt="Excel" />
               </a>
             </OverlayTrigger>
@@ -169,14 +258,20 @@ const Breadcrumbs = (props) => {
         <ul className="table-top-head">
           <li>
             <OverlayTrigger placement="top" overlay={renderTooltip}>
-              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadPDF(); }}>
+              <a href="#" onClick={(e) => { 
+                e.preventDefault(); 
+                handleExportPDF(); 
+              }}>
                 <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="PDF" />
               </a>
             </OverlayTrigger>
           </li>
           <li>
             <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-              <a href="#" onClick={(e) => { e.preventDefault(); props.onDownloadExcel(); }}>
+              <a href="#" onClick={(e) => { 
+                e.preventDefault(); 
+                handleExportExcel(); 
+              }}>
                 <ImageWithBasePath src="assets/img/icons/excel.svg" alt="Excel" />
               </a>
             </OverlayTrigger>
@@ -207,7 +302,8 @@ const Breadcrumbs = (props) => {
           <Link
             to="#"
             className="btn btn-added"
-            {...props.addButtonAttributes}
+            data-bs-toggle={props.buttonDataToggle}
+            data-bs-target={props.buttonDataTarget}
           >
             <PlusCircle className="me-2" />
             {props.addButton}
@@ -225,7 +321,8 @@ Breadcrumbs.propTypes = {
   subtitle: PropTypes.string,
   addButton: PropTypes.string,
   importbutton: PropTypes.string,
-  addButtonAttributes: PropTypes.object,
+  buttonDataToggle: PropTypes.string,
+  buttonDataTarget: PropTypes.string,
   onDownloadPDF: PropTypes.func,
   onDownloadExcel: PropTypes.func,
   onRefresh: PropTypes.func, 
