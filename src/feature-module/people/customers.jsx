@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
 import { Link } from "react-router-dom";
-import { Edit, Trash2 } from "react-feather"; // Added Trash2
+import { Edit, Trash2 } from "react-feather";
 import { Table } from "antd";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import CustomerModal from "../../core/modals/peoples/customerModal";
-import { saveCustomer, fetchCustomers, updateCustomer, getCustomersByName, getCustomersByMobileNumber, updateCustomerStatus } from "../Api/customerApi"; // Added updateCustomerStatus
+import { saveCustomer, fetchCustomers, updateCustomer, updateCustomerStatus } from "../Api/customerApi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
+  const [allCustomers, setAllCustomers] = useState([]); // Store all customers data
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,9 +23,10 @@ const Customers = () => {
   }, []);
 
   const fetchCustomersData = async () => {
-      const data = await fetchCustomers();
-      const reversedData = data.reverse();
-      setCustomers(reversedData);
+    const data = await fetchCustomers();
+    const reversedData = data.reverse();
+    setCustomers(reversedData);
+    setAllCustomers(reversedData); // Store all customers for filtering
   };
 
   const handleSelectAll = (e) => {
@@ -131,34 +133,18 @@ const Customers = () => {
     });
   };
 
-  const handleSearch = async (e) => {
-    const value = e.target.value;
+  const handleSearch = (e) => {
+    const value = e.target.value.toLowerCase();
     setSearchTerm(value);
-    try {
-      if (value.trim() !== "") {
-        const [nameResults, mobileResults] = await Promise.all([
-          getCustomersByName(value),
-          getCustomersByMobileNumber(value),
-        ]);
-
-        const combinedResults = [
-          ...nameResults,
-          ...mobileResults.filter(mobileCustomer => 
-            !nameResults.some(nameCustomer => nameCustomer.id === mobileCustomer.id)
-          ),
-        ];
-
-        setCustomers(combinedResults.reverse());
-      } else {
-        fetchCustomersData();
-      }
-    } catch (error) {
-      MySwal.fire({
-        title: "Error!",
-        text: "Failed to search customers: " + error.message,
-        icon: "error",
-        confirmButtonText: "OK",
-      });
+    
+    if (value.trim() !== "") {
+      const filteredCustomers = allCustomers.filter(customer => 
+        (customer.name && customer.name.toLowerCase().includes(value)) ||
+        (customer.mobileNumber && customer.mobileNumber.toLowerCase().includes(value))
+      );
+      setCustomers(filteredCustomers.reverse());
+    } else {
+      setCustomers([...allCustomers].reverse());
     }
   };
 
@@ -231,7 +217,7 @@ const Customers = () => {
 
   const handleRefresh = () => {
     setSearchTerm("");
-    fetchCustomersData();
+    setCustomers([...allCustomers].reverse());
   };
 
   const handleAddClick = () => {
@@ -330,7 +316,7 @@ const Customers = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search by Name or Mobile Number"
+                    placeholder="Search"
                     className="form-control form-control-sm formsearch"
                     value={searchTerm}
                     onChange={handleSearch}
