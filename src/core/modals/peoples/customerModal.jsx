@@ -2,82 +2,30 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
 const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
-  const initialFormState = {
-    branchName: "",
-    branchCode: "",
-    address: "",
-    contactNumber: "",
-    emailAddress: "",
-    isActive: 1
-  };
+  const [formData, setFormData] = useState({
+    branchName: '',
+    branchCode: '',
+    address: '',
+    contactNumber: '',
+    emailAddress: '',
+  });
 
-  const [formData, setFormData] = useState(initialFormState);
-  const [errors, setErrors] = useState({});
   const [emailError, setEmailError] = useState('');
 
   useEffect(() => {
     if (selectedCustomer) {
-      setFormData({
-        branchName: selectedCustomer.branchName || "",
-        branchCode: selectedCustomer.branchCode || "",
-        address: selectedCustomer.address || "",
-        contactNumber: selectedCustomer.contactNumber || "",
-        emailAddress: selectedCustomer.emailAddress || "",
-        isActive: selectedCustomer.isActive ?? 1
-      });
+      setFormData(selectedCustomer);
     } else {
-      setFormData(initialFormState);
+      setFormData({
+        branchName: '',
+        branchCode: '',
+        address: '',
+        contactNumber: '',
+        emailAddress: '',
+      });
     }
+    setEmailError('');
   }, [selectedCustomer]);
-
-  useEffect(() => {
-    const editModal = document.getElementById("edit-branch");
-    const addModal = document.getElementById("add-branch");
-
-    const handleEditShow = () => {
-      if (selectedCustomer) {
-        setFormData({
-          branchName: selectedCustomer.branchName || "",
-          branchCode: selectedCustomer.branchCode || "",
-          address: selectedCustomer.address || "",
-          contactNumber: selectedCustomer.contactNumber || "",
-          emailAddress: selectedCustomer.emailAddress || "",
-          isActive: selectedCustomer.isActive ?? 1
-        });
-      }
-    };
-
-    const handleAddShow = () => {
-      setFormData(initialFormState);
-      setErrors({});
-    };
-
-    editModal?.addEventListener("show.bs.modal", handleEditShow);
-    addModal?.addEventListener("show.bs.modal", handleAddShow);
-
-    return () => {
-      editModal?.removeEventListener("show.bs.modal", handleEditShow);
-      addModal?.removeEventListener("show.bs.modal", handleAddShow);
-    };
-  }, [selectedCustomer]);
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.branchName.trim()) newErrors.branchName = "Branch name is required";
-    if (!formData.branchCode.trim()) newErrors.branchCode = "Branch code is required";
-    if (!formData.address.trim()) newErrors.address = "Address is required";
-    if (!formData.contactNumber.trim()) newErrors.contactNumber = "Contact number is required";
-    if (!formData.emailAddress.trim()) newErrors.emailAddress = "Email address is required";
-    if (!formData.contactNumber.match(/^\d{10}$/)) {
-      newErrors.contactNumber = 'Contact number must be exactly 10 digits';
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.emailAddress)) {
-      newErrors.emailAddress = 'Please enter a valid email address';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -125,7 +73,13 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
     }
     
     // Reset form
-    setFormData(initialFormState);
+    setFormData({
+      branchName: '',
+      branchCode: '',
+      address: '',
+      contactNumber: '',
+      emailAddress: '',
+    });
     setEmailError('');
   };
 
@@ -155,7 +109,6 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
                         className="form-control"
                         placeholder="Enter branch name"
                       />
-                      {errors.branchName && <span className="text-danger">{errors.branchName}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
@@ -169,7 +122,6 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
                         className="form-control"
                         placeholder="Enter branch code"
                       />
-                      {errors.branchCode && <span className="text-danger">{errors.branchCode}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
@@ -183,7 +135,6 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
                         className="form-control"
                         placeholder="Enter address"
                       />
-                      {errors.address && <span className="text-danger">{errors.address}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
@@ -256,7 +207,6 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
                         className="form-control"
                         placeholder="Enter branch name"
                       />
-                      {errors.branchName && <span className="text-danger">{errors.branchName}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
@@ -270,7 +220,6 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
                         className="form-control"
                         placeholder="Enter branch code"
                       />
-                      {errors.branchCode && <span className="text-danger">{errors.branchCode}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
@@ -284,7 +233,6 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
                         className="form-control"
                         placeholder="Enter address"
                       />
-                      {errors.address && <span className="text-danger">{errors.address}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
