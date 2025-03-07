@@ -1,31 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Filter, ChevronUp, PlusCircle, RotateCcw } from "react-feather";
+import { Filter, Archive, Box } from "react-feather";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
+import Breadcrumbs from "../../core/breadcrumbs";
 import Select from "react-select";
 import { Link } from "react-router-dom";
-import { Archive, Box } from "react-feather";
 import ManageStockModal from "../../core/modals/stocks/managestockModal";
 import { Edit } from "feather-icons-react/build/IconComponents";
 import Swal from "sweetalert2";
 import Table from "../../core/pagination/datatable";
-import { fetchStocks, updateStockStatus } from "../Api/StockApi";
+import { fetchStocks, updateStockStatus, fetchBranches } from "../Api/StockApi";
 import { fetchProducts } from "../Api/productApi";
-import { fetchBranches } from "../Api/StockApi";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
-import { useDispatch, useSelector } from "react-redux";
-import { setToogleHeader } from "../../core/redux/action";
-import { jsPDF } from "jspdf";
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 import "../../style/scss/pages/_categorylist.scss";
 
 const Managestock = () => {
-  const dispatch = useDispatch();
-  const data = useSelector((state) => state.toggle_header);
   const [stockData, setStockData] = useState([]);
   const [allStocks, setAllStocks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [products, setProducts] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -37,20 +27,18 @@ const Managestock = () => {
   const [filteredStockData, setFilteredStockData] = useState([]);
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
-
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
-  };
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
 
   const getStocks = async () => {
     setLoading(true);
     try {
-      console.log("Fetching updated stocks...");
       const response = await fetchStocks();
-      console.log("Fetched stocks:", response);
-
       const stocksData = Array.isArray(response) ? response : 
                         (response.responseDto ? [response.responseDto] : []);
+
+      if (!stocksData.length) {
+        throw new Error("No stock data received");
+      }
 
       const transformedData = stocksData.map(stock => ({
         id: stock.id,
@@ -71,11 +59,13 @@ const Managestock = () => {
       setFilteredStockData(filteredData);
     } catch (error) {
       console.error("Error fetching stocks:", error);
+      setAllStocks([]);
+      setStockData([]);
+      setFilteredStockData([]);
       Swal.fire({
         title: "Error!",
-        text: "Failed to fetch stocks",
+        text: "Failed to fetch stocks: " + error.message,
         icon: "error",
-        confirmButtonText: "OK"
       });
     } finally {
       setLoading(false);
@@ -87,35 +77,34 @@ const Managestock = () => {
   }, [showActive]);
 
   useEffect(() => {
-    const getProducts = async () => {
+    const loadInitialData = async () => {
       try {
-        const response = await fetchProducts();
-        const transformedProducts = response.map(product => ({
+        const [productsResponse, branchesResponse] = await Promise.all([
+          fetchProducts(),
+          fetchBranches()
+        ]);
+
+        const transformedProducts = productsResponse.map(product => ({
           value: product.id,
           label: product.name || '-'
         }));
         setProducts(transformedProducts);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-    getProducts();
-  }, []);
 
-  useEffect(() => {
-    const getBranches = async () => {
-      try {
-        const response = await fetchBranches();
-        const transformedBranches = response.map(branch => ({
+        const transformedBranches = branchesResponse.map(branch => ({
           value: branch.id,
           label: branch.branchName
         }));
         setBranches(transformedBranches);
       } catch (error) {
-        console.error("Error fetching branches:", error);
+        console.error("Error fetching initial data:", error);
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to load products or branches",
+          icon: "error",
+        });
       }
     };
-    getBranches();
+    loadInitialData();
   }, []);
 
   const handleEdit = (record) => {
@@ -131,11 +120,11 @@ const Managestock = () => {
     setSelectedStock(stockData);
   };
 
-  const handleToggleStatus = (stockId, currentStatus) => {
+  const handleToggleStatus = async (stockId, currentStatus) => {
     setTogglingId(stockId);
     const newStatusText = currentStatus ? 'Inactive' : 'Active';
 
-    Swal.fire({
+    const result = await Swal.fire({
       title: 'Are you sure?',
       text: `Do you want to change this stock to ${newStatusText}?`,
       icon: 'warning',
@@ -144,49 +133,48 @@ const Managestock = () => {
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, change it!',
       cancelButtonText: 'No, cancel'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const newStatus = currentStatus ? 0 : 1;
-          const response = await updateStockStatus(stockId, newStatus);
-          if (response && response.success !== false) {
-            getStocks();
-          } else {
-            Swal.fire({
-              title: 'Error!',
-              text: response?.message || 'Failed to update stock status.',
-              icon: 'error',
-              confirmButtonColor: '#d33'
-            });
-          }
-        } catch (error) {
-          console.error("Error updating stock status:", error);
-          Swal.fire({
-            title: 'Error!',
-            text: 'An unexpected error occurred.',
-            icon: 'error',
-            confirmButtonColor: '#d33'
-          });
-        }
-      }
-      setTogglingId(null);
     });
+
+    if (result.isConfirmed) {
+      try {
+        const newStatus = currentStatus ? 0 : 1;
+        const response = await updateStockStatus(stockId, newStatus);
+        if (response && response.success !== false) {
+          await getStocks();
+          Swal.fire({
+            title: 'Success!',
+            text: `Stock status changed to ${newStatusText}`,
+            icon: 'success',
+          });
+        } else {
+          throw new Error(response?.message || 'Failed to update stock status');
+        }
+      } catch (error) {
+        Swal.fire({
+          title: 'Error!',
+          text: error.message || 'An unexpected error occurred',
+          icon: 'error',
+        });
+      }
+    }
+    setTogglingId(null);
   };
 
   const handleSearchChange = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
 
-    if (query.trim() !== '') {
-      const filteredData = allStocks.filter(stock => 
-        stock.Branch.toLowerCase().includes(query) ||
-        stock.Product.Name.toLowerCase().includes(query) ||
-        stock.Quantity.toString().includes(query)
-      );
-      setFilteredStockData(filteredData.length > 0 ? filteredData : []);
-    } else {
+    if (query.trim() === '') {
       setFilteredStockData(stockData);
+      return;
     }
+
+    const filteredData = allStocks.filter(stock => 
+      stock.Branch.toLowerCase().includes(query) ||
+      stock.Product.Name.toLowerCase().includes(query) ||
+      stock.Quantity.toString().includes(query)
+    );
+    setFilteredStockData(filteredData);
   };
 
   const handleSearch = () => {
@@ -198,11 +186,33 @@ const Managestock = () => {
     const filteredData = allStocks.filter(stock => {
       const matchesBranch = !selectedFilters.branch || stock.branchId === selectedFilters.branch.value;
       const matchesProduct = !selectedFilters.product || stock.productId === selectedFilters.product.value;
-      return matchesBranch && matchesProduct;
+      return matchesBranch && matchesProduct && stock.isActive === showActive;
     });
 
-    setFilteredStockData(filteredData.length > 0 ? filteredData : []);
+    setFilteredStockData(filteredData);
     setIsFilterVisible(false);
+  };
+
+  const toggleFilterVisibility = () => {
+    setIsFilterVisible(prev => !prev);
+  };
+
+  const exportToPDFData = () => {
+    if (loading) return [];
+    return filteredStockData.map(stock => ({
+      Branch: stock.Branch || "",
+      Product: stock.Product.Name || "",
+      Quantity: stock.Quantity || "0"
+    }));
+  };
+
+  const exportToExcelData = () => {
+    if (loading) return [];
+    return filteredStockData.map(stock => ({
+      Branch: stock.Branch || "",
+      Product: stock.Product.Name || "",
+      Quantity: stock.Quantity || "0"
+    }));
   };
 
   const columns = [
@@ -237,7 +247,7 @@ const Managestock = () => {
             type="checkbox"
             checked={isActive}
             onChange={() => handleToggleStatus(record.id, isActive)}
-            disabled={togglingId === record.id}
+            disabled={togglingId === record.id || loading}
           />
           <label className="form-check-label">
             {isActive ? 'Active' : 'Inactive'}
@@ -257,6 +267,7 @@ const Managestock = () => {
               data-bs-toggle="modal"
               data-bs-target="#edit-units"
               onClick={() => handleEdit(record)}
+              disabled={loading}
             >
               <Edit className="feather-edit" />
             </Link>
@@ -266,105 +277,28 @@ const Managestock = () => {
     },
   ];
 
-  const renderTooltip = (props) => (
-    <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>
-  );
-  const renderExcelTooltip = (props) => (
-    <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
-  );
-  const renderRefreshTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
-  );
-  const renderCollapseTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>
-  );
-
-  const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-      doc.text(`Stock List (${showActive ? 'Active' : 'Inactive'})`, 14, 15);
-      
-      const tableColumn = ["Branch", "Product", "Quantity"];
-      const tableRows = filteredStockData.map(stock => [
-        stock.Branch || "",
-        stock.Product.Name || "",
-        stock.Quantity || "0"
-      ]);
-
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 20,
-        theme: 'grid',
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      });
-
-      doc.save(`stock_list_${showActive ? 'active' : 'inactive'}.pdf`);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      Swal.fire({
-        title: "Error!",
-        text: "Failed to generate PDF: " + error.message,
-        icon: "error",
-        confirmButtonText: "OK",
-      });
-    }
-  };
-
-  const exportToExcel = () => {
-    try {
-      if (!filteredStockData || filteredStockData.length === 0) {
-        Swal.fire({
-          title: "No Data",
-          text: "There are no stocks to export",
-          icon: "warning",
-          confirmButtonText: "OK",
-        });
-        return;
-      }
-
-      const worksheetData = filteredStockData.map(stock => ({
-        Branch: stock.Branch || "",
-        Product: stock.Product.Name || "",
-        Quantity: stock.Quantity || "0"
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Stocks");
-      
-      worksheet["!cols"] = [
-        { wch: 20 }, { wch: 20 }, { wch: 10 }
-      ];
-
-      XLSX.writeFile(workbook, `stock_list_${showActive ? 'active' : 'inactive'}.xlsx`);
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      Swal.fire({
-        title: "Error!",
-        text: "Failed to export to Excel: " + error.message,
-        icon: "error",
-        confirmButtonText: "OK",
-      });
-    }
-  };
-
   return (
     <div className="page-wrapper">
       <div className="content">
+        <Breadcrumbs 
+          maintitle="Manage Stock"
+          subtitle="Manage your stock"
+          addButton="Add Stock"
+          buttonDataToggle="modal"
+          buttonDataTarget="#add-units"
+          onDownloadPDF={exportToPDFData}
+          onDownloadExcel={exportToExcelData}
+          onRefresh={getStocks}
+        />
         <div className="page-header">
           <div className="add-item d-flex flex-column">
-            <div className="page-title">
-              <h4>Manage Stock</h4>
-              <h6>Manage your stock</h6>
-            </div>
             <div className="status-toggle-btns mt-2">
               <div className="btn-group" role="group">
                 <button
                   type="button"
                   className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
                   onClick={() => setShowActive(true)}
+                  disabled={loading}
                 >
                   Active
                 </button>
@@ -372,59 +306,12 @@ const Managestock = () => {
                   type="button"
                   className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
                   onClick={() => setShowActive(false)}
+                  disabled={loading}
                 >
                   Inactive
                 </button>
               </div>
             </div>
-          </div>
-          <ul className="table-top-head">
-            <li>
-              <OverlayTrigger placement="top" overlay={renderTooltip}>
-                <Link onClick={exportToPDF}>
-                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-                <Link onClick={exportToExcel}>
-                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                <Link onClick={getStocks}>
-                  <RotateCcw />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
-                <Link
-                  id="collapse-header"
-                  className={data ? "active" : ""}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    dispatch(setToogleHeader(!data));
-                  }}
-                >
-                  <ChevronUp />
-                </Link>
-              </OverlayTrigger>
-            </li>
-          </ul>
-          <div className="page-btn">
-            <Link
-              to="#"
-              className="btn btn-added"
-              data-bs-toggle="modal"
-              data-bs-target="#add-units"
-            >
-              <PlusCircle className="me-2 iconsize" />
-              Add Stock
-            </Link>
           </div>
         </div>
         <div className="card table-list-card">
@@ -438,6 +325,7 @@ const Managestock = () => {
                     className="form-control form-control-sm formsearch"
                     value={searchQuery}
                     onChange={handleSearchChange}
+                    disabled={loading}
                   />
                   <Link to="#" className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
@@ -449,6 +337,7 @@ const Managestock = () => {
                   className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`}
                   id="filter_search"
                   onClick={toggleFilterVisibility}
+                  disabled={loading}
                 >
                   <Filter className="filter-icon" />
                   <span>
@@ -477,6 +366,7 @@ const Managestock = () => {
                           branch: selected
                         }))}
                         isLoading={loading}
+                        isDisabled={loading}
                         isClearable
                       />
                     </div>
@@ -494,15 +384,21 @@ const Managestock = () => {
                           product: selected
                         }))}
                         isLoading={loading}
+                        isDisabled={loading}
                         isClearable
                       />
                     </div>
                   </div>
-                  <div className="col-lg-4 col-sm-6 col-12 ms-auto">
+                  <div className="col-lg-4 col-sm-6 col-12">
                     <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto" onClick={handleSearch}>
-                        <i className="feather-search" /> Search
-                      </a>
+                      <button
+                        className="btn btn-primary"
+                        onClick={handleSearch}
+                        disabled={loading}
+                      >
+                        <i className="feather-search me-1" />
+                        Search
+                      </button>
                     </div>
                   </div>
                 </div>
