@@ -1,7 +1,6 @@
 import {
   ChevronUp,
   Edit,
-  Filter,
   PlusCircle,
   RotateCcw,
   Trash2,
@@ -29,16 +28,11 @@ const ProductList = () => {
   const [products, setProducts] = useState([]);
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [taxes, setTaxes] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedTax, setSelectedTax] = useState(null);
-
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
-  };
 
   const loadProductsData = async () => {
     try {
@@ -158,19 +152,19 @@ const ProductList = () => {
     }
   };
 
-  const handleFilterChange = () => {
+  const applyFilters = (category, tax) => {
     try {
       let filteredData = [...products];
 
-      if (selectedCategory) {
+      if (category) {
         filteredData = filteredData.filter(product => 
-          product.productCategoryDto?.id === selectedCategory.value
+          product.productCategoryDto?.id === category.value
         );
       }
 
-      if (selectedTax) {
+      if (tax) {
         filteredData = filteredData.filter(product => 
-          product.taxDto?.id === selectedTax.value
+          product.taxDto?.id === tax.value
         );
       }
 
@@ -178,6 +172,10 @@ const ProductList = () => {
     } catch (error) {
       console.error('Error applying filters:', error);
     }
+  };
+
+  const handleSearch = () => {
+    applyFilters(selectedCategory, selectedTax);
   };
 
   const columns = [
@@ -417,82 +415,46 @@ const ProductList = () => {
           <div className="card-body">
             <div className="table-top">
               <div className="search-set">
-                <div className="search-input">
-                  <input
-                    type="text"
-                    placeholder="Search" 
-                    className="form-control form-control-sm formsearch"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                  />
-                  <Link to className="btn btn-searchset">
-                    <i data-feather="search" className="feather-search" />
-                  </Link>
-                </div>
-              </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`}
-                  id="filter_search"
-                  onClick={toggleFilterVisibility}
-                >
-                  <Filter className="filter-icon" />
-                  <span>
-                    <ImageWithBasePath src="assets/img/icons/closes.svg" alt="img" />
-                  </span>
-                </Link>
-              </div>
-            </div>
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-12 col-sm-12">
-                    <div className="row">
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <Select
-                            className="select"
-                            options={categories}
-                            placeholder="Select Category"
-                            value={selectedCategory}
-                            onChange={(selected) => {
-                              setSelectedCategory(selected);
-                            }}
-                            isClearable
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <Select
-                            className="select"
-                            options={taxes}
-                            placeholder="Select Tax"
-                            value={selectedTax}
-                            onChange={(selected) => {
-                              setSelectedTax(selected);
-                            }}
-                            isClearable
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <Link 
-                            className="btn btn-filters"
-                            onClick={handleFilterChange}
-                          >
-                            <i data-feather="search" className="feather-search" />
-                            Search
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
+                <div className="search-path d-flex align-items-center gap-2" style={{ width: '100%' }}>
+                  <div className="search-input me-2">
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      className="form-control form-control-sm formsearch"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                    />
+                    <Link to className="btn btn-searchset">
+                      <i data-feather="search" className="feather-search" />
+                    </Link>
                   </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      options={categories}
+                      placeholder="Select Category"
+                      value={selectedCategory}
+                      onChange={(selected) => setSelectedCategory(selected)}
+                      isClearable
+                    />
+                  </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      options={taxes}
+                      placeholder="Select Tax"
+                      value={selectedTax}
+                      onChange={(selected) => setSelectedTax(selected)}
+                      isClearable
+                    />
+                  </div>
+                  <button 
+                    className="btn btn-primary ms-auto"
+                    onClick={handleSearch}
+                  >
+                    <i className="feather-search" />
+                    Search
+                  </button>
                 </div>
               </div>
             </div>
@@ -506,5 +468,4 @@ const ProductList = () => {
     </div>
   );
 };
-
 export default ProductList;
