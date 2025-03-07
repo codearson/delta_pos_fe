@@ -4,7 +4,6 @@ import {
   Filter,
   PlusCircle,
   RotateCcw,
-  Trash2,
 } from "feather-icons-react/build/IconComponents";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,23 +11,26 @@ import { Link } from "react-router-dom";
 import Select from "react-select";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import Brand from "../../core/modals/inventory/brand";
-import withReactContent from "sweetalert2-react-content";
 import Swal from "sweetalert2";
 import { all_routes } from "../../Router/all_routes";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import Table from "../../core/pagination/datatable";
 import { setToogleHeader } from "../../core/redux/action";
-import { fetchProducts, updateProductStatus, getProductByName, getProductByBarcode } from '../Api/productApi';
+import { fetchProducts, updateProductStatus } from '../Api/productApi';
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import "../../style/scss/pages/_categorylist.scss";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showActive, setShowActive] = useState(true);
+  const [togglingId, setTogglingId] = useState(null);
 
   const toggleFilterVisibility = () => {
     setIsFilterVisible((prevVisibility) => !prevVisibility);
@@ -37,109 +39,80 @@ const ProductList = () => {
   const loadProductsData = async () => {
     try {
       const data = await fetchProducts();
-      const reversedData = [...data].reverse();
-      setProducts(reversedData);
+      if (Array.isArray(data)) {
+        setAllProducts(data);
+        const filteredData = data.filter(product => product.isActive === showActive).reverse();
+        setProducts(filteredData);
+      } else {
+        setAllProducts([]);
+        setProducts([]);
+      }
     } catch (error) {
       console.error("Error fetching products:", error.message);
+      setAllProducts([]);
+      setProducts([]);
     }
   };
 
   useEffect(() => {
     loadProductsData();
-  }, []);
+  }, [showActive]);
 
   const route = all_routes;
 
-  // const subcategorylist = [
-  //   { value: "choose", label: "Choose Sub Category" },
-  //   { value: "computers", label: "Computers" },
-  //   { value: "fruits", label: "Fruits" },
-  // ];
-  // const brandlist = [
-  //   { value: "all", label: "All Brand" },
-  //   { value: "lenovo", label: "Lenovo" },
-  //   { value: "nike", label: "Nike" },
-  // ];
+  const handleToggleStatus = (productId, currentStatus) => {
+    setTogglingId(productId);
+    const newStatusText = currentStatus ? 'Inactive' : 'Active';
 
-  const MySwal = withReactContent(Swal);
-
-  const handleStatusUpdate = async (productId) => {
-    try {
-      const result = await MySwal.fire({
-        title: 'Are you sure?',
-        text: "You want to delete this product?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, cancel!',
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        reverseButtons: false
-      });
-
+    Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to change this product to ${newStatusText}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, change it!',
+      cancelButtonText: 'No, cancel'
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        MySwal.fire({
-          title: 'Deleting...',
-          text: 'Please wait while we delete the product.',
-          allowOutsideClick: false,
-          showConfirmButton: false,
-          willOpen: () => {
-            MySwal.showLoading();
+        try {
+          const newStatus = currentStatus ? 0 : 1;
+          const response = await updateProductStatus(productId, newStatus);
+          if (response && response.success !== false) {
+            loadProductsData();
+          } else {
+            Swal.fire({
+              title: 'Error!',
+              text: response?.message || 'Failed to update product status.',
+              icon: 'error',
+              confirmButtonColor: '#d33'
+            });
           }
-        });
-
-        const response = await updateProductStatus(productId, 0);
-        if (response && response.success !== false) {
-          MySwal.fire({
-            title: 'Deleted!',
-            text: 'Product has been deleted.',
-            icon: 'success',
-            confirmButtonColor: '#3085d6'
-          }).then(() => {
-            loadProductsData(); // Refresh the product list
-          });
-        } else {
-          MySwal.fire({
+        } catch (error) {
+          console.error("Error updating product status:", error);
+          Swal.fire({
             title: 'Error!',
-            text: response?.message || 'Failed to delete product. Please try again.',
+            text: 'An unexpected error occurred.',
             icon: 'error',
             confirmButtonColor: '#d33'
           });
         }
       }
-    } catch (error) {
-      console.error("Error updating product status:", error);
-      MySwal.fire({
-        title: 'Error!',
-        text: 'An unexpected error occurred. Please try again.',
-        icon: 'error',
-        confirmButtonColor: '#d33'
-      });
-    }
+      setTogglingId(null);
+    });
   };
 
-  const handleSearchChange = async (e) => {
+  const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    try {
-      if (query.trim() !== '') {
-        // Try searching by name first
-        const nameSearchResponse = await getProductByName(query);
-        let searchProducts = nameSearchResponse?.responseDto || [];
-
-        // If no results found by name, try searching by barcode
-        if (!searchProducts.length) {
-          const barcodeSearchResponse = await getProductByBarcode(query);
-          searchProducts = barcodeSearchResponse?.responseDto || [];
-        }
-
-        setProducts(Array.isArray(searchProducts) ? searchProducts : []);
-      } else {
-        loadProductsData();
-      }
-    } catch (error) {
-      console.error('Error searching products:', error);
-      setProducts([]);
+    if (query.trim() !== '') {
+      const searchProducts = allProducts.filter(product => 
+        product.name.toLowerCase().includes(query.toLowerCase()) ||
+        product.barcode.toLowerCase().includes(query.toLowerCase())
+      );
+      setProducts(searchProducts.length > 0 ? searchProducts : []);
+    } else {
+      loadProductsData();
     }
   };
 
@@ -157,7 +130,7 @@ const ProductList = () => {
     {
       title: "Category",
       dataIndex: "productCategoryDto",
-      render: (productCategoryDto) => productCategoryDto?.productCategoryName || 'N/A', // Ensure this matches your API response structure
+      render: (productCategoryDto) => productCategoryDto?.productCategoryName || 'N/A',
       sorter: (a, b) => (a.productCategoryDto?.productCategoryName || '').localeCompare(b.productCategoryDto?.productCategoryName || ''),
     },
     {
@@ -189,6 +162,24 @@ const ProductList = () => {
       sorter: (a, b) => a.lowStock - b.lowStock,
     },
     {
+      title: "Status",
+      dataIndex: "isActive",
+      render: (isActive, record) => (
+        <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
+          <input
+            className="form-check-input"
+            type="checkbox"
+            checked={isActive}
+            onChange={() => handleToggleStatus(record.id, isActive)}
+            disabled={togglingId === record.id}
+          />
+          <label className="form-check-label">
+            {isActive ? 'Active' : 'Inactive'}
+          </label>
+        </div>
+      ),
+    },
+    {
       title: "Action",
       dataIndex: "action",
       render: (_, record) => (
@@ -200,13 +191,6 @@ const ProductList = () => {
             >
               <Edit className="feather-edit" />
             </Link>
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={() => handleStatusUpdate(record.id)}
-            >
-              <Trash2 className="feather-trash-2" />
-            </Link>
           </div>
         </td>
       ),
@@ -214,30 +198,22 @@ const ProductList = () => {
   ];
 
   const renderTooltip = (props) => (
-    <Tooltip id="pdf-tooltip" {...props}>
-      Pdf
-    </Tooltip>
+    <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>
   );
   const renderExcelTooltip = (props) => (
-    <Tooltip id="excel-tooltip" {...props}>
-      Excel
-    </Tooltip>
+    <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
   );
   const renderRefreshTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Refresh
-    </Tooltip>
+    <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
   );
   const renderCollapseTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Collapse
-    </Tooltip>
+    <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>
   );
 
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      doc.text("Product List", 14, 15);
+      doc.text(`Product List (${showActive ? 'Active' : 'Inactive'})`, 14, 15);
       
       const tableColumn = ["Product Name", "Bar Code", "Category", "Tax %", "Purchase Price", "Price/Unit", "Qty", "Low Stock"];
       const tableRows = products.map(product => [
@@ -260,10 +236,10 @@ const ProductList = () => {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       });
 
-      doc.save("product_list.pdf");
+      doc.save(`product_list_${showActive ? 'active' : 'inactive'}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      MySwal.fire({
+      Swal.fire({
         title: "Error!",
         text: "Failed to generate PDF: " + error.message,
         icon: "error",
@@ -275,7 +251,7 @@ const ProductList = () => {
   const exportToExcel = () => {
     try {
       if (!products || products.length === 0) {
-        MySwal.fire({
+        Swal.fire({
           title: "No Data",
           text: "There are no products to export",
           icon: "warning",
@@ -299,22 +275,15 @@ const ProductList = () => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
       
-      // Set column widths
       worksheet["!cols"] = [
-        { wch: 20 }, // Product Name
-        { wch: 15 }, // Bar Code
-        { wch: 15 }, // Category
-        { wch: 12 }, // Tax
-        { wch: 12 }, // Purchase Price
-        { wch: 12 }, // Price Per Unit
-        { wch: 10 }, // Quantity
-        { wch: 10 }  // Low Stock
+        { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
+        { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }
       ];
 
-      XLSX.writeFile(workbook, "product_list.xlsx");
+      XLSX.writeFile(workbook, `product_list_${showActive ? 'active' : 'inactive'}.xlsx`);
     } catch (error) {
       console.error("Error exporting to Excel:", error);
-      MySwal.fire({
+      Swal.fire({
         title: "Error!",
         text: "Failed to export to Excel: " + error.message,
         icon: "error",
@@ -327,10 +296,28 @@ const ProductList = () => {
     <div className="page-wrapper">
       <div className="content">
         <div className="page-header">
-          <div className="add-item d-flex">
+          <div className="add-item d-flex flex-column">
             <div className="page-title">
               <h4>Product List</h4>
               <h6>Manage your products</h6>
+            </div>
+            <div className="status-toggle-btns mt-2">
+              <div className="btn-group" role="group">
+                <button
+                  type="button"
+                  className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(true)}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(false)}
+                >
+                  Inactive
+                </button>
+              </div>
             </div>
           </div>
           <ul className="table-top-head">
@@ -384,7 +371,7 @@ const ProductList = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search"
+                    placeholder="Search by Name or Barcode"
                     className="form-control form-control-sm formsearch"
                     value={searchQuery}
                     onChange={handleSearchChange}
@@ -420,20 +407,10 @@ const ProductList = () => {
                         <div className="input-blocks">
                           <Select
                             className="select"
-                            //options={subcategorylist}
                             placeholder="Choose Category"
                           />
                         </div>
                       </div>
-                      {/* <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <Select
-                            className="select"
-                            //options={brandlist}
-                            placeholder="Tax"
-                          />
-                        </div>
-                      </div> */}
                       <div className="col-lg-2 col-sm-6 col-12">
                         <div className="input-blocks">
                           <Link className="btn btn-filters">
@@ -448,7 +425,7 @@ const ProductList = () => {
               </div>
             </div>
             <div className="table-responsive">
-              <Table columns={columns} dataSource={products} />
+              <Table columns={columns} dataSource={products} rowKey={(record) => record.id} />
             </div>
           </div>
         </div>
