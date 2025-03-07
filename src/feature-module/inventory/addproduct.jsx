@@ -58,18 +58,36 @@ const AddProduct = () => {
 
   const loadCategoriesData = async () => {
     setLoadingCategories(true);
-    const data = await fetchProductCategories();
-    const reversedData = [...data].reverse();
-    setCategories(reversedData.map((cat) => ({ value: cat.id, label: cat.productCategoryName })));
-    setLoadingCategories(false);
+    try {
+      const data = await fetchProductCategories();
+      const reversedData = [...data].reverse();
+      setCategories(reversedData
+        .filter(cat => cat.isActive === true)
+        .map((cat) => ({ value: cat.id, label: cat.productCategoryName }))
+      );
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
   };
-
+  
   const loadTaxesData = async () => {
     setLoadingTaxes(true);
-    const data = await fetchTaxes();
-    const reversedData = [...data].reverse();
-    setTaxes(reversedData.map((tax) => ({ value: tax.id, label: `${tax.taxPercentage}%` })));
-    setLoadingTaxes(false);
+    try {
+      const data = await fetchTaxes();
+      const reversedData = [...data].reverse();
+      setTaxes(reversedData
+        .filter(tax => tax.isActive === true)
+        .map((tax) => ({ value: tax.id, label: `${tax.taxPercentage}%` }))
+      );
+    } catch (error) {
+      console.error('Error loading taxes:', error);
+      setTaxes([]);
+    } finally {
+      setLoadingTaxes(false);
+    }
   };
 
   const renderCollapseTooltip = (props) => (
