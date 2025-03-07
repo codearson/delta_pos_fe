@@ -12,11 +12,14 @@ import Select from "react-select";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import Brand from "../../core/modals/inventory/brand";
 import Swal from "sweetalert2";
+import withReactContent from 'sweetalert2-react-content';
 import { all_routes } from "../../Router/all_routes";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import Table from "../../core/pagination/datatable";
 import { setToogleHeader } from "../../core/redux/action";
 import { fetchProducts, updateProductStatus } from '../Api/productApi';
+import { fetchProductCategories } from '../Api/ProductCategoryApi';
+import { fetchTaxes } from '../Api/TaxApi';
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -25,12 +28,19 @@ import "../../style/scss/pages/_categorylist.scss";
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [taxes, setTaxes] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedTax, setSelectedTax] = useState(null);
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
+
+  const MySwal = withReactContent(Swal);
+  const route = all_routes;
 
   const toggleFilterVisibility = () => {
     setIsFilterVisible((prevVisibility) => !prevVisibility);
@@ -54,17 +64,36 @@ const ProductList = () => {
     }
   };
 
+  const loadFilterOptions = async () => {
+    try {
+      const categoriesData = await fetchProductCategories();
+      const formattedCategories = categoriesData.map(category => ({
+        value: category.id,
+        label: category.productCategoryName
+      }));
+      setCategories(formattedCategories);
+
+      const taxesData = await fetchTaxes();
+      const formattedTaxes = taxesData.map(tax => ({
+        value: tax.id,
+        label: `${tax.taxPercentage}%`
+      }));
+      setTaxes(formattedTaxes);
+    } catch (error) {
+      console.error('Error loading filter options:', error);
+    }
+  };
+
   useEffect(() => {
     loadProductsData();
+    loadFilterOptions();
   }, [showActive]);
 
-  const route = all_routes;
-
-  const handleToggleStatus = (productId, currentStatus) => {
+  const handleToggleStatus = async (productId, currentStatus) => {
     setTogglingId(productId);
     const newStatusText = currentStatus ? 'Inactive' : 'Active';
 
-    Swal.fire({
+    const result = await MySwal.fire({
       title: 'Are you sure?',
       text: `Do you want to change this product to ${newStatusText}?`,
       icon: 'warning',
@@ -72,47 +101,86 @@ const ProductList = () => {
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
       confirmButtonText: 'Yes, change it!',
-      cancelButtonText: 'No, cancel'
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const newStatus = currentStatus ? 0 : 1;
-          const response = await updateProductStatus(productId, newStatus);
-          if (response && response.success !== false) {
-            loadProductsData();
-          } else {
-            Swal.fire({
-              title: 'Error!',
-              text: response?.message || 'Failed to update product status.',
-              icon: 'error',
-              confirmButtonColor: '#d33'
-            });
-          }
-        } catch (error) {
-          console.error("Error updating product status:", error);
+      cancelButtonText: 'No, cancel',
+      reverseButtons: false
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const newStatus = currentStatus ? 0 : 1;
+        const response = await updateProductStatus(productId, newStatus);
+        if (response && response.success !== false) {
+          loadProductsData();
+          Swal.fire({
+            title: 'Success!',
+            text: `Product status changed to ${newStatusText}`,
+            icon: 'success',
+            confirmButtonColor: '#3085d6'
+          });
+        } else {
           Swal.fire({
             title: 'Error!',
-            text: 'An unexpected error occurred.',
+            text: response?.message || 'Failed to update product status.',
             icon: 'error',
             confirmButtonColor: '#d33'
           });
         }
+      } catch (error) {
+        console.error("Error updating product status:", error);
+        Swal.fire({
+          title: 'Error!',
+          text: 'An unexpected error occurred.',
+          icon: 'error',
+          confirmButtonColor: '#d33'
+        });
       }
-      setTogglingId(null);
-    });
+    }
+    setTogglingId(null);
   };
 
   const handleSearchChange = (e) => {
-    const query = e.target.value;
+    const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-    if (query.trim() !== '') {
-      const searchProducts = allProducts.filter(product => 
-        product.name.toLowerCase().includes(query.toLowerCase()) ||
-        product.barcode.toLowerCase().includes(query.toLowerCase())
-      );
-      setProducts(searchProducts.length > 0 ? searchProducts : []);
-    } else {
-      loadProductsData();
+
+    try {
+      if (query.trim() !== '') {
+        const filteredData = allProducts.filter(product => 
+          product.name?.toLowerCase().includes(query) ||
+          product.barcode?.toLowerCase().includes(query) ||
+          product.price?.toString().includes(query) ||
+          product.quantity?.toString().includes(query) ||
+          product.taxDto?.taxPercentage?.toString().includes(query) ||
+          product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
+        );
+        setProducts(filteredData.filter(product => product.isActive === showActive));
+      } else {
+        loadProductsData();
+      }
+    } catch (error) {
+      console.error('Error searching products:', error);
+      setProducts([]);
+    }
+  };
+
+  const handleFilterChange = () => {
+    try {
+      let filteredData = [...allProducts].filter(product => product.isActive === showActive);
+
+      if (selectedCategory) {
+        filteredData = filteredData.filter(product => 
+          product.productCategoryDto?.id === selectedCategory.value
+        );
+      }
+
+      if (selectedTax) {
+        filteredData = filteredData.filter(product => 
+          product.taxDto?.id === selectedTax.value
+        );
+      }
+
+      setProducts(filteredData);
+    } catch (error) {
+      console.error('Error applying filters:', error);
     }
   };
 
@@ -142,13 +210,13 @@ const ProductList = () => {
     {
       title: "Purchase Price",
       dataIndex: "purchasePrice",
-      render: (purchasePrice) => `$${purchasePrice.toFixed(2)}`,
+      render: (purchasePrice) => `${purchasePrice.toFixed(2)}`,
       sorter: (a, b) => a.purchasePrice - b.purchasePrice,
     },
     {
       title: "Price Per Unit",
       dataIndex: "pricePerUnit",
-      render: (pricePerUnit) => `$${pricePerUnit.toFixed(2)}`,
+      render: (pricePerUnit) => `${pricePerUnit.toFixed(2)}`,
       sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
     },
     {
@@ -276,8 +344,14 @@ const ProductList = () => {
       XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
       
       worksheet["!cols"] = [
-        { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
-        { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 10 }
       ];
 
       XLSX.writeFile(workbook, `product_list_${showActive ? 'active' : 'inactive'}.xlsx`);
@@ -371,7 +445,7 @@ const ProductList = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search by Name or Barcode"
+                    placeholder="Search"
                     className="form-control form-control-sm formsearch"
                     value={searchQuery}
                     onChange={handleSearchChange}
@@ -407,13 +481,32 @@ const ProductList = () => {
                         <div className="input-blocks">
                           <Select
                             className="select"
-                            placeholder="Choose Category"
+                            options={categories}
+                            placeholder="Select Category"
+                            value={selectedCategory}
+                            onChange={(selected) => setSelectedCategory(selected)}
+                            isClearable
                           />
                         </div>
                       </div>
                       <div className="col-lg-2 col-sm-6 col-12">
                         <div className="input-blocks">
-                          <Link className="btn btn-filters">
+                          <Select
+                            className="select"
+                            options={taxes}
+                            placeholder="Select Tax"
+                            value={selectedTax}
+                            onChange={(selected) => setSelectedTax(selected)}
+                            isClearable
+                          />
+                        </div>
+                      </div>
+                      <div className="col-lg-2 col-sm-6 col-12">
+                        <div className="input-blocks">
+                          <Link 
+                            className="btn btn-filters"
+                            onClick={handleFilterChange}
+                          >
                             <i data-feather="search" className="feather-search" />
                             Search
                           </Link>
