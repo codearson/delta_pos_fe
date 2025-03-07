@@ -6,7 +6,6 @@ export const fetchSuppliers = async () => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //   console.error("No access token found. Please log in.");
             return [];
         }
 
@@ -14,7 +13,6 @@ export const fetchSuppliers = async () => {
         const userRole = decodedToken?.roles[0]?.authority;
 
         if (userRole !== "ROLE_ADMIN") {
-            //   console.error("Access denied. Only admins can fetch suppliers.");
             return [];
         }
 
@@ -26,11 +24,6 @@ export const fetchSuppliers = async () => {
 
         return response.data.responseDto || [];
     } catch (error) {
-        // console.error("Error fetching suppliers:", {
-        //   status: error.response?.status,
-        //   data: error.response?.data,
-        //   message: error.message,
-        // });
         return [];
     }
 };
@@ -40,7 +33,6 @@ export const saveSupplier = async (supplierData) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //   console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -48,7 +40,6 @@ export const saveSupplier = async (supplierData) => {
         const userRole = decodedToken?.roles[0]?.authority;
 
         if (userRole !== "ROLE_ADMIN") {
-            //   console.error("Access denied. Only admins can save suppliers.");
             return null;
         }
 
@@ -61,11 +52,6 @@ export const saveSupplier = async (supplierData) => {
 
         return response.data;
     } catch (error) {
-        // console.error("Error saving supplier:", {
-        //   status: error.response?.status,
-        //   data: error.response?.data,
-        //   message: error.message,
-        // });
         return null;
     }
 };
@@ -75,7 +61,6 @@ export const updateSupplier = async (supplierData) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //   console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -83,16 +68,12 @@ export const updateSupplier = async (supplierData) => {
         const userRole = decodedToken?.roles[0]?.authority;
 
         if (userRole !== "ROLE_ADMIN") {
-            //   console.error("Access denied. Only admins can update suppliers.");
             return null;
         }
 
         if (!supplierData.id) {
-            //   console.error("Supplier ID is missing in update data:", supplierData);
             return null;
         }
-
-        // console.log("Updating supplier with data:", supplierData);
 
         const { ...updateData } = supplierData;
         const response = await axios.post(`${BASE_BACKEND_URL}/supplier/update`, updateData, {
@@ -102,15 +83,8 @@ export const updateSupplier = async (supplierData) => {
             },
         });
 
-        // console.log("Update supplier response:", response.data);
         return response.data;
     } catch (error) {
-        // console.error("Error updating supplier:", {
-        //   status: error.response?.status,
-        //   data: error.response?.data,
-        //   message: error.message,
-        //   config: error.config,
-        // });
         return null;
     }
 };
@@ -120,7 +94,6 @@ export const updateSupplierStatus = async (supplierId) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            // console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -128,7 +101,6 @@ export const updateSupplierStatus = async (supplierId) => {
         const userRole = decodedToken?.roles[0]?.authority;
 
         if (userRole !== "ROLE_ADMIN") {
-            // console.error("Access denied. Only admins can update supplier status.");
             return null;
         }
 
@@ -145,55 +117,14 @@ export const updateSupplierStatus = async (supplierId) => {
 
         return response.data;
     } catch (error) {
-        //   console.error("Error updating supplier status:", {
-        //     status: error.response?.status,
-        //     data: error.response?.data,
-        //     message: error.message,
-        //   });
         return null;
     }
 };
-
-export const getSuppliersByName = async (name) => {
-    try {
-        const accessToken = localStorage.getItem("accessToken");
-
-        if (!accessToken) {
-            // console.error("No access token found. Please log in.");
-            return [];
-        }
-
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
-            // console.error("Access denied. Only admins can search suppliers.");
-            return [];
-        }
-
-        const response = await axios.get(`${BASE_BACKEND_URL}/supplier/getByName?name=${name}`, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-
-        return response.data.responseDto || [];
-    } catch (error) {
-        //   console.error("Error searching suppliers by name:", {
-        //     status: error.response?.status,
-        //     data: error.response?.data,
-        //     message: error.message,
-        //   });
-        return [];
-    }
-};
-
 
 function decodeJwt(token) {
     try {
         return JSON.parse(atob(token.split('.')[1]));
     } catch (error) {
-        // console.error("Error decoding JWT:", error);
         return null;
     }
 }

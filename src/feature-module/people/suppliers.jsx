@@ -6,13 +6,14 @@ import { Table } from "antd";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import SupplierModal from "../../core/modals/peoples/supplierModal";
-import { fetchSuppliers, saveSupplier, updateSupplier, updateSupplierStatus, getSuppliersByName } from '../Api/supplierApi';
+import { fetchSuppliers, saveSupplier, updateSupplier, updateSupplierStatus } from '../Api/supplierApi';
 import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from "xlsx";
 
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
+  const [allSuppliers, setAllSuppliers] = useState([]); // Store all suppliers for filtering
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,8 +27,14 @@ const Suppliers = () => {
       const data = await fetchSuppliers();
       const reversedData = data.reverse();
       setSuppliers(reversedData);
+      setAllSuppliers(reversedData); // Store all suppliers
     } catch (error) {
-      console.error("Error fetching suppliers:", error);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to fetch suppliers: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     }
   };
 
@@ -52,8 +59,7 @@ const Suppliers = () => {
     try {
       const result = await saveSupplier(supplierData);
       if (result) {
-        const updatedSuppliers = await fetchSuppliers();
-        setSuppliers(updatedSuppliers);
+        await fetchSuppliersData();
         setSelectedSupplier(null);
         MySwal.fire({
           title: "Success!",
@@ -78,8 +84,7 @@ const Suppliers = () => {
     try {
       const result = await updateSupplier(supplierData);
       if (result) {
-        const updatedSuppliers = await fetchSuppliers();
-        setSuppliers(updatedSuppliers);
+        await fetchSuppliersData();
         setSelectedSupplier(null);
         MySwal.fire({
           title: "Success!",
@@ -126,8 +131,7 @@ const Suppliers = () => {
     try {
       const result = await updateSupplierStatus(supplierId, 0);
       if (result) {
-        const updatedSuppliers = await fetchSuppliers();
-        setSuppliers(updatedSuppliers);
+        await fetchSuppliersData();
         MySwal.fire({
           title: "Deleted!",
           text: "Supplier has been deleted.",
@@ -147,17 +151,20 @@ const Suppliers = () => {
     }
   };
 
-  const handleSearch = async (e) => {
-    setSearchTerm(e.target.value);
-    try {
-      if (e.target.value.trim() !== "") {
-        const searchResults = await getSuppliersByName(e.target.value);
-        setSuppliers(searchResults);
-      } else {
-        fetchSuppliersData();
-      }
-    } catch (error) {
-      console.error("Error searching suppliers:", error);
+  const handleSearch = (e) => {
+    const value = e.target.value.toLowerCase();
+    setSearchTerm(value);
+    
+    if (value.trim() !== "") {
+      const filteredSuppliers = allSuppliers.filter(supplier => 
+        (supplier.name && supplier.name.toLowerCase().includes(value)) ||
+        (supplier.emailAddress && supplier.emailAddress.toLowerCase().includes(value)) ||
+        (supplier.mobileNumber && supplier.mobileNumber.toLowerCase().includes(value)) ||
+        (supplier.whatsappNumber && supplier.whatsappNumber.toLowerCase().includes(value))
+      );
+      setSuppliers(filteredSuppliers.reverse());
+    } else {
+      setSuppliers([...allSuppliers].reverse());
     }
   };
 
@@ -191,7 +198,6 @@ const Suppliers = () => {
       });
       doc.save("supplier_list.pdf");
     } catch (error) {
-      console.error("Error generating PDF:", error);
       MySwal.fire({
         title: "Error!",
         text: "Failed to generate PDF: " + error.message,
@@ -224,7 +230,6 @@ const Suppliers = () => {
       worksheet["!cols"] = [{ wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 }];
       XLSX.writeFile(workbook, "supplier_list.xlsx");
     } catch (error) {
-      console.error("Error generating Excel:", error);
       MySwal.fire({
         title: "Error!",
         text: "Failed to generate Excel: " + error.message,
@@ -236,7 +241,7 @@ const Suppliers = () => {
 
   const handleRefresh = () => {
     setSearchTerm("");
-    fetchSuppliersData();
+    setSuppliers([...allSuppliers].reverse());
   };
 
   const handleAddClick = () => {
@@ -244,7 +249,6 @@ const Suppliers = () => {
   };
 
   const handleEditClick = (record) => {
-    console.log("Setting selectedSupplier:", record);
     setSelectedSupplier(record);
   };
 
