@@ -62,7 +62,7 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
     
     // Validate contact number
     if (!formData.contactNumber.match(/^\d{10}$/)) {
-      return; // Don't submit if contact number is invalid
+      return;
     }
     
     if (selectedCustomer) {
@@ -181,7 +181,7 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
         </div>
       </div>
 
-      {/* Edit Branch Modal - Same form fields as Add Branch Modal */}
+      {/* Edit Branch Modal */}
       <div className="modal fade" id="edit-branch" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">

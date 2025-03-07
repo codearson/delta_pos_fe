@@ -12,6 +12,8 @@ import { saveBranch, updateBranch, updateBranchStatus } from "../../../feature-m
 const StoreList = () => {
   const [branchData, setBranchData] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredBranches, setFilteredBranches] = useState([]);
   
   useEffect(() => {
     loadBranches();
@@ -21,6 +23,7 @@ const StoreList = () => {
     try {
       const branches = await fetchBranches();
       setBranchData([...branches].reverse());
+      setFilteredBranches(branches);
     } catch (error) {
       Swal.fire({
         title: 'Error',
@@ -199,6 +202,18 @@ const StoreList = () => {
     loadBranches();
   };
 
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    const filtered = branchData.filter(branch =>
+      branch.branchName.toLowerCase().includes(value.toLowerCase()) ||
+      branch.branchCode.toLowerCase().includes(value.toLowerCase()) ||
+      branch.address.toLowerCase().includes(value.toLowerCase()) ||
+      branch.contactNumber.toLowerCase().includes(value.toLowerCase()) ||
+      branch.emailAddress.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredBranches(filtered);
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -222,6 +237,8 @@ const StoreList = () => {
                     type="text"
                     placeholder="Search"
                     className="form-control form-control-sm formsearch"
+                    onChange={(e) => handleSearch(e.target.value)}
+                    value={searchTerm}
                   />
                   <Link to className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
@@ -233,7 +250,7 @@ const StoreList = () => {
               <Table
                 className="table datanew"
                 columns={columns}
-                dataSource={branchData}
+                dataSource={filteredBranches}
                 rowKey={(record) => record.id}
               />
             </div>
