@@ -65,14 +65,12 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
       return; // Don't submit if contact number is invalid
     }
     
-    // Allow submission even with invalid email
     if (selectedCustomer) {
       onUpdate(formData);
     } else {
       onSave(formData);
     }
     
-    // Reset form
     setFormData({
       branchName: '',
       branchCode: '',
