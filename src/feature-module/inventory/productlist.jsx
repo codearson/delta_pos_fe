@@ -18,10 +18,12 @@ import { all_routes } from "../../Router/all_routes";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import Table from "../../core/pagination/datatable";
 import { setToogleHeader } from "../../core/redux/action";
-import { fetchProducts, updateProductStatus, getProductByName, getProductByBarcode } from '../Api/productApi';
+import { fetchProducts, updateProductStatus } from '../Api/productApi';
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { fetchProductCategories } from '../Api/ProductCategoryApi';
+import { fetchTaxes } from '../Api/TaxApi';
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -29,6 +31,10 @@ const ProductList = () => {
   const data = useSelector((state) => state.toggle_header);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [taxes, setTaxes] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedTax, setSelectedTax] = useState(null);
 
   const toggleFilterVisibility = () => {
     setIsFilterVisible((prevVisibility) => !prevVisibility);
@@ -44,22 +50,32 @@ const ProductList = () => {
     }
   };
 
+  const loadFilterOptions = async () => {
+    try {
+      const categoriesData = await fetchProductCategories();
+      const formattedCategories = categoriesData.map(category => ({
+        value: category.id,
+        label: category.productCategoryName
+      }));
+      setCategories(formattedCategories);
+
+      const taxesData = await fetchTaxes();
+      const formattedTaxes = taxesData.map(tax => ({
+        value: tax.id,
+        label: `${tax.taxPercentage}%`
+      }));
+      setTaxes(formattedTaxes);
+    } catch (error) {
+      console.error('Error loading filter options:', error);
+    }
+  };
+
   useEffect(() => {
     loadProductsData();
+    loadFilterOptions();
   }, []);
 
   const route = all_routes;
-
-  // const subcategorylist = [
-  //   { value: "choose", label: "Choose Sub Category" },
-  //   { value: "computers", label: "Computers" },
-  //   { value: "fruits", label: "Fruits" },
-  // ];
-  // const brandlist = [
-  //   { value: "all", label: "All Brand" },
-  //   { value: "lenovo", label: "Lenovo" },
-  //   { value: "nike", label: "Nike" },
-  // ];
 
   const MySwal = withReactContent(Swal);
 
@@ -119,27 +135,48 @@ const ProductList = () => {
   };
 
   const handleSearchChange = async (e) => {
-    const query = e.target.value;
+    const query = e.target.value.toLowerCase();
     setSearchQuery(query);
+
     try {
       if (query.trim() !== '') {
-        // Try searching by name first
-        const nameSearchResponse = await getProductByName(query);
-        let searchProducts = nameSearchResponse?.responseDto || [];
-
-        // If no results found by name, try searching by barcode
-        if (!searchProducts.length) {
-          const barcodeSearchResponse = await getProductByBarcode(query);
-          searchProducts = barcodeSearchResponse?.responseDto || [];
-        }
-
-        setProducts(Array.isArray(searchProducts) ? searchProducts : []);
+        const filteredData = products.filter(product => 
+          product.name?.toLowerCase().includes(query) ||
+          product.barcode?.toLowerCase().includes(query) ||
+          product.price?.toString().includes(query) ||
+          product.quantity?.toString().includes(query) ||
+          product.taxDto?.taxPercentage?.toString().includes(query) ||
+          product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
+        );
+        setProducts([...filteredData]);
       } else {
         loadProductsData();
       }
     } catch (error) {
       console.error('Error searching products:', error);
       setProducts([]);
+    }
+  };
+
+  const handleFilterChange = () => {
+    try {
+      let filteredData = [...products];
+
+      if (selectedCategory) {
+        filteredData = filteredData.filter(product => 
+          product.productCategoryDto?.id === selectedCategory.value
+        );
+      }
+
+      if (selectedTax) {
+        filteredData = filteredData.filter(product => 
+          product.taxDto?.id === selectedTax.value
+        );
+      }
+
+      setProducts(filteredData);
+    } catch (error) {
+      console.error('Error applying filters:', error);
     }
   };
 
@@ -157,7 +194,7 @@ const ProductList = () => {
     {
       title: "Category",
       dataIndex: "productCategoryDto",
-      render: (productCategoryDto) => productCategoryDto?.productCategoryName || 'N/A', // Ensure this matches your API response structure
+      render: (productCategoryDto) => productCategoryDto?.productCategoryName || 'N/A',
       sorter: (a, b) => (a.productCategoryDto?.productCategoryName || '').localeCompare(b.productCategoryDto?.productCategoryName || ''),
     },
     {
@@ -169,13 +206,13 @@ const ProductList = () => {
     {
       title: "Purchase Price",
       dataIndex: "purchasePrice",
-      render: (purchasePrice) => `$${purchasePrice.toFixed(2)}`,
+      render: (purchasePrice) => `${purchasePrice.toFixed(2)}`,
       sorter: (a, b) => a.purchasePrice - b.purchasePrice,
     },
     {
       title: "Price Per Unit",
       dataIndex: "pricePerUnit",
-      render: (pricePerUnit) => `$${pricePerUnit.toFixed(2)}`,
+      render: (pricePerUnit) => `${pricePerUnit.toFixed(2)}`,
       sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
     },
     {
@@ -299,16 +336,15 @@ const ProductList = () => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
       
-      // Set column widths
       worksheet["!cols"] = [
-        { wch: 20 }, // Product Name
-        { wch: 15 }, // Bar Code
-        { wch: 15 }, // Category
-        { wch: 12 }, // Tax
-        { wch: 12 }, // Purchase Price
-        { wch: 12 }, // Price Per Unit
-        { wch: 10 }, // Quantity
-        { wch: 10 }  // Low Stock
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 10 }
       ];
 
       XLSX.writeFile(workbook, "product_list.xlsx");
@@ -384,7 +420,7 @@ const ProductList = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search"
+                    placeholder="Search" 
                     className="form-control form-control-sm formsearch"
                     value={searchQuery}
                     onChange={handleSearchChange}
@@ -420,23 +456,36 @@ const ProductList = () => {
                         <div className="input-blocks">
                           <Select
                             className="select"
-                            //options={subcategorylist}
-                            placeholder="Choose Category"
+                            options={categories}
+                            placeholder="Select Category"
+                            value={selectedCategory}
+                            onChange={(selected) => {
+                              setSelectedCategory(selected);
+                            }}
+                            isClearable
                           />
                         </div>
                       </div>
-                      {/* <div className="col-lg-2 col-sm-6 col-12">
+                      <div className="col-lg-2 col-sm-6 col-12">
                         <div className="input-blocks">
                           <Select
                             className="select"
-                            //options={brandlist}
-                            placeholder="Tax"
+                            options={taxes}
+                            placeholder="Select Tax"
+                            value={selectedTax}
+                            onChange={(selected) => {
+                              setSelectedTax(selected);
+                            }}
+                            isClearable
                           />
                         </div>
-                      </div> */}
+                      </div>
                       <div className="col-lg-2 col-sm-6 col-12">
                         <div className="input-blocks">
-                          <Link className="btn btn-filters">
+                          <Link 
+                            className="btn btn-filters"
+                            onClick={handleFilterChange}
+                          >
                             <i data-feather="search" className="feather-search" />
                             Search
                           </Link>
