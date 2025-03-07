@@ -55,7 +55,7 @@ const Signin = () => {
         if (loginResult.error === "email_not_found") {
           setEmailError("Email not found");
         } else if (loginResult.error === "incorrect_password") {
-          setPasswordError("Incorrect password");
+          setPasswordError("Please enter valid password");
         } else if (loginResult.error === "network_error") {
           setError("Connection error. Please check your internet connection or try again later.");
         } else {
@@ -98,7 +98,7 @@ const Signin = () => {
 
     if (value.trim()) {
       if (!value.includes('@')) {
-        setEmailError("Email must contain @ symbol");
+        setEmailError("Please enter valid email address");
       } else {
         setEmailError("");
       }
