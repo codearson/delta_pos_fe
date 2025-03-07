@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
-import { Filter } from "react-feather";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import Select from "react-select";
 import { Link } from "react-router-dom";
-import { Archive, Box } from "react-feather";
 import ManageStockModal from "../../core/modals/stocks/managestockModal";
 import { Edit, Trash2 } from "react-feather";
 import Swal from "sweetalert2";
@@ -17,7 +14,6 @@ import { fetchBranches } from "../Api/StockApi";
 const Managestock = () => {
   const [stockData, setStockData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [products, setProducts] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -27,10 +23,6 @@ const Managestock = () => {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredStockData, setFilteredStockData] = useState([]);
-
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
-  };
 
   const getStocks = async () => {
     setLoading(true);
@@ -268,7 +260,6 @@ const Managestock = () => {
 
     // Keep the reversed order in filtered results
     setFilteredStockData([...filteredData]);
-    setIsFilterVisible(false);
   };
 
   // Update useEffect to maintain reverse order when stockData changes
@@ -308,92 +299,54 @@ const Managestock = () => {
           <div className="card-body">
             <div className="table-top">
               <div className="search-set">
-                <div className="search-input">
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="form-control form-control-sm formsearch"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                  />
-                  <Link to="#" className="btn btn-searchset">
+                <div className="search-path d-flex align-items-center gap-2" style={{ width: '100%' }}>
+                  <div className="search-input me-2">
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      className="form-control form-control-sm formsearch"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                    />
+                    <Link to className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
                   </Link>
-                </div>
-              </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                >
-                  <Filter
-                    className="filter-icon"
-                    onClick={toggleFilterVisibility}
-                  />
-                  <span onClick={toggleFilterVisibility}>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
+                  </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      placeholder="Choose Branch"
+                      options={branches}
+                      value={selectedFilters.branch}
+                      onChange={(selected) => setSelectedFilters(prev => ({
+                        ...prev,
+                        branch: selected
+                      }))}
+                      isLoading={loading}
+                      isClearable
                     />
-                  </span>
-                </Link>
-              </div>
-            </div>
-            {/* /Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-4 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Archive className="info-img" />
-                      <Select
-                        className="select"
-                        placeholder="Choose Branch"
-                        options={branches}
-                        value={selectedFilters.branch}
-                        onChange={(selected) => setSelectedFilters(prev => ({
-                          ...prev,
-                          branch: selected
-                        }))}
-                        isLoading={loading}
-                        isClearable
-                      />
-                    </div>
                   </div>
-                  <div className="col-lg-4 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Box className="info-img" />
-                      <Select
-                        className="select"
-                        placeholder="Choose Product"
-                        options={products}
-                        value={selectedFilters.product}
-                        onChange={(selected) => setSelectedFilters(prev => ({
-                          ...prev,
-                          product: selected
-                        }))}
-                        isLoading={loading}
-                        isClearable
-                      />
-                    </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      placeholder="Choose Product"
+                      options={products}
+                      value={selectedFilters.product}
+                      onChange={(selected) => setSelectedFilters(prev => ({
+                        ...prev,
+                        product: selected
+                      }))}
+                      isLoading={loading}
+                      isClearable
+                    />
                   </div>
-                  <div className="col-lg-4 col-sm-6 col-12 ms-auto">
-                    <div className="input-blocks">
-                      <a 
-                        className="btn btn-filters ms-auto"
-                        onClick={handleSearch}
-                      >
-                        <i className="feather-search" />
-                        Search
-                      </a>
-                    </div>
-                  </div>
+                  <button 
+                    className="btn btn-primary ms-auto"
+                    onClick={handleSearch}
+                  >
+                    <i className="feather-search" />
+                    Search
+                  </button>
                 </div>
               </div>
             </div>
