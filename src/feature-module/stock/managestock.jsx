@@ -249,9 +249,6 @@ const Managestock = () => {
             onChange={() => handleToggleStatus(record.id, isActive)}
             disabled={togglingId === record.id || loading}
           />
-          <label className="form-check-label">
-            {isActive ? 'Active' : 'Inactive'}
-          </label>
         </div>
       ),
     },
@@ -321,7 +318,7 @@ const Managestock = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search by Branch, Product, or Quantity"
+                    placeholder="Search"
                     className="form-control form-control-sm formsearch"
                     value={searchQuery}
                     onChange={handleSearchChange}

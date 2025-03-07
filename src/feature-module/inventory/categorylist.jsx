@@ -174,9 +174,6 @@ const CategoryList = () => {
                         onChange={() => handleToggleStatus(record.id, isActive)}
                         disabled={togglingId === record.id}
                     />
-                    <label className="form-check-label">
-                        {isActive ? 'Active' : 'Inactive'}
-                    </label>
                 </div>
             ),
         },
@@ -284,7 +281,7 @@ const CategoryList = () => {
                                     <div className="search-input">
                                         <input
                                             type="text"
-                                            placeholder="Search by Category Name"
+                                            placeholder="Search"
                                             className="form-control form-control-sm formsearch"
                                             value={searchQuery}
                                             onChange={handleSearchChange}

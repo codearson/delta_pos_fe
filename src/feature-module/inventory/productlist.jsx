@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Filter, PlusCircle } from "feather-icons-react/build/IconComponents";
+import { Filter, PlusCircle, Edit, ChevronUp, RotateCcw } from "feather-icons-react/build/IconComponents";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import Brand from "../../core/modals/inventory/brand";
 import Swal from "sweetalert2";
@@ -11,6 +11,12 @@ import Table from "../../core/pagination/datatable";
 import { fetchProducts, updateProductStatus } from '../Api/productApi';
 import { fetchProductCategories } from '../Api/ProductCategoryApi';
 import { fetchTaxes } from '../Api/TaxApi';
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { setToogleHeader } from "../../core/redux/action";
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import "../../style/scss/pages/_categorylist.scss";
 
 const ProductList = () => {
@@ -23,7 +29,9 @@ const ProductList = () => {
   const [selectedTax, setSelectedTax] = useState(null);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [showActive, setShowActive] = useState(true);
-
+  
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.toggle_header);
   const MySwal = withReactContent(Swal);
   const route = all_routes;
 
@@ -157,6 +165,115 @@ const ProductList = () => {
     setIsFilterVisible(prev => !prev);
   };
 
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.text("Product List", 14, 15);
+      
+      const tableColumn = ["Product Name", "Bar Code", "Category", "Tax %", "Purchase Price", "Price/Unit", "Qty", "Low Stock"];
+      const tableRows = products.map(product => [
+        product.name || "",
+        product.barcode || "",
+        product.productCategoryDto?.productCategoryName || "N/A",
+        product.taxDto?.taxPercentage ? `${product.taxDto.taxPercentage}%` : "N/A",
+        `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
+        `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
+        product.quantity?.toString() || "0",
+        product.lowStock?.toString() || "0"
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
+
+      doc.save("product_list.pdf");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to generate PDF: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const exportToExcel = () => {
+    try {
+      if (!products || products.length === 0) {
+        MySwal.fire({
+          title: "No Data",
+          text: "There are no products to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+
+      const worksheetData = products.map(product => ({
+        "Product Name": product.name || "",
+        "Bar Code": product.barcode || "",
+        "Category": product.productCategoryDto?.productCategoryName || "N/A",
+        "Tax Percentage": product.taxDto?.taxPercentage ? `${product.taxDto.taxPercentage}%` : "N/A",
+        "Purchase Price": `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
+        "Price Per Unit": `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
+        "Quantity": product.quantity || 0,
+        "Low Stock": product.lowStock || 0
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+      
+      worksheet["!cols"] = [
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 10 }
+      ];
+
+      XLSX.writeFile(workbook, "product_list.xlsx");
+    } catch (error) {
+      console.error("Error exporting to Excel:", error);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to export to Excel: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
+  const renderTooltip = (props) => (
+    <Tooltip id="pdf-tooltip" {...props}>
+      Pdf
+    </Tooltip>
+  );
+  const renderExcelTooltip = (props) => (
+    <Tooltip id="excel-tooltip" {...props}>
+      Excel
+    </Tooltip>
+  );
+  const renderRefreshTooltip = (props) => (
+    <Tooltip id="refresh-tooltip" {...props}>
+      Refresh
+    </Tooltip>
+  );
+  const renderCollapseTooltip = (props) => (
+    <Tooltip id="refresh-tooltip" {...props}>
+      Collapse
+    </Tooltip>
+  );
+
   const columns = [
     {
       title: "Product Name",
@@ -213,10 +330,23 @@ const ProductList = () => {
             checked={isActive}
             onChange={() => handleToggleStatus(record.id, isActive)}
           />
-          <label className="form-check-label">
-            {isActive ? 'Active' : 'Inactive'}
-          </label>
         </div>
+      ),
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: (_, record) => (
+        <td className="action-table-data">
+          <div className="edit-delete-action">
+            <Link 
+              className="me-2 p-2" 
+              to={`${route.editproduct}?id=${record.id}`}
+            >
+              <Edit className="feather-edit" />
+            </Link>
+          </div>
+        </td>
       ),
     },
   ];
@@ -249,6 +379,43 @@ const ProductList = () => {
               </div>
             </div>
           </div>
+          <ul className="table-top-head">
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip}>
+                <Link onClick={exportToPDF}>
+                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
+                <Link onClick={exportToExcel}>
+                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
+                <Link onClick={loadProductsData}>
+                  <RotateCcw />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+                <Link
+                  id="collapse-header"
+                  className={data ? "active" : ""}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    dispatch(setToogleHeader(!data));
+                  }}
+                >
+                  <ChevronUp />
+                </Link>
+              </OverlayTrigger>
+            </li>
+          </ul>
           <div className="page-btn">
             <Link to={route.addproduct} className="btn btn-added">
               <PlusCircle className="me-2 iconsize" />

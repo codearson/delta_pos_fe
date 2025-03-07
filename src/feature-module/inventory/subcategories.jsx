@@ -135,9 +135,6 @@ const SubCategories = () => {
                         onChange={() => handleToggleStatus(record.id, isActive)}
                         disabled={togglingId === record.id}
                     />
-                    <label className="form-check-label">
-                        {isActive ? 'Active' : 'Inactive'}
-                    </label>
                 </div>
             ),
         },

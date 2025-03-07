@@ -297,9 +297,6 @@ const Customers = () => {
             onChange={() => handleToggleStatus(record.id, isActive)}
             disabled={togglingId === record.id}
           />
-          <label className="form-check-label">
-            {isActive ? 'Active' : 'Inactive'}
-          </label>
         </div>
       ),
     },
@@ -422,7 +419,7 @@ const Customers = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search by Name or Mobile Number"
+                    placeholder="Search"
                     className="form-control form-control-sm formsearch"
                     value={searchTerm}
                     onChange={handleSearch}
