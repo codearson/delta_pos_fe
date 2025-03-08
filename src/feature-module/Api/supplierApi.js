@@ -89,7 +89,7 @@ export const updateSupplier = async (supplierData) => {
     }
 };
 
-export const updateSupplierStatus = async (supplierId) => {
+export const updateSupplierStatus = async (supplierId, status) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
@@ -105,7 +105,7 @@ export const updateSupplierStatus = async (supplierId) => {
         }
 
         const response = await axios.put(
-            `${BASE_BACKEND_URL}/supplier/updateStatus?supplierId=${supplierId}&status=0`,
+            `${BASE_BACKEND_URL}/supplier/updateStatus?supplierId=${supplierId}&status=${status}`,
             {},
             {
                 headers: {

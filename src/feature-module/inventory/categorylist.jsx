@@ -5,49 +5,52 @@ import { Link } from 'react-router-dom';
 import { ChevronUp, PlusCircle, RotateCcw } from 'feather-icons-react/build/IconComponents';
 import { useDispatch, useSelector } from 'react-redux';
 import { setToogleHeader } from '../../core/redux/action';
-//import Select from 'react-select';
-//import { DatePicker } from 'antd';
 import AddCategoryList from '../../core/modals/inventory/addcategorylist';
 import EditCategoryList from '../../core/modals/inventory/editcategorylist';
-import withReactContent from 'sweetalert2-react-content';
 import Swal from 'sweetalert2';
-import Table from '../../core/pagination/datatable'
+import Table from '../../core/pagination/datatable';
 import { 
     fetchProductCategories, 
     updateProductCategoryStatus, 
-    saveProductCategory, 
-    getProductCategoryByName
- } from '../Api/ProductCategoryApi';
+    saveProductCategory 
+} from '../Api/ProductCategoryApi'; // Removed getProductCategoryByName
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-
+import "../../style/scss/pages/_categorylist.scss";
 
 const CategoryList = () => {
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
     const [categories, setCategories] = useState([]);
+    const [allCategories, setAllCategories] = useState([]); // Store full category list
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const MySwal = withReactContent(Swal);
+    const [showActive, setShowActive] = useState(true);
+    const [togglingId, setTogglingId] = useState(null);
 
     useEffect(() => {
         loadCategories();
-    }, []);
+    }, [showActive]);
 
     const loadCategories = async () => {
         try {
             const fetchedCategories = await fetchProductCategories();
-            console.log('Fetched Categories:', fetchedCategories);
             let categoryArray = fetchedCategories;
             if (fetchedCategories?.responseDto) {
                 categoryArray = fetchedCategories.responseDto;
             }
-            const reversedCategories = Array.isArray(categoryArray) ? categoryArray.reverse() : [];
-            console.log('Processed Categories:', reversedCategories);
-            setCategories(reversedCategories);
+            if (Array.isArray(categoryArray)) {
+                setAllCategories(categoryArray); // Store full list
+                const filteredCategories = categoryArray.filter(category => category.isActive === showActive).reverse();
+                setCategories(filteredCategories);
+            } else {
+                setAllCategories([]);
+                setCategories([]);
+            }
         } catch (error) {
             console.error('Error fetching Categories:', error);
+            setAllCategories([]);
             setCategories([]);
         }
     };
@@ -56,29 +59,34 @@ const CategoryList = () => {
         setSelectedCategory(category);
     };
 
-    const handleDelete = async (categoryId) => {
-        MySwal.fire({
+    const handleToggleStatus = async (categoryId, currentStatus) => {
+        setTogglingId(categoryId);
+        const newStatusText = currentStatus ? 'Inactive' : 'Active';
+        
+        Swal.fire({
             title: 'Are you sure?',
-            text: 'This category will be deactivated.',
+            text: `Do you want to change this category to ${newStatusText}?`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, change it!',
+            cancelButtonText: 'No, cancel'
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    const response = await updateProductCategoryStatus(categoryId, 0);
+                    const newStatus = currentStatus ? 0 : 1;
+                    const response = await updateProductCategoryStatus(categoryId, newStatus);
                     if (response) {
-                        Swal.fire('Deleted!', 'Category has been deactivated.', 'success');
                         loadCategories();
                     } else {
-                        Swal.fire('Error', 'Failed to delete category', 'error');
+                        Swal.fire('Error', 'Failed to update category status', 'error');
                     }
                 } catch (error) {
                     Swal.fire('Error', 'Something went wrong', 'error');
                 }
             }
+            setTogglingId(null);
         });
     };
 
@@ -99,40 +107,29 @@ const CategoryList = () => {
         }
     };
 
-    const handleSearchChange = async (e) => {
+    const handleSearchChange = (e) => {
         const query = e.target.value;
         setSearchQuery(query);
-        try {
-            if (query.trim() !== '') {
-                const searchResponse = await getProductCategoryByName(query);
-                console.log('Search Response:', searchResponse);
-                const searchCategories = searchResponse?.responseDto || [];
-                setCategories(Array.isArray(searchCategories) ? searchCategories : []);
-            } else {
-                loadCategories();
-            }
-        } catch (error) {
-            console.error('Error searching categories:', error);
-            setCategories([]);
+        if (query.trim() !== '') {
+            const searchCategories = allCategories.filter(category => 
+                category.productCategoryName.toLowerCase().includes(query.toLowerCase())
+            );
+            setCategories(searchCategories.length > 0 ? searchCategories : []);
+        } else {
+            loadCategories();
         }
     };
 
     const exportToPDF = () => {
-        console.log('Exporting to PDF...');
-        try {
-            const doc = new jsPDF();
-            doc.text('Category List', 20, 10);
-            const tableData = categories.map(category => [category.productCategoryName || 'N/A']);
-            autoTable(doc, {
-                head: [['Category']],
-                body: tableData,
-                startY: 20,
-            });
-            doc.save('category_list.pdf');
-            console.log('PDF generated successfully');
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-        }
+        const doc = new jsPDF();
+        doc.text(`Category List (${showActive ? 'Active' : 'Inactive'})`, 20, 10);
+        const tableData = categories.map(category => [category.productCategoryName || 'N/A']);
+        autoTable(doc, {
+            head: [['Category']],
+            body: tableData,
+            startY: 20,
+        });
+        doc.save(`category_list_${showActive ? 'active' : 'inactive'}.pdf`);
     };
 
     const exportToExcel = () => {
@@ -142,43 +139,21 @@ const CategoryList = () => {
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Categories');
-        XLSX.writeFile(workbook, 'category_list.xlsx');
+        XLSX.writeFile(workbook, `category_list_${showActive ? 'active' : 'inactive'}.xlsx`);
     };
 
-    // const [isFilterVisible, setIsFilterVisible] = useState(false);
-    // const toggleFilterVisibility = () => {
-    //     setIsFilterVisible((prevVisibility) => !prevVisibility);
-    // };
-    // const [selectedDate, setSelectedDate] = useState(new Date());
-    // const handleDateChange = (date) => {
-    //     setSelectedDate(date);
-    // };
-
     const renderTooltip = (props) => (
-        <Tooltip id="pdf-tooltip" {...props}>
-            Pdf
-        </Tooltip>
+        <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>
     );
     const renderExcelTooltip = (props) => (
-        <Tooltip id="excel-tooltip" {...props}>
-            Excel
-        </Tooltip>
+        <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
     );
-    // const renderPrinterTooltip = (props) => (
-    //     <Tooltip id="printer-tooltip" {...props}>
-    //         Printer
-    //     </Tooltip>
-    // );
     const renderRefreshTooltip = (props) => (
-        <Tooltip id="refresh-tooltip" {...props}>
-            Refresh
-        </Tooltip>
+        <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
     );
     const renderCollapseTooltip = (props) => (
-        <Tooltip id="refresh-tooltip" {...props}>
-            Collapse
-        </Tooltip>
-    )
+        <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>
+    );
 
     const columns = [
         {
@@ -186,6 +161,21 @@ const CategoryList = () => {
             dataIndex: 'productCategoryName',
             render: (text) => <Link to="#">{text}</Link>,
             sorter: (a, b) => (a.productCategoryName || '').length - (b.productCategoryName || '').length,
+        },
+        {
+            title: 'Status',
+            dataIndex: 'isActive',
+            render: (isActive, record) => (
+                <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={() => handleToggleStatus(record.id, isActive)}
+                        disabled={togglingId === record.id}
+                    />
+                </div>
+            ),
         },
         {
             title: 'Actions',
@@ -203,102 +193,66 @@ const CategoryList = () => {
                         >
                             <i data-feather="edit" className="feather-edit"></i>
                         </Link>
-                        <Link
-                            className="confirm-text p-2"
-                            to="#"
-                            onClick={() => handleDelete(record.id)}
-                        >
-                            <i data-feather="trash-2" className="feather-trash-2"></i>
-                        </Link>
                     </div>
                 </td>
             ),
         },
     ];
 
-    // const showConfirmationAlert = () => {
-    //     MySwal.fire({
-    //         title: 'Are you sure?',
-    //         text: 'You won\'t be able to revert this!',
-    //         showCancelButton: true,
-    //         confirmButtonColor: '#00ff00',
-    //         confirmButtonText: 'Yes, delete it!',
-    //         cancelButtonColor: '#ff0000',
-    //         cancelButtonText: 'Cancel',
-    //     }).then((result) => {
-    //         if (result.isConfirmed) {
-
-    //             MySwal.fire({
-    //                 title: 'Deleted!',
-    //                 text: 'Your file has been deleted.',
-    //                 className: "btn btn-success",
-    //                 confirmButtonText: 'OK',
-    //                 customClass: {
-    //                     confirmButton: 'btn btn-success',
-    //                 },
-    //             });
-    //         } else {
-    //             MySwal.close();
-    //         }
-
-    //     });
-    // };
-
     return (
         <div>
             <div className="page-wrapper">
                 <div className="content">
                     <div className="page-header">
-                        <div className="add-item d-flex">
+                        <div className="add-item d-flex flex-column">
                             <div className="page-title">
                                 <h4>Category</h4>
                                 <h6>Manage your categories</h6>
+                            </div>
+                            <div className="status-toggle-btns mt-2">
+                                <div className="btn-group" role="group">
+                                    <button
+                                        type="button"
+                                        className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                                        onClick={() => setShowActive(true)}
+                                    >
+                                        Active
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                                        onClick={() => setShowActive(false)}
+                                    >
+                                        Inactive
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <ul className="table-top-head">
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderTooltip}>
-                                    <Link
-                                        onClick={exportToPDF}>
+                                    <Link onClick={exportToPDF}>
                                         <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
                                     </Link>
                                 </OverlayTrigger>
                             </li>
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-                                    <Link
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="top"
-                                        onClick={exportToExcel}>
+                                    <Link onClick={exportToExcel}>
                                         <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
                                     </Link>
                                 </OverlayTrigger>
                             </li>
-                            {/* <li>
-                                <OverlayTrigger placement="top" overlay={renderPrinterTooltip}>
-
-                                    <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                                        <i data-feather="printer" className="feather-printer" />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li> */}
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                                    <Link
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="top"
-                                        onClick={loadCategories}
-                                    >
+                                    <Link onClick={loadCategories}>
                                         <RotateCcw />
                                     </Link>
                                 </OverlayTrigger>
                             </li>
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
-
                                     <Link
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="top"
                                         id="collapse-header"
                                         className={data ? 'active' : ''}
                                         onClick={() => dispatch(setToogleHeader(!data))}
@@ -320,7 +274,6 @@ const CategoryList = () => {
                             </Link>
                         </div>
                     </div>
-                    {/* /product list */}
                     <div className="card table-list-card">
                         <div className="card-body">
                             <div className="table-top">
@@ -338,82 +291,7 @@ const CategoryList = () => {
                                         </Link>
                                     </div>
                                 </div>
-                                {/* <div className="search-path">
-                                    <Link className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`} id="filter_search">
-                                        <Filter
-                                            className="filter-icon"
-                                            onClick={toggleFilterVisibility}
-                                        />
-                                        <span onClick={toggleFilterVisibility}>
-                                            <ImageWithBasePath src="assets/img/icons/closes.svg" alt="img" />
-                                        </span>
-                                    </Link>
-                                </div> */}
-                                {/* <div className="form-sort">
-                                    <Sliders className="info-img" />
-                                    <Select
-                                        className="select"
-                                        options={oldandlatestvalue}
-                                        placeholder="Newest"
-                                    />
-                                </div> */}
                             </div>
-                            {/* /Filter */}
-                            {/* <div
-                                className={`card${isFilterVisible ? " visible" : ""}`}
-                                id="filter_inputs"
-                                style={{ display: isFilterVisible ? "block" : "none" }}
-                            >
-                                <div className="card-body pb-0">
-                                    <div className="row">
-                                        <div className="col-lg-3 col-sm-6 col-12">
-                                            <div className="input-blocks">
-
-                                                <Zap className="info-img" />
-                                                <Select
-                                                    options={category}
-                                                    className="select"
-                                                    placeholder="Choose Category"
-                                                />
-
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-3 col-sm-6 col-12">
-                                            <div className="input-blocks">
-                                                <i data-feather="calendar" className="info-img" />
-                                                <div className="input-groupicon">
-                                                    <DatePicker
-                                                        selected={selectedDate}
-                                                        onChange={handleDateChange}
-                                                        type="date"
-                                                        className="filterdatepicker"
-                                                        dateFormat="dd-MM-yyyy"
-                                                        placeholder='Choose Date'
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-3 col-sm-6 col-12">
-                                            <div className="input-blocks">
-                                                <StopCircle className="info-img" />
-
-                                                <Select options={status} className="select" placeholder="Choose Status" />
-
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-3 col-sm-6 col-12 ms-auto">
-                                            <div className="input-blocks">
-                                                <Link className="btn btn-filters ms-auto">
-                                                    {" "}
-                                                    <i data-feather="search" className="feather-search" />{" "}
-                                                    Search{" "}
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> */}
-                            {/* /Filter */}
                             <div className="table-responsive">
                                 <Table
                                     className="table datanew"
@@ -424,13 +302,12 @@ const CategoryList = () => {
                             </div>
                         </div>
                     </div>
-                    {/* /product list */}
                 </div>
             </div>
             <AddCategoryList onAddCategory={handleAddCategory} onUpdate={loadCategories} />
             <EditCategoryList selectedCategory={selectedCategory} onUpdate={loadCategories} />
         </div>
-    )
-}
+    );
+};
 
-export default CategoryList
+export default CategoryList;

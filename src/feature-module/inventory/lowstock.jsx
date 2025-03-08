@@ -35,9 +35,16 @@ const LowStock = () => {
       const products = await fetchProducts();
       const reversedProducts = products.reverse();
       setAllProducts(reversedProducts); // Store all products
-      const lowStock = reversedProducts.filter((product) => product.quantity < product.lowStock && product.quantity > 0);
+      const lowStock = reversedProducts.filter((product) => 
+        product.isActive === true && 
+        product.quantity < product.lowStock && 
+        product.quantity > 0
+      );
       setLowStockProducts(lowStock);
-      const outOfStock = reversedProducts.filter((product) => product.quantity === 0);
+      const outOfStock = reversedProducts.filter((product) => 
+        product.isActive === true && 
+        product.quantity === 0
+      );
       setOutOfStockProducts(outOfStock);
     } catch (error) {
       MySwal.fire({
@@ -59,7 +66,9 @@ const LowStock = () => {
 
     if (query.trim() !== "") {
       const filteredLowStock = allProducts.filter((product) =>
-        product.quantity < product.lowStock && product.quantity > 0 &&
+        product.isActive === true &&
+        product.quantity < product.lowStock && 
+        product.quantity > 0 &&
         (
           (product.name && product.name.toLowerCase().includes(query)) ||
           (product.barcode && product.barcode.toLowerCase().includes(query)) ||
@@ -68,7 +77,11 @@ const LowStock = () => {
       );
       setLowStockProducts(filteredLowStock);
     } else {
-      const lowStock = allProducts.filter((product) => product.quantity < product.lowStock && product.quantity > 0);
+      const lowStock = allProducts.filter((product) => 
+        product.isActive === true &&
+        product.quantity < product.lowStock && 
+        product.quantity > 0
+      );
       setLowStockProducts(lowStock);
     }
   };
@@ -79,6 +92,7 @@ const LowStock = () => {
 
     if (query.trim() !== "") {
       const filteredOutOfStock = allProducts.filter((product) =>
+        product.isActive === true &&
         product.quantity === 0 &&
         (
           (product.name && product.name.toLowerCase().includes(query)) ||
@@ -88,7 +102,10 @@ const LowStock = () => {
       );
       setOutOfStockProducts(filteredOutOfStock);
     } else {
-      const outOfStock = allProducts.filter((product) => product.quantity === 0);
+      const outOfStock = allProducts.filter((product) => 
+        product.isActive === true &&
+        product.quantity === 0
+      );
       setOutOfStockProducts(outOfStock);
     }
   };
