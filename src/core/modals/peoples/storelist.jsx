@@ -5,7 +5,7 @@ import { Table } from "antd";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import Breadcrumbs from "../../breadcrumbs";
-import CustomerModal from "./customerModal";
+import BranchModal from "./branchModal";
 import { fetchBranches } from "../../../feature-module/Api/StockApi";
 import { saveBranch, updateBranch, updateBranchStatus } from "../../../feature-module/Api/BranchApi";
 
@@ -257,10 +257,10 @@ const StoreList = () => {
           </div>
         </div>
       </div>
-      <CustomerModal 
+      <BranchModal 
         onSave={handleSaveBranch}
         onUpdate={handleUpdateBranch}
-        selectedCustomer={selectedBranch}
+        selectedBranch={selectedBranch}
       />
     </div>
   );
