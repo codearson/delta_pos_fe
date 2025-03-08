@@ -66,7 +66,6 @@ const AddProduct = () => {
         .map((cat) => ({ value: cat.id, label: cat.productCategoryName }))
       );
     } catch (error) {
-      console.error('Error loading categories:', error);
       setCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -83,7 +82,6 @@ const AddProduct = () => {
         .map((tax) => ({ value: tax.id, label: `${tax.taxPercentage}%` }))
       );
     } catch (error) {
-      console.error('Error loading taxes:', error);
       setTaxes([]);
     } finally {
       setLoadingTaxes(false);

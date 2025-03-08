@@ -33,9 +33,7 @@ const Suppliers = () => {
   const fetchSuppliersData = async () => {
     try {
       const data = await fetchSuppliers();
-      console.log("Fetched suppliers:", data); // Debug API response
       if (Array.isArray(data)) {
-        // Normalize isActive to boolean (handles 0/1 or true/false)
         const normalizedData = data.map(supplier => ({
           ...supplier,
           isActive: supplier.isActive === 1 || supplier.isActive === true
@@ -54,7 +52,6 @@ const Suppliers = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching suppliers:", error);
       Swal.fire({
         title: "Error!",
         text: "Failed to fetch suppliers: " + error.message,
@@ -146,11 +143,9 @@ const Suppliers = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const newStatus = currentStatus ? 0 : 1; // Send 0 for inactive, 1 for active
-          console.log(`Toggling supplier ${supplierId} to status ${newStatus}`); // Debug
+          const newStatus = currentStatus ? 0 : 1;
           const response = await updateSupplierStatus(supplierId, newStatus);
-          console.log("Toggle response:", response); // Debug API response
-          if (response && response.success !== false) { // Check for explicit failure
+          if (response && response.success !== false) {
             await fetchSuppliersData();
             Swal.fire({
               title: "Success!",
@@ -163,7 +158,6 @@ const Suppliers = () => {
             throw new Error(response?.message || "Failed to update status");
           }
         } catch (error) {
-          console.error("Error updating supplier status:", error);
           Swal.fire({
             title: "Error!",
             text: "Failed to update supplier status: " + error.message,

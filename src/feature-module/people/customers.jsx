@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Edit } from "feather-icons-react/build/IconComponents"; // Removed Trash2
+import { Edit } from "feather-icons-react/build/IconComponents";
 import { Table } from "antd";
 import Swal from "sweetalert2";
 import CustomerModal from "../../core/modals/peoples/customerModal";
@@ -11,7 +11,7 @@ import { setToogleHeader } from "../../core/redux/action";
 import { ChevronUp, PlusCircle, RotateCcw } from "feather-icons-react/build/IconComponents";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import autoTable from 'jspdf-autotable';
 import * as XLSX from "xlsx";
 import "../../style/scss/pages/_categorylist.scss";
 
@@ -42,12 +42,11 @@ const Customers = () => {
         setCustomers([]);
       }
     } catch (error) {
-      console.error("Error fetching customers:", error);
       Swal.fire({
         title: "Error!",
         text: "Failed to fetch customers",
         icon: "error",
-        confirmButtonText: "OK"
+        confirmButtonText: "OK",
       });
     }
   };
@@ -136,7 +135,7 @@ const Customers = () => {
         try {
           const newStatus = currentStatus ? 0 : 1;
           const response = await updateCustomerStatus(customerId, newStatus);
-          if (response) {
+          if (response && response.success !== false) {
             await fetchCustomersData();
             Swal.fire({
               title: "Success!",
@@ -145,6 +144,8 @@ const Customers = () => {
               confirmButtonText: "OK",
               customClass: { confirmButton: "btn btn-success" },
             });
+          } else {
+            throw new Error(response?.message || "Failed to update status");
           }
         } catch (error) {
           Swal.fire({
@@ -197,7 +198,6 @@ const Customers = () => {
 
       doc.save(`customer_list_${showActive ? 'active' : 'inactive'}.pdf`);
     } catch (error) {
-      console.error("Error generating PDF:", error);
       Swal.fire({
         title: "Error!",
         text: "Failed to generate PDF: " + error.message,
@@ -232,7 +232,6 @@ const Customers = () => {
 
       XLSX.writeFile(workbook, `customer_list_${showActive ? 'active' : 'inactive'}.xlsx`);
     } catch (error) {
-      console.error("Error exporting to Excel:", error);
       Swal.fire({
         title: "Error!",
         text: "Failed to export to Excel: " + error.message,

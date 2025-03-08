@@ -29,7 +29,7 @@ const ProductList = () => {
   const [selectedTax, setSelectedTax] = useState(null);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [showActive, setShowActive] = useState(true);
-  
+
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
   const MySwal = withReactContent(Swal);
@@ -47,33 +47,28 @@ const ProductList = () => {
         setProducts([]);
       }
     } catch (error) {
-      console.error("Error fetching products:", error.message);
       setAllProducts([]);
       setProducts([]);
     }
   };
 
   const loadFilterOptions = async () => {
-    try {
-      const [categoriesData, taxesData] = await Promise.all([
-        fetchProductCategories(),
-        fetchTaxes()
-      ]);
+    const [categoriesData, taxesData] = await Promise.all([
+      fetchProductCategories(),
+      fetchTaxes()
+    ]);
 
-      const formattedCategories = categoriesData.map(category => ({
-        value: category.id,
-        label: category.productCategoryName
-      }));
-      setCategories(formattedCategories);
+    const formattedCategories = categoriesData.map(category => ({
+      value: category.id,
+      label: category.productCategoryName
+    }));
+    setCategories(formattedCategories);
 
-      const formattedTaxes = taxesData.map(tax => ({
-        value: tax.id,
-        label: `${tax.taxPercentage}%`
-      }));
-      setTaxes(formattedTaxes);
-    } catch (error) {
-      console.error('Error loading filter options:', error);
-    }
+    const formattedTaxes = taxesData.map(tax => ({
+      value: tax.id,
+      label: `${tax.taxPercentage}%`
+    }));
+    setTaxes(formattedTaxes);
   };
 
   useEffect(() => {
@@ -114,7 +109,6 @@ const ProductList = () => {
           });
         }
       } catch (error) {
-        console.error("Error updating product status:", error);
         Swal.fire({
           title: 'Error!',
           text: 'An unexpected error occurred.',
@@ -129,7 +123,7 @@ const ProductList = () => {
     setSearchQuery(query);
 
     if (query.trim() !== '') {
-      const filteredData = allProducts.filter(product => 
+      const filteredData = allProducts.filter(product =>
         product.name?.toLowerCase().includes(query) ||
         product.barcode?.toLowerCase().includes(query) ||
         product.price?.toString().includes(query) ||
@@ -147,13 +141,13 @@ const ProductList = () => {
     let filteredData = [...allProducts].filter(product => product.isActive === showActive);
 
     if (selectedCategory) {
-      filteredData = filteredData.filter(product => 
+      filteredData = filteredData.filter(product =>
         product.productCategoryDto?.id === selectedCategory.value
       );
     }
 
     if (selectedTax) {
-      filteredData = filteredData.filter(product => 
+      filteredData = filteredData.filter(product =>
         product.taxDto?.id === selectedTax.value
       );
     }
@@ -169,7 +163,7 @@ const ProductList = () => {
     try {
       const doc = new jsPDF();
       doc.text("Product List", 14, 15);
-      
+
       const tableColumn = ["Product Name", "Bar Code", "Category", "Tax %", "Purchase Price", "Price/Unit", "Qty", "Low Stock"];
       const tableRows = products.map(product => [
         product.name || "",
@@ -193,7 +187,6 @@ const ProductList = () => {
 
       doc.save("product_list.pdf");
     } catch (error) {
-      console.error("Error generating PDF:", error);
       MySwal.fire({
         title: "Error!",
         text: "Failed to generate PDF: " + error.message,
@@ -229,7 +222,7 @@ const ProductList = () => {
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-      
+
       worksheet["!cols"] = [
         { wch: 20 },
         { wch: 15 },
@@ -243,7 +236,6 @@ const ProductList = () => {
 
       XLSX.writeFile(workbook, "product_list.xlsx");
     } catch (error) {
-      console.error("Error exporting to Excel:", error);
       MySwal.fire({
         title: "Error!",
         text: "Failed to export to Excel: " + error.message,
@@ -339,8 +331,8 @@ const ProductList = () => {
       render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <Link 
-              className="me-2 p-2" 
+            <Link
+              className="me-2 p-2"
               to={`${route.editproduct}?id=${record.id}`}
             >
               <Edit className="feather-edit" />

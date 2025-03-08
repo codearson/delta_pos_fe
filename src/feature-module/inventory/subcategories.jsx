@@ -30,13 +30,11 @@ const SubCategories = () => {
     const loadTaxes = async () => {
         try {
             const fetchedTaxes = await fetchTaxes();
-            console.log('Fetched Taxes:', fetchedTaxes);
-            const filteredTaxes = Array.isArray(fetchedTaxes) 
+            const filteredTaxes = Array.isArray(fetchedTaxes)
                 ? fetchedTaxes.filter(tax => tax.isActive === showActive).reverse()
                 : [];
             setTaxes(filteredTaxes);
         } catch (error) {
-            console.error('Error fetching taxes:', error);
             setTaxes([]);
         }
     };
@@ -44,7 +42,7 @@ const SubCategories = () => {
     const handleToggleStatus = (taxId, currentStatus) => {
         setTogglingId(taxId);
         const newStatusText = currentStatus ? 'Inactive' : 'Active';
-        
+
         Swal.fire({
             title: 'Are you sure?',
             text: `Do you want to change this tax to ${newStatusText}?`,
@@ -66,7 +64,6 @@ const SubCategories = () => {
                     }
                 } catch (error) {
                     Swal.fire('Error', 'Something went wrong', 'error');
-                    console.error('Error updating tax status:', error);
                 }
             }
             setTogglingId(null);
@@ -74,19 +71,16 @@ const SubCategories = () => {
     };
 
     const exportToPDF = () => {
-        try {
-            const doc = new jsPDF();
-            doc.text(`Tax List (${showActive ? 'Active' : 'Inactive'})`, 20, 10);
-            const tableData = taxes.map(tax => [tax.taxPercentage || 'N/A']);
-            autoTable(doc, {
-                head: [['Tax Percentage']],
-                body: tableData,
-                startY: 20,
-            });
-            doc.save(`tax_list_${showActive ? 'active' : 'inactive'}.pdf`);
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-        }
+        const doc = new jsPDF();
+        doc.text(`Tax List (${showActive ? 'Active' : 'Inactive'})`, 20, 10);
+        const tableData = taxes.map(tax => [tax.taxPercentage || 'N/A']);
+        autoTable(doc, {
+            head: [['Tax Percentage']],
+            body: tableData,
+            startY: 20,
+        });
+        doc.save(`tax_list_${showActive ? 'active' : 'inactive'}.pdf`);
+
     };
 
     const exportToExcel = () => {
@@ -145,10 +139,10 @@ const SubCategories = () => {
             render: (_, record) => (
                 <td className="action-table-data">
                     <div className="edit-delete-action">
-                        <Link 
-                            className="me-2 p-2" 
-                            to="#" 
-                            data-bs-toggle="modal" 
+                        <Link
+                            className="me-2 p-2"
+                            to="#"
+                            data-bs-toggle="modal"
                             data-bs-target="#edit-tax"
                             onClick={() => handleEdit(record)}
                         >
@@ -242,11 +236,11 @@ const SubCategories = () => {
                     <div className="card table-list-card">
                         <div className="card-body">
                             <div className="table-responsive">
-                                <Table 
+                                <Table
                                     className="table datanew"
                                     columns={columns}
                                     dataSource={taxes}
-                                    rowKey={(record) => record.id} 
+                                    rowKey={(record) => record.id}
                                 />
                             </div>
                         </div>
@@ -254,9 +248,9 @@ const SubCategories = () => {
                 </div>
             </div>
             <AddSubcategory onTaxCreated={handleTaxCreated} />
-            <EditSubcategories 
-                selectedTax={selectedTax} 
-                onTaxUpdated={loadTaxes} 
+            <EditSubcategories
+                selectedTax={selectedTax}
+                onTaxUpdated={loadTaxes}
             />
         </div>
     );
