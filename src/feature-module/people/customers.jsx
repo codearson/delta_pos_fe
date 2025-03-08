@@ -1,32 +1,55 @@
 import React, { useState, useEffect } from "react";
-import Breadcrumbs from "../../core/breadcrumbs";
 import { Link } from "react-router-dom";
-import { Edit, Trash2 } from "react-feather";
+import { Edit } from "feather-icons-react/build/IconComponents"; // Removed Trash2
 import { Table } from "antd";
 import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
 import CustomerModal from "../../core/modals/peoples/customerModal";
 import { saveCustomer, fetchCustomers, updateCustomer, updateCustomerStatus } from "../Api/customerApi";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { setToogleHeader } from "../../core/redux/action";
+import { ChevronUp, PlusCircle, RotateCcw } from "feather-icons-react/build/IconComponents";
+import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import "../../style/scss/pages/_categorylist.scss";
 
 const Customers = () => {
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.toggle_header);
   const [customers, setCustomers] = useState([]);
-  const [allCustomers, setAllCustomers] = useState([]); // Store all customers data
+  const [allCustomers, setAllCustomers] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showActive, setShowActive] = useState(true);
+  const [togglingId, setTogglingId] = useState(null);
 
   useEffect(() => {
     fetchCustomersData();
-  }, []);
+  }, [showActive]);
 
   const fetchCustomersData = async () => {
-    const data = await fetchCustomers();
-    const reversedData = data.reverse();
-    setCustomers(reversedData);
-    setAllCustomers(reversedData); // Store all customers for filtering
+    try {
+      const data = await fetchCustomers();
+      if (Array.isArray(data)) {
+        setAllCustomers(data);
+        const filteredData = data.filter(customer => customer.isActive === showActive).reverse();
+        setCustomers(filteredData);
+      } else {
+        setAllCustomers([]);
+        setCustomers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to fetch customers",
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+    }
   };
 
   const handleSelectAll = (e) => {
@@ -39,11 +62,9 @@ const Customers = () => {
   };
 
   const handleRowSelect = (id) => {
-    if (selectedRows.includes(id)) {
-      setSelectedRows(selectedRows.filter((rowId) => rowId !== id));
-    } else {
-      setSelectedRows([...selectedRows, id]);
-    }
+    setSelectedRows(prev => 
+      prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
+    );
   };
 
   const handleSaveCustomer = async (customerData) => {
@@ -53,7 +74,7 @@ const Customers = () => {
       if (result) {
         await fetchCustomersData();
         setSelectedCustomer(null);
-        MySwal.fire({
+        Swal.fire({
           title: "Success!",
           text: "Customer has been added successfully.",
           icon: "success",
@@ -62,7 +83,7 @@ const Customers = () => {
         });
       }
     } catch (error) {
-      MySwal.fire({
+      Swal.fire({
         title: "Error!",
         text: "Failed to add customer: " + error.message,
         icon: "error",
@@ -78,7 +99,7 @@ const Customers = () => {
       if (result) {
         await fetchCustomersData();
         setSelectedCustomer(null);
-        MySwal.fire({
+        Swal.fire({
           title: "Success!",
           text: "Customer has been updated successfully.",
           icon: "success",
@@ -87,7 +108,7 @@ const Customers = () => {
         });
       }
     } catch (error) {
-      MySwal.fire({
+      Swal.fire({
         title: "Error!",
         text: "Failed to update customer: " + error.message,
         icon: "error",
@@ -97,39 +118,45 @@ const Customers = () => {
     }
   };
 
-  const handleDeleteCustomer = async (customerId) => {
-    MySwal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
+  const handleToggleStatus = (customerId, currentStatus) => {
+    setTogglingId(customerId);
+    const newStatusText = currentStatus ? 'Inactive' : 'Active';
+
+    Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to change this customer to ${newStatusText}?`,
+      icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: "#00ff00",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonColor: "#ff0000",
-      cancelButtonText: "Cancel",
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, change it!',
+      cancelButtonText: 'No, cancel'
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await updateCustomerStatus(customerId, 0);
+          const newStatus = currentStatus ? 0 : 1;
+          const response = await updateCustomerStatus(customerId, newStatus);
           if (response) {
             await fetchCustomersData();
-            MySwal.fire({
-              title: "Deleted!",
-              text: "Customer has been deleted.",
+            Swal.fire({
+              title: "Success!",
+              text: `Customer status changed to ${newStatusText}.`,
               icon: "success",
               confirmButtonText: "OK",
               customClass: { confirmButton: "btn btn-success" },
             });
           }
         } catch (error) {
-          MySwal.fire({
+          Swal.fire({
             title: "Error!",
-            text: "Failed to delete customer: " + error.message,
+            text: "Failed to update customer status: " + error.message,
             icon: "error",
             confirmButtonText: "OK",
             customClass: { confirmButton: "btn btn-danger" },
           });
         }
       }
+      setTogglingId(null);
     });
   };
 
@@ -142,41 +169,36 @@ const Customers = () => {
         (customer.name && customer.name.toLowerCase().includes(value)) ||
         (customer.mobileNumber && customer.mobileNumber.toLowerCase().includes(value))
       );
-      setCustomers(filteredCustomers.reverse());
+      setCustomers(filteredCustomers.length > 0 ? filteredCustomers : []);
     } else {
-      setCustomers([...allCustomers].reverse());
+      setCustomers(allCustomers.filter(customer => customer.isActive === showActive).reverse());
     }
   };
 
-  const downloadPDF = () => {
+  const exportToPDF = () => {
     try {
-      if (!customers || customers.length === 0) {
-        MySwal.fire({
-          title: "No Data",
-          text: "There are no customers to export",
-          icon: "warning",
-          confirmButtonText: "OK",
-        });
-        return;
-      }
       const doc = new jsPDF();
-      doc.text("Customer List", 14, 15);
+      doc.text(`Customer List (${showActive ? 'Active' : 'Inactive'})`, 14, 15);
+      
       const tableColumn = ["Customer Name", "Mobile Number"];
-      const tableRows = customers.map((customer) => [
+      const tableRows = customers.map(customer => [
         customer.name || "",
-        customer.mobileNumber || "",
+        customer.mobileNumber || ""
       ]);
+
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 20,
-        theme: "grid",
+        theme: 'grid',
         styles: { fontSize: 10 },
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       });
-      doc.save("customer_list.pdf");
+
+      doc.save(`customer_list_${showActive ? 'active' : 'inactive'}.pdf`);
     } catch (error) {
-      MySwal.fire({
+      console.error("Error generating PDF:", error);
+      Swal.fire({
         title: "Error!",
         text: "Failed to generate PDF: " + error.message,
         icon: "error",
@@ -185,10 +207,10 @@ const Customers = () => {
     }
   };
 
-  const downloadExcel = () => {
+  const exportToExcel = () => {
     try {
       if (!customers || customers.length === 0) {
-        MySwal.fire({
+        Swal.fire({
           title: "No Data",
           text: "There are no customers to export",
           icon: "warning",
@@ -196,28 +218,28 @@ const Customers = () => {
         });
         return;
       }
-      const worksheetData = customers.map((customer) => ({
+
+      const worksheetData = customers.map(customer => ({
         "Customer Name": customer.name || "",
-        "Mobile Number": customer.mobileNumber || "",
+        "Mobile Number": customer.mobileNumber || ""
       }));
+
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
+      
       worksheet["!cols"] = [{ wch: 20 }, { wch: 15 }];
-      XLSX.writeFile(workbook, "customer_list.xlsx");
+
+      XLSX.writeFile(workbook, `customer_list_${showActive ? 'active' : 'inactive'}.xlsx`);
     } catch (error) {
-      MySwal.fire({
+      console.error("Error exporting to Excel:", error);
+      Swal.fire({
         title: "Error!",
-        text: "Failed to generate Excel: " + error.message,
+        text: "Failed to export to Excel: " + error.message,
         icon: "error",
         confirmButtonText: "OK",
       });
     }
-  };
-
-  const handleRefresh = () => {
-    setSearchTerm("");
-    setCustomers([...allCustomers].reverse());
   };
 
   const handleAddClick = () => {
@@ -256,12 +278,27 @@ const Customers = () => {
       title: "Customer Name",
       dataIndex: "name",
       render: (text) => <Link to="#">{text}</Link>,
-      sorter: (a, b) => a.name.length - b.name.length,
+      sorter: (a, b) => (a.name || '').length - (b.name || '').length,
     },
     {
       title: "Mobile Number",
       dataIndex: "mobileNumber",
-      sorter: (a, b) => a.mobileNumber.length - b.mobileNumber.length,
+      sorter: (a, b) => (a.mobileNumber || '').length - (b.mobileNumber || '').length,
+    },
+    {
+      title: "Status",
+      dataIndex: "isActive",
+      render: (isActive, record) => (
+        <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
+          <input
+            className="form-check-input"
+            type="checkbox"
+            checked={isActive}
+            onChange={() => handleToggleStatus(record.id, isActive)}
+            disabled={togglingId === record.id}
+          />
+        </div>
+      ),
     },
     {
       title: "Action",
@@ -278,37 +315,103 @@ const Customers = () => {
             >
               <Edit className="feather-edit" />
             </Link>
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={() => handleDeleteCustomer(record.id)}
-            >
-              <Trash2 className="feather-trash-2" />
-            </Link>
           </div>
         </td>
       ),
     },
   ];
 
-  const MySwal = withReactContent(Swal);
+  const renderTooltip = (props) => (
+    <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>
+  );
+  const renderExcelTooltip = (props) => (
+    <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
+  );
+  const renderRefreshTooltip = (props) => (
+    <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
+  );
+  const renderCollapseTooltip = (props) => (
+    <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>
+  );
 
   return (
     <div className="page-wrapper">
       <div className="content">
-        <Breadcrumbs
-          maintitle="Customer List"
-          subtitle="Manage Your Customers"
-          addButton="Add New Customer"
-          addButtonAttributes={{
-            "data-bs-toggle": "modal",
-            "data-bs-target": "#add-units",
-            onClick: handleAddClick,
-          }}
-          onDownloadPDF={downloadPDF}
-          onDownloadExcel={downloadExcel}
-          onRefresh={handleRefresh}
-        />
+        <div className="page-header">
+          <div className="add-item d-flex flex-column">
+            <div className="page-title">
+              <h4>Customer List</h4>
+              <h6>Manage Your Customers</h6>
+            </div>
+            <div className="status-toggle-btns mt-2">
+              <div className="btn-group" role="group">
+                <button
+                  type="button"
+                  className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(true)}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(false)}
+                >
+                  Inactive
+                </button>
+              </div>
+            </div>
+          </div>
+          <ul className="table-top-head">
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip}>
+                <Link onClick={exportToPDF}>
+                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
+                <Link onClick={exportToExcel}>
+                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
+                <Link onClick={fetchCustomersData}>
+                  <RotateCcw />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+                <Link
+                  id="collapse-header"
+                  className={data ? "active" : ""}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    dispatch(setToogleHeader(!data));
+                  }}
+                >
+                  <ChevronUp />
+                </Link>
+              </OverlayTrigger>
+            </li>
+          </ul>
+          <div className="page-btn">
+            <Link
+              to="#"
+              className="btn btn-added"
+              data-bs-toggle="modal"
+              data-bs-target="#add-units"
+              onClick={handleAddClick}
+            >
+              <PlusCircle className="me-2 iconsize" />
+              Add New Customer
+            </Link>
+          </div>
+        </div>
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">

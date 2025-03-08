@@ -1,65 +1,71 @@
-import {
-  ChevronUp,
-  Edit,
-  Filter,
-  PlusCircle,
-  RotateCcw,
-  Trash2,
-} from "feather-icons-react/build/IconComponents";
 import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
-import Select from "react-select";
+import { Filter, PlusCircle, Edit, ChevronUp, RotateCcw } from "feather-icons-react/build/IconComponents";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import Brand from "../../core/modals/inventory/brand";
-import withReactContent from "sweetalert2-react-content";
 import Swal from "sweetalert2";
+import withReactContent from 'sweetalert2-react-content';
 import { all_routes } from "../../Router/all_routes";
-import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import Select from "react-select";
+import { Link } from "react-router-dom";
 import Table from "../../core/pagination/datatable";
-import { setToogleHeader } from "../../core/redux/action";
 import { fetchProducts, updateProductStatus } from '../Api/productApi';
+import { fetchProductCategories } from '../Api/ProductCategoryApi';
+import { fetchTaxes } from '../Api/TaxApi';
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { setToogleHeader } from "../../core/redux/action";
 import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { fetchProductCategories } from '../Api/ProductCategoryApi';
-import { fetchTaxes } from '../Api/TaxApi';
+import "../../style/scss/pages/_categorylist.scss";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
-  const dispatch = useDispatch();
-  const data = useSelector((state) => state.toggle_header);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [categories, setCategories] = useState([]);
   const [taxes, setTaxes] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedTax, setSelectedTax] = useState(null);
-
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
-  };
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [showActive, setShowActive] = useState(true);
+  
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.toggle_header);
+  const MySwal = withReactContent(Swal);
+  const route = all_routes;
 
   const loadProductsData = async () => {
     try {
       const data = await fetchProducts();
-      const reversedData = [...data].reverse();
-      setProducts(reversedData);
+      if (Array.isArray(data)) {
+        setAllProducts(data);
+        const filteredData = data.filter(product => product.isActive === showActive).reverse();
+        setProducts(filteredData);
+      } else {
+        setAllProducts([]);
+        setProducts([]);
+      }
     } catch (error) {
       console.error("Error fetching products:", error.message);
+      setAllProducts([]);
+      setProducts([]);
     }
   };
 
   const loadFilterOptions = async () => {
     try {
-      const categoriesData = await fetchProductCategories();
+      const [categoriesData, taxesData] = await Promise.all([
+        fetchProductCategories(),
+        fetchTaxes()
+      ]);
+
       const formattedCategories = categoriesData.map(category => ({
         value: category.id,
         label: category.productCategoryName
       }));
       setCategories(formattedCategories);
 
-      const taxesData = await fetchTaxes();
       const formattedTaxes = taxesData.map(tax => ({
         value: tax.id,
         label: `${tax.taxPercentage}%`
@@ -73,203 +79,91 @@ const ProductList = () => {
   useEffect(() => {
     loadProductsData();
     loadFilterOptions();
-  }, []);
+  }, [showActive]);
 
-  const route = all_routes;
+  const handleToggleStatus = async (productId, currentStatus) => {
+    const newStatusText = currentStatus ? 'Inactive' : 'Active';
 
-  const MySwal = withReactContent(Swal);
+    const result = await MySwal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to change this product to ${newStatusText}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, change it!',
+      cancelButtonText: 'No, cancel'
+    });
 
-  const handleStatusUpdate = async (productId) => {
-    try {
-      const result = await MySwal.fire({
-        title: 'Are you sure?',
-        text: "You want to delete this product?",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, delete it!',
-        cancelButtonText: 'No, cancel!',
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        reverseButtons: false
-      });
-
-      if (result.isConfirmed) {
-        MySwal.fire({
-          title: 'Deleting...',
-          text: 'Please wait while we delete the product.',
-          allowOutsideClick: false,
-          showConfirmButton: false,
-          willOpen: () => {
-            MySwal.showLoading();
-          }
-        });
-
-        const response = await updateProductStatus(productId, 0);
+    if (result.isConfirmed) {
+      try {
+        const newStatus = currentStatus ? 0 : 1;
+        const response = await updateProductStatus(productId, newStatus);
         if (response && response.success !== false) {
-          MySwal.fire({
-            title: 'Deleted!',
-            text: 'Product has been deleted.',
+          loadProductsData();
+          Swal.fire({
+            title: 'Success!',
+            text: `Product status changed to ${newStatusText}`,
             icon: 'success',
-            confirmButtonColor: '#3085d6'
-          }).then(() => {
-            loadProductsData(); // Refresh the product list
           });
         } else {
-          MySwal.fire({
+          Swal.fire({
             title: 'Error!',
-            text: response?.message || 'Failed to delete product. Please try again.',
+            text: response?.message || 'Failed to update product status.',
             icon: 'error',
-            confirmButtonColor: '#d33'
           });
         }
+      } catch (error) {
+        console.error("Error updating product status:", error);
+        Swal.fire({
+          title: 'Error!',
+          text: 'An unexpected error occurred.',
+          icon: 'error',
+        });
       }
-    } catch (error) {
-      console.error("Error updating product status:", error);
-      MySwal.fire({
-        title: 'Error!',
-        text: 'An unexpected error occurred. Please try again.',
-        icon: 'error',
-        confirmButtonColor: '#d33'
-      });
     }
   };
 
-  const handleSearchChange = async (e) => {
+  const handleSearchChange = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
 
-    try {
-      if (query.trim() !== '') {
-        const filteredData = products.filter(product => 
-          product.name?.toLowerCase().includes(query) ||
-          product.barcode?.toLowerCase().includes(query) ||
-          product.price?.toString().includes(query) ||
-          product.quantity?.toString().includes(query) ||
-          product.taxDto?.taxPercentage?.toString().includes(query) ||
-          product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
-        );
-        setProducts([...filteredData]);
-      } else {
-        loadProductsData();
-      }
-    } catch (error) {
-      console.error('Error searching products:', error);
-      setProducts([]);
+    if (query.trim() !== '') {
+      const filteredData = allProducts.filter(product => 
+        product.name?.toLowerCase().includes(query) ||
+        product.barcode?.toLowerCase().includes(query) ||
+        product.price?.toString().includes(query) ||
+        product.quantity?.toString().includes(query) ||
+        product.taxDto?.taxPercentage?.toString().includes(query) ||
+        product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
+      );
+      setProducts(filteredData.filter(product => product.isActive === showActive));
+    } else {
+      loadProductsData();
     }
   };
 
-  const handleFilterChange = () => {
-    try {
-      let filteredData = [...products];
+  const applyFilters = () => {
+    let filteredData = [...allProducts].filter(product => product.isActive === showActive);
 
-      if (selectedCategory) {
-        filteredData = filteredData.filter(product => 
-          product.productCategoryDto?.id === selectedCategory.value
-        );
-      }
-
-      if (selectedTax) {
-        filteredData = filteredData.filter(product => 
-          product.taxDto?.id === selectedTax.value
-        );
-      }
-
-      setProducts(filteredData);
-    } catch (error) {
-      console.error('Error applying filters:', error);
+    if (selectedCategory) {
+      filteredData = filteredData.filter(product => 
+        product.productCategoryDto?.id === selectedCategory.value
+      );
     }
+
+    if (selectedTax) {
+      filteredData = filteredData.filter(product => 
+        product.taxDto?.id === selectedTax.value
+      );
+    }
+
+    setProducts(filteredData);
   };
 
-  const columns = [
-    {
-      title: "Product Name",
-      dataIndex: "name",
-      sorter: (a, b) => a.name.length - b.name.length,
-    },
-    {
-      title: "Bar Code",
-      dataIndex: "barcode",
-      sorter: (a, b) => a.barcode.length - b.barcode.length,
-    },
-    {
-      title: "Category",
-      dataIndex: "productCategoryDto",
-      render: (productCategoryDto) => productCategoryDto?.productCategoryName || 'N/A',
-      sorter: (a, b) => (a.productCategoryDto?.productCategoryName || '').localeCompare(b.productCategoryDto?.productCategoryName || ''),
-    },
-    {
-      title: "Tax Percentage",
-      dataIndex: "taxDto",
-      render: (taxDto) => taxDto ? `${taxDto.taxPercentage}%` : 'N/A',
-      sorter: (a, b) => (a.taxDto?.taxPercentage || 0) - (b.taxDto?.taxPercentage || 0),
-    },
-    {
-      title: "Purchase Price",
-      dataIndex: "purchasePrice",
-      render: (purchasePrice) => `${purchasePrice.toFixed(2)}`,
-      sorter: (a, b) => a.purchasePrice - b.purchasePrice,
-    },
-    {
-      title: "Price Per Unit",
-      dataIndex: "pricePerUnit",
-      render: (pricePerUnit) => `${pricePerUnit.toFixed(2)}`,
-      sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      sorter: (a, b) => a.quantity - b.quantity,
-    },
-    {
-      title: "Low Stock",
-      dataIndex: "lowStock",
-      sorter: (a, b) => a.lowStock - b.lowStock,
-    },
-    {
-      title: "Action",
-      dataIndex: "action",
-      render: (_, record) => (
-        <td className="action-table-data">
-          <div className="edit-delete-action">
-            <Link 
-              className="me-2 p-2" 
-              to={`${route.editproduct}?id=${record.id}`}
-            >
-              <Edit className="feather-edit" />
-            </Link>
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={() => handleStatusUpdate(record.id)}
-            >
-              <Trash2 className="feather-trash-2" />
-            </Link>
-          </div>
-        </td>
-      ),
-    },
-  ];
-
-  const renderTooltip = (props) => (
-    <Tooltip id="pdf-tooltip" {...props}>
-      Pdf
-    </Tooltip>
-  );
-  const renderExcelTooltip = (props) => (
-    <Tooltip id="excel-tooltip" {...props}>
-      Excel
-    </Tooltip>
-  );
-  const renderRefreshTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Refresh
-    </Tooltip>
-  );
-  const renderCollapseTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Collapse
-    </Tooltip>
-  );
+  const toggleFilterVisibility = () => {
+    setIsFilterVisible(prev => !prev);
+  };
 
   const exportToPDF = () => {
     try {
@@ -359,14 +253,130 @@ const ProductList = () => {
     }
   };
 
+  const renderTooltip = (props) => (
+    <Tooltip id="pdf-tooltip" {...props}>
+      Pdf
+    </Tooltip>
+  );
+  const renderExcelTooltip = (props) => (
+    <Tooltip id="excel-tooltip" {...props}>
+      Excel
+    </Tooltip>
+  );
+  const renderRefreshTooltip = (props) => (
+    <Tooltip id="refresh-tooltip" {...props}>
+      Refresh
+    </Tooltip>
+  );
+  const renderCollapseTooltip = (props) => (
+    <Tooltip id="refresh-tooltip" {...props}>
+      Collapse
+    </Tooltip>
+  );
+
+  const columns = [
+    {
+      title: "Product Name",
+      dataIndex: "name",
+      sorter: (a, b) => a.name.length - b.name.length,
+    },
+    {
+      title: "Bar Code",
+      dataIndex: "barcode",
+      sorter: (a, b) => a.barcode.length - b.barcode.length,
+    },
+    {
+      title: "Category",
+      dataIndex: "productCategoryDto",
+      render: (productCategoryDto) => productCategoryDto?.productCategoryName || 'N/A',
+      sorter: (a, b) => (a.productCategoryDto?.productCategoryName || '').localeCompare(b.productCategoryDto?.productCategoryName || ''),
+    },
+    {
+      title: "Tax Percentage",
+      dataIndex: "taxDto",
+      render: (taxDto) => taxDto ? `${taxDto.taxPercentage}%` : 'N/A',
+      sorter: (a, b) => (a.taxDto?.taxPercentage || 0) - (b.taxDto?.taxPercentage || 0),
+    },
+    {
+      title: "Purchase Price",
+      dataIndex: "purchasePrice",
+      render: (purchasePrice) => `${purchasePrice.toFixed(2)}`,
+      sorter: (a, b) => a.purchasePrice - b.purchasePrice,
+    },
+    {
+      title: "Price Per Unit",
+      dataIndex: "pricePerUnit",
+      render: (pricePerUnit) => `${pricePerUnit.toFixed(2)}`,
+      sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
+    },
+    {
+      title: "Qty",
+      dataIndex: "quantity",
+      sorter: (a, b) => a.quantity - b.quantity,
+    },
+    {
+      title: "Low Stock",
+      dataIndex: "lowStock",
+      sorter: (a, b) => a.lowStock - b.lowStock,
+    },
+    {
+      title: "Status",
+      dataIndex: "isActive",
+      render: (isActive, record) => (
+        <div className="form-check form-switch">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            checked={isActive}
+            onChange={() => handleToggleStatus(record.id, isActive)}
+          />
+        </div>
+      ),
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: (_, record) => (
+        <td className="action-table-data">
+          <div className="edit-delete-action">
+            <Link 
+              className="me-2 p-2" 
+              to={`${route.editproduct}?id=${record.id}`}
+            >
+              <Edit className="feather-edit" />
+            </Link>
+          </div>
+        </td>
+      ),
+    },
+  ];
+
   return (
     <div className="page-wrapper">
       <div className="content">
         <div className="page-header">
-          <div className="add-item d-flex">
+          <div className="add-item d-flex flex-column">
             <div className="page-title">
               <h4>Product List</h4>
               <h6>Manage your products</h6>
+            </div>
+            <div className="status-toggle-btns mt-2">
+              <div className="btn-group" role="group">
+                <button
+                  type="button"
+                  className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(true)}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(false)}
+                >
+                  Inactive
+                </button>
+              </div>
             </div>
           </div>
           <ul className="table-top-head">
@@ -420,12 +430,12 @@ const ProductList = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search" 
+                    placeholder="Search"
                     className="form-control form-control-sm formsearch"
                     value={searchQuery}
                     onChange={handleSearchChange}
                   />
-                  <Link to className="btn btn-searchset">
+                  <Link to="#" className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
@@ -450,54 +460,46 @@ const ProductList = () => {
             >
               <div className="card-body pb-0">
                 <div className="row">
-                  <div className="col-lg-12 col-sm-12">
-                    <div className="row">
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <Select
-                            className="select"
-                            options={categories}
-                            placeholder="Select Category"
-                            value={selectedCategory}
-                            onChange={(selected) => {
-                              setSelectedCategory(selected);
-                            }}
-                            isClearable
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <Select
-                            className="select"
-                            options={taxes}
-                            placeholder="Select Tax"
-                            value={selectedTax}
-                            onChange={(selected) => {
-                              setSelectedTax(selected);
-                            }}
-                            isClearable
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-2 col-sm-6 col-12">
-                        <div className="input-blocks">
-                          <Link 
-                            className="btn btn-filters"
-                            onClick={handleFilterChange}
-                          >
-                            <i data-feather="search" className="feather-search" />
-                            Search
-                          </Link>
-                        </div>
-                      </div>
+                  <div className="col-lg-3 col-sm-6 col-12">
+                    <div className="input-blocks">
+                      <Select
+                        className="select"
+                        options={categories}
+                        placeholder="Select Category"
+                        value={selectedCategory}
+                        onChange={setSelectedCategory}
+                        isClearable
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-3 col-sm-6 col-12">
+                    <div className="input-blocks">
+                      <Select
+                        className="select"
+                        options={taxes}
+                        placeholder="Select Tax"
+                        value={selectedTax}
+                        onChange={setSelectedTax}
+                        isClearable
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-3 col-sm-6 col-12">
+                    <div className="input-blocks">
+                      <button
+                        className="btn btn-primary"
+                        onClick={applyFilters}
+                      >
+                        <i className="feather-search me-1" />
+                        Apply Filters
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             <div className="table-responsive">
-              <Table columns={columns} dataSource={products} />
+              <Table columns={columns} dataSource={products} rowKey={(record) => record.id} />
             </div>
           </div>
         </div>
