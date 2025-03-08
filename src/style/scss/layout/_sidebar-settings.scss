@@ -1,57 +1,57 @@
 .account-page .customizer-links,.error-page .customizer-links{ 
   display: none;
 }
-.customizer-links {
-    @include position(fixed,50%,0,null,null);
-    @include transform(translateY(-50%));
-    background: $orange;
-    border-radius: 10px 0px 0px 10px;
-    z-index: 3;
-    width: 41px;
-    height: 38px;
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    align-items: center;
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    justify-content: center;
-    -webkit-justify-content: center;
-    -ms-flex-pack: center;
-    -ms-flex-wrap: wrap;
-    flex-wrap: wrap;
-    @include transition(all 0.3s ease);
-    &:hover {
-        background: $title-color;
-    }
-    ul {
-        li {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            &:last-child { 
-                border-bottom: 0;
-            }
-            a {
-                padding: 5px;
-                text-align: center;
-                display: -webkit-box;
-                display: -ms-flexbox;
-                display: flex;
-                align-items: center;
-                -webkit-box-align: center;
-                -ms-flex-align: center;
-                justify-content: center;
-                -webkit-justify-content: center;
-                -ms-flex-pack: center;
-                border-radius: 5px;
-                svg {
-                    color: $white;
-                    width: 16px;
-                    height: 16px;
-                }
-            }
-        }
-    }
-}
+// .customizer-links {
+//     @include position(fixed,50%,0,null,null);
+//     @include transform(translateY(-50%));
+//     background: $orange;
+//     border-radius: 10px 0px 0px 10px;
+//     z-index: 3;
+//     width: 41px;
+//     height: 38px;
+//     display: -webkit-box;
+//     display: -ms-flexbox;
+//     display: flex;
+//     align-items: center;
+//     -webkit-box-align: center;
+//     -ms-flex-align: center;
+//     justify-content: center;
+//     -webkit-justify-content: center;
+//     -ms-flex-pack: center;
+//     -ms-flex-wrap: wrap;
+//     flex-wrap: wrap;
+//     @include transition(all 0.3s ease);
+//     &:hover {
+//         background: $title-color;
+//     }
+//     ul {
+//         li {
+//             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+//             &:last-child { 
+//                 border-bottom: 0;
+//             }
+//             a {
+//                 padding: 5px;
+//                 text-align: center;
+//                 display: -webkit-box;
+//                 display: -ms-flexbox;
+//                 display: flex;
+//                 align-items: center;
+//                 -webkit-box-align: center;
+//                 -ms-flex-align: center;
+//                 justify-content: center;
+//                 -webkit-justify-content: center;
+//                 -ms-flex-pack: center;
+//                 border-radius: 5px;
+//                 svg {
+//                     color: $white;
+//                     width: 16px;
+//                     height: 16px;
+//                 }
+//             }
+//         }
+//     }
+// }
 .sidebar-settings {
     width: 450px;
     background-color: $white;
