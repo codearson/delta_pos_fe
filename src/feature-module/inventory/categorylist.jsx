@@ -49,7 +49,6 @@ const CategoryList = () => {
                 setCategories([]);
             }
         } catch (error) {
-            console.error('Error fetching Categories:', error);
             setAllCategories([]);
             setCategories([]);
         }

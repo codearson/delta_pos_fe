@@ -58,7 +58,6 @@ const Managestock = () => {
       setStockData(filteredData);
       setFilteredStockData(filteredData);
     } catch (error) {
-      console.error("Error fetching stocks:", error);
       setAllStocks([]);
       setStockData([]);
       setFilteredStockData([]);
@@ -96,7 +95,6 @@ const Managestock = () => {
         }));
         setBranches(transformedBranches);
       } catch (error) {
-        console.error("Error fetching initial data:", error);
         Swal.fire({
           title: "Error!",
           text: "Failed to load products or branches",

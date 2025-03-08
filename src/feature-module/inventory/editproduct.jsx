@@ -87,7 +87,6 @@ const EditProduct = () => {
         setLowStock(product.lowStock.toString());
       }
     } catch (error) {
-      console.error("Error loading product data:", error);
       MySwal.fire({
         title: "Error!",
         text: "Failed to load product data.",
@@ -107,7 +106,6 @@ const EditProduct = () => {
         .map((cat) => ({ value: cat.id, label: cat.productCategoryName }))
       );
     } catch (error) {
-      console.error('Error loading categories:', error);
       setCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -124,7 +122,6 @@ const EditProduct = () => {
         .map((tax) => ({ value: tax.id, label: `${tax.taxPercentage}%` }))
       );
     } catch (error) {
-      console.error('Error loading taxes:', error);
       setTaxes([]);
     } finally {
       setLoadingTaxes(false);
@@ -251,7 +248,6 @@ const EditProduct = () => {
         });
       }
     } catch (error) {
-      console.error("Error updating product:", error);
       MySwal.fire({
         title: "Error!",
         text: "An unexpected error occurred.",
