@@ -90,7 +90,6 @@ const Breadcrumbs = (props) => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
       
-      // Set column widths
       const colWidths = Object.keys(data[0]).map(() => ({ wch: 20 }));
       worksheet["!cols"] = colWidths;
 

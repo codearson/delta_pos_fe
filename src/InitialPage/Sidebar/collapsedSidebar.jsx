@@ -403,7 +403,7 @@ const CollapsedSidebar = () => {
               </li>
               <li>
                 <Link to="store-list">
-                  <span>Stores</span>
+                  <span>Branches</span>
                 </Link>
               </li>
               <li>

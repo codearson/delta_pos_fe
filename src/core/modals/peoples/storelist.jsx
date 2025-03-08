@@ -1,125 +1,97 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Filter, Sliders } from "react-feather";
-import Select from "react-select";
-import { Edit, Eye, Globe, Trash2, User } from "react-feather";
-import { useSelector } from "react-redux";
+import { Edit, Trash2 } from "react-feather";
 import { Table } from "antd";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import ImageWithBasePath from "../../img/imagewithbasebath";
 import Breadcrumbs from "../../breadcrumbs";
 import CustomerModal from "./customerModal";
+import { fetchBranches } from "../../../feature-module/Api/StockApi";
+import { saveBranch, updateBranch, updateBranchStatus } from "../../../feature-module/Api/BranchApi";
 
 const StoreList = () => {
-  const data = useSelector((state) => state.customerdata);
+  const [branchData, setBranchData] = useState([]);
+  const [selectedBranch, setSelectedBranch] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredBranches, setFilteredBranches] = useState([]);
+  
+  useEffect(() => {
+    loadBranches();
+  }, []);
 
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
+  const loadBranches = async () => {
+    try {
+      const branches = await fetchBranches();
+      setBranchData([...branches].reverse());
+      setFilteredBranches(branches);
+    } catch (error) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to load branches',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
   };
-
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
-  ];
-  const optionsTwo = [
-    { label: "Choose Store Name", value: "" },
-    { label: "Benjamin", value: "Benjamin" },
-    { label: "Ellen", value: "Ellen" },
-    { label: "Freda", value: "Freda" },
-    { label: "Kaitlin", value: "Kaitlin" },
-  ];
-
-  const countries = [
-    { label: "Choose Country", value: "" },
-    { label: "India", value: "India" },
-    { label: "USA", value: "USA" },
-  ];
 
   const columns = [
     {
-      render: () => (
-        <label className="checkboxs">
-          <input type="checkbox" />
-          <span className="checkmarks" />
-        </label>
-      ),
-    },
-
-    {
-      title: "Store Name",
-      dataIndex: "CustomerName",
-      sorter: (a, b) => a.CustomerName.length - b.CustomerName.length,
+      title: "Branch Name",
+      dataIndex: "branchName",
+      sorter: (a, b) => a.branchName.length - b.branchName.length,
     },
     {
-      title: "Code",
-      dataIndex: "Code",
-      sorter: (a, b) => a.Code.length - b.Code.length,
+      title: "Branch Code",
+      dataIndex: "branchCode",
+      sorter: (a, b) => a.branchCode.length - b.branchCode.length,
     },
     {
-      title: "Store",
-      dataIndex: "Customer",
-      sorter: (a, b) => a.Customer.length - b.Customer.length,
+      title: "Address",
+      dataIndex: "address",
+      sorter: (a, b) => a.address.length - b.address.length,
     },
-
     {
-      title: "Email",
-      dataIndex: "Email",
-      sorter: (a, b) => a.Email.length - b.Email.length,
+      title: "Contact Number",
+      dataIndex: "contactNumber",
+      sorter: (a, b) => a.contactNumber.length - b.contactNumber.length,
     },
-
     {
-      title: "Phone",
-      dataIndex: "Phone",
-      sorter: (a, b) => a.Phone.length - b.Phone.length,
+      title: "Email Address",
+      dataIndex: "emailAddress",
+      sorter: (a, b) => a.emailAddress.length - b.emailAddress.length,
     },
-
-    {
-      title: "Country",
-      dataIndex: "Country",
-      sorter: (a, b) => a.Country.length - b.Country.length,
-    },
-
     {
       title: "Action",
       dataIndex: "action",
-      render: () => (
+      render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
             <div className="input-block add-lists"></div>
-
-            <Link className="me-2 p-2" to="#">
-              <Eye className="feather-view" />
-            </Link>
-
             <Link
               className="me-2 p-2"
               to="#"
               data-bs-toggle="modal"
-              data-bs-target="#edit-units"
+              data-bs-target="#edit-branch"
+              onClick={() => setSelectedBranch(record)}
             >
               <Edit className="feather-edit" />
             </Link>
-
             <Link
               className="confirm-text p-2"
               to="#"
-              onClick={showConfirmationAlert}
+              onClick={() => showConfirmationAlert(record.id)}
             >
               <Trash2 className="feather-trash-2" />
             </Link>
           </div>
         </td>
       ),
-      sorter: (a, b) => a.createdby.length - b.createdby.length,
     },
   ];
 
   const MySwal = withReactContent(Swal);
 
-  const showConfirmationAlert = () => {
+  const showConfirmationAlert = (branchId) => {
     MySwal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -128,32 +100,134 @@ const StoreList = () => {
       confirmButtonText: "Yes, delete it!",
       cancelButtonColor: "#ff0000",
       cancelButtonText: "Cancel",
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.isConfirmed) {
-        MySwal.fire({
-          title: "Deleted!",
-          text: "Your file has been deleted.",
-          className: "btn btn-success",
-          confirmButtonText: "OK",
-          customClass: {
-            confirmButton: "btn btn-success",
-          },
-        });
-      } else {
-        MySwal.close();
+        try {
+          await updateBranchStatus(branchId, 0);
+          await loadBranches();
+          
+          MySwal.fire({
+            title: "Deleted!",
+            text: "Branch has been deleted successfully.",
+            icon: "success",
+            confirmButtonText: "OK",
+          });
+        } catch (error) {
+          MySwal.fire({
+            title: "Error!",
+            text: error.response?.data?.errorDescription || "Failed to delete branch",
+            icon: "error",
+            confirmButtonText: "OK",
+          });
+        }
       }
     });
   };
+
+  const handleSaveBranch = async (branchData) => {
+    try {
+      const saveData = {
+        ...branchData,
+        isActive: 1
+      };
+      
+      await saveBranch(saveData);
+      await loadBranches();
+      
+      Swal.fire({
+        title: 'Success',
+        text: 'Branch saved successfully',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+    } catch (error) {
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || "Failed to save branch",
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
+  };
+
+  const handleUpdateBranch = async (branchData) => {
+    try {
+      const updateData = {
+        ...branchData,
+        id: selectedBranch.id,
+        isActive: 1
+      };
+      
+      await updateBranch(updateData);
+      await loadBranches();
+      setSelectedBranch(null);
+      
+      Swal.fire({
+        title: 'Success',
+        text: 'Branch updated successfully',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+    } catch (error) {
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.message || "Failed to update branch",
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    return branchData.map(branch => ({
+      'Branch Name': branch.branchName,
+      'Branch Code': branch.branchCode,
+      'Address': branch.address,
+      'Contact Number': branch.contactNumber,
+      'Email Address': branch.emailAddress
+    }));
+  };
+
+  const handleDownloadExcel = () => {
+    return branchData.map(branch => ({
+      'Branch Name': branch.branchName,
+      'Branch Code': branch.branchCode,
+      'Address': branch.address,
+      'Contact Number': branch.contactNumber,
+      'Email Address': branch.emailAddress
+    }));
+  };
+
+  const handleRefresh = () => {
+    loadBranches();
+  };
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    const filtered = branchData.filter(branch =>
+      branch.branchName.toLowerCase().includes(value.toLowerCase()) ||
+      branch.branchCode.toLowerCase().includes(value.toLowerCase()) ||
+      branch.address.toLowerCase().includes(value.toLowerCase()) ||
+      branch.contactNumber.toLowerCase().includes(value.toLowerCase()) ||
+      branch.emailAddress.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredBranches(filtered);
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content">
         <Breadcrumbs
-          maintitle="Store List"
-          subtitle="Manage Your Store"
-          addButton="Add Store"
+          maintitle="Branch List"
+          subtitle="Manage Your Branch"
+          addButton="Add Branch"
+          buttonDataToggle="modal"
+          buttonDataTarget="#add-branch"
+          onDownloadPDF={handleDownloadPDF}
+          onDownloadExcel={handleDownloadExcel}
+          onRefresh={handleRefresh}
         />
 
-        {/* /product list */}
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">
@@ -163,97 +237,31 @@ const StoreList = () => {
                     type="text"
                     placeholder="Search"
                     className="form-control form-control-sm formsearch"
+                    onChange={(e) => handleSearch(e.target.value)}
+                    value={searchTerm}
                   />
                   <Link to className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
               </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                >
-                  <Filter
-                    className="filter-icon"
-                    onClick={toggleFilterVisibility}
-                  />
-                  <span onClick={toggleFilterVisibility}>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
-                    />
-                  </span>
-                </Link>
-              </div>
-              <div className="form-sort stylewidth">
-                <Sliders className="info-img" />
-
-                <Select
-                  className="select "
-                  options={options}
-                  placeholder="Sort by Date"
-                />
-              </div>
             </div>
-            {/* /Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <User className="info-img" />
-                      <Select
-                        options={optionsTwo}
-                        placeholder="Choose Store Name"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Globe className="info-img" />
-                      <Select
-                        options={countries}
-                        placeholder="Choose Country"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12 ms-auto">
-                    <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto">
-                        {" "}
-                        <i
-                          data-feather="search"
-                          className="feather-search"
-                        />{" "}
-                        Search{" "}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* /Filter */}
             <div className="table-responsive">
               <Table
                 className="table datanew"
                 columns={columns}
-                dataSource={data}
+                dataSource={filteredBranches}
                 rowKey={(record) => record.id}
-                // pagination={true}
               />
             </div>
           </div>
         </div>
-        {/* /product list */}
       </div>
-      <CustomerModal />
+      <CustomerModal 
+        onSave={handleSaveBranch}
+        onUpdate={handleUpdateBranch}
+        selectedCustomer={selectedBranch}
+      />
     </div>
   );
 };

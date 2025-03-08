@@ -311,7 +311,7 @@ const Header = () => {
           {/* /Search */}
 
           {/* Select Store */}
-          <li className="nav-item dropdown has-arrow main-drop select-store-dropdown">
+          {/* <li className="nav-item dropdown has-arrow main-drop select-store-dropdown">
             <Link
               to="#"
               className="dropdown-toggle nav-link select-store"
@@ -326,7 +326,7 @@ const Header = () => {
                   />
                 </span>
                 <span className="user-detail">
-                  <span className="user-name">Select Store</span>
+                  <span className="user-name">Select Branch</span>
                 </span>
               </span>
             </Link>
@@ -364,7 +364,7 @@ const Header = () => {
                 Grocery Eden
               </Link>
             </div>
-          </li>
+          </li> */}
           {/* /Select Store */}
 
           <li className="nav-item nav-item-box">

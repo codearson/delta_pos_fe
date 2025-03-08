@@ -2,131 +2,172 @@ import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
 const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
-  const initialFormState = {
-    id: "",
-    name: "",
-    mobileNumber: "",
-    isActive: 1,
-  };
+  const [formData, setFormData] = useState({
+    branchName: '',
+    branchCode: '',
+    address: '',
+    contactNumber: '',
+    emailAddress: '',
+  });
 
-  const [formData, setFormData] = useState(initialFormState);
-  const [errors, setErrors] = useState({});
+  const [emailError, setEmailError] = useState('');
 
   useEffect(() => {
     if (selectedCustomer) {
-      setFormData({
-        id: selectedCustomer.id || "",
-        name: selectedCustomer.name || "",
-        mobileNumber: selectedCustomer.mobileNumber || "",
-        isActive: selectedCustomer.isActive ?? 1,
-      });
+      setFormData(selectedCustomer);
     } else {
-      setFormData(initialFormState);
+      setFormData({
+        branchName: '',
+        branchCode: '',
+        address: '',
+        contactNumber: '',
+        emailAddress: '',
+      });
     }
+    setEmailError('');
   }, [selectedCustomer]);
 
-  useEffect(() => {
-    const editModal = document.getElementById("edit-units");
-    const handleShow = () => {
-      if (selectedCustomer) {
-        setFormData({
-          id: selectedCustomer.id || "",
-          name: selectedCustomer.name || "",
-          mobileNumber: selectedCustomer.mobileNumber || "",
-          isActive: selectedCustomer.isActive ?? 1,
-        });
-      }
-    };
-
-    const addModal = document.getElementById("add-units");
-    const handleAddShow = () => {
-      setFormData(initialFormState);
-      setErrors({});
-    };
-
-    editModal?.addEventListener("show.bs.modal", handleShow);
-    addModal?.addEventListener("show.bs.modal", handleAddShow);
-
-    return () => {
-      editModal?.removeEventListener("show.bs.modal", handleShow);
-      addModal?.removeEventListener("show.bs.modal", handleAddShow);
-    };
-  }, [selectedCustomer]);
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = "Customer name is required";
-    if (!formData.mobileNumber.trim()) newErrors.mobileNumber = "Mobile number is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleAddSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      onSave({ ...formData, isActive: 1 });
-      setFormData(initialFormState);
-      setErrors({});
-      document.querySelector("#add-units .close").click();
+    
+    if (name === 'contactNumber') {
+      const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({
+        ...prev,
+        [name]: onlyDigits
+      }));
+    } else if (name === 'emailAddress') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+      
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && !emailRegex.test(value)) {
+        setEmailError('Please enter a valid email address');
+      } else {
+        setEmailError('');
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
   };
 
-  const handleEditSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
+    
+    // Validate contact number
+    if (!formData.contactNumber.match(/^\d{10}$/)) {
+      return;
+    }
+    
+    if (selectedCustomer) {
       onUpdate(formData);
-      setFormData(initialFormState);
-      setErrors({});
-      document.querySelector("#edit-units .close").click();
+    } else {
+      onSave(formData);
     }
+    
+    setFormData({
+      branchName: '',
+      branchCode: '',
+      address: '',
+      contactNumber: '',
+      emailAddress: '',
+    });
+    setEmailError('');
   };
 
   return (
     <div>
-      {/* Add Customer Modal */}
-      <div className="modal fade" id="add-units" data-bs-backdrop="static" data-bs-keyboard="false">
+      {/* Add Branch Modal */}
+      <div className="modal fade" id="add-branch" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="modal-header border-0 custom-modal-header">
-              <h4 className="page-title">Add Customer</h4>
+              <h4 className="page-title">Add Branch</h4>
               <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">×</span>
               </button>
             </div>
             <div className="modal-body custom-modal-body">
-              <form onSubmit={handleAddSubmit}>
+              <form onSubmit={handleSubmit}>
                 <div className="row">
                   <div className="col-lg-12">
                     <div className="input-blocks">
-                      <label>Customer Name <span className="text-danger">*</span></label>
+                      <label>Branch Name <span className="text-danger">*</span></label>
                       <input
                         type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
+                        name="branchName"
+                        value={formData.branchName}
+                        onChange={handleInputChange}
                         className="form-control"
-                        placeholder="Enter customer name"
+                        placeholder="Enter branch name"
                       />
-                      {errors.name && <span className="text-danger">{errors.name}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
                     <div className="input-blocks">
-                      <label>Mobile Number <span className="text-danger">*</span></label>
+                      <label>Branch Code <span className="text-danger">*</span></label>
                       <input
                         type="text"
-                        name="mobileNumber"
-                        value={formData.mobileNumber}
-                        onChange={handleChange}
+                        name="branchCode"
+                        value={formData.branchCode}
+                        onChange={handleInputChange}
                         className="form-control"
-                        placeholder="Enter mobile number"
+                        placeholder="Enter branch code"
                       />
-                      {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Address <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter address"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Contact Number <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="contactNumber"
+                        value={formData.contactNumber}
+                        onChange={handleInputChange}
+                        className={`form-control ${!formData.contactNumber.match(/^\d{10}$/) ? 'is-invalid' : ''}`}
+                        placeholder="Enter 10-digit contact number"
+                        required
+                      />
+                      {!formData.contactNumber.match(/^\d{10}$/) && formData.contactNumber && (
+                        <div className="invalid-feedback">Contact number must be exactly 10 digits</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Email Address <span className="text-danger">*</span></label>
+                      <input
+                        type="email"
+                        name="emailAddress"
+                        value={formData.emailAddress}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter email address"
+                      />
+                      {emailError && (
+                        <div className="text-danger" style={{ fontSize: '0.875em', marginTop: '0.25rem' }}>
+                          {emailError}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -140,45 +181,91 @@ const CustomerModal = ({ onSave, onUpdate, selectedCustomer }) => {
         </div>
       </div>
 
-      {/* Edit Customer Modal */}
-      <div className="modal fade" id="edit-units" data-bs-backdrop="static" data-bs-keyboard="false">
+      {/* Edit Branch Modal */}
+      <div className="modal fade" id="edit-branch" data-bs-backdrop="static" data-bs-keyboard="false">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="modal-header border-0 custom-modal-header">
-              <h4 className="page-title">Edit Customer</h4>
+              <h4 className="page-title">Edit Branch</h4>
               <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">×</span>
               </button>
             </div>
             <div className="modal-body custom-modal-body">
-              <form onSubmit={handleEditSubmit}>
+              <form onSubmit={handleSubmit}>
                 <div className="row">
                   <div className="col-lg-12">
                     <div className="input-blocks">
-                      <label>Customer Name <span className="text-danger">*</span></label>
+                      <label>Branch Name <span className="text-danger">*</span></label>
                       <input
                         type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
+                        name="branchName"
+                        value={formData.branchName}
+                        onChange={handleInputChange}
                         className="form-control"
-                        placeholder="Enter customer name"
+                        placeholder="Enter branch name"
                       />
-                      {errors.name && <span className="text-danger">{errors.name}</span>}
                     </div>
                   </div>
                   <div className="col-lg-12">
                     <div className="input-blocks">
-                      <label>Mobile Number <span className="text-danger">*</span></label>
+                      <label>Branch Code <span className="text-danger">*</span></label>
                       <input
                         type="text"
-                        name="mobileNumber"
-                        value={formData.mobileNumber}
-                        onChange={handleChange}
+                        name="branchCode"
+                        value={formData.branchCode}
+                        onChange={handleInputChange}
                         className="form-control"
-                        placeholder="Enter mobile number"
+                        placeholder="Enter branch code"
                       />
-                      {errors.mobileNumber && <span className="text-danger">{errors.mobileNumber}</span>}
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Address <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter address"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Contact Number <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="contactNumber"
+                        value={formData.contactNumber}
+                        onChange={handleInputChange}
+                        className={`form-control ${!formData.contactNumber.match(/^\d{10}$/) ? 'is-invalid' : ''}`}
+                        placeholder="Enter 10-digit contact number"
+                        required
+                      />
+                      {!formData.contactNumber.match(/^\d{10}$/) && formData.contactNumber && (
+                        <div className="invalid-feedback">Contact number must be exactly 10 digits</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Email Address <span className="text-danger">*</span></label>
+                      <input
+                        type="email"
+                        name="emailAddress"
+                        value={formData.emailAddress}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter email address"
+                      />
+                      {emailError && (
+                        <div className="text-danger" style={{ fontSize: '0.875em', marginTop: '0.25rem' }}>
+                          {emailError}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
