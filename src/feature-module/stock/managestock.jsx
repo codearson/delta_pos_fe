@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Filter, Archive, Box } from "react-feather";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import Breadcrumbs from "../../core/breadcrumbs";
 import Select from "react-select";
 import { Link } from "react-router-dom";
@@ -13,21 +11,19 @@ import { fetchProducts } from "../Api/productApi";
 import "../../style/scss/pages/_categorylist.scss";
 
 const Managestock = () => {
-  const [stockData, setStockData] = useState([]);
   const [allStocks, setAllStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedStock, setSelectedStock] = useState(null);
   const [products, setProducts] = useState([]);
   const [branches, setBranches] = useState([]);
-  const [selectedFilters, setSelectedFilters] = useState({
-    branch: null,
-    product: null
-  });
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredStockData, setFilteredStockData] = useState([]);
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState({
+    branch: null,
+    product: null
+  });
 
   const getStocks = async () => {
     setLoading(true);
@@ -54,12 +50,10 @@ const Managestock = () => {
       }));
 
       setAllStocks(transformedData);
-      const filteredData = transformedData.filter(stock => stock.isActive === showActive).reverse();
-      setStockData(filteredData);
-      setFilteredStockData(filteredData);
+      const activeData = transformedData.filter(stock => stock.isActive === showActive).reverse();
+      setFilteredStockData(activeData);
     } catch (error) {
       setAllStocks([]);
-      setStockData([]);
       setFilteredStockData([]);
       Swal.fire({
         title: "Error!",
@@ -161,38 +155,43 @@ const Managestock = () => {
   const handleSearchChange = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
-
-    if (query.trim() === '') {
-      setFilteredStockData(stockData);
-      return;
-    }
-
-    const filteredData = allStocks.filter(stock => 
-      stock.Branch.toLowerCase().includes(query) ||
-      stock.Product.Name.toLowerCase().includes(query) ||
-      stock.Quantity.toString().includes(query)
-    );
-    setFilteredStockData(filteredData);
+    filterData(query, selectedFilters.branch, selectedFilters.product);
   };
 
-  const handleSearch = () => {
-    if (!selectedFilters.branch && !selectedFilters.product) {
-      setFilteredStockData(stockData);
-      return;
-    }
-
-    const filteredData = allStocks.filter(stock => {
-      const matchesBranch = !selectedFilters.branch || stock.branchId === selectedFilters.branch.value;
-      const matchesProduct = !selectedFilters.product || stock.productId === selectedFilters.product.value;
-      return matchesBranch && matchesProduct && stock.isActive === showActive;
-    });
-
-    setFilteredStockData(filteredData);
-    setIsFilterVisible(false);
+  const handleFilterChange = (selected, filterType) => {
+    const newFilters = {
+      ...selectedFilters,
+      [filterType]: selected
+    };
+    setSelectedFilters(newFilters);
+    filterData(searchQuery, filterType === 'branch' ? selected : newFilters.branch, 
+      filterType === 'product' ? selected : newFilters.product);
   };
 
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible(prev => !prev);
+  const filterData = (query, branchFilter, productFilter) => {
+    let filteredData = allStocks.filter(stock => stock.isActive === showActive);
+
+    if (query.trim() !== '') {
+      filteredData = filteredData.filter(stock => 
+        stock.Branch.toLowerCase().includes(query) ||
+        stock.Product.Name.toLowerCase().includes(query) ||
+        stock.Quantity.toString().includes(query)
+      );
+    }
+
+    if (branchFilter) {
+      filteredData = filteredData.filter(stock => 
+        stock.branchId === branchFilter.value
+      );
+    }
+
+    if (productFilter) {
+      filteredData = filteredData.filter(stock => 
+        stock.productId === productFilter.value
+      );
+    }
+
+    setFilteredStockData(filteredData);
   };
 
   const exportToPDFData = () => {
@@ -313,88 +312,41 @@ const Managestock = () => {
           <div className="card-body">
             <div className="table-top">
               <div className="search-set">
-                <div className="search-input">
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="form-control form-control-sm formsearch"
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    disabled={loading}
-                  />
-                  <Link to="#" className="btn btn-searchset">
-                    <i data-feather="search" className="feather-search" />
-                  </Link>
-                </div>
-              </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`}
-                  id="filter_search"
-                  onClick={toggleFilterVisibility}
-                  disabled={loading}
-                >
-                  <Filter className="filter-icon" />
-                  <span>
-                    <ImageWithBasePath src="assets/img/icons/closes.svg" alt="img" />
-                  </span>
-                </Link>
-              </div>
-            </div>
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-4 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Archive className="info-img" />
-                      <Select
-                        className="select"
-                        placeholder="Choose Branch"
-                        options={branches}
-                        value={selectedFilters.branch}
-                        onChange={(selected) => setSelectedFilters(prev => ({
-                          ...prev,
-                          branch: selected
-                        }))}
-                        isLoading={loading}
-                        isDisabled={loading}
-                        isClearable
-                      />
-                    </div>
+                <div className="search-path d-flex align-items-center gap-2" style={{ width: '100%' }}>
+                  <div className="search-input">
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      className="form-control form-control-sm formsearch"
+                      value={searchQuery}
+                      onChange={handleSearchChange}
+                      disabled={loading}
+                    />
+                    <Link to="#" className="btn btn-searchset">
+                      <i data-feather="search" className="feather-search" />
+                    </Link>
                   </div>
-                  <div className="col-lg-4 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Box className="info-img" />
-                      <Select
-                        className="select"
-                        placeholder="Choose Product"
-                        options={products}
-                        value={selectedFilters.product}
-                        onChange={(selected) => setSelectedFilters(prev => ({
-                          ...prev,
-                          product: selected
-                        }))}
-                        isLoading={loading}
-                        isDisabled={loading}
-                        isClearable
-                      />
-                    </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      placeholder="Choose Branch"
+                      options={branches}
+                      value={selectedFilters.branch}
+                      onChange={(selected) => handleFilterChange(selected, 'branch')}
+                      isLoading={loading}
+                      isClearable
+                    />
                   </div>
-                  <div className="col-lg-4 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <button
-                        className="btn btn-primary"
-                        onClick={handleSearch}
-                        disabled={loading}
-                      >
-                        <i className="feather-search me-1" />
-                        Search
-                      </button>
-                    </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      placeholder="Choose Product"
+                      options={products}
+                      value={selectedFilters.product}
+                      onChange={(selected) => handleFilterChange(selected, 'product')}
+                      isLoading={loading}
+                      isClearable
+                    />
                   </div>
                 </div>
               </div>
