@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Edit, Trash2 } from "react-feather";
+import { Edit } from "react-feather";
 import { Table } from "antd";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
@@ -14,16 +14,24 @@ const StoreList = () => {
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredBranches, setFilteredBranches] = useState([]);
+  const [showActive, setShowActive] = useState(true);
+  const [togglingId, setTogglingId] = useState(null);
   
+  const MySwal = withReactContent(Swal);
+
   useEffect(() => {
     loadBranches();
-  }, []);
+  }, [showActive]);
 
   const loadBranches = async () => {
     try {
       const branches = await fetchBranches();
-      setBranchData([...branches].reverse());
-      setFilteredBranches(branches);
+      const normalizedData = branches.map(branch => ({
+        ...branch,
+        isActive: branch.isActive === 1 || branch.isActive === true
+      }));
+      setBranchData(normalizedData);
+      filterData(normalizedData, searchTerm);
     } catch (error) {
       Swal.fire({
         title: 'Error',
@@ -32,6 +40,66 @@ const StoreList = () => {
         confirmButtonText: 'OK'
       });
     }
+  };
+
+  const filterData = (branchesData, query) => {
+    let filtered = branchesData.filter(branch => branch.isActive === showActive);
+
+    if (query.trim() !== "") {
+      filtered = filtered.filter(branch =>
+        (branch.branchName && branch.branchName.toLowerCase().includes(query.toLowerCase())) ||
+        (branch.branchCode && branch.branchCode.toLowerCase().includes(query.toLowerCase())) ||
+        (branch.address && branch.address.toLowerCase().includes(query.toLowerCase())) ||
+        (branch.contactNumber && branch.contactNumber.toLowerCase().includes(query.toLowerCase())) ||
+        (branch.emailAddress && branch.emailAddress.toLowerCase().includes(query.toLowerCase()))
+      );
+    }
+
+    setFilteredBranches(filtered.reverse());
+  };
+
+  const handleToggleStatus = (branchId, currentStatus) => {
+    setTogglingId(branchId);
+    const newStatusText = currentStatus ? 'Inactive' : 'Active';
+
+    MySwal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to change this branch to ${newStatusText}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, change it!',
+      cancelButtonText: 'No, cancel'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const newStatus = currentStatus ? 0 : 1;
+          const response = await updateBranchStatus(branchId, newStatus);
+          if (response) {
+            await loadBranches();
+            MySwal.fire({
+              title: "Success!",
+              text: `Branch status changed to ${newStatusText}.`,
+              icon: "success",
+              confirmButtonText: "OK",
+              customClass: { confirmButton: "btn btn-success" },
+            });
+          } else {
+            throw new Error("Failed to update status");
+          }
+        } catch (error) {
+          MySwal.fire({
+            title: "Error!",
+            text: error.response?.data?.errorDescription || "Failed to update branch status",
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+        }
+      }
+      setTogglingId(null);
+    });
   };
 
   const columns = [
@@ -61,6 +129,21 @@ const StoreList = () => {
       sorter: (a, b) => a.emailAddress.length - b.emailAddress.length,
     },
     {
+      title: "Status",
+      dataIndex: "isActive",
+      render: (isActive, record) => (
+        <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
+          <input
+            className="form-check-input"
+            type="checkbox"
+            checked={isActive}
+            onChange={() => handleToggleStatus(record.id, isActive)}
+            disabled={togglingId === record.id}
+          />
+        </div>
+      ),
+    },
+    {
       title: "Action",
       dataIndex: "action",
       render: (_, record) => (
@@ -76,53 +159,11 @@ const StoreList = () => {
             >
               <Edit className="feather-edit" />
             </Link>
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={() => showConfirmationAlert(record.id)}
-            >
-              <Trash2 className="feather-trash-2" />
-            </Link>
           </div>
         </td>
       ),
     },
   ];
-
-  const MySwal = withReactContent(Swal);
-
-  const showConfirmationAlert = (branchId) => {
-    MySwal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      showCancelButton: true,
-      confirmButtonColor: "#00ff00",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonColor: "#ff0000",
-      cancelButtonText: "Cancel",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          await updateBranchStatus(branchId, 0);
-          await loadBranches();
-          
-          MySwal.fire({
-            title: "Deleted!",
-            text: "Branch has been deleted successfully.",
-            icon: "success",
-            confirmButtonText: "OK",
-          });
-        } catch (error) {
-          MySwal.fire({
-            title: "Error!",
-            text: error.response?.data?.errorDescription || "Failed to delete branch",
-            icon: "error",
-            confirmButtonText: "OK",
-          });
-        }
-      }
-    });
-  };
 
   const handleSaveBranch = async (branchData) => {
     try {
@@ -179,7 +220,7 @@ const StoreList = () => {
   };
 
   const handleDownloadPDF = () => {
-    return branchData.map(branch => ({
+    return filteredBranches.map(branch => ({
       'Branch Name': branch.branchName,
       'Branch Code': branch.branchCode,
       'Address': branch.address,
@@ -189,7 +230,7 @@ const StoreList = () => {
   };
 
   const handleDownloadExcel = () => {
-    return branchData.map(branch => ({
+    return filteredBranches.map(branch => ({
       'Branch Name': branch.branchName,
       'Branch Code': branch.branchCode,
       'Address': branch.address,
@@ -204,14 +245,7 @@ const StoreList = () => {
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-    const filtered = branchData.filter(branch =>
-      branch.branchName.toLowerCase().includes(value.toLowerCase()) ||
-      branch.branchCode.toLowerCase().includes(value.toLowerCase()) ||
-      branch.address.toLowerCase().includes(value.toLowerCase()) ||
-      branch.contactNumber.toLowerCase().includes(value.toLowerCase()) ||
-      branch.emailAddress.toLowerCase().includes(value.toLowerCase())
-    );
-    setFilteredBranches(filtered);
+    filterData(branchData, value);
   };
 
   return (
@@ -227,6 +261,29 @@ const StoreList = () => {
           onDownloadExcel={handleDownloadExcel}
           onRefresh={handleRefresh}
         />
+
+        <div className="page-header">
+          <div className="add-item d-flex flex-column">
+            <div className="status-toggle-btns mt-2">
+              <div className="btn-group" role="group">
+                <button
+                  type="button"
+                  className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(true)}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                  onClick={() => setShowActive(false)}
+                >
+                  Inactive
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="card table-list-card">
           <div className="card-body">
