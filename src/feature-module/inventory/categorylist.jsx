@@ -9,11 +9,11 @@ import AddCategoryList from '../../core/modals/inventory/addcategorylist';
 import EditCategoryList from '../../core/modals/inventory/editcategorylist';
 import Swal from 'sweetalert2';
 import Table from '../../core/pagination/datatable';
-import { 
-    fetchProductCategories, 
-    updateProductCategoryStatus, 
-    saveProductCategory 
-} from '../Api/ProductCategoryApi'; // Removed getProductCategoryByName
+import {
+    fetchProductCategories,
+    updateProductCategoryStatus,
+    saveProductCategory
+} from '../Api/ProductCategoryApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -28,13 +28,29 @@ const CategoryList = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [showActive, setShowActive] = useState(true);
     const [togglingId, setTogglingId] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        loadCategories();
+        loadInitialData();
+    }, []);
+
+    useEffect(() => {
+        if (!isLoading) {
+            loadCategories(false);
+        }
     }, [showActive]);
 
-    const loadCategories = async () => {
+    const loadInitialData = async () => {
+        setIsLoading(true);
+        await loadCategories(true);
+        setIsLoading(false);
+    };
+
+    const loadCategories = async (isInitial = false) => {
         try {
+            if (isInitial) {
+                setIsLoading(true);
+            }
             const fetchedCategories = await fetchProductCategories();
             let categoryArray = fetchedCategories;
             if (fetchedCategories?.responseDto) {
@@ -47,10 +63,26 @@ const CategoryList = () => {
             } else {
                 setAllCategories([]);
                 setCategories([]);
+                Swal.fire({
+                    title: "Warning!",
+                    text: "No category data received from the server.",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                });
             }
         } catch (error) {
             setAllCategories([]);
             setCategories([]);
+            Swal.fire({
+                title: "Error!",
+                text: "Failed to fetch categories: " + error.message,
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+        } finally {
+            if (isInitial) {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -61,7 +93,7 @@ const CategoryList = () => {
     const handleToggleStatus = async (categoryId, currentStatus) => {
         setTogglingId(categoryId);
         const newStatusText = currentStatus ? 'Inactive' : 'Active';
-        
+
         Swal.fire({
             title: 'Are you sure?',
             text: `Do you want to change this category to ${newStatusText}?`,
@@ -77,7 +109,7 @@ const CategoryList = () => {
                     const newStatus = currentStatus ? 0 : 1;
                     const response = await updateProductCategoryStatus(categoryId, newStatus);
                     if (response) {
-                        loadCategories();
+                        loadCategories(false);
                     } else {
                         Swal.fire('Error', 'Failed to update category status', 'error');
                     }
@@ -94,7 +126,7 @@ const CategoryList = () => {
             const response = await saveProductCategory(newCategory);
             if (response) {
                 Swal.fire('Success', 'Category has been added!', 'success');
-                await loadCategories();
+                await loadCategories(false);
                 const modal = document.getElementById('add-category');
                 const bootstrapModal = new window.bootstrap.Modal(modal);
                 bootstrapModal.hide();
@@ -110,12 +142,12 @@ const CategoryList = () => {
         const query = e.target.value;
         setSearchQuery(query);
         if (query.trim() !== '') {
-            const searchCategories = allCategories.filter(category => 
+            const searchCategories = allCategories.filter(category =>
                 category.productCategoryName.toLowerCase().includes(query.toLowerCase())
             );
             setCategories(searchCategories.length > 0 ? searchCategories : []);
         } else {
-            loadCategories();
+            loadCategories(false);
         }
     };
 
@@ -198,6 +230,14 @@ const CategoryList = () => {
         },
     ];
 
+    if (isLoading) {
+        return (
+            <div className="page-wrapper">
+                {/* You can add a loading spinner or message here if desired */}
+            </div>
+        );
+    }
+
     return (
         <div>
             <div className="page-wrapper">
@@ -244,7 +284,7 @@ const CategoryList = () => {
                             </li>
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                                    <Link onClick={loadCategories}>
+                                    <Link onClick={() => loadCategories(false)}>
                                         <RotateCcw />
                                     </Link>
                                 </OverlayTrigger>

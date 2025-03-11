@@ -28,14 +28,18 @@ const ProductList = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedTax, setSelectedTax] = useState(null);
   const [showActive, setShowActive] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
   const MySwal = withReactContent(Swal);
   const route = all_routes;
 
-  const loadProductsData = async () => {
+  const loadProductsData = async (isInitial = false) => {
     try {
+      if (isInitial) {
+        setIsLoading(true);
+      }
       const data = await fetchProducts();
       if (Array.isArray(data)) {
         setAllProducts(data);
@@ -44,10 +48,26 @@ const ProductList = () => {
       } else {
         setAllProducts([]);
         setProducts([]);
+        Swal.fire({
+          title: "Warning!",
+          text: "No product data received from the server.",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
       }
     } catch (error) {
       setAllProducts([]);
       setProducts([]);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to fetch products: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    } finally {
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -71,8 +91,22 @@ const ProductList = () => {
   };
 
   useEffect(() => {
-    loadProductsData();
-    loadFilterOptions();
+    const loadInitialData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        loadProductsData(true),
+        loadFilterOptions()
+      ]);
+
+      setIsLoading(false);
+    };
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      loadProductsData(false);
+    }
   }, [showActive]);
 
   const handleToggleStatus = async (productId, currentStatus) => {
@@ -94,7 +128,7 @@ const ProductList = () => {
         const newStatus = currentStatus ? 0 : 1;
         const response = await updateProductStatus(productId, newStatus);
         if (response && response.success !== false) {
-          loadProductsData();
+          loadProductsData(false);
           Swal.fire({
             title: 'Success!',
             text: `Product status changed to ${newStatusText}`,
@@ -123,7 +157,7 @@ const ProductList = () => {
     } else {
       setSelectedTax(selected);
     }
-    filterData(searchQuery, filterType === 'category' ? selected : selectedCategory, 
+    filterData(searchQuery, filterType === 'category' ? selected : selectedCategory,
       filterType === 'tax' ? selected : selectedTax);
   };
 
@@ -132,7 +166,7 @@ const ProductList = () => {
 
     // Apply text search
     if (query.trim() !== '') {
-      filteredData = filteredData.filter(product => 
+      filteredData = filteredData.filter(product =>
         product.name.toLowerCase().includes(query.toLowerCase()) ||
         product.barcode?.toLowerCase().includes(query.toLowerCase()) ||
         product.price?.toString().includes(query) ||
@@ -144,14 +178,14 @@ const ProductList = () => {
 
     // Apply category filter
     if (categoryFilter) {
-      filteredData = filteredData.filter(product => 
+      filteredData = filteredData.filter(product =>
         product.productCategoryDto?.id === categoryFilter.value
       );
     }
 
     // Apply tax filter
     if (taxFilter) {
-      filteredData = filteredData.filter(product => 
+      filteredData = filteredData.filter(product =>
         product.taxDto?.id === taxFilter.value
       );
     }
@@ -349,6 +383,14 @@ const ProductList = () => {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="page-wrapper">
+        {/* You can add a loading spinner or message here if desired */}
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -394,7 +436,7 @@ const ProductList = () => {
             </li>
             <li>
               <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                <Link onClick={loadProductsData}>
+                <Link onClick={() => loadProductsData(false)}>
                   <RotateCcw />
                 </Link>
               </OverlayTrigger>

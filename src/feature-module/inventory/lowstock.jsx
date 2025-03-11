@@ -27,25 +27,41 @@ const LowStock = () => {
   const [searchQueryLow, setSearchQueryLow] = useState("");
   const [searchQueryOut, setSearchQueryOut] = useState("");
   const [activeTab, setActiveTab] = useState("low");
+  const [isLoading, setIsLoading] = useState(true);
 
   const MySwal = withReactContent(Swal);
 
-  const loadProductsData = async () => {
+  const loadProductsData = async (isInitial = false) => {
     try {
+      if (isInitial) {
+        setIsLoading(true);
+      }
       const products = await fetchProducts();
-      const reversedProducts = products.reverse();
-      setAllProducts(reversedProducts); // Store all products
-      const lowStock = reversedProducts.filter((product) => 
-        product.isActive === true && 
-        product.quantity < product.lowStock && 
-        product.quantity > 0
-      );
-      setLowStockProducts(lowStock);
-      const outOfStock = reversedProducts.filter((product) => 
-        product.isActive === true && 
-        product.quantity === 0
-      );
-      setOutOfStockProducts(outOfStock);
+      if (Array.isArray(products)) {
+        const reversedProducts = products.reverse();
+        setAllProducts(reversedProducts); // Store all products
+        const lowStock = reversedProducts.filter((product) => 
+          product.isActive === true && 
+          product.quantity < product.lowStock && 
+          product.quantity > 0
+        );
+        setLowStockProducts(lowStock);
+        const outOfStock = reversedProducts.filter((product) => 
+          product.isActive === true && 
+          product.quantity === 0
+        );
+        setOutOfStockProducts(outOfStock);
+      } else {
+        setAllProducts([]);
+        setLowStockProducts([]);
+        setOutOfStockProducts([]);
+        MySwal.fire({
+          title: "Warning!",
+          text: "No product data received from the server.",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+      }
     } catch (error) {
       MySwal.fire({
         title: "Error!",
@@ -53,11 +69,15 @@ const LowStock = () => {
         icon: "error",
         confirmButtonText: "OK",
       });
+    } finally {
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadProductsData();
+    loadProductsData(true);
   }, []);
 
   const handleSearchChangeLow = (e) => {
@@ -286,6 +306,14 @@ const LowStock = () => {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="page-wrapper">
+        {/* You can add a loading spinner or message here if desired */}
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="page-wrapper">
@@ -332,7 +360,7 @@ const LowStock = () => {
               </li>
               <li>
                 <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                  <Link onClick={loadProductsData}>
+                  <Link onClick={() => loadProductsData(false)}>
                     <RotateCcw />
                   </Link>
                 </OverlayTrigger>

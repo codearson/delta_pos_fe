@@ -25,30 +25,72 @@ const Customers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchCustomersData();
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      fetchCustomersData(false);
+    }
   }, [showActive]);
 
-  const fetchCustomersData = async () => {
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    await fetchCustomersData(true);
+    setIsLoading(false);
+  };
+
+  const fetchCustomersData = async (isInitial = false) => {
     try {
+      if (isInitial) {
+        setIsLoading(true);
+      }
       const data = await fetchCustomers();
       if (Array.isArray(data)) {
-        setAllCustomers(data);
-        const filteredData = data.filter(customer => customer.isActive === showActive).reverse();
-        setCustomers(filteredData);
+        const normalizedData = data.map(customer => ({
+          ...customer,
+          isActive: customer.isActive === 1 || customer.isActive === true
+        }));
+        setAllCustomers(normalizedData);
+        filterData(normalizedData, searchTerm);
       } else {
         setAllCustomers([]);
         setCustomers([]);
+        Swal.fire({
+          title: "Warning!",
+          text: "No customer data received from the server.",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
       }
     } catch (error) {
       Swal.fire({
         title: "Error!",
-        text: "Failed to fetch customers",
+        text: "Failed to fetch customers: " + error.message,
         icon: "error",
         confirmButtonText: "OK",
       });
+    } finally {
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
+  };
+
+  const filterData = (customersData, query) => {
+    let filteredData = customersData.filter(customer => customer.isActive === showActive);
+
+    if (query.trim() !== "") {
+      filteredData = filteredData.filter(customer =>
+        (customer.name && customer.name.toLowerCase().includes(query.toLowerCase())) ||
+        (customer.mobileNumber && customer.mobileNumber.toLowerCase().includes(query.toLowerCase()))
+      );
+    }
+
+    setCustomers(filteredData.reverse());
   };
 
   const handleSelectAll = (e) => {
@@ -61,7 +103,7 @@ const Customers = () => {
   };
 
   const handleRowSelect = (id) => {
-    setSelectedRows(prev => 
+    setSelectedRows(prev =>
       prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
     );
   };
@@ -71,7 +113,7 @@ const Customers = () => {
       const customerDataWithActive = { ...customerData, isActive: 1 };
       const result = await saveCustomer(customerDataWithActive);
       if (result) {
-        await fetchCustomersData();
+        await fetchCustomersData(false);
         setSelectedCustomer(null);
         Swal.fire({
           title: "Success!",
@@ -96,7 +138,7 @@ const Customers = () => {
     try {
       const result = await updateCustomer(customerData);
       if (result) {
-        await fetchCustomersData();
+        await fetchCustomersData(false);
         setSelectedCustomer(null);
         Swal.fire({
           title: "Success!",
@@ -136,7 +178,7 @@ const Customers = () => {
           const newStatus = currentStatus ? 0 : 1;
           const response = await updateCustomerStatus(customerId, newStatus);
           if (response && response.success !== false) {
-            await fetchCustomersData();
+            await fetchCustomersData(false);
             Swal.fire({
               title: "Success!",
               text: `Customer status changed to ${newStatusText}.`,
@@ -162,25 +204,16 @@ const Customers = () => {
   };
 
   const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase();
+    const value = e.target.value;
     setSearchTerm(value);
-    
-    if (value.trim() !== "") {
-      const filteredCustomers = allCustomers.filter(customer => 
-        (customer.name && customer.name.toLowerCase().includes(value)) ||
-        (customer.mobileNumber && customer.mobileNumber.toLowerCase().includes(value))
-      );
-      setCustomers(filteredCustomers.length > 0 ? filteredCustomers : []);
-    } else {
-      setCustomers(allCustomers.filter(customer => customer.isActive === showActive).reverse());
-    }
+    filterData(allCustomers, value);
   };
 
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
       doc.text(`Customer List (${showActive ? 'Active' : 'Inactive'})`, 14, 15);
-      
+
       const tableColumn = ["Customer Name", "Mobile Number"];
       const tableRows = customers.map(customer => [
         customer.name || "",
@@ -227,7 +260,7 @@ const Customers = () => {
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Customers");
-      
+
       worksheet["!cols"] = [{ wch: 20 }, { wch: 15 }];
 
       XLSX.writeFile(workbook, `customer_list_${showActive ? 'active' : 'inactive'}.xlsx`);
@@ -333,6 +366,14 @@ const Customers = () => {
     <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>
   );
 
+  if (isLoading) {
+    return (
+      <div className="page-wrapper">
+        {/* You can add a loading spinner or message here if desired */}
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -378,7 +419,7 @@ const Customers = () => {
             </li>
             <li>
               <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                <Link onClick={fetchCustomersData}>
+                <Link onClick={() => fetchCustomersData(false)}>
                   <RotateCcw />
                 </Link>
               </OverlayTrigger>

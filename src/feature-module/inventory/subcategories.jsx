@@ -22,13 +22,29 @@ const SubCategories = () => {
     const [selectedTax, setSelectedTax] = useState(null);
     const [togglingId, setTogglingId] = useState(null);
     const [showActive, setShowActive] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        loadTaxes();
+        loadInitialData();
+    }, []);
+
+    useEffect(() => {
+        if (!isLoading) {
+            loadTaxes(false);
+        }
     }, [showActive]);
 
-    const loadTaxes = async () => {
+    const loadInitialData = async () => {
+        setIsLoading(true);
+        await loadTaxes(true);
+        setIsLoading(false);
+    };
+
+    const loadTaxes = async (isInitial = false) => {
         try {
+            if (isInitial) {
+                setIsLoading(true);
+            }
             const fetchedTaxes = await fetchTaxes();
             const filteredTaxes = Array.isArray(fetchedTaxes)
                 ? fetchedTaxes.filter(tax => tax.isActive === showActive).reverse()
@@ -36,6 +52,16 @@ const SubCategories = () => {
             setTaxes(filteredTaxes);
         } catch (error) {
             setTaxes([]);
+            Swal.fire({
+                title: "Error!",
+                text: "Failed to fetch taxes: " + error.message,
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+        } finally {
+            if (isInitial) {
+                setIsLoading(false);
+            }
         }
     };
 
@@ -58,7 +84,7 @@ const SubCategories = () => {
                     const newStatus = currentStatus ? 0 : 1;
                     const response = await updateTaxStatus(taxId, newStatus);
                     if (response) {
-                        loadTaxes();
+                        loadTaxes(false);
                     } else {
                         Swal.fire('Error', 'Failed to update tax status', 'error');
                     }
@@ -155,8 +181,16 @@ const SubCategories = () => {
     ];
 
     const handleTaxCreated = () => {
-        loadTaxes();
+        loadTaxes(false);
     };
+
+    if (isLoading) {
+        return (
+            <div className="page-wrapper">
+                {/* You can add a loading spinner or message here if desired */}
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -204,7 +238,7 @@ const SubCategories = () => {
                             </li>
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                                    <Link onClick={loadTaxes}>
+                                    <Link onClick={() => loadTaxes(false)}>
                                         <RotateCcw />
                                     </Link>
                                 </OverlayTrigger>

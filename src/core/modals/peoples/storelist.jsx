@@ -16,29 +16,60 @@ const StoreList = () => {
   const [filteredBranches, setFilteredBranches] = useState([]);
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
-  
+  const [isLoading, setIsLoading] = useState(true);
+
   const MySwal = withReactContent(Swal);
 
   useEffect(() => {
-    loadBranches();
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      loadBranches(false);
+    }
   }, [showActive]);
 
-  const loadBranches = async () => {
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    await loadBranches(true);
+    setIsLoading(false);
+  };
+
+  const loadBranches = async (isInitial = false) => {
     try {
+      if (isInitial) {
+        setIsLoading(true);
+      }
       const branches = await fetchBranches();
-      const normalizedData = branches.map(branch => ({
-        ...branch,
-        isActive: branch.isActive === 1 || branch.isActive === true
-      }));
-      setBranchData(normalizedData);
-      filterData(normalizedData, searchTerm);
+      if (Array.isArray(branches)) {
+        const normalizedData = branches.map(branch => ({
+          ...branch,
+          isActive: branch.isActive === 1 || branch.isActive === true
+        }));
+        setBranchData(normalizedData);
+        filterData(normalizedData, searchTerm);
+      } else {
+        setBranchData([]);
+        setFilteredBranches([]);
+        Swal.fire({
+          title: "Warning!",
+          text: "No branch data received from the server.",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+      }
     } catch (error) {
       Swal.fire({
         title: 'Error',
-        text: 'Failed to load branches',
+        text: 'Failed to load branches: ' + error.message,
         icon: 'error',
         confirmButtonText: 'OK'
       });
+    } finally {
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -77,7 +108,7 @@ const StoreList = () => {
           const newStatus = currentStatus ? 0 : 1;
           const response = await updateBranchStatus(branchId, newStatus);
           if (response) {
-            await loadBranches();
+            await loadBranches(false);
             MySwal.fire({
               title: "Success!",
               text: `Branch status changed to ${newStatusText}.`,
@@ -171,10 +202,10 @@ const StoreList = () => {
         ...branchData,
         isActive: 1
       };
-      
+
       await saveBranch(saveData);
-      await loadBranches();
-      
+      await loadBranches(false);
+
       Swal.fire({
         title: 'Success',
         text: 'Branch saved successfully',
@@ -196,13 +227,13 @@ const StoreList = () => {
       const updateData = {
         ...branchData,
         id: selectedBranch.id,
-        isActive: 1
+        isActive: selectedBranch.isActive // Preserve the current status
       };
-      
+
       await updateBranch(updateData);
-      await loadBranches();
+      await loadBranches(false);
       setSelectedBranch(null);
-      
+
       Swal.fire({
         title: 'Success',
         text: 'Branch updated successfully',
@@ -240,13 +271,21 @@ const StoreList = () => {
   };
 
   const handleRefresh = () => {
-    loadBranches();
+    loadBranches(false);
   };
 
   const handleSearch = (value) => {
     setSearchTerm(value);
     filterData(branchData, value);
   };
+
+  if (isLoading) {
+    return (
+      <div className="page-wrapper">
+        {/* You can add a loading spinner or message here if desired */}
+      </div>
+    );
+  }
 
   return (
     <div className="page-wrapper">
@@ -314,7 +353,7 @@ const StoreList = () => {
           </div>
         </div>
       </div>
-      <BranchModal 
+      <BranchModal
         onSave={handleSaveBranch}
         onUpdate={handleUpdateBranch}
         selectedBranch={selectedBranch}

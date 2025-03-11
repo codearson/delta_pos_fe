@@ -25,12 +25,14 @@ const Managestock = () => {
     product: null
   });
 
-  const getStocks = async () => {
-    setLoading(true);
+  const getStocks = async (isInitial = false) => {
     try {
+      if (isInitial) {
+        setLoading(true);
+      }
       const response = await fetchStocks();
-      const stocksData = Array.isArray(response) ? response : 
-                        (response.responseDto ? [response.responseDto] : []);
+      const stocksData = Array.isArray(response) ? response :
+        (response.responseDto ? [response.responseDto] : []);
 
       if (!stocksData.length) {
         throw new Error("No stock data received");
@@ -61,43 +63,57 @@ const Managestock = () => {
         icon: "error",
       });
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    getStocks();
-  }, [showActive]);
-
-  useEffect(() => {
     const loadInitialData = async () => {
-      try {
-        const [productsResponse, branchesResponse] = await Promise.all([
-          fetchProducts(),
-          fetchBranches()
-        ]);
+      setLoading(true);
+      await Promise.all([
+        getStocks(true),
+        loadFilters()
+      ]);
 
-        const transformedProducts = productsResponse.map(product => ({
-          value: product.id,
-          label: product.name || '-'
-        }));
-        setProducts(transformedProducts);
-
-        const transformedBranches = branchesResponse.map(branch => ({
-          value: branch.id,
-          label: branch.branchName
-        }));
-        setBranches(transformedBranches);
-      } catch (error) {
-        Swal.fire({
-          title: "Error!",
-          text: "Failed to load products or branches",
-          icon: "error",
-        });
-      }
+      setLoading(false);
     };
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      getStocks(false);
+    }
+  }, [showActive]);
+
+  const loadFilters = async () => {
+    try {
+      const [productsResponse, branchesResponse] = await Promise.all([
+        fetchProducts(),
+        fetchBranches()
+      ]);
+
+      const transformedProducts = productsResponse.map(product => ({
+        value: product.id,
+        label: product.name || '-'
+      }));
+      setProducts(transformedProducts);
+
+      const transformedBranches = branchesResponse.map(branch => ({
+        value: branch.id,
+        label: branch.branchName
+      }));
+      setBranches(transformedBranches);
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to load products or branches",
+        icon: "error",
+      });
+    }
+  };
 
   const handleEdit = (record) => {
     const stockData = {
@@ -132,7 +148,7 @@ const Managestock = () => {
         const newStatus = currentStatus ? 0 : 1;
         const response = await updateStockStatus(stockId, newStatus);
         if (response && response.success !== false) {
-          await getStocks();
+          await getStocks(false);
           Swal.fire({
             title: 'Success!',
             text: `Stock status changed to ${newStatusText}`,
@@ -164,7 +180,7 @@ const Managestock = () => {
       [filterType]: selected
     };
     setSelectedFilters(newFilters);
-    filterData(searchQuery, filterType === 'branch' ? selected : newFilters.branch, 
+    filterData(searchQuery, filterType === 'branch' ? selected : newFilters.branch,
       filterType === 'product' ? selected : newFilters.product);
   };
 
@@ -172,7 +188,7 @@ const Managestock = () => {
     let filteredData = allStocks.filter(stock => stock.isActive === showActive);
 
     if (query.trim() !== '') {
-      filteredData = filteredData.filter(stock => 
+      filteredData = filteredData.filter(stock =>
         stock.Branch.toLowerCase().includes(query) ||
         stock.Product.Name.toLowerCase().includes(query) ||
         stock.Quantity.toString().includes(query)
@@ -180,13 +196,13 @@ const Managestock = () => {
     }
 
     if (branchFilter) {
-      filteredData = filteredData.filter(stock => 
+      filteredData = filteredData.filter(stock =>
         stock.branchId === branchFilter.value
       );
     }
 
     if (productFilter) {
-      filteredData = filteredData.filter(stock => 
+      filteredData = filteredData.filter(stock =>
         stock.productId === productFilter.value
       );
     }
@@ -271,10 +287,18 @@ const Managestock = () => {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        {/* You can add a loading spinner or message here if desired */}
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper">
       <div className="content">
-        <Breadcrumbs 
+        <Breadcrumbs
           maintitle="Manage Stock"
           subtitle="Manage your stock"
           addButton="Add Stock"
@@ -282,7 +306,7 @@ const Managestock = () => {
           buttonDataTarget="#add-units"
           onDownloadPDF={exportToPDFData}
           onDownloadExcel={exportToExcelData}
-          onRefresh={getStocks}
+          onRefresh={() => getStocks(false)}
         />
         <div className="page-header">
           <div className="add-item d-flex flex-column">
@@ -363,9 +387,9 @@ const Managestock = () => {
           </div>
         </div>
       </div>
-      <ManageStockModal 
+      <ManageStockModal
         selectedStock={selectedStock}
-        refreshData={getStocks}
+        refreshData={() => getStocks(false)}
       />
     </div>
   );
