@@ -25,13 +25,29 @@ const Suppliers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Changed variable name to isLoading for clarity
 
   useEffect(() => {
-    fetchSuppliersData();
+    loadInitialData();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      fetchSuppliersData(false);
+    }
   }, [showActive]);
 
-  const fetchSuppliersData = async () => {
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    await fetchSuppliersData(true);
+    setIsLoading(false);
+  };
+
+  const fetchSuppliersData = async (isInitial = false) => {
     try {
+      if (isInitial) {
+        setIsLoading(true);
+      }
       const data = await fetchSuppliers();
       if (Array.isArray(data)) {
         const normalizedData = data.map(supplier => ({
@@ -39,8 +55,7 @@ const Suppliers = () => {
           isActive: supplier.isActive === 1 || supplier.isActive === true
         }));
         setAllSuppliers(normalizedData);
-        const filteredData = normalizedData.filter(supplier => supplier.isActive === showActive).reverse();
-        setSuppliers(filteredData);
+        filterData(normalizedData, searchTerm);
       } else {
         setAllSuppliers([]);
         setSuppliers([]);
@@ -58,7 +73,26 @@ const Suppliers = () => {
         icon: "error",
         confirmButtonText: "OK",
       });
+    } finally {
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
+  };
+
+  const filterData = (suppliersData, query) => {
+    let filteredData = suppliersData.filter(supplier => supplier.isActive === showActive);
+
+    if (query.trim() !== "") {
+      filteredData = filteredData.filter(supplier =>
+        (supplier.name && supplier.name.toLowerCase().includes(query.toLowerCase())) ||
+        (supplier.emailAddress && supplier.emailAddress.toLowerCase().includes(query.toLowerCase())) ||
+        (supplier.mobileNumber && supplier.mobileNumber.toLowerCase().includes(query.toLowerCase())) ||
+        (supplier.whatsappNumber && supplier.whatsappNumber.toLowerCase().includes(query.toLowerCase()))
+      );
+    }
+
+    setSuppliers(filteredData.reverse());
   };
 
   const handleSelectAll = (e) => {
@@ -71,7 +105,7 @@ const Suppliers = () => {
   };
 
   const handleRowSelect = (id) => {
-    setSelectedRows(prev => 
+    setSelectedRows(prev =>
       prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
     );
   };
@@ -81,7 +115,7 @@ const Suppliers = () => {
       const supplierDataWithActive = { ...supplierData, isActive: 1 };
       const result = await saveSupplier(supplierDataWithActive);
       if (result) {
-        await fetchSuppliersData();
+        await fetchSuppliersData(false);
         setSelectedSupplier(null);
         Swal.fire({
           title: "Success!",
@@ -106,7 +140,7 @@ const Suppliers = () => {
     try {
       const result = await updateSupplier(supplierData);
       if (result) {
-        await fetchSuppliersData();
+        await fetchSuppliersData(false);
         setSelectedSupplier(null);
         Swal.fire({
           title: "Success!",
@@ -146,7 +180,7 @@ const Suppliers = () => {
           const newStatus = currentStatus ? 0 : 1;
           const response = await updateSupplierStatus(supplierId, newStatus);
           if (response && response.success !== false) {
-            await fetchSuppliersData();
+            await fetchSuppliersData(false);
             Swal.fire({
               title: "Success!",
               text: `Supplier status changed to ${newStatusText}.`,
@@ -172,27 +206,16 @@ const Suppliers = () => {
   };
 
   const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase();
+    const value = e.target.value;
     setSearchTerm(value);
-    
-    if (value.trim() !== "") {
-      const filteredSuppliers = allSuppliers.filter(supplier => 
-        (supplier.name && supplier.name.toLowerCase().includes(value)) ||
-        (supplier.emailAddress && supplier.emailAddress.toLowerCase().includes(value)) ||
-        (supplier.mobileNumber && supplier.mobileNumber.toLowerCase().includes(value)) ||
-        (supplier.whatsappNumber && supplier.whatsappNumber.toLowerCase().includes(value))
-      );
-      setSuppliers(filteredSuppliers.length > 0 ? filteredSuppliers : []);
-    } else {
-      setSuppliers(allSuppliers.filter(supplier => supplier.isActive === showActive).reverse());
-    }
+    filterData(allSuppliers, value);
   };
 
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
       doc.text(`Supplier List (${showActive ? 'Active' : 'Inactive'})`, 14, 15);
-      
+
       const tableColumn = ["Supplier Name", "Email", "Mobile Number", "WhatsApp Number"];
       const tableRows = suppliers.map(supplier => [
         supplier.name || "",
@@ -243,7 +266,7 @@ const Suppliers = () => {
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Suppliers");
-      
+
       worksheet["!cols"] = [{ wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 }];
 
       XLSX.writeFile(workbook, `supplier_list_${showActive ? 'active' : 'inactive'}.xlsx`);
@@ -359,6 +382,14 @@ const Suppliers = () => {
     <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>
   );
 
+  if (isLoading) {
+    return (
+      <div className="page-wrapper">
+
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -404,7 +435,7 @@ const Suppliers = () => {
             </li>
             <li>
               <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                <Link onClick={fetchSuppliersData}>
+                <Link onClick={() => fetchSuppliersData(false)}>
                   <RotateCcw />
                 </Link>
               </OverlayTrigger>

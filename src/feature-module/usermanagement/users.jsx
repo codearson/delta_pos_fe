@@ -34,7 +34,7 @@ const Users = () => {
     const [togglingId, setTogglingId] = useState(null);
     const [selectedRole, setSelectedRole] = useState(null);
     const [roleOptions, setRoleOptions] = useState([]);
-    
+
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
     const MySwal = withReactContent(Swal);
@@ -51,13 +51,8 @@ const Users = () => {
 
     const loadInitialData = async () => {
         setInitialLoading(true);
-        try {
-            await Promise.all([loadUsers(true), loadUserRoles()]);
-        } catch (error) {
-            console.error('Error loading initial data:', error);
-        } finally {
-            setInitialLoading(false);
-        }
+        await Promise.all([loadUsers(true), loadUserRoles()]);
+        setInitialLoading(false);
     };
 
     const loadUserRoles = async () => {
@@ -71,7 +66,6 @@ const Users = () => {
             ];
             setRoleOptions(formattedRoles);
         } catch (error) {
-            console.error('Error loading user roles:', error);
             setRoleOptions([{ value: 'all', label: 'All Roles' }]);
         }
     };
@@ -90,7 +84,6 @@ const Users = () => {
             setAllUsers(normalizedData);
             filterData(normalizedData, searchTerm, selectedRole);
         } catch (error) {
-            console.error('Error fetching users:', error);
             Swal.fire({
                 title: "Error!",
                 text: "Failed to fetch users: " + error.message,
@@ -118,7 +111,7 @@ const Users = () => {
 
         // Apply role filter
         if (roleFilter && roleFilter.value !== 'all') {
-            filteredData = filteredData.filter(user => 
+            filteredData = filteredData.filter(user =>
                 user.userRoleDto?.userRole === roleFilter.value
             );
         }
@@ -312,8 +305,8 @@ const Users = () => {
             render: (_, record) => (
                 <td className="action-table-data">
                     <div className="edit-delete-action">
-                        <Link 
-                            className="me-2 p-2" 
+                        <Link
+                            className="me-2 p-2"
                             to="#"
                             data-bs-toggle="modal"
                             data-bs-target="#change-password"
@@ -321,10 +314,10 @@ const Users = () => {
                         >
                             <Lock className="feather feather-lock action-lock" />
                         </Link>
-                        <Link 
-                            className="me-2 p-2" 
-                            to="#" 
-                            data-bs-toggle="modal" 
+                        <Link
+                            className="me-2 p-2"
+                            to="#"
+                            data-bs-toggle="modal"
                             data-bs-target="#edit-units"
                             onClick={() => setSelectedUser(record)}
                         >
@@ -347,9 +340,6 @@ const Users = () => {
     const renderExcelTooltip = (props) => (
         <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
     );
-    const renderPrinterTooltip = (props) => (
-        <Tooltip id="printer-tooltip" {...props}>Printer</Tooltip>
-    );
     const renderRefreshTooltip = (props) => (
         <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
     );
@@ -358,7 +348,11 @@ const Users = () => {
     );
 
     if (initialLoading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="page-wrapper">
+
+            </div>
+        );
     }
 
     return (
@@ -402,13 +396,6 @@ const Users = () => {
                                 <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
                                     <Link onClick={exportToExcel}>
                                         <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderPrinterTooltip}>
-                                    <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                                        <i data-feather="printer" className="feather-printer" />
                                     </Link>
                                 </OverlayTrigger>
                             </li>
@@ -476,9 +463,9 @@ const Users = () => {
                                 </div>
                             </div>
                             <div className="table-responsive">
-                                <Table 
-                                    columns={columns} 
-                                    dataSource={reversedUsers} 
+                                <Table
+                                    columns={columns}
+                                    dataSource={reversedUsers}
                                     pagination={{
                                         current: currentPage,
                                         pageSize: pageSize,
@@ -491,15 +478,15 @@ const Users = () => {
                     </div>
                 </div>
             </div>
-            <AddUsers/>
+            <AddUsers />
             <EditUser user={selectedUser} onUpdate={() => {
                 setSelectedUser(null);
                 loadUsers(false);
-            }}/>
+            }} />
             <ChangePassword user={selectedUserForPassword} onUpdate={() => {
                 setSelectedUserForPassword(null);
                 loadUsers(false);
-            }}/>
+            }} />
         </div>
     );
 };
