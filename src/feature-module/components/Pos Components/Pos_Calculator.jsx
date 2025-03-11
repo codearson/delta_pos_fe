@@ -34,16 +34,16 @@ export const Pos_Calculator = ({ darkMode, selectedItems, currentItem, totalValu
                 <div key={index} className="result-row">
                   <span className="qty-column">{item.qty}</span>
                   <span className="item-column">{item.name}</span>
-                  <span className="price-column">${item.price.toFixed(2)}</span>
-                  <span className="total-column">${(item.qty * item.price).toFixed(2)}</span>
+                  <span className="price-column">LKR {item.price.toFixed(2)}</span>
+                  <span className="total-column">LKR {(item.qty * item.price).toFixed(2)}</span>
                 </div>
               ))}
               {currentItem && (
                 <div className="result-row in-progress">
                   <span className="qty-column">{currentItem.qty || ""}</span>
                   <span className="item-column">{currentItem.name || "Undefined Item"}</span>
-                  <span className="price-column">{currentItem.price ? `$${currentItem.price.toFixed(2)}` : ""}</span>
-                  <span className="total-column">{currentItem.qty && currentItem.price ? `$${(currentItem.qty * currentItem.price).toFixed(2)}` : ""}</span>
+                  <span className="price-column">{currentItem.price ? `LKR ${currentItem.price.toFixed(2)}` : ""}</span>
+                  <span className="total-column">{currentItem.qty && currentItem.price ? `LKR ${(currentItem.qty * currentItem.price).toFixed(2)}` : ""}</span>
                 </div>
               )}
             </>
@@ -58,24 +58,24 @@ export const Pos_Calculator = ({ darkMode, selectedItems, currentItem, totalValu
         </div>
         <div className="summary-item">
           <span className="label">Sub Total</span>
-          <span className="value">${totalValue.toFixed(2)}</span>
+          <span className="value">LKR {totalValue.toFixed(2)}</span>
         </div>
         <div className="summary-item">
           <span className="label">Cash Back</span>
-          <span className="value">$0.00</span>
+          <span className="value">LKR 0.00</span>
         </div>
         <div className="summary-item">
           <span className="label">Discount</span>
-          <span className="value">$0.00</span>
+          <span className="value">LKR 0.00</span>
         </div>
         <div className="summary-item">
           <span className="label">Balance</span>
-          <span className="value">$0.00</span>
+          <span className="value">LKR 0.00</span>
         </div>
         <div className="divider" />
         <div className="total-summary">
           <span className="label">Grand Total</span>
-          <span className="value">${totalValue.toFixed(2)}</span>
+          <span className="value">LKR {totalValue.toFixed(2)}</span>
         </div>
       </div>
     </div>
