@@ -371,7 +371,7 @@ const HorizontalSidebar = () => {
                   </li>
                   <li>
                     <Link to="invoice-report">
-                      <span>Invoices</span>
+                      <span>Transaction</span>
                     </Link>
                   </li>
                   <li>

@@ -52,8 +52,7 @@ const Managestock = () => {
       }));
 
       setAllStocks(transformedData);
-      const activeData = transformedData.filter(stock => stock.isActive === showActive).reverse();
-      setFilteredStockData(activeData);
+      filterData(searchQuery, selectedFilters.branch, selectedFilters.product); // Filter data after loading
     } catch (error) {
       setAllStocks([]);
       setFilteredStockData([]);
@@ -76,7 +75,6 @@ const Managestock = () => {
         getStocks(true),
         loadFilters()
       ]);
-
       setLoading(false);
     };
     loadInitialData();
@@ -84,9 +82,9 @@ const Managestock = () => {
 
   useEffect(() => {
     if (!loading) {
-      getStocks(false);
+      filterData(searchQuery, selectedFilters.branch, selectedFilters.product);
     }
-  }, [showActive]);
+  }, [showActive, allStocks, searchQuery, selectedFilters]);
 
   const loadFilters = async () => {
     try {
@@ -185,7 +183,7 @@ const Managestock = () => {
   };
 
   const filterData = (query, branchFilter, productFilter) => {
-    let filteredData = allStocks.filter(stock => stock.isActive === showActive);
+    let filteredData = [...allStocks];
 
     if (query.trim() !== '') {
       filteredData = filteredData.filter(stock =>
@@ -193,6 +191,8 @@ const Managestock = () => {
         stock.Product.Name.toLowerCase().includes(query) ||
         stock.Quantity.toString().includes(query)
       );
+    } else {
+      filteredData = filteredData.filter(stock => stock.isActive === showActive);
     }
 
     if (branchFilter) {
@@ -201,13 +201,14 @@ const Managestock = () => {
       );
     }
 
+    // Apply product filter
     if (productFilter) {
       filteredData = filteredData.filter(stock =>
         stock.productId === productFilter.value
       );
     }
 
-    setFilteredStockData(filteredData);
+    setFilteredStockData(filteredData.reverse());
   };
 
   const exportToPDFData = () => {

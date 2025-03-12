@@ -1,0 +1,14 @@
+.table.datanew {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 10px;
+  
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+  
+    .action-table-data {
+      text-align: center;
+    }
+  }

@@ -26,9 +26,9 @@ const StoreList = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      loadBranches(false);
+      filterData(branchData, searchTerm);
     }
-  }, [showActive]);
+  }, [showActive, branchData, searchTerm]);
 
   const loadInitialData = async () => {
     setIsLoading(true);
@@ -74,7 +74,7 @@ const StoreList = () => {
   };
 
   const filterData = (branchesData, query) => {
-    let filtered = branchesData.filter(branch => branch.isActive === showActive);
+    let filtered = [...branchesData];
 
     if (query.trim() !== "") {
       filtered = filtered.filter(branch =>
@@ -84,6 +84,8 @@ const StoreList = () => {
         (branch.contactNumber && branch.contactNumber.toLowerCase().includes(query.toLowerCase())) ||
         (branch.emailAddress && branch.emailAddress.toLowerCase().includes(query.toLowerCase()))
       );
+    } else {
+      filtered = filtered.filter(branch => branch.isActive === showActive);
     }
 
     setFilteredBranches(filtered.reverse());
