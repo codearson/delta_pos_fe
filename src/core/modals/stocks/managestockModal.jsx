@@ -49,7 +49,6 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
         const response = await fetchBranches();
         console.log('Branches response:', response);
         
-        // Transform branches for Select component
         const transformedBranches = response.map(branch => ({
           value: branch.id,
           label: branch.branchName
@@ -88,7 +87,6 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
         quantity: selectedStock.quantity || ''
       });
     } else {
-      // Reset form when not editing
       setFormData({
         branch: null,
         product: null,
@@ -100,44 +98,32 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
+    setErrors({
+      branch: '',
+      product: '',
+      quantity: ''
+    });
+
+    let hasErrors = false;
+
+   
     if (!formData.branch?.value) {
-      MySwal.fire({
-        title: "Validation Error!",
-        text: "Please select a branch",
-        icon: "warning",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-primary",
-        },
-      });
-      return;
+      setErrors(prev => ({...prev, branch: 'Please select a branch'}));
+      hasErrors = true;
     }
 
     if (!formData.product?.value) {
-      MySwal.fire({
-        title: "Validation Error!",
-        text: "Please select a product",
-        icon: "warning",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-primary",
-        },
-      });
-      return;
+      setErrors(prev => ({...prev, product: 'Please select a product'}));
+      hasErrors = true;
     }
 
     const quantity = parseInt(formData.quantity);
     if (!formData.quantity || isNaN(quantity) || quantity < 0) {
-      MySwal.fire({
-        title: "Validation Error!",
-        text: "Please enter a valid quantity (must be 0 or greater)",
-        icon: "warning",
-        confirmButtonText: "OK",
-        customClass: {
-          confirmButton: "btn btn-primary",
-        },
-      });
+      setErrors(prev => ({...prev, quantity: 'Please enter a valid quantity (must be 0 or greater)'}));
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
       return;
     }
 
@@ -157,7 +143,6 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
       const response = await updateStock(updatedData);
 
       if (response?.data?.status === true) {
-        // Close modal
         document.getElementById('edit-units').classList.remove('show');
         document.body.classList.remove('modal-open');
         const modalBackdrop = document.querySelector('.modal-backdrop');
@@ -201,11 +186,9 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
     }
   };
 
-  // Add onChange handler for quantity
   const handleQuantityChange = (e) => {
     const value = e.target.value;
-    
-    // Only allow positive numbers and empty string (for backspace)
+
     if (value === '' || (/^\d+$/.test(value) && parseInt(value) >= 0)) {
       setFormData(prev => ({
         ...prev,
@@ -214,11 +197,9 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
     }
   };
 
-  // Add this function for handling stock creation
   const handleCreate = async (e) => {
     e.preventDefault();
 
-    // Reset previous errors
     setErrors({
       branch: '',
       product: '',
@@ -227,7 +208,6 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
 
     let hasErrors = false;
 
-    // Validation
     if (!formData.branch?.value) {
       setErrors(prev => ({...prev, branch: 'Please select a branch'}));
       hasErrors = true;
@@ -273,21 +253,18 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
                 },
             });
             
-            // Reset form data
             setFormData({
                 branch: null,
                 product: null,
                 quantity: ''
             });
 
-            // Close modal and clean up
             document.getElementById('add-units').classList.remove('show');
             document.querySelector('.modal-backdrop').remove();
             document.body.classList.remove('modal-open');
             document.body.style.removeProperty('overflow');
             document.body.style.removeProperty('padding-right');
             
-            // Refresh data
             if (refreshData) {
                 refreshData();
             }
@@ -315,9 +292,7 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
     }
   };
 
-  // Add this function to handle cancel button click
   const handleCancel = () => {
-    // Reset form to the original selected stock data if editing
     if (selectedStock) {
       setFormData({
         branch: selectedStock.branchDto ? {
@@ -331,10 +306,14 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
         quantity: selectedStock.quantity || ''
       });
     }
+    setErrors({
+      branch: '',
+      product: '',
+      quantity: ''
+    });
   };
 
   useEffect(() => {
-    // Expose reset function globally
     window.resetStockForm = () => {
       setFormData({
         branch: null,
@@ -343,18 +322,15 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
       });
     };
 
-    // Cleanup
     return () => {
       delete window.resetStockForm;
     };
   }, []);
 
-  // Add event listener for Add Stock modal
   useEffect(() => {
     const addModal = document.getElementById('add-units');
     if (addModal) {
       addModal.addEventListener('show.bs.modal', () => {
-        // Clear form data when Add Stock modal opens
         setFormData({
           branch: null,
           product: null,
@@ -363,11 +339,40 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
       });
     }
 
-    // Cleanup
     return () => {
       const addModal = document.getElementById('add-units');
       if (addModal) {
         addModal.removeEventListener('show.bs.modal', () => {});
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const addModal = document.getElementById('add-units');
+    const editModal = document.getElementById('edit-units');
+
+    const clearErrorsOnClose = () => {
+      setErrors({
+        branch: '',
+        product: '',
+        quantity: ''
+      });
+    };
+
+    if (addModal) {
+      addModal.addEventListener('hidden.bs.modal', clearErrorsOnClose);
+    }
+
+    if (editModal) {
+      editModal.addEventListener('hidden.bs.modal', clearErrorsOnClose);
+    }
+
+    return () => {
+      if (addModal) {
+        addModal.removeEventListener('hidden.bs.modal', clearErrorsOnClose);
+      }
+      if (editModal) {
+        editModal.removeEventListener('hidden.bs.modal', clearErrorsOnClose);
       }
     };
   }, []);
@@ -470,6 +475,7 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
                         className="btn btn-cancel me-2"
                         data-bs-dismiss="modal"
                         tabIndex="0"
+                        onClick={handleCancel}
                       >
                         Cancel
                       </button>
@@ -523,47 +529,59 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
                         <div className="input-blocks">
                           <label>Branch<span className="text-danger">*</span></label>
                           <Select 
-                            className="select" 
+                            className={`select ${errors.branch ? 'is-invalid' : ''}`}
                             placeholder="Select Branch"
                             options={branches}
                             value={formData.branch}
-                            onChange={(selected) => setFormData(prev => ({...prev, branch: selected}))}
+                            onChange={(selected) => {
+                              setFormData(prev => ({...prev, branch: selected}));
+                              setErrors(prev => ({...prev, branch: ''}));
+                            }}
                             isLoading={loading}
                             isClearable
                           />
+                          {errors.branch && <div className="error-message" style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>{errors.branch}</div>}
                         </div>
                       </div>
                       <div className="col-lg-6">
                         <div className="input-blocks">
-                          <label>Product</label>
+                          <label>Product<span className="text-danger">*</span></label>
                           <Select 
-                            className="select" 
+                            className={`select ${errors.product ? 'is-invalid' : ''}`}
                             options={products}
                             placeholder="Select Product"
-                            isLoading={loading}
                             value={formData.product}
-                            onChange={(selected) => setFormData(prev => ({...prev, product: selected}))}
+                            onChange={(selected) => {
+                              setFormData(prev => ({...prev, product: selected}));
+                              setErrors(prev => ({...prev, product: ''}));
+                            }}
+                            isLoading={loading}
+                            isClearable
                           />
+                          {errors.product && <div className="error-message" style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>{errors.product}</div>}
                         </div>
                       </div>
                       <div className="col-lg-12">
                         <div className="input-blocks">
-                          <label>Quantity</label>
+                          <label>Quantity<span className="text-danger">*</span></label>
                           <input
                             type="number"
-                            className="form-control"
+                            className={`form-control ${errors.quantity ? 'is-invalid' : ''}`}
                             value={formData.quantity}
-                            onChange={handleQuantityChange}
+                            onChange={(e) => {
+                              handleQuantityChange(e);
+                              setErrors(prev => ({...prev, quantity: ''}));
+                            }}
                             min="0"
                             step="1"
                             onKeyPress={(e) => {
-                              // Prevent negative signs and decimals
                               if (e.key === '-' || e.key === '.' || e.key === 'e') {
                                 e.preventDefault();
                               }
                             }}
                             required
                           />
+                          {errors.quantity && <div className="error-message" style={{ color: 'red', fontSize: '12px', marginTop: '5px' }}>{errors.quantity}</div>}
                         </div>
                       </div>
                     </div>
