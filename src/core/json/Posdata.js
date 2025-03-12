@@ -14,7 +14,7 @@ export const fetchCustomCategories = async () => {
   try {
     const products = await fetchProducts();
     const customProducts = products
-      .filter((product) => product.productCategoryDto?.productCategoryName?.toLowerCase() === "custom")
+      .filter((product) => product.isActive === true && product.productCategoryDto?.productCategoryName?.toLowerCase() === "custom")
       .map((product) => {
         const [name, icon] = product.name.split("-");
         return {
