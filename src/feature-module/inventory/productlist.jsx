@@ -43,8 +43,7 @@ const ProductList = () => {
       const data = await fetchProducts();
       if (Array.isArray(data)) {
         setAllProducts(data);
-        const filteredData = data.filter(product => product.isActive === showActive).reverse();
-        setProducts(filteredData);
+        filterData(searchQuery, selectedCategory, selectedTax); // Filter data after loading
       } else {
         setAllProducts([]);
         setProducts([]);
@@ -97,7 +96,6 @@ const ProductList = () => {
         loadProductsData(true),
         loadFilterOptions()
       ]);
-
       setIsLoading(false);
     };
     loadInitialData();
@@ -105,9 +103,9 @@ const ProductList = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      loadProductsData(false);
+      filterData(searchQuery, selectedCategory, selectedTax);
     }
-  }, [showActive]);
+  }, [showActive, allProducts, searchQuery, selectedCategory, selectedTax]);
 
   const handleToggleStatus = async (productId, currentStatus) => {
     const newStatusText = currentStatus ? 'Inactive' : 'Active';
@@ -162,9 +160,8 @@ const ProductList = () => {
   };
 
   const filterData = (query, categoryFilter, taxFilter) => {
-    let filteredData = allProducts.filter(product => product.isActive === showActive);
+    let filteredData = [...allProducts];
 
-    // Apply text search
     if (query.trim() !== '') {
       filteredData = filteredData.filter(product =>
         product.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -174,23 +171,23 @@ const ProductList = () => {
         product.taxDto?.taxPercentage?.toString().includes(query) ||
         product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
       );
+    } else {
+      filteredData = filteredData.filter(product => product.isActive === showActive);
     }
 
-    // Apply category filter
     if (categoryFilter) {
       filteredData = filteredData.filter(product =>
         product.productCategoryDto?.id === categoryFilter.value
       );
     }
 
-    // Apply tax filter
     if (taxFilter) {
       filteredData = filteredData.filter(product =>
         product.taxDto?.id === taxFilter.value
       );
     }
 
-    setProducts(filteredData);
+    setProducts(filteredData.reverse());
   };
 
   const handleSearchChange = (e) => {
