@@ -1,51 +1,39 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_CategoryGrid.scss";
-import { categories, quickAccess } from "../../../core/json/Posdata";
+import { fetchCustomCategories, quickAccess } from "../../../core/json/Posdata";
 import Pos_BarcodeCreation from "./Pos_BarcodeCreation";
 
-const PAGE_SIZE = 15; 
+const PAGE_SIZE = 15;
 
-const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
+const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    setPageIndex(0);
+    if (typeof items === "function") {
+      items().then((fetchedCategories) => {
+        setCategories(fetchedCategories);
+        setPageIndex(0);
+      });
+    } else {
+      setCategories(items);
+      setPageIndex(0);
+    }
   }, [items]);
 
   const start = pageIndex * PAGE_SIZE;
   const end = start + PAGE_SIZE;
 
-  const filteredCategories = items === categories
-    ? categories.filter((item) => item.id !== 15) 
-    : items;
+  const filteredCategories = items === fetchCustomCategories ? categories : items;
 
   let paginatedItems = filteredCategories.slice(start, end);
 
-  if (items === categories && end >= filteredCategories.length) {
-    paginatedItems = [
-      ...paginatedItems,
-      { id: "label-print", name: "Label Print", icon: "🏷️", isLabelPrint: true },
-    ];
-  }
-
   if (items === quickAccess) {
-    if (pageIndex === 0) {
-      const modifiedItems = [...quickAccess];
-      const quick14Index = modifiedItems.findIndex((item) => item.id === 14);
-      if (quick14Index !== -1) {
-        modifiedItems[quick14Index] = { id: "label-print", name: "Label Print", icon: "🏷️", isLabelPrint: true };
-      }
-      paginatedItems = modifiedItems.slice(start, end);
-    } else if (pageIndex > 0 && end > quickAccess.length) {
-      const quick14 = { id: 14, name: "Quick 14", icon: "🌟" };
-      paginatedItems = [
-        ...paginatedItems,
-        quick14,
-        { id: "label-print", name: "Label Print", icon: "🏷️", isLabelPrint: true },
-      ];
-    }
+    paginatedItems = paginatedItems.map((item) =>
+      item.name === "Label Print" ? { ...item, isLabelPrint: true } : item
+    );
   }
 
   if (pageIndex > 0) {
@@ -60,9 +48,9 @@ const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
     ];
   }
 
-  if (items === categories && end < filteredCategories.length) {
+  if (items === fetchCustomCategories && end < filteredCategories.length) {
     paginatedItems = [
-      ...paginatedItems.slice(0, 14), 
+      ...paginatedItems.slice(0, 14),
       {
         id: "more",
         name: "More",
@@ -112,13 +100,16 @@ const Pos_CategoryGrid = ({ items = categories, onCategorySelect }) => {
 };
 
 Pos_CategoryGrid.propTypes = {
-  items: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
-      name: PropTypes.string.isRequired,
-      icon: PropTypes.string.isRequired,
-    })
-  ),
+  items: PropTypes.oneOfType([
+    PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+        name: PropTypes.string.isRequired,
+        icon: PropTypes.string.isRequired,
+      })
+    ),
+    PropTypes.func,
+  ]),
   onCategorySelect: PropTypes.func.isRequired,
 };
 

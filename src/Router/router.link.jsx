@@ -3,6 +3,7 @@ import { Route, Navigate } from "react-router-dom";
 import ProductList from "../feature-module/inventory/productlist";
 import Dashboard from "../feature-module/dashboard/Dashboard";
 import AddProduct from "../feature-module/inventory/addproduct";
+import CustomProductList from "../feature-module/inventory/customproductlist";
 import SalesDashbaord from "../feature-module/dashboard/salesdashbaord";
 import BrandList from "../feature-module/inventory/brandlist";
 import VariantAttributes from "../feature-module/inventory/variantattributes";
@@ -1393,6 +1394,13 @@ export const publicRoutes = [
     element: <Navigate to="/" />,
     route: Route,
   },
+  {
+    id: 120,
+    path: routes.customproductlist,
+    name: "customproducts",
+    element: <CustomProductList />,
+    route: Route,
+  }
 ];
 export const posRoutes = [
   {

@@ -1,9 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import Barcode from "react-barcode";
 import { jsPDF } from "jspdf";
 import html2canvas from 'html2canvas';
-import { categories } from "../../../core/json/Posdata";
+import { fetchCustomCategories } from "../../../core/json/Posdata"; // Updated import
 import "../../../style/scss/components/Pos Components/Pos_BarcodeCreation.scss";
 
 const Pos_BarcodeCreation = ({ onClose }) => {
@@ -11,9 +11,17 @@ const Pos_BarcodeCreation = ({ onClose }) => {
   const [barcodeValue, setBarcodeValue] = useState("");
   const [productStatus, setProductStatus] = useState("");
   const [isValidProduct, setIsValidProduct] = useState(false);
+  const [categories, setCategories] = useState([]);
   const barcodeRef = useRef(null);
 
-  // Check if the input matches an existing product as you type
+  useEffect(() => {
+    fetchCustomCategories().then((fetchedCategories) => {
+      setCategories(fetchedCategories);
+    }).catch(() => {
+      setCategories([]);
+    });
+  }, []);
+
   const handleInputChange = (e) => {
     const value = e.target.value.trim();
     setInput(value);
@@ -22,8 +30,7 @@ const Pos_BarcodeCreation = ({ onClose }) => {
       setIsValidProduct(false);
       return;
     }
-    
-    // Handle both numeric and string inputs for flexibility
+
     const parsedValue = parseInt(value, 10);
     if (!isNaN(parsedValue)) {
       const foundProduct = categories.find((item) => item.id === parsedValue);
@@ -40,14 +47,12 @@ const Pos_BarcodeCreation = ({ onClose }) => {
     }
   };
 
-  // Generate barcode
   const handleGenerateBarcode = () => {
     if (input.trim() !== "" && isValidProduct) {
       setBarcodeValue(input);
     }
   };
 
-  // Go back (reset barcode and states)
   const handleBack = () => {
     setBarcodeValue("");
     setInput("");
@@ -55,58 +60,43 @@ const Pos_BarcodeCreation = ({ onClose }) => {
     setIsValidProduct(false);
   };
 
-  // Generate and download PDF
   const handlePrint = async () => {
-    console.log("Print button clicked");
     if (!barcodeValue) {
-      console.log("No barcode value found");
       return;
     }
 
-    try {
-      console.log("Capturing barcode element...");
-      const barcodeElement = barcodeRef.current;
-      if (!barcodeElement) {
-        console.log("Barcode element not found");
-        return;
-      }
-
-      const canvas = await html2canvas(barcodeElement);
-      console.log("Barcode captured successfully");
-
-      const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      // Get page width only since we don't need height
-      const pageWidth = doc.internal.pageSize.getWidth();
-
-      // Set image dimensions
-      const imgWidth = 150;
-      const imgHeight = 70;
-
-      // Calculate center positions
-      const imgX = (pageWidth - imgWidth) / 2;
-      const imgY = 50;
-
-      // Center align text
-      doc.setFontSize(18);
-      const text = `Barcode: ${barcodeValue}`;
-      const textWidth = doc.getStringUnitWidth(text) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-      const textX = (pageWidth - textWidth) / 2;
-      doc.text(text, textX, 30);
-
-      // Add centered image
-      const imgData = canvas.toDataURL("image/png");
-      doc.addImage(imgData, "PNG", imgX, imgY, imgWidth, imgHeight);
-
-      doc.save(`barcode_${barcodeValue}.pdf`);
-      console.log("PDF generated and download initiated");
-    } catch (error) {
-      console.error("Error generating PDF:", error);
+    const barcodeElement = barcodeRef.current;
+    if (!barcodeElement) {
+      return;
     }
+
+    const canvas = await html2canvas(barcodeElement);
+
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    const imgWidth = 150;
+    const imgHeight = 70;
+
+    const imgX = (pageWidth - imgWidth) / 2;
+    const imgY = 50;
+
+    doc.setFontSize(18);
+    const text = `Barcode: ${barcodeValue}`;
+    const textWidth = doc.getStringUnitWidth(text) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+    const textX = (pageWidth - textWidth) / 2;
+    doc.text(text, textX, 30);
+
+    const imgData = canvas.toDataURL("image/png");
+    doc.addImage(imgData, "PNG", imgX, imgY, imgWidth, imgHeight);
+
+    doc.save(`barcode_${barcodeValue}.pdf`);
+
   };
 
   return (
@@ -135,7 +125,7 @@ const Pos_BarcodeCreation = ({ onClose }) => {
           </button>
           {barcodeValue && (
             <div className="barcode-popup-barcode" ref={barcodeRef}>
-              <Barcode 
+              <Barcode
                 value={barcodeValue}
                 width={2}
                 height={100}
@@ -175,4 +165,4 @@ Pos_BarcodeCreation.propTypes = {
   onClose: PropTypes.func.isRequired,
 };
 
-export default Pos_BarcodeCreation; 
+export default Pos_BarcodeCreation;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { categories, quickAccess } from "../../core/json/Posdata";
+import { fetchCustomCategories, quickAccess } from "../../core/json/Posdata"; // Updated import
 import Header from "../components/Pos Components/Pos_Header";
 import Sidebar from "../components/Pos Components/Pos_Sidebar";
 import Pos_Calculator from "../components/Pos Components/Pos_Calculator";
@@ -185,7 +185,7 @@ const Pos = () => {
                 darkMode={darkMode}
               />
               <CategoryGrid
-                items={activeTab === "category" ? categories : quickAccess}
+                items={activeTab === "category" ? fetchCustomCategories : quickAccess} // Updated to use fetchCustomCategories
                 onCategorySelect={handleCategorySelect}
               />
               <div className="action-buttons">

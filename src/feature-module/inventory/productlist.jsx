@@ -42,9 +42,11 @@ const ProductList = () => {
       }
       const data = await fetchProducts();
       if (Array.isArray(data)) {
-        setAllProducts(data);
-        const filteredData = data.filter(product => product.isActive === showActive).reverse();
-        setProducts(filteredData);
+        const filteredProducts = data.filter(product => 
+          product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'custom'
+        );
+        setAllProducts(filteredProducts);
+        filterData(searchQuery, selectedCategory, selectedTax);
       } else {
         setAllProducts([]);
         setProducts([]);
@@ -77,10 +79,12 @@ const ProductList = () => {
       fetchTaxes()
     ]);
 
-    const formattedCategories = categoriesData.map(category => ({
-      value: category.id,
-      label: category.productCategoryName
-    }));
+    const formattedCategories = categoriesData
+      .filter(category => category.productCategoryName?.toLowerCase() !== 'custom')
+      .map(category => ({
+        value: category.id,
+        label: category.productCategoryName
+      }));
     setCategories(formattedCategories);
 
     const formattedTaxes = taxesData.map(tax => ({
@@ -97,7 +101,6 @@ const ProductList = () => {
         loadProductsData(true),
         loadFilterOptions()
       ]);
-
       setIsLoading(false);
     };
     loadInitialData();
@@ -105,13 +108,12 @@ const ProductList = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      loadProductsData(false);
+      filterData(searchQuery, selectedCategory, selectedTax);
     }
-  }, [showActive]);
+  }, [showActive, allProducts, searchQuery, selectedCategory, selectedTax]);
 
   const handleToggleStatus = async (productId, currentStatus) => {
     const newStatusText = currentStatus ? 'Inactive' : 'Active';
-
     const result = await MySwal.fire({
       title: 'Are you sure?',
       text: `Do you want to change this product to ${newStatusText}?`,
@@ -162,9 +164,11 @@ const ProductList = () => {
   };
 
   const filterData = (query, categoryFilter, taxFilter) => {
-    let filteredData = allProducts.filter(product => product.isActive === showActive);
+    let filteredData = [...allProducts];
+    filteredData = filteredData.filter(product => 
+      product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'custom'
+    );
 
-    // Apply text search
     if (query.trim() !== '') {
       filteredData = filteredData.filter(product =>
         product.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -174,23 +178,23 @@ const ProductList = () => {
         product.taxDto?.taxPercentage?.toString().includes(query) ||
         product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
       );
+    } else {
+      filteredData = filteredData.filter(product => product.isActive === showActive);
     }
 
-    // Apply category filter
     if (categoryFilter) {
       filteredData = filteredData.filter(product =>
         product.productCategoryDto?.id === categoryFilter.value
       );
     }
 
-    // Apply tax filter
     if (taxFilter) {
       filteredData = filteredData.filter(product =>
         product.taxDto?.id === taxFilter.value
       );
     }
 
-    setProducts(filteredData);
+    setProducts(filteredData.reverse());
   };
 
   const handleSearchChange = (e) => {
@@ -203,7 +207,6 @@ const ProductList = () => {
     try {
       const doc = new jsPDF();
       doc.text("Product List", 14, 15);
-
       const tableColumn = ["Product Name", "Bar Code", "Category", "Tax %", "Purchase Price", "Price/Unit", "Qty", "Low Stock"];
       const tableRows = products.map(product => [
         product.name || "",
@@ -224,7 +227,6 @@ const ProductList = () => {
         styles: { fontSize: 8 },
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       });
-
       doc.save("product_list.pdf");
     } catch (error) {
       MySwal.fire({
@@ -247,7 +249,6 @@ const ProductList = () => {
         });
         return;
       }
-
       const worksheetData = products.map(product => ({
         "Product Name": product.name || "",
         "Bar Code": product.barcode || "",
@@ -258,22 +259,13 @@ const ProductList = () => {
         "Quantity": product.quantity || 0,
         "Low Stock": product.lowStock || 0
       }));
-
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-
       worksheet["!cols"] = [
-        { wch: 20 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 12 },
-        { wch: 12 },
-        { wch: 12 },
-        { wch: 10 },
-        { wch: 10 }
+        { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 },
+        { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }
       ];
-
       XLSX.writeFile(workbook, "product_list.xlsx");
     } catch (error) {
       MySwal.fire({
@@ -286,37 +278,21 @@ const ProductList = () => {
   };
 
   const renderTooltip = (props) => (
-    <Tooltip id="pdf-tooltip" {...props}>
-      Pdf
-    </Tooltip>
+    <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>
   );
   const renderExcelTooltip = (props) => (
-    <Tooltip id="excel-tooltip" {...props}>
-      Excel
-    </Tooltip>
+    <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
   );
   const renderRefreshTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Refresh
-    </Tooltip>
+    <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
   );
   const renderCollapseTooltip = (props) => (
-    <Tooltip id="refresh-tooltip" {...props}>
-      Collapse
-    </Tooltip>
+    <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>
   );
 
   const columns = [
-    {
-      title: "Product Name",
-      dataIndex: "name",
-      sorter: (a, b) => a.name.length - b.name.length,
-    },
-    {
-      title: "Bar Code",
-      dataIndex: "barcode",
-      sorter: (a, b) => a.barcode.length - b.barcode.length,
-    },
+    { title: "Product Name", dataIndex: "name", sorter: (a, b) => a.name.length - b.name.length },
+    { title: "Bar Code", dataIndex: "barcode", sorter: (a, b) => a.barcode.length - b.barcode.length },
     {
       title: "Category",
       dataIndex: "productCategoryDto",
@@ -341,16 +317,8 @@ const ProductList = () => {
       render: (pricePerUnit) => `${pricePerUnit.toFixed(2)}`,
       sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
     },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      sorter: (a, b) => a.quantity - b.quantity,
-    },
-    {
-      title: "Low Stock",
-      dataIndex: "lowStock",
-      sorter: (a, b) => a.lowStock - b.lowStock,
-    },
+    { title: "Qty", dataIndex: "quantity", sorter: (a, b) => a.quantity - b.quantity },
+    { title: "Low Stock", dataIndex: "lowStock", sorter: (a, b) => a.lowStock - b.lowStock },
     {
       title: "Status",
       dataIndex: "isActive",
@@ -371,10 +339,7 @@ const ProductList = () => {
       render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <Link
-              className="me-2 p-2"
-              to={`${route.editproduct}?id=${record.id}`}
-            >
+            <Link className="me-2 p-2" to={`${route.editproduct}?id=${record.id}`}>
               <Edit className="feather-edit" />
             </Link>
           </div>
@@ -384,11 +349,7 @@ const ProductList = () => {
   ];
 
   if (isLoading) {
-    return (
-      <div className="page-wrapper">
-        {/* You can add a loading spinner or message here if desired */}
-      </div>
-    );
+    return <div className="page-wrapper">{/* Loading spinner or message */}</div>;
   }
 
   return (
@@ -420,46 +381,14 @@ const ProductList = () => {
             </div>
           </div>
           <ul className="table-top-head">
-            <li>
-              <OverlayTrigger placement="top" overlay={renderTooltip}>
-                <Link onClick={exportToPDF}>
-                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-                <Link onClick={exportToExcel}>
-                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                <Link onClick={() => loadProductsData(false)}>
-                  <RotateCcw />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
-                <Link
-                  id="collapse-header"
-                  className={data ? "active" : ""}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    dispatch(setToogleHeader(!data));
-                  }}
-                >
-                  <ChevronUp />
-                </Link>
-              </OverlayTrigger>
-            </li>
+            <li><OverlayTrigger placement="top" overlay={renderTooltip}><Link onClick={exportToPDF}><ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" /></Link></OverlayTrigger></li>
+            <li><OverlayTrigger placement="top" overlay={renderExcelTooltip}><Link onClick={exportToExcel}><ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" /></Link></OverlayTrigger></li>
+            <li><OverlayTrigger placement="top" overlay={renderRefreshTooltip}><Link onClick={() => loadProductsData(false)}><RotateCcw /></Link></OverlayTrigger></li>
+            <li><OverlayTrigger placement="top" overlay={renderCollapseTooltip}><Link id="collapse-header" className={data ? "active" : ""} onClick={(e) => { e.preventDefault(); dispatch(setToogleHeader(!data)); }}><ChevronUp /></Link></OverlayTrigger></li>
           </ul>
-          <div className="page-btn">
+          <div className="page-btn d-flex gap-2">
             <Link to={route.addproduct} className="btn btn-added">
-              <PlusCircle className="me-2 iconsize" />
-              Add New Product
+              <PlusCircle className="me-2 iconsize" /> Add New Product
             </Link>
           </div>
         </div>
@@ -476,9 +405,7 @@ const ProductList = () => {
                       value={searchQuery}
                       onChange={handleSearchChange}
                     />
-                    <Link to className="btn btn-searchset">
-                      <i data-feather="search" className="feather-search" />
-                    </Link>
+                    <Link to className="btn btn-searchset"><i data-feather="search" className="feather-search" /></Link>
                   </div>
                   <div style={{ width: '200px' }}>
                     <Select
