@@ -1,75 +1,190 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import { Link } from "react-router-dom";
-import { Filter, Sliders, StopCircle, User, Calendar } from "react-feather";
-import Select from "react-select";
-import DateRangePicker from "react-bootstrap-daterangepicker";
+import { Eye } from "react-feather";
+import { fetchTransactions } from "../Api/TransactionApi";
+import { Modal, Button } from "react-bootstrap";
+import Table from "../../core/pagination/datatable";
+import "../../style/scss/pages/_invoicereport.scss";
 
 const Invoicereport = () => {
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
+  const [transactions, setTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const loadTransactions = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchTransactions();
+        console.log("Transactions set to state:", data);
+        const reversedData = [...data].reverse();
+        setTransactions(reversedData);
+        setFilteredTransactions(reversedData);
+      } catch (error) {
+        console.error("Error in loadTransactions:", error);
+        setTransactions([]);
+        setFilteredTransactions([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTransactions();
+  }, []);
+
+  const handleSearch = (event) => {
+    const value = event.target.value.toLowerCase();
+    setSearchTerm(value);
+
+    const filtered = transactions.filter((transaction) => {
+      const branchName = transaction.branchDto?.branchName?.toLowerCase() || "";
+      const shopName = transaction.shopDetailsDto?.name?.toLowerCase() || "";
+      const userName = transaction.userDto?.firstName?.toLowerCase() || "";
+      const customerName = transaction.customerDto?.name?.toLowerCase() || "";
+
+      return (
+        branchName.includes(value) ||
+        shopName.includes(value) ||
+        userName.includes(value) ||
+        customerName.includes(value)
+      );
+    });
+
+    setFilteredTransactions([...filtered].reverse());
   };
 
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
-  ];
-  const nameOptions = [
-    { value: "chooseName", label: "Choose Name" },
-    { value: "rose", label: "Rose" },
-    { value: "kaitlin", label: "Kaitlin" },
-  ];
+  const handleViewDetails = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowModal(true);
+  };
 
-  const statusOptions = [
-    { value: "chooseStatus", label: "Choose Status" },
-    { value: "paid", label: "Paid" },
-    { value: "unpaid", label: "Unpaid" },
-    { value: "overdue", label: "Overdue" },
-  ];
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedTransaction(null);
+  };
 
-  const initialSettings = {
-    endDate: new Date("2020-08-11T12:30:00.000Z"),
-    ranges: {
-      "Last 30 Days": [
-        new Date("2020-07-12T04:57:17.076Z"),
-        new Date("2020-08-10T04:57:17.076Z"),
-      ],
-      "Last 7 Days": [
-        new Date("2020-08-04T04:57:17.076Z"),
-        new Date("2020-08-10T04:57:17.076Z"),
-      ],
-      "Last Month": [
-        new Date("2020-06-30T18:30:00.000Z"),
-        new Date("2020-07-31T18:29:59.999Z"),
-      ],
-      "This Month": [
-        new Date("2020-07-31T18:30:00.000Z"),
-        new Date("2020-08-31T18:29:59.999Z"),
-      ],
-      Today: [
-        new Date("2020-08-10T04:57:17.076Z"),
-        new Date("2020-08-10T04:57:17.076Z"),
-      ],
-      Yesterday: [
-        new Date("2020-08-09T04:57:17.076Z"),
-        new Date("2020-08-09T04:57:17.076Z"),
-      ],
+  const exportToPDFData = () => {
+    if (isLoading) return [];
+    return filteredTransactions.map((transaction) => ({
+      "Branch Name": transaction.branchDto?.branchName || "N/A",
+      "Shop Name": transaction.shopDetailsDto?.name || "N/A",
+      "User Name": transaction.userDto?.firstName || "N/A",
+      "Customer Name": transaction.customerDto?.name || "N/A",
+      "Total Amount": `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
+      "Date Time": transaction.dateTime
+        ? new Date(transaction.dateTime).toLocaleString()
+        : "N/A",
+    }));
+  };
+
+  const exportToExcelData = () => {
+    if (isLoading) return [];
+    return filteredTransactions.map((transaction) => ({
+      "Branch Name": transaction.branchDto?.branchName || "N/A",
+      "Shop Name": transaction.shopDetailsDto?.name || "N/A",
+      "User Name": transaction.userDto?.firstName || "N/A",
+      "Customer Name": transaction.customerDto?.name || "N/A",
+      "Total Amount": `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
+      "Date Time": transaction.dateTime
+        ? new Date(transaction.dateTime).toLocaleString()
+        : "N/A",
+    }));
+  };
+
+  const handleRefresh = async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchTransactions();
+      const reversedData = [...data].reverse();
+      setTransactions(reversedData);
+      setFilteredTransactions(reversedData);
+    } catch (error) {
+      console.error("Error in handleRefresh:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const columns = [
+    {
+      title: "Branch Name",
+      dataIndex: "branchDto",
+      render: (branchDto) => branchDto?.branchName || "N/A",
+      sorter: (a, b) =>
+        (a.branchDto?.branchName || "").localeCompare(
+          b.branchDto?.branchName || ""
+        ),
     },
-    startDate: new Date("2020-08-04T04:57:17.076Z"), // Set "Last 7 Days" as default
-    timePicker: false,
-  };
+    {
+      title: "Shop Name",
+      dataIndex: "shopDetailsDto",
+      render: (shopDetailsDto) => shopDetailsDto?.name || "N/A",
+      sorter: (a, b) =>
+        (a.shopDetailsDto?.name || "").localeCompare(
+          b.shopDetailsDto?.name || ""
+        ),
+    },
+    {
+      title: "User Name",
+      dataIndex: "userDto",
+      render: (userDto) => userDto?.firstName || "N/A",
+      sorter: (a, b) =>
+        (a.userDto?.firstName || "").localeCompare(b.userDto?.firstName || ""),
+    },
+    {
+      title: "Customer Name",
+      dataIndex: "customerDto",
+      render: (customerDto) => customerDto?.name || "N/A",
+      sorter: (a, b) =>
+        (a.customerDto?.name || "").localeCompare(b.customerDto?.name || ""),
+    },
+    {
+      title: "Total Amount",
+      dataIndex: "totalAmount",
+      render: (totalAmount) => `LKR ${parseFloat(totalAmount || 0).toFixed(2)}`,
+      sorter: (a, b) => (a.totalAmount || 0) - (b.totalAmount || 0),
+    },
+    {
+      title: "Date Time",
+      dataIndex: "dateTime",
+      render: (dateTime) =>
+        dateTime ? new Date(dateTime).toLocaleString() : "N/A",
+      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: (_, record) => (
+        <td className="action-table-data text-center">
+          <div className="edit-delete-action d-flex justify-content-center align-items-center">
+            <Link
+              className="p-2"
+              to="#"
+              onClick={() => handleViewDetails(record)}
+            >
+              <Eye className="action-eye" />
+            </Link>
+          </div>
+        </td>
+      ),
+      sorter: false,
+    },
+  ];
 
   return (
     <div className="page-wrapper">
       <div className="content">
         <Breadcrumbs
-          maintitle="Invoice Report"
-          subtitle="Manage Your Invoice Report"
+          maintitle="Transaction Report"
+          subtitle="Manage Your Transaction Report"
+          onDownloadPDF={exportToPDFData}
+          onDownloadExcel={exportToExcelData}
+          onRefresh={handleRefresh}
         />
-        {/* /product list */}
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">
@@ -79,299 +194,202 @@ const Invoicereport = () => {
                     type="text"
                     placeholder="Search"
                     className="form-control form-control-sm formsearch"
+                    value={searchTerm}
+                    onChange={handleSearch}
                   />
-                  <Link to className="btn btn-searchset">
+                  <Link to="#" className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
               </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                >
-                  <Filter
-                    className="filter-icon"
-                    onClick={toggleFilterVisibility}
-                  />
-                  <span onClick={toggleFilterVisibility}>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
-                    />
-                  </span>
-                </Link>
-              </div>
-              <div className="form-sort stylewidth">
-                <Sliders className="info-img" />
-
-                <Select
-                  className="select "
-                  options={options}
-                  placeholder="Sort by Date"
-                />
-              </div>
             </div>
-            {/* /Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <User className="info-img" />
-                      <Select className="select" options={nameOptions} />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <StopCircle className="info-img" />
-                      <Select className="select" options={statusOptions} />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <div className="position-relative daterange-wraper">
-                        {/* <input
-                          type="text"
-                          className="form-control"
-                          name="datetimes"
-                          placeholder="From Date - To Date"
-                        />
-                        <i
-                          data-feather="calendar"
-                          className="feather-14 info-img"
-                        /> */}
-                        <Calendar className="feather-14 info-img" />
-
-                        <DateRangePicker initialSettings={initialSettings}>
-                          <input
-                            className="form-control col-4 input-range"
-                            type="text"
-                            style={{ border: "none" }}
-                          />
-                        </DateRangePicker>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto">
-                        {" "}
-                        <i
-                          data-feather="search"
-                          className="feather-search"
-                        />{" "}
-                        Search{" "}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* /Filter */}
             <div className="table-responsive">
-              <table className="table  datanew">
-                <thead>
-                  <tr>
-                    <th className="no-sort">
-                      <label className="checkboxs">
-                        <input type="checkbox" id="select-all" />
-                        <span className="checkmarks" />
-                      </label>
-                    </th>
-                    <th>Invoice No</th>
-                    <th>Customer</th>
-                    <th>Due Date</th>
-                    <th>Amount</th>
-                    <th>Paid</th>
-                    <th>Amount Due</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV001</td>
-                    <td>Thomas</td>
-                    <td>19 Jan 2023</td>
-                    <td>$1000</td>
-                    <td>$1000</td>
-                    <td>$0.00</td>
-                    <td>
-                      <span className="badge badge-linesuccess">Paid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV002</td>
-                    <td>Rose</td>
-                    <td>25 Jan 2023</td>
-                    <td>$1500</td>
-                    <td>$0.00</td>
-                    <td>$1500</td>
-                    <td>
-                      <span className="badge badge-linedanger">Unpaid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV003</td>
-                    <td>Benjamin</td>
-                    <td>05 Feb 2023</td>
-                    <td>$1800</td>
-                    <td>$1800</td>
-                    <td>$0.00</td>
-                    <td>
-                      <span className="badge badge-linesuccess">Paid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV004</td>
-                    <td>Kaitlin</td>
-                    <td>15 Feb 2023</td>
-                    <td>$2000</td>
-                    <td>$1000</td>
-                    <td>$1000</td>
-                    <td>
-                      <span className="badge badges-warning">Overdue</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV005</td>
-                    <td>Lilly</td>
-                    <td>18 Mar 2023</td>
-                    <td>$800</td>
-                    <td>$800</td>
-                    <td>$0.00</td>
-                    <td>
-                      <span className="badge badge-linesuccess">Paid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV006</td>
-                    <td>Freda</td>
-                    <td>24 Mar 2023</td>
-                    <td>$750</td>
-                    <td>$0.00</td>
-                    <td>$750</td>
-                    <td>
-                      <span className="badge badge-linedanger">Unpaid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV007</td>
-                    <td>Alwin</td>
-                    <td>12 Apr 2023</td>
-                    <td>$1300</td>
-                    <td>$1300</td>
-                    <td>$0.00</td>
-                    <td>
-                      <span className="badge badge-linesuccess">Paid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV008</td>
-                    <td>Maybelle</td>
-                    <td>24 Apr 2023</td>
-                    <td>$1100</td>
-                    <td>$1100</td>
-                    <td>$0.00</td>
-                    <td>
-                      <span className="badge badge-linesuccess">Paid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV009</td>
-                    <td>Ellen</td>
-                    <td>03 May 2023</td>
-                    <td>$2300</td>
-                    <td>$2300</td>
-                    <td>$0.00</td>
-                    <td>
-                      <span className="badge badge-linesuccess">Paid</span>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <label className="checkboxs">
-                        <input type="checkbox" />
-                        <span className="checkmarks" />
-                      </label>
-                    </td>
-                    <td>INV010</td>
-                    <td>Grace</td>
-                    <td>29 May 2023</td>
-                    <td>$1700</td>
-                    <td>$1700</td>
-                    <td>$0.00</td>
-                    <td>
-                      <span className="badge badge-linesuccess">Paid</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <Table
+                className="table datanew"
+                columns={columns}
+                dataSource={filteredTransactions}
+                rowKey={(record) => record.id || Math.random()}
+                loading={isLoading}
+                pagination={{ pageSize: 10 }}
+              />
             </div>
           </div>
         </div>
-        {/* /product list */}
       </div>
+
+      {/* Modal for Transaction Details */}
+      <Modal show={showModal} onHide={handleCloseModal} centered size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Transaction Receipt</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedTransaction ? (
+            <div className="receipt">
+              <div className="receipt-details">
+                <div className="row">
+                  <div className="col-md-6">
+                    <p>
+                      <strong>Date & Time:</strong>{" "}
+                      {selectedTransaction.dateTime
+                        ? new Date(selectedTransaction.dateTime).toLocaleString()
+                        : "N/A"}
+                    </p>
+                    <p>
+                      <strong>Total Amount:</strong> LKR{" "}
+                      {parseFloat(selectedTransaction.totalAmount || 0).toFixed(2)}
+                    </p>
+                    <p>
+                      <strong>Status:</strong>{" "}
+                      <span
+                        className={`badge ${selectedTransaction.status?.toLowerCase() === "completed"
+                            ? "badge-linesuccess"
+                            : "badge-linedanger"
+                          }`}
+                      >
+                        {selectedTransaction.status || "N/A"}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="col-md-6">
+                    <p>
+                      <strong>Branch Name:</strong>{" "}
+                      {selectedTransaction.branchDto?.branchName || "N/A"}
+                    </p>
+                    <p>
+                      <strong>Shop Name:</strong>{" "}
+                      {selectedTransaction.shopDetailsDto?.name || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                <hr />
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <h6>User Information</h6>
+                    <p>
+                      <strong>First Name:</strong>{" "}
+                      {selectedTransaction.userDto?.firstName || "N/A"}
+                    </p>
+                    <p>
+                      <strong>Last Name:</strong>{" "}
+                      {selectedTransaction.userDto?.lastName || "N/A"}
+                    </p>
+                    <p>
+                      <strong>Role:</strong>{" "}
+                      {selectedTransaction.userDto?.userRoleDto?.userRole || "N/A"}
+                    </p>
+                  </div>
+                  <div className="col-md-6">
+                    <h6>Customer Information</h6>
+                    <p>
+                      <strong>Name:</strong>{" "}
+                      {selectedTransaction.customerDto?.name || "N/A"}
+                    </p>
+                    <p>
+                      <strong>Mobile Number:</strong>{" "}
+                      {selectedTransaction.customerDto?.mobileNumber || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                <hr />
+
+                <h6>Transaction Items</h6>
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Product Name</th>
+                        <th>Barcode</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Discount</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedTransaction.transactionDetailsList &&
+                        selectedTransaction.transactionDetailsList.length > 0 ? (
+                        selectedTransaction.transactionDetailsList.map(
+                          (item, index) => (
+                            <tr key={index}>
+                              <td>{item.productDto?.name || "N/A"}</td>
+                              <td>{item.productDto?.barcode || "N/A"}</td>
+                              <td>
+                                LKR {parseFloat(item.unitPrice || 0).toFixed(2)}
+                              </td>
+                              <td>{item.quantity || 0}</td>
+                              <td>
+                                LKR {parseFloat(item.discount || 0).toFixed(2)}
+                              </td>
+                              <td>
+                                LKR{" "}
+                                {parseFloat(
+                                  (item.unitPrice * item.quantity) -
+                                  item.discount || 0
+                                ).toFixed(2)}
+                              </td>
+                            </tr>
+                          )
+                        )
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="text-center">
+                            No items found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr />
+
+                <h6>Payment Methods</h6>
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Payment Type</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedTransaction.transactionPaymentMethod &&
+                        selectedTransaction.transactionPaymentMethod.length > 0 ? (
+                        selectedTransaction.transactionPaymentMethod.map(
+                          (payment, index) => (
+                            <tr key={index}>
+                              <td>{payment.paymentMethodDto?.type || "N/A"}</td>
+                              <td>
+                                LKR {parseFloat(payment.amount || 0).toFixed(2)}
+                              </td>
+                            </tr>
+                          )
+                        )
+                      ) : (
+                        <tr>
+                          <td colSpan="2" className="text-center">
+                            No payment methods found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p>No transaction selected.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseModal}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
