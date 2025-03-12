@@ -97,15 +97,13 @@ const Invoicereport = () => {
 
   const handleRefresh = async () => {
     try {
-      setIsLoading(true);
+      setFilteredTransactions([]);
+      setSearchTerm("");
       const data = await fetchTransactions();
-      const reversedData = [...data].reverse();
-      setTransactions(reversedData);
-      setFilteredTransactions(reversedData);
+      setTransactions(data);
+      setFilteredTransactions([...data].reverse());
     } catch (error) {
       console.error("Error in handleRefresh:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -175,6 +173,14 @@ const Invoicereport = () => {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="page-wrapper">
+        {/* You can add a loading spinner or message here if desired */}
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -209,7 +215,7 @@ const Invoicereport = () => {
                 columns={columns}
                 dataSource={filteredTransactions}
                 rowKey={(record) => record.id || Math.random()}
-                loading={isLoading}
+                loading={filteredTransactions.length === 0}
                 pagination={{ pageSize: 10 }}
               />
             </div>
