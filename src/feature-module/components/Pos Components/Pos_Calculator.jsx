@@ -1,17 +1,17 @@
-// Pos_Calculator.jsx
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 
-export const Pos_Calculator = ({ 
-  darkMode, 
-  selectedItems, 
-  currentItem, 
-  totalValue, 
-  inputScreenText, 
-  onBarcodeSearch, 
-  barcodeInput, 
-  setBarcodeInput 
+export const Pos_Calculator = ({
+  darkMode,
+  selectedItems,
+  currentItem,
+  totalValue,
+  inputScreenText,
+  onBarcodeSearch,
+  barcodeInput,
+  setBarcodeInput,
+  customerName,
 }) => {
   const [debounceTimeout, setDebounceTimeout] = useState(null);
 
@@ -53,7 +53,7 @@ export const Pos_Calculator = ({
       </div>
 
       <div className="input-screen-box">
-        {inputScreenText || ""}
+        <div className="input-screen-text">{inputScreenText || ""}</div>
       </div>
 
       <div className="display-box">
@@ -88,14 +88,20 @@ export const Pos_Calculator = ({
       </div>
 
       <div className="summary-box">
+        {customerName && (
+          <div className="summary-item customer-name-box">
+            <span className="label">Customer Name</span>
+            <span className="value">{customerName}</span>
+          </div>
+        )}
         <div className="summary-item">
           <span className="label">Total Qty</span>
           <span className="value">{selectedItems.reduce((sum, item) => sum + item.qty, 0)}</span>
         </div>
-        <div className="summary-item">
+        {/* <div className="summary-item">
           <span className="label">Sub Total</span>
           <span className="value">LKR {totalValue.toFixed(2)}</span>
-        </div>
+        </div> */}
         <div className="summary-item">
           <span className="label">Cash Back</span>
           <span className="value">LKR 0.00</span>
@@ -137,6 +143,7 @@ Pos_Calculator.propTypes = {
   onBarcodeSearch: PropTypes.func.isRequired,
   barcodeInput: PropTypes.string.isRequired,
   setBarcodeInput: PropTypes.func.isRequired,
+  customerName: PropTypes.string,
 };
 
 export default Pos_Calculator;

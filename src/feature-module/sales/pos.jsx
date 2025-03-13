@@ -1,4 +1,3 @@
-// Pos.jsx
 import React, { useEffect, useState } from "react";
 import { fetchCustomCategories, quickAccess } from "../../core/json/Posdata";
 import Header from "../components/Pos Components/Pos_Header";
@@ -22,7 +21,8 @@ const Pos = () => {
   const [hasCategory, setHasCategory] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
   const [inputScreenText, setInputScreenText] = useState("");
-  const [barcodeInput, setBarcodeInput] = useState(""); // Added to manage barcode input
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [customerName, setCustomerName] = useState("");
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -53,7 +53,6 @@ const Pos = () => {
   const handleCategorySelect = (category) => {
     if (activeTab === "category") {
       if (!category || !category.name) {
-        console.warn("Cannot select an item without a valid category/name.");
         return;
       }
       if (!currentItem && inputStage === "qty" && inputValue !== "0" && inputValue !== "") {
@@ -66,8 +65,6 @@ const Pos = () => {
         setCurrentItem({ ...currentItem, name: category.name });
         setHasCategory(true);
         setInputScreenText(`${currentItem.qty}`);
-      } else {
-        console.warn("Please enter a quantity first, or wait until after multiply to proceed.");
       }
     }
   };
@@ -127,7 +124,6 @@ const Pos = () => {
           setInputScreenText(`${currentItem.qty} × ${newInput}`);
           setInputValue(newInput);
         } else {
-          console.warn("Qty is locked until '×' is pressed. Only category selection is allowed.");
           return;
         }
       }
@@ -136,8 +132,6 @@ const Pos = () => {
         setInputStage("price");
         setInputValue("0");
         setInputScreenText(`${currentItem.qty} ×`);
-      } else {
-        console.warn("Please enter quantity and select a category before multiplying.");
       }
     } else if (type === "enter") {
       if (currentItem && inputStage === "price" && hasCategory && currentItem.name && currentItem.price !== null) {
@@ -163,8 +157,6 @@ const Pos = () => {
         setInputStage("qty");
         setInputValue("0");
         setInputScreenText("");
-      } else {
-        console.warn("Cannot add item: Missing category, price, quantity, or incorrect order.");
       }
     }
   };
@@ -173,9 +165,7 @@ const Pos = () => {
     if (barcode.length < 3) return;
 
     try {
-      console.log("Searching for barcode:", barcode);
       const product = await getProductByBarcode(barcode);
-      console.log("API response:", product);
 
       if (product && product.responseDto && product.responseDto.length > 0) {
         const productData = product.responseDto[0];
@@ -185,35 +175,32 @@ const Pos = () => {
             name,
             qty: null,
             price: pricePerUnit,
-            total: null
+            total: null,
           });
           setHasCategory(true);
           setInputStage("qty");
           setInputValue("");
           setInputScreenText("");
-          setBarcodeInput(""); // Clear the barcode input after successful fetch
-          console.log("Product found:", { name, pricePerUnit });
+          setBarcodeInput("");
         } else {
-          console.warn("Product data incomplete:", productData);
           setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
           setHasCategory(false);
-          setBarcodeInput(""); // Clear even if incomplete
+          setBarcodeInput("");
         }
       } else {
-        console.warn("No product found for barcode:", barcode);
         setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
         setHasCategory(false);
-        setBarcodeInput(""); // Clear if no product found
+        setBarcodeInput("");
       }
     } catch (error) {
-      console.error("Error searching barcode:", error.message);
-      if (error.response) {
-        console.error("Response details:", error.response.data, error.response.status);
-      }
       setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
       setHasCategory(false);
-      setBarcodeInput(""); // Clear on error
+      setBarcodeInput("");
     }
+  };
+
+  const handleCustomerAdded = (name) => {
+    setCustomerName(name);
   };
 
   return (
@@ -234,8 +221,9 @@ const Pos = () => {
               totalValue={totalValue}
               inputScreenText={inputScreenText}
               onBarcodeSearch={handleBarcodeSearch}
-              barcodeInput={barcodeInput} // Pass barcode input state
-              setBarcodeInput={setBarcodeInput} // Pass setter function
+              barcodeInput={barcodeInput}
+              setBarcodeInput={setBarcodeInput}
+              customerName={customerName}
             />
             <div className="category-section">
               <CategoryTabs
@@ -249,7 +237,7 @@ const Pos = () => {
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
-                <PaymentButtons />
+                <PaymentButtons onCustomerAdded={handleCustomerAdded} />
                 <FunctionButtons activeTab={activeTab} />
               </div>
             </div>
