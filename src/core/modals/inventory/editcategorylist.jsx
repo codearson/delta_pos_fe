@@ -7,15 +7,22 @@ import PropTypes from "prop-types";
 const EditCategoryList = ({ selectedCategory, onUpdate }) => {
     const [categoryName, setCategoryName] = useState("");
     const [isActive, setIsActive] = useState(1);
+    const [validationError, setValidationError] = useState("");
 
     useEffect(() => {
         if (selectedCategory) {
             setCategoryName(selectedCategory.productCategoryName);
             setIsActive(selectedCategory.isActive);
+            setValidationError("");
         }
     }, [selectedCategory]);
 
     const handleUpdate = async () => {
+        if (!categoryName.trim()) {
+            setValidationError("Category name is required");
+            return;
+        }
+        
         if (!selectedCategory) return;
    
         const updatedData = { 
@@ -28,12 +35,20 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
             if (response) {
                 Swal.fire("Success", "Category updated successfully!", "success");
                 onUpdate();
+                document.getElementById('edit-category-close').click();
             } else {
                 Swal.fire("Error", "Failed to update category", "error");
             }
         } catch (error) {
             Swal.fire("Error", "Something went wrong", "error");
         }
+    };
+
+    const handleCloseModal = () => {
+        if (selectedCategory) {
+            setCategoryName(selectedCategory.productCategoryName);
+        }
+        setValidationError("");
     };
 
     return (
@@ -49,10 +64,12 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
                                         <h4>Edit Category</h4>
                                     </div>
                                     <button
+                                        id="edit-category-close"
                                         type="button"
                                         className="close"
                                         data-bs-dismiss="modal"
                                         aria-label="Close"
+                                        onClick={handleCloseModal}
                                     >
                                         <span aria-hidden="true">×</span>
                                     </button>
@@ -63,10 +80,18 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
                                             <label className="form-label">Category</label>
                                             <input
                                                 type="text"
-                                                className="form-control"
+                                                className={`form-control ${validationError ? 'is-invalid' : ''}`}
                                                 value={categoryName}
-                                                onChange={(e) => setCategoryName(e.target.value)}
+                                                onChange={(e) => {
+                                                    setCategoryName(e.target.value);
+                                                    setValidationError("");
+                                                }}
                                             />
+                                            {validationError && (
+                                                <div className="invalid-feedback">
+                                                    {validationError}
+                                                </div>
+                                            )}
                                         </div>
                                         {/* <div className="mb-3">
                                             <label className="form-label">Category Slug</label>
@@ -94,6 +119,7 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
                                                 type="button"
                                                 className="btn btn-cancel me-2"
                                                 data-bs-dismiss="modal"
+                                                onClick={handleCloseModal}
                                             >
                                                 Cancel
                                             </button>
