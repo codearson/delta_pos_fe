@@ -62,7 +62,7 @@ const AddProduct = () => {
       const data = await fetchProductCategories();
       const reversedData = [...data].reverse();
       setCategories(reversedData
-        .filter(cat => cat.isActive === true)
+        .filter(cat => cat.isActive === true && cat.productCategoryName.toLowerCase() !== 'custom')
         .map((cat) => ({ value: cat.id, label: cat.productCategoryName }))
       );
     } catch (error) {

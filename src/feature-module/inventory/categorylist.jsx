@@ -57,9 +57,15 @@ const CategoryList = () => {
                 categoryArray = fetchedCategories.responseDto;
             }
             if (Array.isArray(categoryArray)) {
-                setAllCategories(categoryArray); // Store full list
-                const filteredCategories = categoryArray.filter(category => category.isActive === showActive).reverse();
-                setCategories(filteredCategories);
+                // Filter out 'Custom' category
+                const filteredCategories = categoryArray.filter(category => 
+                    category.productCategoryName?.toLowerCase() !== 'custom'
+                );
+                setAllCategories(filteredCategories); // Store filtered list
+                const activeFilteredCategories = filteredCategories
+                    .filter(category => category.isActive === showActive)
+                    .reverse();
+                setCategories(activeFilteredCategories);
             } else {
                 setAllCategories([]);
                 setCategories([]);
@@ -143,7 +149,8 @@ const CategoryList = () => {
         setSearchQuery(query);
         if (query.trim() !== '') {
             const searchCategories = allCategories.filter(category =>
-                category.productCategoryName.toLowerCase().includes(query.toLowerCase())
+                category.productCategoryName.toLowerCase().includes(query.toLowerCase()) &&
+                category.productCategoryName.toLowerCase() !== 'custom' // Ensure 'Custom' is excluded
             );
             setCategories(searchCategories.length > 0 ? searchCategories : []);
         } else {
