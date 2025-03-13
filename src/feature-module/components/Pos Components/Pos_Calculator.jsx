@@ -1,15 +1,51 @@
-import React from "react";
+// Pos_Calculator.jsx
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 
-export const Pos_Calculator = ({ darkMode, selectedItems, currentItem, totalValue, inputScreenText }) => {
+export const Pos_Calculator = ({ 
+  darkMode, 
+  selectedItems, 
+  currentItem, 
+  totalValue, 
+  inputScreenText, 
+  onBarcodeSearch, 
+  barcodeInput, 
+  setBarcodeInput 
+}) => {
+  const [debounceTimeout, setDebounceTimeout] = useState(null);
+
+  const handleBarcodeChange = (e) => {
+    const value = e.target.value.trim();
+    setBarcodeInput(value);
+
+    if (debounceTimeout) {
+      clearTimeout(debounceTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      onBarcodeSearch(value);
+    }, 500);
+    setDebounceTimeout(timeout);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+    };
+  }, [debounceTimeout]);
+
   return (
     <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <div className="search-bar">
         <input
-          type="search"
-          placeholder="Search"
+          type="text"
+          placeholder="Scan barcode"
           className="search-input"
+          value={barcodeInput}
+          onChange={handleBarcodeChange}
         />
         <span className="search-icon">
           <i className="feather-search" />
@@ -98,6 +134,9 @@ Pos_Calculator.propTypes = {
   }),
   totalValue: PropTypes.number.isRequired,
   inputScreenText: PropTypes.string,
+  onBarcodeSearch: PropTypes.func.isRequired,
+  barcodeInput: PropTypes.string.isRequired,
+  setBarcodeInput: PropTypes.func.isRequired,
 };
 
 export default Pos_Calculator;
