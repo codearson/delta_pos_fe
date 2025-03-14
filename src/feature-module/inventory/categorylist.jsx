@@ -23,7 +23,7 @@ const CategoryList = () => {
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
     const [categories, setCategories] = useState([]);
-    const [allCategories, setAllCategories] = useState([]); // Store full category list
+    const [allCategories, setAllCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [showActive, setShowActive] = useState(true);
@@ -57,11 +57,10 @@ const CategoryList = () => {
                 categoryArray = fetchedCategories.responseDto;
             }
             if (Array.isArray(categoryArray)) {
-                // Filter out 'Custom' category
                 const filteredCategories = categoryArray.filter(category => 
                     category.productCategoryName?.toLowerCase() !== 'custom'
                 );
-                setAllCategories(filteredCategories); // Store filtered list
+                setAllCategories(filteredCategories);
                 const activeFilteredCategories = filteredCategories
                     .filter(category => category.isActive === showActive)
                     .reverse();
@@ -150,7 +149,7 @@ const CategoryList = () => {
         if (query.trim() !== '') {
             const searchCategories = allCategories.filter(category =>
                 category.productCategoryName.toLowerCase().includes(query.toLowerCase()) &&
-                category.productCategoryName.toLowerCase() !== 'custom' // Ensure 'Custom' is excluded
+                category.productCategoryName.toLowerCase() !== 'custom'
             );
             setCategories(searchCategories.length > 0 ? searchCategories : []);
         } else {

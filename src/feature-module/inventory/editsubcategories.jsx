@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-//import { Link } from 'react-router-dom';
 import { updateTax } from '../Api/TaxApi';
 import Swal from 'sweetalert2';
-//import Select from 'react-select';
 
 const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
     const [taxPercentage, setTaxPercentage] = useState('');
+    const [validationError, setValidationError] = useState('');
 
     useEffect(() => {
-        if (selectedTax?.taxPercentage) {
-            setTaxPercentage(selectedTax.taxPercentage);
+        if (selectedTax?.taxPercentage !== undefined) {
+            setTaxPercentage(selectedTax.taxPercentage.toString());
+            setValidationError('');
         }
     }, [selectedTax]);
 
@@ -22,10 +22,25 @@ const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
             return;
         }
 
-        // Add validation
+        if (!taxPercentage.trim()) {
+            setValidationError('Tax percentage is required');
+            return;
+        }
+
         const percentage = parseFloat(taxPercentage);
-        if (isNaN(percentage) || percentage < 0 || percentage > 100) {
-            Swal.fire('Error', 'Tax percentage must be between 0 and 100', 'error');
+        
+        if (isNaN(percentage)) {
+            setValidationError('Please enter a valid number');
+            return;
+        }
+
+        if (percentage < 0) {
+            setValidationError('Negative numbers are not allowed');
+            return;
+        }
+        
+        if (percentage > 100) {
+            setValidationError('Tax percentage must be between 0 and 100');
             return;
         }
 
@@ -43,36 +58,34 @@ const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
                     text: 'Tax has been updated successfully',
                     icon: 'success',
                     confirmButtonText: 'OK'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('edit-tax-close').click();
+                        if (onTaxUpdated) {
+                            onTaxUpdated();
+                        }
+                    }
                 });
-                
-                if (onTaxUpdated) {
-                    onTaxUpdated();
-                }
-                
-                // Close modal
-                document.querySelector('[data-bs-dismiss="modal"]').click();
             } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Failed to update tax',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
+                setValidationError('Failed to update tax');
             }
         } catch (error) {
             console.error('Error updating tax:', error);
-            Swal.fire({
-                title: 'Error!',
-                text: 'Something went wrong while updating tax',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            });
+            setValidationError('Something went wrong while updating tax');
+        }
+    };
+
+    const handleCloseModal = () => {
+        setValidationError(''); 
+        if (selectedTax?.taxPercentage !== undefined) {
+            setTaxPercentage(selectedTax.taxPercentage.toString());
+        } else {
+            setTaxPercentage('');
         }
     };
 
     return (
         <div>
-            {/* Edit Category */}
             <div className="modal fade" id="edit-tax">
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
@@ -83,72 +96,50 @@ const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
                                         <h4>Edit Tax</h4>
                                     </div>
                                     <button
+                                        id="edit-tax-close"
                                         type="button"
                                         className="close"
                                         data-bs-dismiss="modal"
                                         aria-label="Close"
+                                        onClick={handleCloseModal}
                                     >
                                         <span aria-hidden="true">×</span>
                                     </button>
                                 </div>
                                 <div className="modal-body custom-modal-body">
                                     <form onSubmit={handleSubmit}>
-                                        {/* <div className="mb-3">
-                                            <label className="form-label">Parent Category</label>
-                                            <Select
-                                            className="select"
-                                            options={categories}
-                                            placeholder="Newest"
-                                        />
-                                        </div> */}
                                         <div className="mb-3">
                                             <label className="form-label">Tax Percentage</label>
                                             <input
                                                 type="number"
-                                                className="form-control"
+                                                className={`form-control ${validationError ? 'is-invalid' : ''}`}
                                                 value={taxPercentage}
                                                 onChange={(e) => {
                                                     const value = e.target.value;
-                                                    if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
                                                         setTaxPercentage(value);
+                                                        if (value !== '' && parseFloat(value) < 0) {
+                                                            setValidationError('Negative numbers are not allowed');
+                                                        } else {
+                                                            setValidationError('');
+                                                        }
                                                     }
                                                 }}
                                                 min="0"
                                                 max="100"
                                             />
+                                            {validationError && (
+                                                <div className="invalid-feedback">
+                                                    {validationError}
+                                                </div>
+                                            )}
                                         </div>
-                                        {/* <div className="mb-3">
-                                            <label className="form-label">Category Code</label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                defaultValue="CT001"
-                                            />
-                                        </div>
-                                        <div className="mb-3 input-blocks">
-                                            <label className="form-label">Description</label>
-                                            <textarea
-                                                className="form-control"
-                                                defaultValue={"Type Description"}
-                                            />
-                                        </div>
-                                        <div className="mb-0">
-                                            <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                <span className="status-label">Status</span>
-                                                <input
-                                                    type="checkbox"
-                                                    id="user3"
-                                                    className="check"
-                                                    defaultChecked="true"
-                                                />
-                                                <label htmlFor="user3" className="checktoggle" />
-                                            </div>
-                                        </div> */}
                                         <div className="modal-footer-btn">
                                             <button
                                                 type="button"
                                                 className="btn btn-cancel me-2"
                                                 data-bs-dismiss="modal"
+                                                onClick={handleCloseModal}
                                             >
                                                 Cancel
                                             </button>
@@ -163,10 +154,9 @@ const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
                     </div>
                 </div>
             </div>
-            {/* /Edit Category */}
         </div>
-    )
-}
+    );
+};
 
 EditSubcategories.propTypes = {
     selectedTax: PropTypes.shape({
@@ -181,4 +171,4 @@ EditSubcategories.defaultProps = {
     onTaxUpdated: () => {}
 };
 
-export default EditSubcategories
+export default EditSubcategories;
