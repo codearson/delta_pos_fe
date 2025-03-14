@@ -6,6 +6,7 @@ import { fetchTransactions } from "../Api/TransactionApi";
 import { Modal, Button } from "react-bootstrap";
 import Table from "../../core/pagination/datatable";
 import "../../style/scss/pages/_invoicereport.scss";
+import Select from "react-select";
 
 const Invoicereport = () => {
   const [transactions, setTransactions] = useState([]);
@@ -14,6 +15,8 @@ const Invoicereport = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBranch, setSelectedBranch] = useState("");
+  const [selectedUser, setSelectedUser] = useState("");
 
   useEffect(() => {
     const loadTransactions = async () => {
@@ -36,25 +39,54 @@ const Invoicereport = () => {
     loadTransactions();
   }, []);
 
-  const handleSearch = (event) => {
-    const value = event.target.value.toLowerCase();
-    setSearchTerm(value);
+  useEffect(() => {
+    handleFilter();
+  }, [selectedBranch, selectedUser]);
 
-    const filtered = transactions.filter((transaction) => {
-      const branchName = transaction.branchDto?.branchName?.toLowerCase() || "";
-      const shopName = transaction.shopDetailsDto?.name?.toLowerCase() || "";
-      const userName = transaction.userDto?.firstName?.toLowerCase() || "";
-      const customerName = transaction.customerDto?.name?.toLowerCase() || "";
+  const getBranchOptions = () => {
+    const uniqueBranches = [...new Set(transactions.map(t => t.branchDto?.branchName).filter(Boolean))];
+    return uniqueBranches.sort();
+  };
 
-      return (
-        branchName.includes(value) ||
-        shopName.includes(value) ||
-        userName.includes(value) ||
-        customerName.includes(value)
-      );
-    });
+  const getUserOptions = () => {
+    const uniqueUsers = [...new Set(transactions.map(t => t.userDto?.firstName).filter(Boolean))];
+    return uniqueUsers.sort();
+  };
+
+  const handleFilter = () => {
+    let filtered = [...transactions];
+
+    if (selectedBranch) {
+      filtered = filtered.filter(t => t.branchDto?.branchName === selectedBranch);
+    }
+
+    if (selectedUser) {
+      filtered = filtered.filter(t => t.userDto?.firstName === selectedUser);
+    }
+
+    if (searchTerm) {
+      const value = searchTerm.toLowerCase();
+      filtered = filtered.filter((transaction) => {
+        const branchName = transaction.branchDto?.branchName?.toLowerCase() || "";
+        const shopName = transaction.shopDetailsDto?.name?.toLowerCase() || "";
+        const userName = transaction.userDto?.firstName?.toLowerCase() || "";
+        const customerName = transaction.customerDto?.name?.toLowerCase() || "";
+
+        return (
+          branchName.includes(value) ||
+          shopName.includes(value) ||
+          userName.includes(value) ||
+          customerName.includes(value)
+        );
+      });
+    }
 
     setFilteredTransactions([...filtered].reverse());
+  };
+
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    handleFilter();
   };
 
   const handleViewDetails = (transaction) => {
@@ -99,6 +131,8 @@ const Invoicereport = () => {
     try {
       setFilteredTransactions([]);
       setSearchTerm("");
+      setSelectedBranch("");
+      setSelectedUser("");
       const data = await fetchTransactions();
       setTransactions(data);
       setFilteredTransactions([...data].reverse());
@@ -195,17 +229,39 @@ const Invoicereport = () => {
           <div className="card-body">
             <div className="table-top">
               <div className="search-set">
-                <div className="search-input">
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="form-control form-control-sm formsearch"
-                    value={searchTerm}
-                    onChange={handleSearch}
-                  />
-                  <Link to="#" className="btn btn-searchset">
-                    <i data-feather="search" className="feather-search" />
-                  </Link>
+                <div className="search-path d-flex align-items-center gap-2" style={{ width: '100%' }}>
+                  <div className="search-input">
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      className="form-control form-control-sm formsearch"
+                      value={searchTerm}
+                      onChange={handleSearch}
+                    />
+                    <Link to="#" className="btn btn-searchset">
+                      <i data-feather="search" className="feather-search" />
+                    </Link>
+                  </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      options={getBranchOptions().map(branch => ({ value: branch, label: branch }))}
+                      placeholder="Select Branch"
+                      value={selectedBranch ? { value: selectedBranch, label: selectedBranch } : null}
+                      onChange={(selected) => setSelectedBranch(selected ? selected.value : "")}
+                      isClearable
+                    />
+                  </div>
+                  <div style={{ width: '200px' }}>
+                    <Select
+                      className="select"
+                      options={getUserOptions().map(user => ({ value: user, label: user }))}
+                      placeholder="Select User"
+                      value={selectedUser ? { value: selectedUser, label: selectedUser } : null}
+                      onChange={(selected) => setSelectedUser(selected ? selected.value : "")}
+                      isClearable
+                    />
+                  </div>
                 </div>
               </div>
             </div>
