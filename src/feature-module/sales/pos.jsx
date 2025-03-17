@@ -227,7 +227,12 @@ const Pos = () => {
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <Sidebar darkMode={darkMode} />
       <div className="main-content">
-        <Header currentTime={currentTime} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+        <Header
+          currentTime={currentTime}
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          onCustomerAdded={handleCustomerAdded}
+        />
         <div className="content">
           <div className="grid-container">
             <Pos_Calculator
@@ -250,7 +255,7 @@ const Pos = () => {
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
-                <PaymentButtons onCustomerAdded={handleCustomerAdded} />
+                <PaymentButtons />
                 <FunctionButtons activeTab={activeTab} />
               </div>
             </div>
