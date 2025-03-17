@@ -211,6 +211,7 @@ const Pos = () => {
           currentTime={currentTime}
           darkMode={darkMode}
           toggleDarkMode={toggleDarkMode}
+          onCustomerAdded={handleCustomerAdded}
         />
         <div className="content">
           <div className="grid-container">
@@ -237,7 +238,7 @@ const Pos = () => {
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
-                <PaymentButtons onCustomerAdded={handleCustomerAdded} />
+                <PaymentButtons />
                 <FunctionButtons activeTab={activeTab} />
               </div>
             </div>
