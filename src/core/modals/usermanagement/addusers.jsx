@@ -7,6 +7,7 @@ import { saveUser } from '../../../feature-module/Api/UserApi'
 import withReactContent from 'sweetalert2-react-content'
 import Swal from 'sweetalert2'
 import PropTypes from 'prop-types'
+import { fetchBranches } from '../../../feature-module/Api/StockApi'
 
 const AddUsers = ({ onUpdate }) => {
     const [formData, setFormData] = useState({
@@ -18,7 +19,8 @@ const AddUsers = ({ onUpdate }) => {
         mobileNumber: '',
         isActive: true,
         createdDate: new Date().toISOString(),
-        userRoleDto: null
+        userRoleDto: null,
+        branchDto: null
     });
 
     const [errors, setErrors] = useState({});
@@ -26,11 +28,14 @@ const AddUsers = ({ onUpdate }) => {
     const [selectedRole, setSelectedRole] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setConfirmPassword] = useState(false);
+    const [branchOptions, setBranchOptions] = useState([]);
+    const [selectedBranch, setSelectedBranch] = useState(null);
 
     const MySwal = withReactContent(Swal);
 
     useEffect(() => {
         loadUserRoles();
+        loadBranches();
     }, []);
 
     const loadUserRoles = async () => {
@@ -43,6 +48,19 @@ const AddUsers = ({ onUpdate }) => {
             setRoleOptions(formattedRoles);
         } catch (error) {
             console.error('Error loading user roles:', error);
+        }
+    };
+
+    const loadBranches = async () => {
+        try {
+            const branches = await fetchBranches();
+            const formattedBranches = branches.map(branch => ({
+                value: branch.id,
+                label: branch.branchName
+            }));
+            setBranchOptions(formattedBranches);
+        } catch (error) {
+            console.error('Error loading branches:', error);
         }
     };
 
@@ -59,8 +77,8 @@ const AddUsers = ({ onUpdate }) => {
 
         if (!formData.mobileNumber.trim()) {
             newErrors.mobileNumber = 'Phone number is required';
-        } else if (!/^\d{9}$/.test(formData.mobileNumber)) {
-            newErrors.mobileNumber = 'Phone number must be 9 digits';
+        } else if (!/^\d+$/.test(formData.mobileNumber)) {
+            newErrors.mobileNumber = 'Please enter valid phone number';
         }
 
         if (!formData.emailAddress.trim()) {
@@ -89,16 +107,45 @@ const AddUsers = ({ onUpdate }) => {
             newErrors.confirmPassword = 'Passwords do not match';
         }
 
+        if (!formData.branchDto) {
+            newErrors.branch = 'Branch is required';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        
+        // Special handling for phone number to allow only digits
+        if (name === 'mobileNumber') {
+            const numbersOnly = value.replace(/[^0-9]/g, '');
+            setFormData(prev => ({
+                ...prev,
+                [name]: numbersOnly
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+
+        // Real-time email validation
+        if (name === 'emailAddress' && value) {
+            if (!value.includes('@')) {
+                setErrors(prev => ({
+                    ...prev,
+                    emailAddress: 'Email must contain @ symbol'
+                }));
+            } else {
+                setErrors(prev => ({
+                    ...prev,
+                    emailAddress: ''
+                }));
+            }
+        }
     };
 
     const handleRoleChange = (selectedOption) => {
@@ -108,6 +155,17 @@ const AddUsers = ({ onUpdate }) => {
             userRoleDto: {
                 id: selectedOption.value,
                 userRole: selectedOption.label
+            }
+        }));
+    };
+
+    const handleBranchChange = (selectedOption) => {
+        setSelectedBranch(selectedOption);
+        setFormData(prev => ({
+            ...prev,
+            branchDto: {
+                id: selectedOption.value,
+                branchName: selectedOption.label
             }
         }));
     };
@@ -152,9 +210,11 @@ const AddUsers = ({ onUpdate }) => {
                         mobileNumber: '',
                         isActive: true,
                         createdDate: new Date().toISOString(),
-                        userRoleDto: null
+                        userRoleDto: null,
+                        branchDto: null
                     });
                     setSelectedRole(null);
+                    setSelectedBranch(null);
                 } else {
                     MySwal.fire({
                         title: 'Error!',
@@ -174,6 +234,24 @@ const AddUsers = ({ onUpdate }) => {
         }
     };
 
+    const handleCancel = () => {
+        setFormData({
+            firstName: '',
+            lastName: '',
+            password: '',
+            address: '',
+            emailAddress: '',
+            mobileNumber: '',
+            isActive: true,
+            createdDate: new Date().toISOString(),
+            userRoleDto: null,
+            branchDto: null
+        });
+        setSelectedRole(null);
+        setSelectedBranch(null);
+        setErrors({});
+    };
+
     return (
         <div>
             {/* Add User */}
@@ -191,6 +269,7 @@ const AddUsers = ({ onUpdate }) => {
                                         className="close"
                                         data-bs-dismiss="modal"
                                         aria-label="Close"
+                                        onClick={handleCancel}
                                     >
                                         <span aria-hidden="true">×</span>
                                     </button>
@@ -249,7 +328,7 @@ const AddUsers = ({ onUpdate }) => {
                                                 <div className="input-blocks">
                                                     <label>Phone</label>
                                                     <input
-                                                        type="text"
+                                                        type="tel"
                                                         className="form-control"
                                                         name="mobileNumber"
                                                         value={formData.mobileNumber}
@@ -296,6 +375,20 @@ const AddUsers = ({ onUpdate }) => {
                                                         isSearchable={true}
                                                     />
                                                     {errors.role && <span className="error-message text-danger">{errors.role}</span>}
+                                                </div>
+                                            </div>
+                                            <div className="col-lg-6">
+                                                <div className="input-blocks">
+                                                    <label>Branch</label>
+                                                    <Select
+                                                        className="select"
+                                                        options={branchOptions}
+                                                        value={selectedBranch}
+                                                        onChange={handleBranchChange}
+                                                        placeholder="Choose Branch"
+                                                        isSearchable={true}
+                                                    />
+                                                    {errors.branch && <span className="error-message text-danger">{errors.branch}</span>}
                                                 </div>
                                             </div>
                                             <div className="col-lg-6">
@@ -354,6 +447,7 @@ const AddUsers = ({ onUpdate }) => {
                                                 type="button"
                                                 className="btn btn-cancel me-2"
                                                 data-bs-dismiss="modal"
+                                                onClick={handleCancel}
                                             >
                                                 Cancel
                                             </button>

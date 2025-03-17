@@ -129,7 +129,45 @@ export const updateUserStatus = async (userId, status) => {
     }
 };
 
-function decodeJwt(token) {
+export const updatePassword = async (userId, password, changedByUserId) => {
+    try {
+        const accessToken = localStorage.getItem("accessToken");
+
+        if (!accessToken) {
+            return null;
+        }
+
+        const decodedToken = decodeJwt(accessToken);
+        const userRole = decodedToken?.roles[0]?.authority;
+
+        if (userRole !== "ROLE_ADMIN") {
+            return null;
+        }
+
+        const response = await axios.put(
+            `${BASE_BACKEND_URL}/user/updatePassword`,
+            null,
+            {
+                params: {
+                    userId: userId,                // Selected user's ID
+                    password: password,            // New password
+                    changedByUserId: changedByUserId  // Logged-in user's ID
+                },
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        console.error('Error updating password:', error);
+        return null;
+    }
+};
+
+export function decodeJwt(token) {
     try {
         return JSON.parse(atob(token.split('.')[1]));
     } catch (error) {
