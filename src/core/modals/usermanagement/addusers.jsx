@@ -8,6 +8,7 @@ import withReactContent from 'sweetalert2-react-content'
 import Swal from 'sweetalert2'
 import PropTypes from 'prop-types'
 import { fetchBranches } from '../../../feature-module/Api/StockApi'
+import { decodeJwt } from '../../../feature-module/Api/UserApi'
 
 const AddUsers = ({ onUpdate }) => {
     const [formData, setFormData] = useState({
@@ -46,6 +47,7 @@ const AddUsers = ({ onUpdate }) => {
                 label: role.userRole
             }));
             setRoleOptions(formattedRoles);
+            setDefaultRoleForManager(formattedRoles);
         } catch (error) {
             console.error('Error loading user roles:', error);
         }
@@ -61,6 +63,22 @@ const AddUsers = ({ onUpdate }) => {
             setBranchOptions(formattedBranches);
         } catch (error) {
             console.error('Error loading branches:', error);
+        }
+    };
+
+    const setDefaultRoleForManager = (roles) => {
+        const accessToken = localStorage.getItem("accessToken");
+        if (accessToken) {
+            const decodedToken = decodeJwt(accessToken);
+            const userRole = decodedToken?.roles[0]?.authority;
+            
+            if (userRole === "ROLE_MANAGER") {
+                const userRoleOption = roles.find(option => option.label === "USER");
+                if (userRoleOption) {
+                    handleRoleChange(userRoleOption);
+                    setSelectedRole(userRoleOption);
+                }
+            }
         }
     };
 
@@ -91,7 +109,7 @@ const AddUsers = ({ onUpdate }) => {
             newErrors.address = 'Address is required';
         }
 
-        if (!formData.userRoleDto) {
+        if (!isManagerLoggedIn() && !formData.userRoleDto) {
             newErrors.role = 'Role is required';
         }
 
@@ -118,7 +136,6 @@ const AddUsers = ({ onUpdate }) => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         
-        // Special handling for phone number to allow only digits
         if (name === 'mobileNumber') {
             const numbersOnly = value.replace(/[^0-9]/g, '');
             setFormData(prev => ({
@@ -132,7 +149,6 @@ const AddUsers = ({ onUpdate }) => {
             }));
         }
 
-        // Real-time email validation
         if (name === 'emailAddress' && value) {
             if (!value.includes('@')) {
                 setErrors(prev => ({
@@ -180,6 +196,15 @@ const AddUsers = ({ onUpdate }) => {
                     createdDate: new Date().toISOString()
                 };
                 delete submitData.confirmPassword;
+
+                if (!submitData.userRoleDto) {
+                    submitData.userRoleDto = {
+                        id: 3,
+                        userRole: "USER"
+                    };
+                }
+                
+                console.log("Data being submitted:", JSON.stringify(submitData, null, 2));
                 
                 const response = await saveUser(submitData);
                 
@@ -200,7 +225,6 @@ const AddUsers = ({ onUpdate }) => {
                         }
                     });
 
-                    
                     setFormData({
                         firstName: '',
                         lastName: '',
@@ -226,7 +250,7 @@ const AddUsers = ({ onUpdate }) => {
             } catch (error) {
                 MySwal.fire({
                     title: 'Error!',
-                    text: 'Error creating user',
+                    text: error.message || 'An unexpected error occurred',
                     icon: 'error',
                     confirmButtonText: 'OK'
                 });
@@ -250,6 +274,15 @@ const AddUsers = ({ onUpdate }) => {
         setSelectedRole(null);
         setSelectedBranch(null);
         setErrors({});
+    };
+
+    const isManagerLoggedIn = () => {
+        const accessToken = localStorage.getItem("accessToken");
+        if (accessToken) {
+            const decodedToken = decodeJwt(accessToken);
+            return decodedToken?.roles[0]?.authority === "ROLE_MANAGER";
+        }
+        return false;
     };
 
     return (
@@ -371,8 +404,9 @@ const AddUsers = ({ onUpdate }) => {
                                                         options={roleOptions}
                                                         value={selectedRole}
                                                         onChange={handleRoleChange}
-                                                        placeholder="Choose Role"
+                                                        placeholder={isManagerLoggedIn() ? "USER" : "Choose Role"}
                                                         isSearchable={true}
+                                                        isDisabled={isManagerLoggedIn()}
                                                     />
                                                     {errors.role && <span className="error-message text-danger">{errors.role}</span>}
                                                 </div>
