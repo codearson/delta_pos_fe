@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { saveTax } from '../../../feature-module/Api/TaxApi';
+import { saveTax, getTaxByName } from '../../../feature-module/Api/TaxApi';
 import Swal from 'sweetalert2';
 import PropTypes from 'prop-types';
 
@@ -32,6 +32,12 @@ const AddSubcategory = ({ onTaxCreated }) => {
         }
 
         try {
+            const existingTax = await getTaxByName(taxPercentage);
+            if (existingTax) {
+                Swal.fire('Error', 'This tax percentage already exists', 'error');
+                return;
+            }
+
             const response = await saveTax(taxPercentage);
             if (response) {
                 Swal.fire({

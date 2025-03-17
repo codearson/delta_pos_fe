@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { saveProductCategory } from '../../../feature-module/Api/ProductCategoryApi'
+import { saveProductCategory, getProductCategoryByName } from '../../../feature-module/Api/ProductCategoryApi'
 import Swal from "sweetalert2";
 import PropTypes from 'prop-types';
 
@@ -16,6 +16,12 @@ const AddCategoryList = (props) => {
         }
 
         try {
+            const existingCategory = await getProductCategoryByName(categoryName);
+            if (existingCategory) {
+                Swal.fire("Error", "This category name already exists", "error");
+                return;
+            }
+
             const response = await saveProductCategory(categoryName);
             if (response) {         
                 document.querySelector('[data-bs-dismiss="modal"]').click();
