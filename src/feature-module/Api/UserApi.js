@@ -25,7 +25,6 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
             }
         );
 
-        // Match the actual API response structure
         return {
             payload: response.data.responseDto.payload || [],
             totalRecords: response.data.responseDto.totalRecords || 0
@@ -41,14 +40,26 @@ export const saveUser = async (userData) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            return null;
+            return {
+                errorDescription: "Authentication required. Please login again."
+            };
         }
 
         const decodedToken = decodeJwt(accessToken);
         const userRole = decodedToken?.roles[0]?.authority;
 
-        if (userRole !== "ROLE_ADMIN") {
-            return null;
+        if (userRole !== "ROLE_ADMIN" && userRole !== "ROLE_MANAGER") {
+            return {
+                errorDescription: "You don't have permission to perform this action."
+            };
+        }
+
+        if (userRole === "ROLE_MANAGER") {
+            if (!userData.branchDto || !userData.branchDto.id) {
+                return {
+                    errorDescription: "Branch is required for user registration."
+                };
+            }
         }
 
         const response = await axios.post(`${BASE_BACKEND_URL}/user/register`, userData, {
@@ -60,7 +71,12 @@ export const saveUser = async (userData) => {
 
         return response.data;
     } catch (error) {
-        return null;
+        console.error('Error saving user:', error);
+        return {
+            errorDescription: error.response?.data?.message || 
+                            error.response?.data?.errorDescription || 
+                            "An error occurred while saving the user. Please try again."
+        };
     }
 };
 
@@ -149,9 +165,9 @@ export const updatePassword = async (userId, password, changedByUserId) => {
             null,
             {
                 params: {
-                    userId: userId,                // Selected user's ID
-                    password: password,            // New password
-                    changedByUserId: changedByUserId  // Logged-in user's ID
+                    userId: userId,                
+                    password: password,            
+                    changedByUserId: changedByUserId  
                 },
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
