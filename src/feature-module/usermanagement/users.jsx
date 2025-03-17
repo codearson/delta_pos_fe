@@ -19,6 +19,7 @@ import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from "xlsx";
 import "../../style/scss/pages/_categorylist.scss";
+import { fetchBranches } from '../Api/StockApi';
 
 const Users = () => {
     const [userData, setUserData] = useState({ payload: [], totalRecords: 0 });
@@ -34,6 +35,8 @@ const Users = () => {
     const [togglingId, setTogglingId] = useState(null);
     const [selectedRole, setSelectedRole] = useState(null);
     const [roleOptions, setRoleOptions] = useState([]);
+    const [selectedBranch, setSelectedBranch] = useState(null);
+    const [branchOptions, setBranchOptions] = useState([]);
 
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
@@ -51,7 +54,7 @@ const Users = () => {
 
     const loadInitialData = async () => {
         setInitialLoading(true);
-        await Promise.all([loadUsers(true), loadUserRoles()]);
+        await Promise.all([loadUsers(true), loadUserRoles(), loadBranches()]);
         setInitialLoading(false);
     };
 
@@ -70,6 +73,20 @@ const Users = () => {
         }
     };
 
+    const loadBranches = async () => {
+        try {
+            const branches = await fetchBranches();
+            const formattedBranches = branches.map(branch => ({
+                value: branch.branchName,
+                label: branch.branchName
+            }));
+            setBranchOptions(formattedBranches);
+        } catch (error) {
+            console.error('Error loading branches:', error);
+            setBranchOptions([]);
+        }
+    };
+
     const loadUsers = async (isInitial = false) => {
         try {
             if (isInitial) {
@@ -82,7 +99,7 @@ const Users = () => {
             }));
             setUserData(result);
             setAllUsers(normalizedData);
-            filterData(normalizedData, searchTerm, selectedRole);
+            filterData(normalizedData, searchTerm, selectedRole, selectedBranch);
         } catch (error) {
             Swal.fire({
                 title: "Error!",
@@ -97,10 +114,9 @@ const Users = () => {
         }
     };
 
-    const filterData = (usersData, query, roleFilter) => {
+    const filterData = (usersData, query, roleFilter, branchFilter) => {
         let filteredData = usersData.filter(user => user.isActive === showActive);
 
-        // Apply text search
         if (query.trim() !== "") {
             filteredData = filteredData.filter(user =>
                 (user.firstName && `${user.firstName} ${user.lastName}`.toLowerCase().includes(query.toLowerCase())) ||
@@ -109,10 +125,15 @@ const Users = () => {
             );
         }
 
-        // Apply role filter
         if (roleFilter && roleFilter.value !== 'all') {
             filteredData = filteredData.filter(user =>
                 user.userRoleDto?.userRole === roleFilter.value
+            );
+        }
+
+        if (branchFilter && branchFilter.value) {
+            filteredData = filteredData.filter(user =>
+                user.branchDto?.branchName === branchFilter.value
             );
         }
 
@@ -122,12 +143,17 @@ const Users = () => {
     const handleSearch = (e) => {
         const value = e.target.value;
         setSearchTerm(value);
-        filterData(allUsers, value, selectedRole);
+        filterData(allUsers, value, selectedRole, selectedBranch);
     };
 
     const handleRoleChange = (selected) => {
         setSelectedRole(selected);
-        filterData(allUsers, searchTerm, selected);
+        filterData(allUsers, searchTerm, selected, selectedBranch);
+    };
+
+    const handleBranchChange = (selected) => {
+        setSelectedBranch(selected);
+        filterData(allUsers, searchTerm, selectedRole, selected);
     };
 
     const exportToPDF = () => {
@@ -135,13 +161,14 @@ const Users = () => {
             const doc = new jsPDF();
             doc.text(`User List (${showActive ? 'Active' : 'Inactive'})`, 14, 15);
 
-            const tableColumn = ["Name", "Phone", "Email", "Address", "Role"];
+            const tableColumn = ["Name", "Phone", "Email", "Address", "Role", "Branch"];
             const tableRows = reversedUsers.map(user => [
                 `${user.firstName} ${user.lastName}` || "",
                 user.mobileNumber || "",
                 user.emailAddress || "",
                 user.address || "",
-                user.userRoleDto?.userRole || ""
+                user.userRoleDto?.userRole || "",
+                user.branchDto?.branchName || "N/A"
             ]);
 
             autoTable(doc, {
@@ -181,14 +208,15 @@ const Users = () => {
                 "Phone": user.mobileNumber || "",
                 "Email": user.emailAddress || "",
                 "Address": user.address || "",
-                "Role": user.userRoleDto?.userRole || ""
+                "Role": user.userRoleDto?.userRole || "",
+                "Branch": user.branchDto?.branchName || "N/A"
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(worksheetData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
 
-            worksheet["!cols"] = [{ wch: 20 }, { wch: 15 }, { wch: 30 }, { wch: 25 }, { wch: 15 }];
+            worksheet["!cols"] = [{ wch: 20 }, { wch: 15 }, { wch: 30 }, { wch: 25 }, { wch: 15 }, { wch: 20 }];
 
             XLSX.writeFile(workbook, `user_list_${showActive ? 'active' : 'inactive'}.xlsx`);
         } catch (error) {
@@ -284,6 +312,20 @@ const Users = () => {
                 </span>
             ),
             sorter: (a, b) => a.userRoleDto.userRole.length - b.userRoleDto.userRole.length,
+        },
+        {
+            title: "Branch",
+            dataIndex: ["branchDto", "branchName"],
+            render: (text) => (
+                <span>
+                    {text || 'N/A'}
+                </span>
+            ),
+            sorter: (a, b) => {
+                const branchA = a.branchDto?.branchName || '';
+                const branchB = b.branchDto?.branchName || '';
+                return branchA.localeCompare(branchB);
+            },
         },
         {
             title: "Status",
@@ -459,6 +501,16 @@ const Users = () => {
                                                 isClearable
                                             />
                                         </div>
+                                        <div style={{ width: '200px' }}>
+                                            <Select
+                                                className="select"
+                                                options={branchOptions}
+                                                placeholder="Select Branch"
+                                                value={selectedBranch}
+                                                onChange={handleBranchChange}
+                                                isClearable
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -478,7 +530,9 @@ const Users = () => {
                     </div>
                 </div>
             </div>
-            <AddUsers />
+            <AddUsers onUpdate={() => {
+                loadUsers(false);
+            }} />
             <EditUser user={selectedUser} onUpdate={() => {
                 setSelectedUser(null);
                 loadUsers(false);
