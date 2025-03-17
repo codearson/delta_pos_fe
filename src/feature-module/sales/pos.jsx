@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { fetchCustomCategories, quickAccess } from "../../core/json/Posdata";
 import Header from "../components/Pos Components/Pos_Header";
 import Sidebar from "../components/Pos Components/Pos_Sidebar";
@@ -23,49 +23,35 @@ const Pos = () => {
   const [inputScreenText, setInputScreenText] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [pendingQty, setPendingQty] = useState(null);
+  const barcodeInputRef = useRef(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add("dark-mode");
-    } else {
-      document.body.classList.remove("dark-mode");
-    }
+    document.body.classList.toggle("dark-mode", darkMode);
   }, [darkMode]);
 
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
     localStorage.setItem("theme", newMode ? "dark" : "light");
-    document.body.classList.toggle("dark-mode", newMode);
   };
 
-  const handleTabChange = (newTab) => {
-    setActiveTab(newTab);
-  };
+  const handleTabChange = (newTab) => setActiveTab(newTab);
 
   const handleCategorySelect = (category) => {
-    if (activeTab === "category") {
-      if (!category || !category.name) {
-        return;
-      }
-      if (!currentItem && inputStage === "qty" && inputValue !== "0" && inputValue !== "") {
-        const qty = parseFloat(inputValue) || 1;
-        setCurrentItem({ name: category.name, qty, price: null, total: null });
-        setHasCategory(true);
-        setInputValue("0");
-        setInputScreenText(`${qty}`);
-      } else if (currentItem && inputStage === "qty") {
-        setCurrentItem({ ...currentItem, name: category.name });
-        setHasCategory(true);
-        setInputScreenText(`${currentItem.qty}`);
-      }
+    if (activeTab === "category" && category?.name) {
+      const qty = pendingQty && inputStage === "price" ? pendingQty : 1;
+      setCurrentItem({ name: category.name, qty, price: null, total: null });
+      setHasCategory(true);
+      setInputStage("price");
+      setInputValue("0");
+      setInputScreenText(`${qty} ×`);
+      setPendingQty(null);
     }
   };
 
@@ -84,27 +70,31 @@ const Pos = () => {
           setInputValue("0");
           setInputScreenText(`${currentItem.qty}`);
         } else if (hasCategory) {
-          setCurrentItem({ ...currentItem, name: "Undefined Item" });
+          setCurrentItem({ ...currentItem, name: null });
           setHasCategory(false);
           setInputStage("qty");
           setInputValue("0");
           setInputScreenText(`${currentItem.qty}`);
-        } else if (currentItem.qty !== null) {
+        } else if (currentItem?.qty !== null) {
           setCurrentItem(null);
           setInputStage("qty");
           setInputValue("0");
           setInputScreenText("");
+          setPendingQty(null);
         }
       } else if (selectedItems.length > 0) {
         const newItems = selectedItems.slice(0, -1);
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+        setPendingQty(null);
       } else {
         setInputValue("0");
         setTotalValue(0);
         setInputStage("qty");
         setInputScreenText("");
+        setPendingQty(null);
       }
+      barcodeInputRef.current?.focus();
     } else if (type === "number") {
       let newInput = inputValue === "0" && value !== "." ? value.toString() : inputValue + value.toString();
       const parts = newInput.split(".");
@@ -115,38 +105,29 @@ const Pos = () => {
         if (value === "." && decPart) return;
         if (inputStage === "qty") {
           const qty = parseFloat(newInput) || 1;
-          setCurrentItem({ qty, name: currentItem?.name || "Undefined Item", price: currentItem?.price || null, total: null });
-          setInputScreenText(`${newInput}`);
+          if (!currentItem || !currentItem.name) {
+            setCurrentItem({ qty, name: null, price: null, total: null });
+          }
+          setInputScreenText(newInput);
           setInputValue(newInput);
         } else if (inputStage === "price" && currentItem && hasCategory) {
           const price = parseFloat(newInput) || 0;
-          setCurrentItem({ ...currentItem, price, total: null });
+          const total = currentItem.qty * price;
+          setCurrentItem({ ...currentItem, price, total });
           setInputScreenText(`${currentItem.qty} × ${newInput}`);
           setInputValue(newInput);
-        } else {
-          return;
         }
       }
     } else if (type === "multiply") {
-      if (currentItem && currentItem.qty !== null && inputStage === "qty" && hasCategory) {
+      if (inputValue !== "0" && inputStage === "qty") {
+        const qty = parseFloat(inputValue) || 1;
+        setPendingQty(qty);
         setInputStage("price");
         setInputValue("0");
-        setInputScreenText(`${currentItem.qty} ×`);
+        setInputScreenText(`${qty} ×`);
       }
     } else if (type === "enter") {
-      if (currentItem && inputStage === "price" && hasCategory && currentItem.name && currentItem.price !== null) {
-        const price = parseFloat(inputValue) || 0;
-        const total = currentItem.qty * price;
-        const newItem = { name: currentItem.name, qty: currentItem.qty, price, total };
-        const newItems = [...selectedItems, newItem];
-        setSelectedItems(newItems);
-        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        setCurrentItem(null);
-        setHasCategory(false);
-        setInputStage("qty");
-        setInputValue("0");
-        setInputScreenText("");
-      } else if (currentItem && inputStage === "qty" && hasCategory && currentItem.price !== null) {
+      if (currentItem && currentItem.name && currentItem.price !== null) {
         const total = currentItem.qty * currentItem.price;
         const newItem = { name: currentItem.name, qty: currentItem.qty, price: currentItem.price, total };
         const newItems = [...selectedItems, newItem];
@@ -157,61 +138,96 @@ const Pos = () => {
         setInputStage("qty");
         setInputValue("0");
         setInputScreenText("");
+        setPendingQty(null);
+        barcodeInputRef.current?.focus();
       }
     }
   };
 
   const handleBarcodeSearch = async (barcode) => {
-    if (barcode.length < 3) return;
+    console.log("handleBarcodeSearch called", { barcode, inputStage, inputValue, pendingQty, currentItem });
+
+    if (barcode.length < 3) {
+      console.log("Barcode too short, skipping");
+      return;
+    }
 
     try {
       const product = await getProductByBarcode(barcode);
-
-      if (product && product.responseDto && product.responseDto.length > 0) {
-        const productData = product.responseDto[0];
-        const { name, pricePerUnit } = productData;
-        if (name && pricePerUnit !== undefined) {
-          setCurrentItem({
-            name,
-            qty: null,
-            price: pricePerUnit,
-            total: null,
-          });
-          setHasCategory(true);
-          setInputStage("qty");
-          setInputValue("");
-          setInputScreenText("");
-          setBarcodeInput("");
-        } else {
-          setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-          setHasCategory(false);
-          setBarcodeInput("");
-        }
-      } else {
+      console.log("API response:", product);
+      if (!product || !product.responseDto || product.responseDto.length === 0) {
+        console.log("No product found");
         setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-        setHasCategory(false);
+        setInputScreenText("");
         setBarcodeInput("");
+        setInputValue("0");
+        barcodeInputRef.current?.focus();
+        return;
+      }
+
+      const productData = product.responseDto[0];
+      const { name, pricePerUnit } = productData;
+      if (!name || pricePerUnit === undefined) {
+        console.log("Invalid product data");
+        setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
+        setInputScreenText("");
+        setBarcodeInput("");
+        setInputValue("0");
+        barcodeInputRef.current?.focus();
+        return;
+      }
+
+      if (inputStage === "price" && pendingQty) {
+        // Number + "×" + Scan: Add to selectedItems with pendingQty
+        const qty = pendingQty;
+        const total = qty * pricePerUnit;
+        const newItem = { name, qty, price: pricePerUnit, total };
+        const newItems = [...selectedItems, newItem];
+        setSelectedItems(newItems);
+        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+        setInputStage("qty");
+        setInputValue("0");
+        setInputScreenText("");
+        setBarcodeInput("");
+        setPendingQty(null);
+        barcodeInputRef.current?.focus();
+        console.log("Added to selectedItems with pendingQty:", newItem);
+      } else if (inputStage === "qty") {
+        // Plain Scan: Add to selectedItems with qty 1, update total, no Enter needed
+        const qty = 1;
+        const total = qty * pricePerUnit;
+        const newItem = { name, qty, price: pricePerUnit, total };
+        const newItems = [...selectedItems, newItem];
+        setSelectedItems(newItems);
+        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+        setCurrentItem(null); // Clear currentItem since it's added
+        setInputScreenText("1"); // Briefly show qty
+        setBarcodeInput(""); // Clear barcode input
+        setInputValue("0");
+        setTimeout(() => {
+          setInputScreenText(""); // Clear screen after a short delay
+          console.log("inputScreenText cleared");
+        }, 500);
+        barcodeInputRef.current?.focus();
+        console.log("Added to selectedItems with qty 1:", newItem);
       }
     } catch (error) {
+      console.error("Barcode fetch error:", error);
       setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-      setHasCategory(false);
+      setInputScreenText("");
       setBarcodeInput("");
+      setInputValue("0");
+      barcodeInputRef.current?.focus();
     }
   };
 
-  const handleCustomerAdded = (name) => {
-    setCustomerName(name);
-  };
+  const handleCustomerAdded = (name) => setCustomerName(name);
 
   return (
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <Sidebar darkMode={darkMode} />
       <div className="main-content">
-        <Header
-          currentTime={currentTime}
-          darkMode={darkMode}
-          toggleDarkMode={toggleDarkMode}
-        />
+        <Header currentTime={currentTime} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         <div className="content">
           <div className="grid-container">
             <Pos_Calculator
@@ -224,13 +240,10 @@ const Pos = () => {
               barcodeInput={barcodeInput}
               setBarcodeInput={setBarcodeInput}
               customerName={customerName}
+              barcodeInputRef={barcodeInputRef}
             />
             <div className="category-section">
-              <CategoryTabs
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                darkMode={darkMode}
-              />
+              <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
               <CategoryGrid
                 items={activeTab === "category" ? fetchCustomCategories : quickAccess}
                 onCategorySelect={handleCategorySelect}
