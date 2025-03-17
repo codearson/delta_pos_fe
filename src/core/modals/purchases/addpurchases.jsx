@@ -1,207 +1,133 @@
-import { DatePicker } from 'antd';
-import { PlusCircle } from 'feather-icons-react/build/IconComponents';
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
-import Select from 'react-select'
-import TextEditor from '../../../feature-module/inventory/texteditor';
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { fetchProducts } from "../../../feature-module/Api/productApi";
 
-const AddPurchases = () => {
+const AddPurchases = ({ onSave, purchases = [] }) => {
+  const initialFormState = {
+    barcode: "",
+  };
 
-    const status = [
-        { value: 'choose', label: 'Choose' },
-        { value: 'received', label: 'Received' },
-        { value: 'pending', label: 'Pending' },
-    ];
-    const productlist = [
-        { value: 'choose', label: 'Choose' },
-        { value: 'Shoe', label: 'Shoe' },
-        { value: 'Mobile', label: 'Mobile' },
-    ];
-    const customers = [
-        { value: 'Select Customer', label: 'Select Customer' },
-        { value: 'Apex Computers', label: 'Apex Computers' },
-        { value: 'Dazzle Shoes', label: 'Dazzle Shoes' },
-        { value: 'Best Accessories', label: 'Best Accessories' },
-    ];
+  const [formData, setFormData] = useState(initialFormState);
+  const [errors, setErrors] = useState({});
+  const [productName, setProductName] = useState("");
+  const [isLoadingProduct, setIsLoadingProduct] = useState(false);
+  const [products, setProducts] = useState([]);
 
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const handleDateChange = (date) => {
-        setSelectedDate(date);
+  useEffect(() => {
+    const loadProducts = async () => {
+      setIsLoadingProduct(true);
+      try {
+        const productList = await fetchProducts();
+        setProducts(productList || []);
+      } catch (error) {
+        setProductName("Error fetching products");
+      } finally {
+        setIsLoadingProduct(false);
+      }
     };
+    loadProducts();
+  }, []);
 
-    return (
-        <div>
-            {/* Add Purchase */}
-            <div className="modal fade" id="add-units">
-                <div className="modal-dialog purchase modal-dialog-centered stock-adjust-modal">
-                    <div className="modal-content">
-                        <div className="page-wrapper-new p-0">
-                            <div className="content">
-                                <div className="modal-header border-0 custom-modal-header">
-                                    <div className="page-title">
-                                        <h4>Add Purchase</h4>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="close"
-                                        data-bs-dismiss="modal"
-                                        aria-label="Close"
-                                    >
-                                        <span aria-hidden="true">×</span>
-                                    </button>
-                                </div>
-                                <div className="modal-body custom-modal-body">
-                                    <form>
-                                        <div className="row">
-                                            <div className="col-lg-3 col-md-6 col-sm-12">
-                                                <div className="input-blocks add-product">
-                                                    <label>Supplier Name</label>
-                                                    <div className="row">
-                                                        <div className="col-lg-10 col-sm-10 col-10">
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.barcode.trim()) {
+      newErrors.barcode = "Barcode is required";
+    } else if (purchases && purchases.some((purchase) => purchase.barcode === formData.barcode)) {
+      newErrors.barcode = "This barcode is already added to the purchase list";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-                                                            <Select options={customers} className="select" placeholder="Choose" />
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
 
-                                                        </div>
-                                                        <div className="col-lg-2 col-sm-2 col-2 ps-0">
-                                                            <div className="add-icon tab">
-                                                                <Link to="#">
-                                                                    <PlusCircle className="feather-plus-circles"/>
-                                                                </Link>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="col-lg-3 col-md-6 col-sm-12">
-                                                <div className="input-blocks">
-                                                    <label>Purchase Date</label>
-                                                    <div className="input-groupicon calender-input">
-                                                        <DatePicker
-                                                        selected={selectedDate}
-                                                        onChange={handleDateChange}
-                                                        type="date"
-                                                        className="filterdatepicker"
-                                                        dateFormat="dd-MM-yyyy"
-                                                        placeholder='Choose Date'
-                                                    />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="col-lg-3 col-md-6 col-sm-12">
-                                                <div className="input-blocks">
-                                                    <label>Product Name</label>
-                                                    <Select options={productlist} className="select" placeholder="Choose" />
+    if (name === "barcode" && value.trim()) {
+      const matchingProduct = products.find(
+        (product) => product.barcode === value && product.isActive === true
+      );
+      if (matchingProduct && matchingProduct.name) {
+        setProductName(matchingProduct.name);
+      } else {
+        setProductName("Product not found or inactive");
+      }
+    } else {
+      setProductName("");
+    }
+  };
 
-                                                </div>
-                                            </div>
-                                            <div className="col-lg-3 col-md-6 col-sm-12">
-                                                <div className="input-blocks">
-                                                    <label>Reference No</label>
-                                                    <input type="text" className="form-control" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="row">
-                                            <div className="col-lg-12">
-                                                <div className="input-blocks">
-                                                    <label>Product Name</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Please type product code and select"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="col-lg-12">
-                                                <div className="modal-body-table">
-                                                    <div className="table-responsive">
-                                                        <table className="table  datanew">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Product</th>
-                                                                    <th>Qty</th>
-                                                                    <th>Purchase Price($)</th>
-                                                                    <th>Discount($)</th>
-                                                                    <th>Tax(%)</th>
-                                                                    <th>Tax Amount($)</th>
-                                                                    <th>Unit Cost($)</th>
-                                                                    <th>Total Cost(%)</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <tr>
-                                                                    <td className="p-5" />
-                                                                    <td className="p-5" />
-                                                                    <td className="p-5" />
-                                                                    <td className="p-5" />
-                                                                    <td className="p-5" />
-                                                                    <td className="p-5" />
-                                                                    <td className="p-5" />
-                                                                    <td className="p-5" />
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="row">
-                                                <div className="col-lg-3 col-md-6 col-sm-12">
-                                                    <div className="input-blocks">
-                                                        <label>Order Tax</label>
-                                                        <input type="text" defaultValue={0} />
-                                                    </div>
-                                                </div>
-                                                <div className="col-lg-3 col-md-6 col-sm-12">
-                                                    <div className="input-blocks">
-                                                        <label>Discount</label>
-                                                        <input type="text" defaultValue={0} />
-                                                    </div>
-                                                </div>
-                                                <div className="col-lg-3 col-md-6 col-sm-12">
-                                                    <div className="input-blocks">
-                                                        <label>Shipping</label>
-                                                        <input type="text" defaultValue={0} />
-                                                    </div>
-                                                </div>
-                                                <div className="col-lg-3 col-md-6 col-sm-12">
-                                                    <div className="input-blocks">
-                                                        <label>Status</label>
-                                                        <Select options={status} className="select" placeholder="Choose" />
+  const handleAddSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onSave(formData);
+      setFormData(initialFormState);
+      setErrors({});
+      setProductName("");
+      document.querySelector("#add-units .close").click();
+    }
+  };
 
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-12">
-                                            <div className="input-blocks summer-description-box">
-                                                <label>Notes</label>
-                                                <div id="summernote" />
-                                                <TextEditor />
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-12">
-                                            <div className="modal-footer-btn">
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-cancel me-2"
-                                                    data-bs-dismiss="modal"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <Link to="#" className="btn btn-submit">
-                                                    Submit
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+  return (
+    <div>
+      <div className="modal fade" id="add-units" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div className="modal-dialog modal-dialog-centered custom-modal-two">
+          <div className="modal-content">
+            <div className="modal-header border-0 custom-modal-header">
+              <h4 className="page-title">Add Purchase</h4>
+              <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">×</span>
+              </button>
             </div>
-            {/* /Add Purchase */}
+            <div className="modal-body custom-modal-body">
+              <form onSubmit={handleAddSubmit}>
+                <div className="row">
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Barcode <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="barcode"
+                        value={formData.barcode}
+                        onChange={handleChange}
+                        className="form-control"
+                      />
+                      {errors.barcode && <span className="text-danger">{errors.barcode}</span>}
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Product Name</label>
+                      <p className="form-control-static">
+                        {isLoadingProduct ? "Loading..." : productName || "Enter a barcode to see product name"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer-btn">
+                  <button type="button" className="btn btn-cancel me-2" data-bs-dismiss="modal">
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-submit">
+                    Submit
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
-    )
-}
+      </div>
+    </div>
+  );
+};
 
-export default AddPurchases
+AddPurchases.propTypes = {
+  onSave: PropTypes.func.isRequired,
+  purchases: PropTypes.array,
+};
+
+AddPurchases.defaultProps = {
+  purchases: [],
+};
+
+export default AddPurchases;
