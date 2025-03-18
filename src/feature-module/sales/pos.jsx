@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { fetchCustomCategories, quickAccess } from "../../core/json/Posdata";
 import Header from "../components/Pos Components/Pos_Header";
 import Sidebar from "../components/Pos Components/Pos_Sidebar";
@@ -9,6 +9,8 @@ import Numpad from "../components/Pos Components/Pos_Numpad";
 import PaymentButtons from "../components/Pos Components/Pos_Payment";
 import FunctionButtons from "../components/Pos Components/Pos_Function";
 import { getProductByBarcode } from "../Api/productApi";
+import { saveTransaction } from "../Api/TransactionApi";
+import { fetchCustomers } from "../Api/customerApi";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -18,53 +20,66 @@ const Pos = () => {
   const [currentItem, setCurrentItem] = useState(null);
   const [inputValue, setInputValue] = useState("0");
   const [inputStage, setInputStage] = useState("qty");
-  const [hasCategory, setHasCategory] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
   const [inputScreenText, setInputScreenText] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [pendingQty, setPendingQty] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [balance, setBalance] = useState(0);
+  const [isPaymentStarted, setIsPaymentStarted] = useState(false);
+  const [selectedRowIndex, setSelectedRowIndex] = useState(null);
+  const [showBillPopup, setShowBillPopup] = useState(false);
+  const barcodeInputRef = useRef(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add("dark-mode");
-    } else {
-      document.body.classList.remove("dark-mode");
-    }
+    document.body.classList.toggle("dark-mode", darkMode);
   }, [darkMode]);
+
+  useEffect(() => {
+    const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+    const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+    const newBalance = totalPaid - currentTotal;
+    setBalance(newBalance);
+
+    if (isPaymentStarted && newBalance >= 0 && selectedItems.length > 0) {
+      handleSaveTransaction();
+    }
+  }, [selectedItems, paymentMethods, isPaymentStarted]);
 
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
     localStorage.setItem("theme", newMode ? "dark" : "light");
-    document.body.classList.toggle("dark-mode", newMode);
   };
 
-  const handleTabChange = (newTab) => {
-    setActiveTab(newTab);
-  };
+  const handleTabChange = (newTab) => setActiveTab(newTab);
 
   const handleCategorySelect = (category) => {
-    if (activeTab === "category") {
-      if (!category || !category.name) {
-        return;
-      }
-      if (!currentItem && inputStage === "qty" && inputValue !== "0" && inputValue !== "") {
-        const qty = parseFloat(inputValue) || 1;
-        setCurrentItem({ name: category.name, qty, price: null, total: null });
-        setHasCategory(true);
+    if (isPaymentStarted) {
+      alert("Cannot add items after payment has started. Please complete or reset the transaction.");
+      return;
+    }
+    if (activeTab === "category" && category?.name) {
+      const qty = pendingQty || 1;
+      const price = inputStage === "price" && inputValue !== "0" ? parseFloat(inputValue) : null;
+      if (price) {
+        const total = qty * price;
+        const newItem = { id: category.id, name: category.name, qty, price, total };
+        const newItems = [...selectedItems, newItem];
+        setSelectedItems(newItems);
+        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+        resetInput();
+      } else {
+        setCurrentItem({ id: category.id, name: category.name, qty, price: null, total: null });
+        setInputStage("price");
         setInputValue("0");
-        setInputScreenText(`${qty}`);
-      } else if (currentItem && inputStage === "qty") {
-        setCurrentItem({ ...currentItem, name: category.name });
-        setHasCategory(true);
-        setInputScreenText(`${currentItem.qty}`);
+        setInputScreenText(`${qty} ×`);
       }
     }
   };
@@ -73,134 +88,203 @@ const Pos = () => {
     const { type, value } = action;
 
     if (type === "clear") {
-      if (currentItem) {
-        if (currentItem.price !== null) {
-          setCurrentItem({ ...currentItem, price: null, total: null });
-          setInputStage("price");
-          setInputValue("0");
-          setInputScreenText(`${currentItem.qty} ×`);
-        } else if (inputStage === "price" && hasCategory) {
-          setInputStage("qty");
-          setInputValue("0");
-          setInputScreenText(`${currentItem.qty}`);
-        } else if (hasCategory) {
-          setCurrentItem({ ...currentItem, name: "Undefined Item" });
-          setHasCategory(false);
-          setInputStage("qty");
-          setInputValue("0");
-          setInputScreenText(`${currentItem.qty}`);
-        } else if (currentItem.qty !== null) {
-          setCurrentItem(null);
-          setInputStage("qty");
-          setInputValue("0");
-          setInputScreenText("");
-        }
-      } else if (selectedItems.length > 0) {
-        const newItems = selectedItems.slice(0, -1);
-        setSelectedItems(newItems);
-        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-      } else {
-        setInputValue("0");
-        setTotalValue(0);
-        setInputStage("qty");
-        setInputScreenText("");
-      }
+      setInputScreenText("");
+      setInputValue("0");
+      setInputStage("qty");
+      setCurrentItem(null);
+      setPendingQty(null);
+      setBarcodeInput("");
+      setSelectedRowIndex(null);
+      barcodeInputRef.current?.focus();
     } else if (type === "number") {
       let newInput = inputValue === "0" && value !== "." ? value.toString() : inputValue + value.toString();
       const parts = newInput.split(".");
-      const numPart = parts[0] || "0";
       const decPart = parts[1] || "";
 
-      if (numPart.length <= 5 && (decPart.length <= 2 || !decPart)) {
-        if (value === "." && decPart) return;
+      if (decPart.length <= 2 || !decPart) {
+        if (value === "." && inputValue.includes(".")) return;
         if (inputStage === "qty") {
-          const qty = parseFloat(newInput) || 1;
-          setCurrentItem({ qty, name: currentItem?.name || "Undefined Item", price: currentItem?.price || null, total: null });
-          setInputScreenText(`${newInput}`);
+          setInputScreenText(newInput);
           setInputValue(newInput);
-        } else if (inputStage === "price" && currentItem && hasCategory) {
-          const price = parseFloat(newInput) || 0;
-          setCurrentItem({ ...currentItem, price, total: null });
-          setInputScreenText(`${currentItem.qty} × ${newInput}`);
+        } else if (inputStage === "price") {
+          setInputScreenText(`${pendingQty || 1} × ${newInput}`);
           setInputValue(newInput);
-        } else {
-          return;
         }
       }
     } else if (type === "multiply") {
-      if (currentItem && currentItem.qty !== null && inputStage === "qty" && hasCategory) {
+      if (inputValue !== "0" && inputStage === "qty") {
+        const qty = parseFloat(inputValue) || 1;
+        setPendingQty(qty);
         setInputStage("price");
         setInputValue("0");
-        setInputScreenText(`${currentItem.qty} ×`);
+        setInputScreenText(`${qty} × `);
       }
     } else if (type === "enter") {
-      if (currentItem && inputStage === "price" && hasCategory && currentItem.name && currentItem.price !== null) {
-        const price = parseFloat(inputValue) || 0;
-        const total = currentItem.qty * price;
-        const newItem = { name: currentItem.name, qty: currentItem.qty, price, total };
-        const newItems = [...selectedItems, newItem];
-        setSelectedItems(newItems);
-        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        setCurrentItem(null);
-        setHasCategory(false);
-        setInputStage("qty");
-        setInputValue("0");
-        setInputScreenText("");
-      } else if (currentItem && inputStage === "qty" && hasCategory && currentItem.price !== null) {
+      if (currentItem && currentItem.name && currentItem.price !== null) {
         const total = currentItem.qty * currentItem.price;
-        const newItem = { name: currentItem.name, qty: currentItem.qty, price: currentItem.price, total };
+        const newItem = { ...currentItem, total };
         const newItems = [...selectedItems, newItem];
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        setCurrentItem(null);
-        setHasCategory(false);
-        setInputStage("qty");
-        setInputValue("0");
-        setInputScreenText("");
+        resetInput();
       }
     }
   };
 
   const handleBarcodeSearch = async (barcode) => {
+    if (isPaymentStarted) {
+      alert("Cannot add items after payment has started. Please complete or reset the transaction.");
+      return;
+    }
     if (barcode.length < 3) return;
 
     try {
       const product = await getProductByBarcode(barcode);
-
-      if (product && product.responseDto && product.responseDto.length > 0) {
-        const productData = product.responseDto[0];
-        const { name, pricePerUnit } = productData;
-        if (name && pricePerUnit !== undefined) {
-          setCurrentItem({
-            name,
-            qty: null,
-            price: pricePerUnit,
-            total: null,
-          });
-          setHasCategory(true);
-          setInputStage("qty");
-          setInputValue("");
-          setInputScreenText("");
-          setBarcodeInput("");
-        } else {
-          setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-          setHasCategory(false);
-          setBarcodeInput("");
-        }
-      } else {
-        setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-        setHasCategory(false);
-        setBarcodeInput("");
+      if (!product || !product.responseDto || product.responseDto.length === 0) {
+        resetInput();
+        return;
       }
+
+      const productData = product.responseDto[0];
+      const { id, name, pricePerUnit, quantity } = productData;
+      if (!name || pricePerUnit === undefined || quantity === undefined) {
+        resetInput();
+        return;
+      }
+
+      const qty = inputStage === "price" && pendingQty ? pendingQty : 1;
+      if (inputStage === "price" && inputValue !== "0") {
+        alert("Invalid Qty: Cannot set custom price for barcoded items");
+        resetInput();
+        return;
+      }
+
+      // Check stock availability
+      if (qty > quantity) {
+        alert(`Insufficient stock for ${name}. Available: ${quantity}, Requested: ${qty}`);
+        resetInput();
+        return;
+      }
+
+      const total = qty * pricePerUnit;
+      const newItem = { id, name, qty, price: pricePerUnit, total };
+      const newItems = [...selectedItems, newItem];
+      setSelectedItems(newItems);
+      setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+      resetInput();
     } catch (error) {
-      setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-      setHasCategory(false);
-      setBarcodeInput("");
+      resetInput();
     }
   };
 
-  const handleCustomerAdded = (name) => {
-    setCustomerName(name);
+  const resetInput = () => {
+    setCurrentItem(null);
+    setInputStage("qty");
+    setInputValue("0");
+    setInputScreenText("");
+    setBarcodeInput("");
+    setPendingQty(null);
+    barcodeInputRef.current?.focus();
+  };
+
+  const handleRowSelect = (index) => {
+    if (selectedRowIndex === index) {
+      setSelectedRowIndex(null);
+    } else {
+      setSelectedRowIndex(index);
+    }
+  };
+
+  const handleVoidLine = () => {
+    if (selectedRowIndex === null) {
+      alert("Please select a row to void.");
+      return;
+    }
+    if (isPaymentStarted) {
+      alert("Cannot void items after payment has started.");
+      return;
+    }
+    const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
+    setSelectedItems(newItems);
+    setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+    setSelectedRowIndex(null);
+  };
+
+  const handleVoidAll = () => {
+    if (isPaymentStarted) {
+      alert("Cannot void all items after payment has started.");
+      return;
+    }
+    setSelectedItems([]);
+    setTotalValue(0);
+    setSelectedRowIndex(null);
+  };
+
+  const handleCustomerAdded = (name) => setCustomerName(name);
+
+  const handleSaveTransaction = async () => {
+    const userIdRaw = localStorage.getItem("userId");
+    const branchIdRaw = localStorage.getItem("branchId");
+
+    const userId = !isNaN(parseInt(userIdRaw)) ? parseInt(userIdRaw) : 1;
+    const branchId = !isNaN(parseInt(branchIdRaw)) ? parseInt(branchIdRaw) : 3;
+
+    let customerId = 1;
+    if (customerName) {
+      const customers = await fetchCustomers();
+      const customer = customers.find(
+        (c) => c.name === customerName && c.isActive === true
+      );
+      if (customer) {
+        customerId = customer.id;
+      }
+
+    }
+
+    const transactionData = {
+      status: "Completed",
+      isActive: 1,
+      totalAmount: totalValue,
+      branchDto: { id: branchId },
+      shopDetailsDto: { id: 1 },
+      customerDto: { id: customerId },
+      userDto: { id: userId },
+      transactionDetailsList: selectedItems.map((item) => ({
+        productDto: { id: item.id },
+        quantity: item.qty,
+        unitPrice: item.price,
+        discount: 0.00,
+      })),
+      transactionPaymentMethod: paymentMethods.map((method) => ({
+        paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
+        amount: method.amount,
+        isActive: 1,
+      })),
+    };
+
+
+    const result = await saveTransaction(transactionData);
+    if (result.success) {
+      setShowBillPopup(true);
+    } else {
+      alert("Failed to save transaction: " + result.error);
+    }
+  };
+
+  const handlePrintBill = () => {
+    window.print();
+  };
+
+  const handleClosePopup = () => {
+    setShowBillPopup(false);
+    setSelectedItems([]);
+    setTotalValue(0);
+    setPaymentMethods([]);
+    setBalance(0);
+    setIsPaymentStarted(false);
+    setSelectedRowIndex(null);
+    setCustomerName("");
+    resetInput();
   };
 
   return (
@@ -218,32 +302,91 @@ const Pos = () => {
             <Pos_Calculator
               darkMode={darkMode}
               selectedItems={selectedItems}
-              currentItem={currentItem}
               totalValue={totalValue}
               inputScreenText={inputScreenText}
               onBarcodeSearch={handleBarcodeSearch}
               barcodeInput={barcodeInput}
               setBarcodeInput={setBarcodeInput}
               customerName={customerName}
+              barcodeInputRef={barcodeInputRef}
+              paymentMethods={paymentMethods}
+              balance={balance}
+              selectedRowIndex={selectedRowIndex}
+              onRowSelect={handleRowSelect}
             />
             <div className="category-section">
-              <CategoryTabs
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                darkMode={darkMode}
-              />
+              <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
               <CategoryGrid
                 items={activeTab === "category" ? fetchCustomCategories : quickAccess}
                 onCategorySelect={handleCategorySelect}
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
-                <PaymentButtons />
-                <FunctionButtons activeTab={activeTab} />
+                <PaymentButtons
+                  inputValue={inputValue}
+                  resetInput={resetInput}
+                  setPaymentMethods={setPaymentMethods}
+                  totalValue={totalValue}
+                  setBalance={setBalance}
+                  setIsPaymentStarted={setIsPaymentStarted}
+                />
+                <FunctionButtons
+                  onVoidLine={handleVoidLine}
+                  onVoidAll={handleVoidAll}
+                />
               </div>
             </div>
           </div>
         </div>
+
+        {showBillPopup && (
+          <div className="bill-popup-overlay">
+            <div className="bill-popup">
+              <div className="bill-content">
+                <h2>Transaction Receipt</h2>
+                <p>Date: {currentTime.toLocaleString()}</p>
+                {customerName && <p>Customer: {customerName}</p>}
+                <table className="bill-table">
+                  <thead>
+                    <tr>
+                      <th>Qty</th>
+                      <th>Item</th>
+                      <th>Price</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedItems.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.qty}</td>
+                        <td>{item.name}</td>
+                        <td>{item.price.toFixed(2)}</td>
+                        <td>{item.total.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="bill-summary">
+                  <p>Grand Total: {totalValue.toFixed(2)}</p>
+                  {paymentMethods.map((method, index) => (
+                    <p key={index}>
+                      {method.type}: {method.amount.toFixed(2)}
+                    </p>
+                  ))}
+                  <p>Balance: {balance.toFixed(2)}</p>
+                </div>
+              </div>
+              <div className="bill-actions">
+                <button onClick={handlePrintBill} className="print-btn">
+                  Print Bill
+                </button>
+                <button onClick={handleClosePopup} className="close-btn">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -75,6 +75,8 @@ const Signin = () => {
       localStorage.setItem("firstName", user.firstName || "");
       localStorage.setItem("lastName", user.lastName || "");
       localStorage.setItem("userRole", user.userRoleDto?.userRole || "");
+      localStorage.setItem("userId", user.id ? String(user.id) : "1");
+      localStorage.setItem("branchId", user.branchDto?.id ? String(user.branchDto.id) : "3");
 
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
@@ -165,13 +167,6 @@ const Signin = () => {
                   <div className="row">
                   {error && <p className="text-danger text-center mb-3">{error}</p>}
                     <div className="col-12 d-flex align-items-center justify-content-between">
-                      {/* <div className="custom-control custom-checkbox">
-                        <label className="checkboxs ps-4 mb-0 pb-0 line-height-1">
-                          <input type="checkbox" className="form-control" />
-                          <span className="checkmarks" />
-                          Remember me
-                        </label>
-                      </div>  */}
                       <div className="text-end">
                         <Link className="forgot-link" to={route.forgotPassword}>
                           Forgot Password?
@@ -189,47 +184,6 @@ const Signin = () => {
                     {isLoading ? "Signing In..." : "Sign In"}
                   </button>
                 </div>
-                {/* <div className="signinform">
-                  <h4>
-                    New on our platform?
-                    <Link to={route.register} className="hover-a">
-                      {" "}
-                      Create an account
-                    </Link>
-                  </h4>
-                </div> */}
-                {/* <div className="form-setlogin or-text">
-                  <h4>OR</h4>
-                </div>
-                <div className="form-sociallink">
-                  <ul className="d-flex">
-                    <li>
-                      <Link to="#" className="facebook-logo">
-                        <ImageWithBasePath
-                          src="assets/img/icons/facebook-logo.svg"
-                          alt="Facebook"
-                        />
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="#">
-                        <ImageWithBasePath
-                          src="assets/img/icons/google.png"
-                          alt="Google"
-                        />
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="#" className="apple-logo">
-                        <ImageWithBasePath
-                          src="assets/img/icons/apple-logo.svg"
-                          alt="Apple"
-                        />
-                      </Link>
-                    </li>
-                  </ul>
-                  
-                </div> */}
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
                   <p>Copyright © 2025 Codearson POS. All rights reserved</p>
                 </div>
