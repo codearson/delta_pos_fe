@@ -17,7 +17,7 @@ import { setToogleHeader } from "../../core/redux/action";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { saveProduct } from "../Api/productApi";
+import { saveProduct, getProductByName, getProductByBarcode } from "../Api/productApi";
 import { fetchProductCategories } from "../Api/ProductCategoryApi";
 import { fetchTaxes } from "../Api/TaxApi";
 
@@ -204,6 +204,34 @@ const AddProduct = () => {
     }
 
     try {
+      const existingProductByName = await getProductByName(productName);
+      if (existingProductByName && existingProductByName.responseDto) {
+        MySwal.fire({
+          title: "Error!",
+          text: "A product with this name already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton: "btn btn-primary",
+          },
+        });
+        return;
+      }
+
+      const existingProductByBarcode = await getProductByBarcode(barcode);
+      if (existingProductByBarcode && existingProductByBarcode.responseDto) {
+        MySwal.fire({
+          title: "Error!",
+          text: "A product with this barcode already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton: "btn btn-primary",
+          },
+        });
+        return;
+      }
+
       const productData = {
         name: productName,
         barcode: barcode,
