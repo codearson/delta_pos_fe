@@ -2,7 +2,7 @@ import React from "react";
 import "../../../style/scss/components/Pos Components/Pos_Function.scss";
 import PropTypes from "prop-types";
 
-const Pos_Function = ({ onVoidLine, onVoidAll, onPrintLastBill }) => {
+const Pos_Function = ({ onVoidLine, onVoidAll, onPrintLastBill, onPriceCheck }) => {
   return (
     <div className="col-span-4 grid grid-cols-2 gap-1 h-full">
       <button
@@ -17,7 +17,10 @@ const Pos_Function = ({ onVoidLine, onVoidAll, onPrintLastBill }) => {
       >
         Void All
       </button>
-      <button className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 rounded-lg text-xs font-bold transition-colors shadow-md hover:shadow-lg">
+      <button
+        className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 rounded-lg text-xs font-bold transition-colors shadow-md hover:shadow-lg"
+        onClick={onPriceCheck}
+      >
         Price Check
       </button>
       <button
@@ -40,6 +43,7 @@ Pos_Function.propTypes = {
   onVoidLine: PropTypes.func.isRequired,
   onVoidAll: PropTypes.func.isRequired,
   onPrintLastBill: PropTypes.func.isRequired,
+  onPriceCheck: PropTypes.func.isRequired,
 };
 
 export default Pos_Function;

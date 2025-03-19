@@ -8,8 +8,9 @@ import CategoryGrid from "../components/Pos Components/Pos_CategoryGrid";
 import Numpad from "../components/Pos Components/Pos_Numpad";
 import PaymentButtons from "../components/Pos Components/Pos_Payment";
 import FunctionButtons from "../components/Pos Components/Pos_Function";
+import PriceCheckPopup from "../components/Pos Components/PriceCheckPopup";
 import { getProductByBarcode } from "../Api/productApi";
-import { saveTransaction, fetchTransactions } from "../Api/TransactionApi"; // Added fetchTransactions
+import { saveTransaction, fetchTransactions } from "../Api/TransactionApi";
 import { fetchCustomers } from "../Api/customerApi";
 import { fetchBranches } from "../Api/StockApi";
 import { fetchUsers } from "../Api/UserApi";
@@ -35,6 +36,7 @@ const Pos = () => {
   const [transactionDate, setTransactionDate] = useState(null);
   const [userDetails, setUserDetails] = useState({ firstName: "", lastName: "" });
   const [branchDetails, setBranchDetails] = useState({ branchName: "", branchCode: "", address: "" });
+  const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
   const barcodeInputRef = useRef(null);
 
   useEffect(() => {
@@ -120,7 +122,6 @@ const Pos = () => {
 
   const handleNumpadClick = (action) => {
     const { type, value } = action;
-
     if (type === "clear") {
       setInputScreenText("");
       setInputValue("0");
@@ -134,7 +135,6 @@ const Pos = () => {
       let newInput = inputValue === "0" && value !== "." ? value.toString() : inputValue + value.toString();
       const parts = newInput.split(".");
       const decPart = parts[1] || "";
-
       if (decPart.length <= 2 || !decPart) {
         if (value === "." && inputValue.includes(".")) return;
         if (inputStage === "qty") {
@@ -703,6 +703,15 @@ const Pos = () => {
     resetInput();
   };
 
+  const handlePriceCheck = () => {
+    setShowPriceCheckPopup(true);
+  };
+
+  const handleClosePriceCheckPopup = () => {
+    setShowPriceCheckPopup(false);
+    resetInput();
+  };
+
   return (
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <Sidebar darkMode={darkMode} />
@@ -751,6 +760,7 @@ const Pos = () => {
                   onVoidLine={handleVoidLine}
                   onVoidAll={handleVoidAll}
                   onPrintLastBill={handlePrintLastBill}
+                  onPriceCheck={handlePriceCheck}
                 />
               </div>
             </div>
@@ -785,6 +795,18 @@ const Pos = () => {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {showPriceCheckPopup && (
+          <div className="price-check-popup-overlay">
+            <div className="price-check-popup">
+              <h2>Price Check</h2>
+              <PriceCheckPopup
+                onClose={handleClosePriceCheckPopup}
+                darkMode={darkMode}
+              />
             </div>
           </div>
         )}
