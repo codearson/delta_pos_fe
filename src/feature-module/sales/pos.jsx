@@ -9,8 +9,10 @@ import Numpad from "../components/Pos Components/Pos_Numpad";
 import PaymentButtons from "../components/Pos Components/Pos_Payment";
 import FunctionButtons from "../components/Pos Components/Pos_Function";
 import { getProductByBarcode } from "../Api/productApi";
-import { saveTransaction } from "../Api/TransactionApi";
+import { saveTransaction, fetchTransactions } from "../Api/TransactionApi"; // Added fetchTransactions
 import { fetchCustomers } from "../Api/customerApi";
+import { fetchBranches } from "../Api/StockApi";
+import { fetchUsers } from "../Api/UserApi";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -30,6 +32,9 @@ const Pos = () => {
   const [isPaymentStarted, setIsPaymentStarted] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
   const [showBillPopup, setShowBillPopup] = useState(false);
+  const [transactionDate, setTransactionDate] = useState(null);
+  const [userDetails, setUserDetails] = useState({ firstName: "", lastName: "" });
+  const [branchDetails, setBranchDetails] = useState({ branchName: "", branchCode: "", address: "" });
   const barcodeInputRef = useRef(null);
 
   useEffect(() => {
@@ -42,15 +47,31 @@ const Pos = () => {
   }, [darkMode]);
 
   useEffect(() => {
-    const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-    const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
-    const newBalance = totalPaid - currentTotal;
-    setBalance(newBalance);
+    if (isPaymentStarted) {
+      const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+      const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+      const newBalance = totalPaid - currentTotal;
+      setBalance(newBalance);
 
-    if (isPaymentStarted && newBalance >= 0 && selectedItems.length > 0) {
-      handleSaveTransaction();
+      if (newBalance >= 0 && selectedItems.length > 0) {
+        handleSaveTransaction();
+      }
+    } else {
+      setBalance(0);
     }
   }, [selectedItems, paymentMethods, isPaymentStarted]);
+
+  useEffect(() => {
+    let timer;
+    if (showBillPopup) {
+      timer = setTimeout(() => {
+        handleClosePopup();
+      }, 10000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [showBillPopup]);
 
   const toggleDarkMode = () => {
     const newMode = !darkMode;
@@ -71,7 +92,20 @@ const Pos = () => {
       if (price) {
         const total = qty * price;
         const newItem = { id: category.id, name: category.name, qty, price, total };
-        const newItems = [...selectedItems, newItem];
+
+        const existingItemIndex = selectedItems.findIndex(
+          (item) => item.name === newItem.name && item.price === newItem.price
+        );
+
+        let newItems;
+        if (existingItemIndex !== -1) {
+          newItems = [...selectedItems];
+          newItems[existingItemIndex].qty += qty;
+          newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+        } else {
+          newItems = [...selectedItems, newItem];
+        }
+
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         resetInput();
@@ -123,7 +157,20 @@ const Pos = () => {
       if (currentItem && currentItem.name && currentItem.price !== null) {
         const total = currentItem.qty * currentItem.price;
         const newItem = { ...currentItem, total };
-        const newItems = [...selectedItems, newItem];
+
+        const existingItemIndex = selectedItems.findIndex(
+          (item) => item.name === newItem.name && item.price === newItem.price
+        );
+
+        let newItems;
+        if (existingItemIndex !== -1) {
+          newItems = [...selectedItems];
+          newItems[existingItemIndex].qty += newItem.qty;
+          newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+        } else {
+          newItems = [...selectedItems, newItem];
+        }
+
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         resetInput();
@@ -159,7 +206,6 @@ const Pos = () => {
         return;
       }
 
-      // Check stock availability
       if (qty > quantity) {
         alert(`Insufficient stock for ${name}. Available: ${quantity}, Requested: ${qty}`);
         resetInput();
@@ -168,7 +214,20 @@ const Pos = () => {
 
       const total = qty * pricePerUnit;
       const newItem = { id, name, qty, price: pricePerUnit, total };
-      const newItems = [...selectedItems, newItem];
+
+      const existingItemIndex = selectedItems.findIndex(
+        (item) => item.name === newItem.name && item.price === newItem.price
+      );
+
+      let newItems;
+      if (existingItemIndex !== -1) {
+        newItems = [...selectedItems];
+        newItems[existingItemIndex].qty += qty;
+        newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+      } else {
+        newItems = [...selectedItems, newItem];
+      }
+
       setSelectedItems(newItems);
       setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
       resetInput();
@@ -201,13 +260,28 @@ const Pos = () => {
       return;
     }
     if (isPaymentStarted) {
-      alert("Cannot void items after payment has started.");
-      return;
+      const selectedItem = selectedItems.concat(paymentMethods)[selectedRowIndex];
+      if (selectedItem.amount) {
+        if (selectedItem.type === "Card") {
+          alert("Card payments cannot be voided.");
+          return;
+        }
+        const paymentIndex = selectedRowIndex - selectedItems.length;
+        const newPaymentMethods = paymentMethods.filter((_, index) => index !== paymentIndex);
+        setPaymentMethods(newPaymentMethods);
+        setSelectedRowIndex(null);
+        if (newPaymentMethods.length === 0) {
+          setIsPaymentStarted(false);
+        }
+      } else {
+        alert("Cannot void items after payment has started.");
+      }
+    } else {
+      const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
+      setSelectedItems(newItems);
+      setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+      setSelectedRowIndex(null);
     }
-    const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
-    setSelectedItems(newItems);
-    setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-    setSelectedRowIndex(null);
   };
 
   const handleVoidAll = () => {
@@ -229,16 +303,69 @@ const Pos = () => {
     const userId = !isNaN(parseInt(userIdRaw)) ? parseInt(userIdRaw) : 1;
     const branchId = !isNaN(parseInt(branchIdRaw)) ? parseInt(branchIdRaw) : 3;
 
+    try {
+      const branches = await fetchBranches();
+      const branch = branches.find((b) => b.id === branchId);
+      if (branch) {
+        setBranchDetails({
+          branchName: branch.branchName || "Unknown Branch",
+          branchCode: branch.branchCode || "N/A",
+          address: branch.address || "N/A",
+        });
+      } else {
+        setBranchDetails({
+          branchName: "Unknown Branch",
+          branchCode: "N/A",
+          address: "N/A",
+        });
+      }
+
+      const usersResponse = await fetchUsers();
+      const user = usersResponse.payload.find((u) => u.id === userId);
+      if (user) {
+        setUserDetails({
+          firstName: user.firstName || "Unknown",
+          lastName: user.lastName || "",
+        });
+      } else {
+        setUserDetails({
+          firstName: "Unknown",
+          lastName: "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching branch or user details:", error);
+      setBranchDetails({
+        branchName: "Unknown Branch",
+        branchCode: "N/A",
+        address: "N/A",
+      });
+      setUserDetails({
+        firstName: "Unknown",
+        lastName: "",
+      });
+    }
+
+    setTransactionDate(new Date());
+
     let customerId = 1;
     if (customerName) {
       const customers = await fetchCustomers();
-      const customer = customers.find(
-        (c) => c.name === customerName && c.isActive === true
-      );
+      const customer = customers.find((c) => c.name === customerName && c.isActive === true);
       if (customer) {
         customerId = customer.id;
       }
+    }
 
+    const combinedPaymentMethods = [];
+    const cashPayments = paymentMethods.filter(m => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
+    const cardPayments = paymentMethods.filter(m => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
+
+    if (cashPayments > 0) {
+      combinedPaymentMethods.push({ type: "Cash", amount: cashPayments });
+    }
+    if (cardPayments > 0) {
+      combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
     }
 
     const transactionData = {
@@ -255,13 +382,12 @@ const Pos = () => {
         unitPrice: item.price,
         discount: 0.00,
       })),
-      transactionPaymentMethod: paymentMethods.map((method) => ({
+      transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
         paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
         amount: method.amount,
         isActive: 1,
       })),
     };
-
 
     const result = await saveTransaction(transactionData);
     if (result.success) {
@@ -272,7 +398,297 @@ const Pos = () => {
   };
 
   const handlePrintBill = () => {
-    window.print();
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              width: 80mm;
+              margin: 0 auto;
+              padding: 10px;
+              font-size: 12px;
+              line-height: 1.2;
+            }
+            .receipt-header {
+              text-align: center;
+              margin-bottom: 10px;
+            }
+            .receipt-header h2 {
+              margin: 0;
+              font-size: 14px;
+            }
+            .receipt-details {
+              margin-bottom: 10px;
+            }
+            .receipt-details p {
+              margin: 2px 0;
+            }
+            .receipt-items {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 10px;
+            }
+            .receipt-items th, .receipt-items td {
+              padding: 2px 0;
+              text-align: left;
+              font-size: 10px;
+            }
+            .receipt-items th {
+              border-bottom: 1px dashed #000;
+            }
+            .receipt-items .total-column {
+              text-align: right;
+            }
+            .receipt-footer {
+              text-align: center;
+              margin-top: 10px;
+            }
+            .receipt-footer p {
+              margin: 2px 0;
+            }
+            .divider {
+              border-top: 1px dashed #000;
+              margin: 5px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <h2>Delta POS</h2>
+            <p>${branchDetails.branchName}</p>
+            <p>Branch Code: ${branchDetails.branchCode}</p>
+            <p>${branchDetails.address}</p>
+          </div>
+          <div class="receipt-details">
+            <p>Date: ${transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}</p>
+            <p>Cashier: ${userDetails.firstName} ${userDetails.lastName}</p>
+            ${customerName ? `<p>Customer: ${customerName}</p>` : ""}
+          </div>
+          <div class="divider"></div>
+          <table class="receipt-items">
+            <thead>
+              <tr>
+                <th>Qty</th>
+                <th>Item</th>
+                <th>Price</th>
+                <th class="total-column">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selectedItems
+                .map(
+                  (item) => `
+                    <tr>
+                      <td>${item.qty}</td>
+                      <td>${item.name}</td>
+                      <td>${item.price.toFixed(2)}</td>
+                      <td class="total-column">${item.total.toFixed(2)}</td>
+                    </tr>
+                  `
+                )
+                .join("")}
+            </tbody>
+          </table>
+          <div class="divider"></div>
+          <div class="receipt-details">
+            <p>Total: ${totalValue.toFixed(2)}</p>
+            ${paymentMethods
+              .map(
+                (method) => `
+                  <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                `
+              )
+              .join("")}
+            <p>Balance: ${balance.toFixed(2)}</p>
+          </div>
+          <div class="divider"></div>
+          <div class="receipt-footer">
+            <p>Thank You for Shopping with Us!</p>
+            <p>Powered by Delta POS</p>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  const handlePrintLastBill = async () => {
+    try {
+      const transactions = await fetchTransactions();
+      if (transactions.length === 0) {
+        alert("No transactions found or insufficient permissions.");
+        return;
+      }
+
+      const lastTransaction = transactions[transactions.length - 1];
+
+      const items = lastTransaction.transactionDetailsList.map((detail) => ({
+        qty: detail.quantity,
+        name: detail.productDto.name || "Unknown Item",
+        price: detail.unitPrice,
+        total: detail.quantity * detail.unitPrice,
+      }));
+
+      const totalAmount = lastTransaction.totalAmount;
+      const paymentMethods = lastTransaction.transactionPaymentMethod.map((method) => ({
+        type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
+        amount: method.amount,
+      }));
+
+      const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+      const calculatedBalance = totalPaid - totalAmount;
+
+      const branchId = lastTransaction.branchDto.id;
+      const userId = lastTransaction.userDto.id;
+      let branchName = branchDetails.branchName;
+      let branchCode = branchDetails.branchCode;
+      let address = branchDetails.address;
+      let firstName = userDetails.firstName;
+      let lastName = userDetails.lastName;
+
+      const branches = await fetchBranches();
+      const branch = branches.find((b) => b.id === branchId);
+      if (branch) {
+        branchName = branch.branchName || "Unknown Branch";
+        branchCode = branch.branchCode || "N/A";
+        address = branch.address || "N/A";
+      }
+
+      const usersResponse = await fetchUsers();
+      const user = usersResponse.payload.find((u) => u.id === userId);
+      if (user) {
+        firstName = user.firstName || "Unknown";
+        lastName = user.lastName || "";
+      }
+
+      const customer = lastTransaction.customerDto.name || "";
+
+      const printWindow = window.open("", "_blank");
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Last Receipt</title>
+            <style>
+              body {
+                font-family: 'Courier New', Courier, monospace;
+                width: 80mm;
+                margin: 0 auto;
+                padding: 10px;
+                font-size: 12px;
+                line-height: 1.2;
+              }
+              .receipt-header {
+                text-align: center;
+                margin-bottom: 10px;
+              }
+              .receipt-header h2 {
+                margin: 0;
+                font-size: 14px;
+              }
+              .receipt-details {
+                margin-bottom: 10px;
+              }
+              .receipt-details p {
+                margin: 2px 0;
+              }
+              .receipt-items {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 10px;
+              }
+              .receipt-items th, .receipt-items td {
+                padding: 2px 0;
+                text-align: left;
+                font-size: 10px;
+              }
+              .receipt-items th {
+                border-bottom: 1px dashed #000;
+              }
+              .receipt-items .total-column {
+                text-align: right;
+              }
+              .receipt-footer {
+                text-align: center;
+                margin-top: 10px;
+              }
+              .receipt-footer p {
+                margin: 2px 0;
+              }
+              .divider {
+                border-top: 1px dashed #000;
+                margin: 5px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="receipt-header">
+              <h2>Delta POS</h2>
+              <p>${branchName}</p>
+              <p>Branch Code: ${branchCode}</p>
+              <p>${address}</p>
+            </div>
+            <div class="receipt-details">
+              <p>Date: ${new Date(lastTransaction.transactionDate).toLocaleString()}</p>
+              <p>Cashier: ${firstName} ${lastName}</p>
+              ${customer ? `<p>Customer: ${customer}</p>` : ""}
+            </div>
+            <div class="divider"></div>
+            <table class="receipt-items">
+              <thead>
+                <tr>
+                  <th>Qty</th>
+                  <th>Item</th>
+                  <th>Price</th>
+                  <th class="total-column">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items
+                  .map(
+                    (item) => `
+                      <tr>
+                        <td>${item.qty}</td>
+                        <td>${item.name}</td>
+                        <td>${item.price.toFixed(2)}</td>
+                        <td class="total-column">${item.total.toFixed(2)}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            <div class="divider"></div>
+            <div class="receipt-details">
+              <p>Total: ${totalAmount.toFixed(2)}</p>
+              ${paymentMethods
+                .map(
+                  (method) => `
+                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                  `
+                )
+                .join("")}
+              <p>Balance: ${calculatedBalance.toFixed(2)}</p>
+            </div>
+            <div class="divider"></div>
+            <div class="receipt-footer">
+              <p>Thank You for Shopping with Us!</p>
+              <p>Powered by Delta POS</p>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
+    } catch (error) {
+      console.error("Error printing last bill:", error);
+      alert("Failed to fetch or print the last transaction.");
+    }
   };
 
   const handleClosePopup = () => {
@@ -313,6 +729,7 @@ const Pos = () => {
               balance={balance}
               selectedRowIndex={selectedRowIndex}
               onRowSelect={handleRowSelect}
+              isPaymentStarted={isPaymentStarted}
             />
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
@@ -333,6 +750,7 @@ const Pos = () => {
                 <FunctionButtons
                   onVoidLine={handleVoidLine}
                   onVoidAll={handleVoidAll}
+                  onPrintLastBill={handlePrintLastBill}
                 />
               </div>
             </div>
@@ -344,36 +762,19 @@ const Pos = () => {
             <div className="bill-popup">
               <div className="bill-content">
                 <h2>Transaction Receipt</h2>
-                <p>Date: {currentTime.toLocaleString()}</p>
+                <p>Date: {transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}</p>
                 {customerName && <p>Customer: {customerName}</p>}
-                <table className="bill-table">
-                  <thead>
-                    <tr>
-                      <th>Qty</th>
-                      <th>Item</th>
-                      <th>Price</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedItems.map((item, index) => (
-                      <tr key={index}>
-                        <td>{item.qty}</td>
-                        <td>{item.name}</td>
-                        <td>{item.price.toFixed(2)}</td>
-                        <td>{item.total.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="bill-summary">
+                <div className="bill-summary centered">
                   <p>Grand Total: {totalValue.toFixed(2)}</p>
                   {paymentMethods.map((method, index) => (
                     <p key={index}>
                       {method.type}: {method.amount.toFixed(2)}
                     </p>
                   ))}
-                  <p>Balance: {balance.toFixed(2)}</p>
+                  <p>
+                    <span className="balance-label">Balance:</span>{" "}
+                    <span className="balance-value">{balance.toFixed(2)}</span>
+                  </p>
                 </div>
               </div>
               <div className="bill-actions">

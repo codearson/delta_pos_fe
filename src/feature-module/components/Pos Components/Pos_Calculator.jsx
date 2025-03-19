@@ -16,6 +16,7 @@ export const Pos_Calculator = ({
   balance,
   selectedRowIndex,
   onRowSelect,
+  isPaymentStarted,
 }) => {
   const handleBarcodeChange = (e) => {
     const value = e.target.value.trim();
@@ -50,6 +51,16 @@ export const Pos_Calculator = ({
     .filter((method) => method.type === "Card")
     .reduce((sum, method) => sum + method.amount, 0);
 
+  const displayItems = isPaymentStarted && balance < 0
+    ? [...selectedItems, ...paymentMethods.map((method, index) => ({
+        id: `payment-${index}`,
+        name: `${method.type} Payment`,
+        qty: 1,
+        price: method.amount,
+        total: method.amount,
+      }))]
+    : selectedItems;
+
   return (
     <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <div className="search-bar">
@@ -72,26 +83,28 @@ export const Pos_Calculator = ({
       </div>
 
       <div className="display-box">
-        <div className="result-table">
-          <div className="result-header">
-            <span className="qty-column">Qty</span>
-            <span className="item-column">Item</span>
-            <span className="price-column">Price</span>
-            <span className="total-column">Total</span>
+        <div className="table-container">
+          <div className="result-table">
+            <div className="result-header">
+              <span className="qty-column">Qty</span>
+              <span className="item-column">Item</span>
+              <span className="price-column">Price</span>
+              <span className="total-column">Total</span>
+            </div>
+            {displayItems.length > 0 &&
+              displayItems.map((item, index) => (
+                <div
+                  key={index}
+                  className={`result-row ${selectedRowIndex === index ? "selected" : ""}`}
+                  onClick={() => onRowSelect(index)}
+                >
+                  <span className="qty-column">{item.qty}</span>
+                  <span className="item-column">{item.name}</span>
+                  <span className="price-column">{item.price.toFixed(2)}</span>
+                  <span className="total-column">{item.total.toFixed(2)}</span>
+                </div>
+              ))}
           </div>
-          {selectedItems.length > 0 &&
-            selectedItems.map((item, index) => (
-              <div
-                key={index}
-                className={`result-row ${selectedRowIndex === index ? "selected" : ""}`}
-                onClick={() => onRowSelect(index)}
-              >
-                <span className="qty-column">{item.qty}</span>
-                <span className="item-column">{item.name}</span>
-                <span className="price-column">{item.price.toFixed(2)}</span>
-                <span className="total-column">{item.total.toFixed(2)}</span>
-              </div>
-            ))}
         </div>
       </div>
 
@@ -116,7 +129,7 @@ export const Pos_Calculator = ({
         </div>
         <div className="summary-item">
           <span className="label">Balance</span>
-          <span className="value">{balance.toFixed(2)}</span>
+          <span className="value">{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
         </div>
         <div className="divider" />
         <div className="total-summary">
@@ -167,6 +180,7 @@ Pos_Calculator.propTypes = {
   balance: PropTypes.number.isRequired,
   selectedRowIndex: PropTypes.number,
   onRowSelect: PropTypes.func.isRequired,
+  isPaymentStarted: PropTypes.bool.isRequired,
 };
 
 export default Pos_Calculator;

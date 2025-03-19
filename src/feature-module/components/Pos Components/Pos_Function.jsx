@@ -2,7 +2,7 @@ import React from "react";
 import "../../../style/scss/components/Pos Components/Pos_Function.scss";
 import PropTypes from "prop-types";
 
-const Pos_Function = ({ onVoidLine, onVoidAll }) => {
+const Pos_Function = ({ onVoidLine, onVoidAll, onPrintLastBill }) => {
   return (
     <div className="col-span-4 grid grid-cols-2 gap-1 h-full">
       <button
@@ -20,7 +20,10 @@ const Pos_Function = ({ onVoidLine, onVoidAll }) => {
       <button className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 rounded-lg text-xs font-bold transition-colors shadow-md hover:shadow-lg">
         Price Check
       </button>
-      <button className="bg-indigo-800 hover:bg-indigo-900 text-white p-1.5 rounded-lg text-xs font-bold transition-colors shadow-md hover:shadow-lg">
+      <button
+        className="bg-indigo-800 hover:bg-indigo-900 text-white p-1.5 rounded-lg text-xs font-bold transition-colors shadow-md hover:shadow-lg"
+        onClick={onPrintLastBill}
+      >
         Print Last Bill
       </button>
       <button className="bg-purple-600 hover:bg-purple-700 text-white p-1.5 rounded-lg text-xs font-bold transition-colors shadow-md hover:shadow-lg">
@@ -36,6 +39,7 @@ const Pos_Function = ({ onVoidLine, onVoidAll }) => {
 Pos_Function.propTypes = {
   onVoidLine: PropTypes.func.isRequired,
   onVoidAll: PropTypes.func.isRequired,
+  onPrintLastBill: PropTypes.func.isRequired,
 };
 
 export default Pos_Function;
