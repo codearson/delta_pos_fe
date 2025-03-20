@@ -8,7 +8,12 @@ import CategoryGrid from "../components/Pos Components/Pos_CategoryGrid";
 import Numpad from "../components/Pos Components/Pos_Numpad";
 import PaymentButtons from "../components/Pos Components/Pos_Payment";
 import FunctionButtons from "../components/Pos Components/Pos_Function";
+import PriceCheckPopup from "../components/Pos Components/PriceCheckPopup";
 import { getProductByBarcode } from "../Api/productApi";
+import { saveTransaction, fetchTransactions } from "../Api/TransactionApi";
+import { fetchCustomers } from "../Api/customerApi";
+import { fetchBranches } from "../Api/StockApi";
+import { fetchUsers } from "../Api/UserApi";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -18,12 +23,20 @@ const Pos = () => {
   const [currentItem, setCurrentItem] = useState(null);
   const [inputValue, setInputValue] = useState("0");
   const [inputStage, setInputStage] = useState("qty");
-  const [hasCategory, setHasCategory] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
   const [inputScreenText, setInputScreenText] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [pendingQty, setPendingQty] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [balance, setBalance] = useState(0);
+  const [isPaymentStarted, setIsPaymentStarted] = useState(false);
+  const [selectedRowIndex, setSelectedRowIndex] = useState(null);
+  const [showBillPopup, setShowBillPopup] = useState(false);
+  const [transactionDate, setTransactionDate] = useState(null);
+  const [userDetails, setUserDetails] = useState({ firstName: "", lastName: "" });
+  const [branchDetails, setBranchDetails] = useState({ branchName: "", branchCode: "", address: "" });
+  const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
   const barcodeInputRef = useRef(null);
 
   useEffect(() => {
@@ -35,6 +48,33 @@ const Pos = () => {
     document.body.classList.toggle("dark-mode", darkMode);
   }, [darkMode]);
 
+  useEffect(() => {
+    if (isPaymentStarted) {
+      const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+      const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+      const newBalance = totalPaid - currentTotal;
+      setBalance(newBalance);
+
+      if (newBalance >= 0 && selectedItems.length > 0) {
+        handleSaveTransaction();
+      }
+    } else {
+      setBalance(0);
+    }
+  }, [selectedItems, paymentMethods, isPaymentStarted]);
+
+  useEffect(() => {
+    let timer;
+    if (showBillPopup) {
+      timer = setTimeout(() => {
+        handleClosePopup();
+      }, 10000);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [showBillPopup]);
+
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -44,77 +84,64 @@ const Pos = () => {
   const handleTabChange = (newTab) => setActiveTab(newTab);
 
   const handleCategorySelect = (category) => {
+    if (isPaymentStarted) {
+      alert("Cannot add items after payment has started. Please complete or reset the transaction.");
+      return;
+    }
     if (activeTab === "category" && category?.name) {
-      const qty = pendingQty && inputStage === "price" ? pendingQty : 1;
-      setCurrentItem({ name: category.name, qty, price: null, total: null });
-      setHasCategory(true);
-      setInputStage("price");
-      setInputValue("0");
-      setInputScreenText(`${qty} ×`);
-      setPendingQty(null);
+      const qty = pendingQty || 1;
+      const price = inputStage === "price" && inputValue !== "0" ? parseFloat(inputValue) : null;
+      if (price) {
+        const total = qty * price;
+        const newItem = { id: category.id, name: category.name, qty, price, total };
+
+        const existingItemIndex = selectedItems.findIndex(
+          (item) => item.name === newItem.name && item.price === newItem.price
+        );
+
+        let newItems;
+        if (existingItemIndex !== -1) {
+          newItems = [...selectedItems];
+          newItems[existingItemIndex].qty += qty;
+          newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+        } else {
+          newItems = [...selectedItems, newItem];
+        }
+
+        setSelectedItems(newItems);
+        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+        resetInput();
+      } else {
+        setCurrentItem({ id: category.id, name: category.name, qty, price: null, total: null });
+        setInputStage("price");
+        setInputValue("0");
+        setInputScreenText(`${qty} ×`);
+      }
     }
   };
 
   const handleNumpadClick = (action) => {
     const { type, value } = action;
-
     if (type === "clear") {
-      if (currentItem) {
-        if (currentItem.price !== null) {
-          setCurrentItem({ ...currentItem, price: null, total: null });
-          setInputStage("price");
-          setInputValue("0");
-          setInputScreenText(`${currentItem.qty} ×`);
-        } else if (inputStage === "price" && hasCategory) {
-          setInputStage("qty");
-          setInputValue("0");
-          setInputScreenText(`${currentItem.qty}`);
-        } else if (hasCategory) {
-          setCurrentItem({ ...currentItem, name: null });
-          setHasCategory(false);
-          setInputStage("qty");
-          setInputValue("0");
-          setInputScreenText(`${currentItem.qty}`);
-        } else if (currentItem?.qty !== null) {
-          setCurrentItem(null);
-          setInputStage("qty");
-          setInputValue("0");
-          setInputScreenText("");
-          setPendingQty(null);
-        }
-      } else if (selectedItems.length > 0) {
-        const newItems = selectedItems.slice(0, -1);
-        setSelectedItems(newItems);
-        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        setPendingQty(null);
-      } else {
-        setInputValue("0");
-        setTotalValue(0);
-        setInputStage("qty");
-        setInputScreenText("");
-        setPendingQty(null);
-      }
+      setInputScreenText("");
+      setInputValue("0");
+      setInputStage("qty");
+      setCurrentItem(null);
+      setPendingQty(null);
+      setBarcodeInput("");
+      setSelectedRowIndex(null);
       barcodeInputRef.current?.focus();
     } else if (type === "number") {
       let newInput = inputValue === "0" && value !== "." ? value.toString() : inputValue + value.toString();
       const parts = newInput.split(".");
-      const numPart = parts[0] || "0";
       const decPart = parts[1] || "";
-
-      if (numPart.length <= 5 && (decPart.length <= 2 || !decPart)) {
-        if (value === "." && decPart) return;
+      if (decPart.length <= 2 || !decPart) {
+        if (value === "." && inputValue.includes(".")) return;
         if (inputStage === "qty") {
-          const qty = parseFloat(newInput) || 1;
-          if (!currentItem || !currentItem.name) {
-            setCurrentItem({ qty, name: null, price: null, total: null });
-          }
           setInputScreenText(newInput);
           setInputValue(newInput);
-        } else if (inputStage === "price" && currentItem && hasCategory) {
-          const price = parseFloat(newInput) || 0;
-          const total = currentItem.qty * price;
-          setCurrentItem({ ...currentItem, price, total });
-          setInputScreenText(`${currentItem.qty} × ${newInput}`);
+        } else if (inputStage === "price") {
+          setInputScreenText(`${pendingQty || 1} × ${newInput}`);
           setInputValue(newInput);
         }
       }
@@ -124,104 +151,566 @@ const Pos = () => {
         setPendingQty(qty);
         setInputStage("price");
         setInputValue("0");
-        setInputScreenText(`${qty} ×`);
+        setInputScreenText(`${qty} × `);
       }
     } else if (type === "enter") {
       if (currentItem && currentItem.name && currentItem.price !== null) {
         const total = currentItem.qty * currentItem.price;
-        const newItem = { name: currentItem.name, qty: currentItem.qty, price: currentItem.price, total };
-        const newItems = [...selectedItems, newItem];
+        const newItem = { ...currentItem, total };
+
+        const existingItemIndex = selectedItems.findIndex(
+          (item) => item.name === newItem.name && item.price === newItem.price
+        );
+
+        let newItems;
+        if (existingItemIndex !== -1) {
+          newItems = [...selectedItems];
+          newItems[existingItemIndex].qty += newItem.qty;
+          newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+        } else {
+          newItems = [...selectedItems, newItem];
+        }
+
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        setCurrentItem(null);
-        setHasCategory(false);
-        setInputStage("qty");
-        setInputValue("0");
-        setInputScreenText("");
-        setPendingQty(null);
-        barcodeInputRef.current?.focus();
+        resetInput();
       }
     }
   };
 
   const handleBarcodeSearch = async (barcode) => {
-    console.log("handleBarcodeSearch called", { barcode, inputStage, inputValue, pendingQty, currentItem });
-
-    if (barcode.length < 3) {
-      console.log("Barcode too short, skipping");
+    if (isPaymentStarted) {
+      alert("Cannot add items after payment has started. Please complete or reset the transaction.");
       return;
     }
+    if (barcode.length < 3) return;
 
     try {
       const product = await getProductByBarcode(barcode);
-      console.log("API response:", product);
       if (!product || !product.responseDto || product.responseDto.length === 0) {
-        console.log("No product found");
-        setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-        setInputScreenText("");
-        setBarcodeInput("");
-        setInputValue("0");
-        barcodeInputRef.current?.focus();
+        resetInput();
         return;
       }
 
       const productData = product.responseDto[0];
-      const { name, pricePerUnit } = productData;
-      if (!name || pricePerUnit === undefined) {
-        console.log("Invalid product data");
-        setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-        setInputScreenText("");
-        setBarcodeInput("");
-        setInputValue("0");
-        barcodeInputRef.current?.focus();
+      const { id, name, pricePerUnit, quantity } = productData;
+      if (!name || pricePerUnit === undefined || quantity === undefined) {
+        resetInput();
         return;
       }
 
-      if (inputStage === "price" && pendingQty) {
-        // Number + "×" + Scan: Add to selectedItems with pendingQty
-        const qty = pendingQty;
-        const total = qty * pricePerUnit;
-        const newItem = { name, qty, price: pricePerUnit, total };
-        const newItems = [...selectedItems, newItem];
-        setSelectedItems(newItems);
-        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        setInputStage("qty");
-        setInputValue("0");
-        setInputScreenText("");
-        setBarcodeInput("");
-        setPendingQty(null);
-        barcodeInputRef.current?.focus();
-        console.log("Added to selectedItems with pendingQty:", newItem);
-      } else if (inputStage === "qty") {
-        // Plain Scan: Add to selectedItems with qty 1, update total, no Enter needed
-        const qty = 1;
-        const total = qty * pricePerUnit;
-        const newItem = { name, qty, price: pricePerUnit, total };
-        const newItems = [...selectedItems, newItem];
-        setSelectedItems(newItems);
-        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        setCurrentItem(null); // Clear currentItem since it's added
-        setInputScreenText("1"); // Briefly show qty
-        setBarcodeInput(""); // Clear barcode input
-        setInputValue("0");
-        setTimeout(() => {
-          setInputScreenText(""); // Clear screen after a short delay
-          console.log("inputScreenText cleared");
-        }, 500);
-        barcodeInputRef.current?.focus();
-        console.log("Added to selectedItems with qty 1:", newItem);
+      const qty = inputStage === "price" && pendingQty ? pendingQty : 1;
+      if (inputStage === "price" && inputValue !== "0") {
+        alert("Invalid Qty: Cannot set custom price for barcoded items");
+        resetInput();
+        return;
       }
+
+      if (qty > quantity) {
+        alert(`Insufficient stock for ${name}. Available: ${quantity}, Requested: ${qty}`);
+        resetInput();
+        return;
+      }
+
+      const total = qty * pricePerUnit;
+      const newItem = { id, name, qty, price: pricePerUnit, total };
+
+      const existingItemIndex = selectedItems.findIndex(
+        (item) => item.name === newItem.name && item.price === newItem.price
+      );
+
+      let newItems;
+      if (existingItemIndex !== -1) {
+        newItems = [...selectedItems];
+        newItems[existingItemIndex].qty += qty;
+        newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+      } else {
+        newItems = [...selectedItems, newItem];
+      }
+
+      setSelectedItems(newItems);
+      setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+      resetInput();
     } catch (error) {
-      console.error("Barcode fetch error:", error);
-      setCurrentItem({ name: "Undefined Item", qty: 1, price: null, total: null });
-      setInputScreenText("");
-      setBarcodeInput("");
-      setInputValue("0");
-      barcodeInputRef.current?.focus();
+      resetInput();
     }
   };
 
+  const resetInput = () => {
+    setCurrentItem(null);
+    setInputStage("qty");
+    setInputValue("0");
+    setInputScreenText("");
+    setBarcodeInput("");
+    setPendingQty(null);
+    barcodeInputRef.current?.focus();
+  };
+
+  const handleRowSelect = (index) => {
+    if (selectedRowIndex === index) {
+      setSelectedRowIndex(null);
+    } else {
+      setSelectedRowIndex(index);
+    }
+  };
+
+  const handleVoidLine = () => {
+    if (selectedRowIndex === null) {
+      alert("Please select a row to void.");
+      return;
+    }
+    if (isPaymentStarted) {
+      const selectedItem = selectedItems.concat(paymentMethods)[selectedRowIndex];
+      if (selectedItem.amount) {
+        if (selectedItem.type === "Card") {
+          alert("Card payments cannot be voided.");
+          return;
+        }
+        const paymentIndex = selectedRowIndex - selectedItems.length;
+        const newPaymentMethods = paymentMethods.filter((_, index) => index !== paymentIndex);
+        setPaymentMethods(newPaymentMethods);
+        setSelectedRowIndex(null);
+        if (newPaymentMethods.length === 0) {
+          setIsPaymentStarted(false);
+        }
+      } else {
+        alert("Cannot void items after payment has started.");
+      }
+    } else {
+      const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
+      setSelectedItems(newItems);
+      setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+      setSelectedRowIndex(null);
+    }
+  };
+
+  const handleVoidAll = () => {
+    if (isPaymentStarted) {
+      alert("Cannot void all items after payment has started.");
+      return;
+    }
+    setSelectedItems([]);
+    setTotalValue(0);
+    setSelectedRowIndex(null);
+  };
+
   const handleCustomerAdded = (name) => setCustomerName(name);
+
+  const handleSaveTransaction = async () => {
+    const userIdRaw = localStorage.getItem("userId");
+    const branchIdRaw = localStorage.getItem("branchId");
+
+    const userId = !isNaN(parseInt(userIdRaw)) ? parseInt(userIdRaw) : 1;
+    const branchId = !isNaN(parseInt(branchIdRaw)) ? parseInt(branchIdRaw) : 3;
+
+    try {
+      const branches = await fetchBranches();
+      const branch = branches.find((b) => b.id === branchId);
+      if (branch) {
+        setBranchDetails({
+          branchName: branch.branchName || "Unknown Branch",
+          branchCode: branch.branchCode || "N/A",
+          address: branch.address || "N/A",
+        });
+      } else {
+        setBranchDetails({
+          branchName: "Unknown Branch",
+          branchCode: "N/A",
+          address: "N/A",
+        });
+      }
+
+      const usersResponse = await fetchUsers();
+      const user = usersResponse.payload.find((u) => u.id === userId);
+      if (user) {
+        setUserDetails({
+          firstName: user.firstName || "Unknown",
+          lastName: user.lastName || "",
+        });
+      } else {
+        setUserDetails({
+          firstName: "Unknown",
+          lastName: "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching branch or user details:", error);
+      setBranchDetails({
+        branchName: "Unknown Branch",
+        branchCode: "N/A",
+        address: "N/A",
+      });
+      setUserDetails({
+        firstName: "Unknown",
+        lastName: "",
+      });
+    }
+
+    setTransactionDate(new Date());
+
+    let customerId = 1;
+    if (customerName) {
+      const customers = await fetchCustomers();
+      const customer = customers.find((c) => c.name === customerName && c.isActive === true);
+      if (customer) {
+        customerId = customer.id;
+      }
+    }
+
+    const combinedPaymentMethods = [];
+    const cashPayments = paymentMethods.filter(m => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
+    const cardPayments = paymentMethods.filter(m => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
+
+    if (cashPayments > 0) {
+      combinedPaymentMethods.push({ type: "Cash", amount: cashPayments });
+    }
+    if (cardPayments > 0) {
+      combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
+    }
+
+    const transactionData = {
+      status: "Completed",
+      isActive: 1,
+      totalAmount: totalValue,
+      branchDto: { id: branchId },
+      shopDetailsDto: { id: 1 },
+      customerDto: { id: customerId },
+      userDto: { id: userId },
+      transactionDetailsList: selectedItems.map((item) => ({
+        productDto: { id: item.id },
+        quantity: item.qty,
+        unitPrice: item.price,
+        discount: 0.00,
+      })),
+      transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
+        paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
+        amount: method.amount,
+        isActive: 1,
+      })),
+    };
+
+    const result = await saveTransaction(transactionData);
+    if (result.success) {
+      setShowBillPopup(true);
+    } else {
+      alert("Failed to save transaction: " + result.error);
+    }
+  };
+
+  const handlePrintBill = () => {
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Receipt</title>
+          <style>
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              width: 80mm;
+              margin: 0 auto;
+              padding: 10px;
+              font-size: 12px;
+              line-height: 1.2;
+            }
+            .receipt-header {
+              text-align: center;
+              margin-bottom: 10px;
+            }
+            .receipt-header h2 {
+              margin: 0;
+              font-size: 14px;
+            }
+            .receipt-details {
+              margin-bottom: 10px;
+            }
+            .receipt-details p {
+              margin: 2px 0;
+            }
+            .receipt-items {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 10px;
+            }
+            .receipt-items th, .receipt-items td {
+              padding: 2px 0;
+              text-align: left;
+              font-size: 10px;
+            }
+            .receipt-items th {
+              border-bottom: 1px dashed #000;
+            }
+            .receipt-items .total-column {
+              text-align: right;
+            }
+            .receipt-footer {
+              text-align: center;
+              margin-top: 10px;
+            }
+            .receipt-footer p {
+              margin: 2px 0;
+            }
+            .divider {
+              border-top: 1px dashed #000;
+              margin: 5px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <h2>Delta POS</h2>
+            <p>${branchDetails.branchName}</p>
+            <p>Branch Code: ${branchDetails.branchCode}</p>
+            <p>${branchDetails.address}</p>
+          </div>
+          <div class="receipt-details">
+            <p>Date: ${transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}</p>
+            <p>Cashier: ${userDetails.firstName} ${userDetails.lastName}</p>
+            ${customerName ? `<p>Customer: ${customerName}</p>` : ""}
+          </div>
+          <div class="divider"></div>
+          <table class="receipt-items">
+            <thead>
+              <tr>
+                <th>Qty</th>
+                <th>Item</th>
+                <th>Price</th>
+                <th class="total-column">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selectedItems
+                .map(
+                  (item) => `
+                    <tr>
+                      <td>${item.qty}</td>
+                      <td>${item.name}</td>
+                      <td>${item.price.toFixed(2)}</td>
+                      <td class="total-column">${item.total.toFixed(2)}</td>
+                    </tr>
+                  `
+                )
+                .join("")}
+            </tbody>
+          </table>
+          <div class="divider"></div>
+          <div class="receipt-details">
+            <p>Total: ${totalValue.toFixed(2)}</p>
+            ${paymentMethods
+              .map(
+                (method) => `
+                  <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                `
+              )
+              .join("")}
+            <p>Balance: ${balance.toFixed(2)}</p>
+          </div>
+          <div class="divider"></div>
+          <div class="receipt-footer">
+            <p>Thank You for Shopping with Us!</p>
+            <p>Powered by Delta POS</p>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  const handlePrintLastBill = async () => {
+    try {
+      const transactions = await fetchTransactions();
+      if (transactions.length === 0) {
+        alert("No transactions found or insufficient permissions.");
+        return;
+      }
+
+      const lastTransaction = transactions[transactions.length - 1];
+
+      const items = lastTransaction.transactionDetailsList.map((detail) => ({
+        qty: detail.quantity,
+        name: detail.productDto.name || "Unknown Item",
+        price: detail.unitPrice,
+        total: detail.quantity * detail.unitPrice,
+      }));
+
+      const totalAmount = lastTransaction.totalAmount;
+      const paymentMethods = lastTransaction.transactionPaymentMethod.map((method) => ({
+        type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
+        amount: method.amount,
+      }));
+
+      const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+      const calculatedBalance = totalPaid - totalAmount;
+
+      const branchId = lastTransaction.branchDto.id;
+      const userId = lastTransaction.userDto.id;
+      let branchName = branchDetails.branchName;
+      let branchCode = branchDetails.branchCode;
+      let address = branchDetails.address;
+      let firstName = userDetails.firstName;
+      let lastName = userDetails.lastName;
+
+      const branches = await fetchBranches();
+      const branch = branches.find((b) => b.id === branchId);
+      if (branch) {
+        branchName = branch.branchName || "Unknown Branch";
+        branchCode = branch.branchCode || "N/A";
+        address = branch.address || "N/A";
+      }
+
+      const usersResponse = await fetchUsers();
+      const user = usersResponse.payload.find((u) => u.id === userId);
+      if (user) {
+        firstName = user.firstName || "Unknown";
+        lastName = user.lastName || "";
+      }
+
+      const customer = lastTransaction.customerDto.name || "";
+
+      const printWindow = window.open("", "_blank");
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Last Receipt</title>
+            <style>
+              body {
+                font-family: 'Courier New', Courier, monospace;
+                width: 80mm;
+                margin: 0 auto;
+                padding: 10px;
+                font-size: 12px;
+                line-height: 1.2;
+              }
+              .receipt-header {
+                text-align: center;
+                margin-bottom: 10px;
+              }
+              .receipt-header h2 {
+                margin: 0;
+                font-size: 14px;
+              }
+              .receipt-details {
+                margin-bottom: 10px;
+              }
+              .receipt-details p {
+                margin: 2px 0;
+              }
+              .receipt-items {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 10px;
+              }
+              .receipt-items th, .receipt-items td {
+                padding: 2px 0;
+                text-align: left;
+                font-size: 10px;
+              }
+              .receipt-items th {
+                border-bottom: 1px dashed #000;
+              }
+              .receipt-items .total-column {
+                text-align: right;
+              }
+              .receipt-footer {
+                text-align: center;
+                margin-top: 10px;
+              }
+              .receipt-footer p {
+                margin: 2px 0;
+              }
+              .divider {
+                border-top: 1px dashed #000;
+                margin: 5px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="receipt-header">
+              <h2>Delta POS</h2>
+              <p>${branchName}</p>
+              <p>Branch Code: ${branchCode}</p>
+              <p>${address}</p>
+            </div>
+            <div class="receipt-details">
+              <p>Date: ${new Date(lastTransaction.transactionDate).toLocaleString()}</p>
+              <p>Cashier: ${firstName} ${lastName}</p>
+              ${customer ? `<p>Customer: ${customer}</p>` : ""}
+            </div>
+            <div class="divider"></div>
+            <table class="receipt-items">
+              <thead>
+                <tr>
+                  <th>Qty</th>
+                  <th>Item</th>
+                  <th>Price</th>
+                  <th class="total-column">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items
+                  .map(
+                    (item) => `
+                      <tr>
+                        <td>${item.qty}</td>
+                        <td>${item.name}</td>
+                        <td>${item.price.toFixed(2)}</td>
+                        <td class="total-column">${item.total.toFixed(2)}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            <div class="divider"></div>
+            <div class="receipt-details">
+              <p>Total: ${totalAmount.toFixed(2)}</p>
+              ${paymentMethods
+                .map(
+                  (method) => `
+                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                  `
+                )
+                .join("")}
+              <p>Balance: ${calculatedBalance.toFixed(2)}</p>
+            </div>
+            <div class="divider"></div>
+            <div class="receipt-footer">
+              <p>Thank You for Shopping with Us!</p>
+              <p>Powered by Delta POS</p>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
+    } catch (error) {
+      console.error("Error printing last bill:", error);
+      alert("Failed to fetch or print the last transaction.");
+    }
+  };
+
+  const handleClosePopup = () => {
+    setShowBillPopup(false);
+    setSelectedItems([]);
+    setTotalValue(0);
+    setPaymentMethods([]);
+    setBalance(0);
+    setIsPaymentStarted(false);
+    setSelectedRowIndex(null);
+    setCustomerName("");
+    resetInput();
+  };
+
+  const handlePriceCheck = () => {
+    setShowPriceCheckPopup(true);
+  };
+
+  const handleClosePriceCheckPopup = () => {
+    setShowPriceCheckPopup(false);
+    resetInput();
+  };
 
   return (
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
@@ -238,7 +727,6 @@ const Pos = () => {
             <Pos_Calculator
               darkMode={darkMode}
               selectedItems={selectedItems}
-              currentItem={currentItem}
               totalValue={totalValue}
               inputScreenText={inputScreenText}
               onBarcodeSearch={handleBarcodeSearch}
@@ -246,6 +734,11 @@ const Pos = () => {
               setBarcodeInput={setBarcodeInput}
               customerName={customerName}
               barcodeInputRef={barcodeInputRef}
+              paymentMethods={paymentMethods}
+              balance={balance}
+              selectedRowIndex={selectedRowIndex}
+              onRowSelect={handleRowSelect}
+              isPaymentStarted={isPaymentStarted}
             />
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
@@ -255,12 +748,68 @@ const Pos = () => {
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
-                <PaymentButtons />
-                <FunctionButtons activeTab={activeTab} />
+                <PaymentButtons
+                  inputValue={inputValue}
+                  resetInput={resetInput}
+                  setPaymentMethods={setPaymentMethods}
+                  totalValue={totalValue}
+                  setBalance={setBalance}
+                  setIsPaymentStarted={setIsPaymentStarted}
+                />
+                <FunctionButtons
+                  onVoidLine={handleVoidLine}
+                  onVoidAll={handleVoidAll}
+                  onPrintLastBill={handlePrintLastBill}
+                  onPriceCheck={handlePriceCheck}
+                />
               </div>
             </div>
           </div>
         </div>
+
+        {showBillPopup && (
+          <div className="bill-popup-overlay">
+            <div className="bill-popup">
+              <div className="bill-content">
+                <h2>Transaction Receipt</h2>
+                <p>Date: {transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}</p>
+                {customerName && <p>Customer: {customerName}</p>}
+                <div className="bill-summary centered">
+                  <p>Grand Total: {totalValue.toFixed(2)}</p>
+                  {paymentMethods.map((method, index) => (
+                    <p key={index}>
+                      {method.type}: {method.amount.toFixed(2)}
+                    </p>
+                  ))}
+                  <p>
+                    <span className="balance-label">Balance:</span>{" "}
+                    <span className="balance-value">{balance.toFixed(2)}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="bill-actions">
+                <button onClick={handlePrintBill} className="print-btn">
+                  Print Bill
+                </button>
+                <button onClick={handleClosePopup} className="close-btn">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPriceCheckPopup && (
+          <div className="price-check-popup-overlay">
+            <div className="price-check-popup">
+              <h2>Price Check</h2>
+              <PriceCheckPopup
+                onClose={handleClosePriceCheckPopup}
+                darkMode={darkMode}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

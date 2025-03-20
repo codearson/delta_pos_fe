@@ -81,67 +81,78 @@ $light-text: #000000;
   border-radius: 0.5rem;
   margin-bottom: 1rem;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  height: 250px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.table-container {
+  flex: 1;
   overflow-y: auto;
-  position: relative;
+  max-height: 340px;
+}
 
-  @media (max-width: 768px) {
-    height: 120px;
+.result-table {
+  width: 100%;
+}
+
+.result-header {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr;
+  font-weight: bold;
+  border-bottom: 2px solid $bg-gray-600;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: $text-gray-900;
+  position: sticky;
+  top: 0;
+  background: $text-white;
+  z-index: 2;
+}
+
+.result-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr;
+  padding: 8px 0;
+  border-bottom: 1px dashed $bg-gray-700;
+  font-size: 13px;
+  color: $text-gray-900;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &.in-progress {
+    color: $text-gray-400;
+    background: $bg-gray-700;
   }
 
-  @media (max-width: 480px) {
-    height: 100px;
+  &.selected {
+    background-color: #e0f2fe;
+    color: #1e40af;
+    border-radius: 0.25rem;
   }
+}
 
-  .result-table {
-    width: 100%;
-  }
+.qty-column {
+  padding-right: 10px;
+}
 
-  .result-header {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr;
-    font-weight: bold;
-    border-bottom: 2px solid #ccc;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: #333;
-    top: 0;
-    background: #fff;
-    z-index: 2;
-  }
+.item-column {
+  padding-right: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  .result-row {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr;
-    padding: 8px 0;
-    border-bottom: 1px dashed #eee;
-    font-size: 13px;
-    color: #555;
-    line-height: 1.5;
+.price-column {
+  text-align: right;
+  padding-right: 10px;
+}
 
-    &.in-progress {
-      color: #777;
-      background: #f9f9f9;
-    }
-  }
-
-  .qty-column {
-    padding-right: 10px;
-  }
-
-  .item-column {
-    padding-right: 20px;
-  }
-
-  .price-column {
-    text-align: right;
-    padding-right: 10px;
-  }
-
-  .total-column {
-    text-align: right;
-  }
+.total-column {
+  text-align: right;
 }
 
 .summary-box {
@@ -150,11 +161,13 @@ $light-text: #000000;
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 
   .summary-item {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.75rem;
+    font-size: 1rem;
 
     .label {
       font-weight: 500;
@@ -176,6 +189,106 @@ $light-text: #000000;
     font-size: 1.25rem;
     font-weight: 700;
     padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
+.bill-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.bill-popup {
+  background: $text-white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+
+  &.dark-mode {
+    background: $dark-bg;
+    color: $dark-text;
+  }
+}
+
+.bill-content {
+  margin-bottom: 1rem;
+
+  h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: 1rem;
+    margin: 0.25rem 0;
+  }
+}
+
+.bill-summary {
+  text-align: right;
+  margin-top: 1rem;
+
+  &.centered {
+    text-align: center;
+  }
+
+  p {
+    margin: 0.25rem 0;
+  }
+
+  .balance-label {
+    font-weight: bold;
+  }
+
+  .balance-value {
+    font-weight: bold;
+    color: red;
+  }
+}
+
+.bill-actions {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1rem;
+}
+
+.print-btn,
+.close-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.25rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 200px;
+}
+
+.print-btn {
+  background: $text-green-400;
+  color: $text-black;
+
+  &:hover {
+    background: darken($text-green-400, 10%);
+  }
+}
+
+.close-btn {
+  background: $bg-gray-600;
+  color: $text-white;
+
+  &:hover {
+    background: darken($bg-gray-600, 10%);
   }
 }
 
@@ -188,26 +301,137 @@ $light-text: #000000;
     font-size: 0.875rem;
   }
 
-  .total-summary {
+  .input-screen-box {
     font-size: 1rem;
+    min-height: 36px;
+  }
+
+  .table-container {
+    max-height: 215px;
+  }
+
+  .result-header,
+  .result-row {
+    grid-template-columns: 1fr 3fr 1fr 1fr;
+    font-size: 12px;
+  }
+
+  .summary-box {
+    .summary-item {
+      font-size: 0.875rem;
+    }
+    .total-summary {
+      font-size: 1rem;
+    }
+  }
+
+  .bill-popup {
+    width: 95%;
+    max-width: 400px;
+  }
+
+  .bill-content {
+    h2 {
+      font-size: 1.25rem;
+    }
+    p {
+      font-size: 0.875rem;
+    }
   }
 }
 
 @media (max-width: 480px) {
   .calculator-container {
     grid-column: span 12;
+    padding: 0.75rem;
   }
 
-  .search-input {
-    font-size: 0.75rem;
-    padding-left: 30px;
+  .search-bar {
+    margin-bottom: 0.75rem;
+
+    .search-input {
+      font-size: 0.75rem;
+      padding-left: 30px;
+      height: 32px;
+    }
+
+    .search-icon {
+      left: 8px;
+    }
   }
 
-  .search-icon {
-    left: 5px;
-  }
-
-  .total-summary {
+  .input-screen-box {
     font-size: 0.875rem;
+    min-height: 32px;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .table-container {
+    max-height: 215px;
+  }
+
+  .result-header,
+  .result-row {
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    font-size: 11px;
+    padding: 6px 0;
+  }
+
+  .item-column {
+    padding-right: 10px;
+  }
+
+  .result-row {
+    &.selected {
+      background-color: #e0f2fe;
+      color: #1e40af;
+    }
+  }
+
+  .summary-box {
+    padding: 0.75rem;
+
+    .summary-item {
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .total-summary {
+      font-size: 0.875rem;
+      padding-top: 0.5rem;
+    }
+  }
+
+  .bill-popup {
+    width: 100%;
+    max-width: 300px;
+    padding: 1rem;
+  }
+
+  .bill-content {
+    h2 {
+      font-size: 1rem;
+    }
+    p {
+      font-size: 0.75rem;
+    }
+  }
+
+  .bill-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .print-btn,
+  .close-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media print {
+  .pos-container,
+  .bill-popup-overlay {
+    display: none !important;
   }
 }

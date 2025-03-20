@@ -5,7 +5,6 @@ import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
 export const Pos_Calculator = ({
   darkMode,
   selectedItems,
-  currentItem,
   totalValue,
   inputScreenText,
   onBarcodeSearch,
@@ -13,31 +12,54 @@ export const Pos_Calculator = ({
   setBarcodeInput,
   customerName,
   barcodeInputRef,
+  paymentMethods,
+  balance,
+  selectedRowIndex,
+  onRowSelect,
+  isPaymentStarted,
 }) => {
   const handleBarcodeChange = (e) => {
     const value = e.target.value.trim();
-    console.log("handleBarcodeChange triggered", { value, previousBarcodeInput: barcodeInput });
     setBarcodeInput(value);
-    if (value) {
-      onBarcodeSearch(value);
-      setBarcodeInput(""); // Clear immediately after search
-      console.log("Barcode input cleared after search");
-    }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && barcodeInput) {
-      console.log("Enter pressed with barcode:", barcodeInput);
       onBarcodeSearch(barcodeInput);
       setBarcodeInput("");
-      console.log("Barcode input cleared after Enter");
     }
   };
 
   useEffect(() => {
     barcodeInputRef.current?.focus();
-    console.log("Pos_Calculator mounted or barcodeInputRef changed, focusing input");
   }, [barcodeInputRef]);
+
+  useEffect(() => {
+    if (barcodeInput.length >= 3) {
+      const timer = setTimeout(() => {
+        onBarcodeSearch(barcodeInput);
+        setBarcodeInput("");
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [barcodeInput, onBarcodeSearch, setBarcodeInput]);
+
+  const cashTotal = paymentMethods
+    .filter((method) => method.type === "Cash")
+    .reduce((sum, method) => sum + method.amount, 0);
+  const cardTotal = paymentMethods
+    .filter((method) => method.type === "Card")
+    .reduce((sum, method) => sum + method.amount, 0);
+
+  const displayItems = isPaymentStarted && balance < 0
+    ? [...selectedItems, ...paymentMethods.map((method, index) => ({
+        id: `payment-${index}`,
+        name: `${method.type} Payment`,
+        qty: 1,
+        price: method.amount,
+        total: method.amount,
+      }))]
+    : selectedItems;
 
   return (
     <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
@@ -61,33 +83,28 @@ export const Pos_Calculator = ({
       </div>
 
       <div className="display-box">
-        <div className="result-table">
-          <div className="result-header">
-            <span className="qty-column">Qty</span>
-            <span className="item-column">Item</span>
-            <span className="price-column">Price</span>
-            <span className="total-column">Total</span>
-          </div>
-          {(selectedItems.length > 0 || currentItem) && (
-            <>
-              {selectedItems.map((item, index) => (
-                <div key={index} className="result-row">
+        <div className="table-container">
+          <div className="result-table">
+            <div className="result-header">
+              <span className="qty-column">Qty</span>
+              <span className="item-column">Item</span>
+              <span className="price-column">Price</span>
+              <span className="total-column">Total</span>
+            </div>
+            {displayItems.length > 0 &&
+              displayItems.map((item, index) => (
+                <div
+                  key={index}
+                  className={`result-row ${selectedRowIndex === index ? "selected" : ""}`}
+                  onClick={() => onRowSelect(index)}
+                >
                   <span className="qty-column">{item.qty}</span>
                   <span className="item-column">{item.name}</span>
                   <span className="price-column">{item.price.toFixed(2)}</span>
                   <span className="total-column">{item.total.toFixed(2)}</span>
                 </div>
               ))}
-              {currentItem && (
-                <div className="result-row in-progress">
-                  <span className="qty-column">{currentItem.qty || ""}</span>
-                  <span className="item-column">{currentItem.name || "Undefined Item"}</span>
-                  <span className="price-column">{currentItem.price ? currentItem.price.toFixed(2) : ""}</span>
-                  <span className="total-column">{currentItem.total ? currentItem.total.toFixed(2) : ""}</span>
-                </div>
-              )}
-            </>
-          )}
+          </div>
         </div>
       </div>
 
@@ -112,13 +129,25 @@ export const Pos_Calculator = ({
         </div>
         <div className="summary-item">
           <span className="label">Balance</span>
-          <span className="value">0.00</span>
+          <span className="value">{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
         </div>
         <div className="divider" />
         <div className="total-summary">
           <span className="label">Grand Total</span>
           <span className="value">{totalValue.toFixed(2)}</span>
         </div>
+        {cashTotal > 0 && (
+          <div className="summary-item">
+            <span className="label">Cash</span>
+            <span className="value">{cashTotal.toFixed(2)}</span>
+          </div>
+        )}
+        {cardTotal > 0 && (
+          <div className="summary-item">
+            <span className="label">Card</span>
+            <span className="value">{cardTotal.toFixed(2)}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -128,18 +157,13 @@ Pos_Calculator.propTypes = {
   darkMode: PropTypes.bool.isRequired,
   selectedItems: PropTypes.arrayOf(
     PropTypes.shape({
+      id: PropTypes.number.isRequired,
       name: PropTypes.string.isRequired,
       qty: PropTypes.number.isRequired,
       price: PropTypes.number.isRequired,
       total: PropTypes.number.isRequired,
     })
   ).isRequired,
-  currentItem: PropTypes.shape({
-    name: PropTypes.string,
-    qty: PropTypes.number,
-    price: PropTypes.number,
-    total: PropTypes.number,
-  }),
   totalValue: PropTypes.number.isRequired,
   inputScreenText: PropTypes.string,
   onBarcodeSearch: PropTypes.func.isRequired,
@@ -147,6 +171,16 @@ Pos_Calculator.propTypes = {
   setBarcodeInput: PropTypes.func.isRequired,
   customerName: PropTypes.string,
   barcodeInputRef: PropTypes.shape({ current: PropTypes.instanceOf(Element) }),
+  paymentMethods: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string,
+      amount: PropTypes.number,
+    })
+  ).isRequired,
+  balance: PropTypes.number.isRequired,
+  selectedRowIndex: PropTypes.number,
+  onRowSelect: PropTypes.func.isRequired,
+  isPaymentStarted: PropTypes.bool.isRequired,
 };
 
 export default Pos_Calculator;
