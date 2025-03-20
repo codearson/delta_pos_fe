@@ -16,16 +16,33 @@ const AddCategoryList = (props) => {
         }
 
         try {
+            // Check for existing category
             const existingCategory = await getProductCategoryByName(categoryName);
-            if (existingCategory) {
-                Swal.fire("Error", "This category name already exists", "error");
+            if (existingCategory && existingCategory.responseDto) {
+                Swal.fire({
+                    title: "Error!",
+                    text: "A category with this name already exists.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
                 return;
             }
 
             const response = await saveProductCategory(categoryName);
             if (response) {         
                 document.querySelector('[data-bs-dismiss="modal"]').click();
-                Swal.fire("Success", "Category saved successfully!", "success");
+                Swal.fire({
+                    title: "Success",
+                    text: "Category saved successfully!",
+                    icon: "success",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
                 
                 if (props.onUpdate) {
                     props.onUpdate();
@@ -34,10 +51,26 @@ const AddCategoryList = (props) => {
                 setCategoryName("");
                 setShowError(false);
             } else {
-                Swal.fire("Error", "Failed to save category.", "error");
+                Swal.fire({
+                    title: "Error",
+                    text: "Failed to save category.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
             }
         } catch (error) {
-            Swal.fire("Error", "Something went wrong", "error");
+            Swal.fire({
+                title: "Error",
+                text: "Something went wrong",
+                icon: "error",
+                confirmButtonText: "OK",
+                customClass: {
+                    confirmButton: "btn btn-primary",
+                },
+            });
         }
     };
 
@@ -48,7 +81,6 @@ const AddCategoryList = (props) => {
 
     return (
         <div>
-            {/* Add Category */}
             <div className="modal fade" id="add-category" tabIndex="-1" aria-labelledby="addCategoryLabel" aria-hidden="true">
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
@@ -75,7 +107,7 @@ const AddCategoryList = (props) => {
                                             <label className="form-label">Category</label>
                                             <input
                                                 type="text"
-                                                className="form-control"
+                                                className={`form-control ${showError ? 'is-invalid' : ''}`}
                                                 value={categoryName}
                                                 onChange={(e) => {
                                                     setCategoryName(e.target.value);
@@ -83,25 +115,11 @@ const AddCategoryList = (props) => {
                                                 }}
                                             />
                                             {showError && (
-                                                <small className="text-danger">Category name is required</small>
+                                                <div className="invalid-feedback">
+                                                    Category name is required
+                                                </div>
                                             )}
                                         </div>
-                                        {/* <div className="mb-3">
-                                            <label className="form-label">Category Slug</label>
-                                            <input type="text" className="form-control" />
-                                        </div> */}
-                                        {/* <div className="mb-0">
-                                            <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                <span className="status-label">Status</span>
-                                                <input
-                                                    type="checkbox"
-                                                    id="user2"
-                                                    className="check"
-                                                    defaultChecked="true"
-                                                />
-                                                <label htmlFor="user2" className="checktoggle" />
-                                            </div>
-                                        </div> */}
                                         <div className="modal-footer-btn">
                                             <button
                                                 type="button"
@@ -122,7 +140,6 @@ const AddCategoryList = (props) => {
                     </div>
                 </div>
             </div>
-            {/* /Add Category */}
         </div>
     )
 }

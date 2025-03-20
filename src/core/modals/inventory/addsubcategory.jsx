@@ -32,9 +32,18 @@ const AddSubcategory = ({ onTaxCreated }) => {
         }
 
         try {
+            // Check for existing tax
             const existingTax = await getTaxByName(taxPercentage);
-            if (existingTax) {
-                Swal.fire('Error', 'This tax percentage already exists', 'error');
+            if (existingTax && existingTax.responseDto) {
+                Swal.fire({
+                    title: "Error!",
+                    text: "A tax with this percentage already exists.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
                 return;
             }
 
@@ -44,7 +53,10 @@ const AddSubcategory = ({ onTaxCreated }) => {
                     title: 'Success',
                     text: 'Tax created successfully',
                     icon: 'success',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'OK',
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
                 }).then((result) => {
                     if (result.isConfirmed) {
                         document.getElementById('add-tax-close').click();
@@ -53,11 +65,29 @@ const AddSubcategory = ({ onTaxCreated }) => {
                         }
                     }
                 });
+                setTaxPercentage('');
+                setShowError(false);
             } else {
-                Swal.fire('Error', 'Failed to create tax', 'error');
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to create tax',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
             }
         } catch (error) {
-            Swal.fire('Error', 'Something went wrong', 'error');
+            Swal.fire({
+                title: 'Error',
+                text: 'Something went wrong',
+                icon: 'error',
+                confirmButtonText: 'OK',
+                customClass: {
+                    confirmButton: "btn btn-primary",
+                },
+            });
         }
     };
 

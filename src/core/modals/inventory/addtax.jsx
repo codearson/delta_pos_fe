@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import PropTypes from 'prop-types';
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { saveTax } from "../../../feature-module/Api/TaxApi";
+import { saveTax, getTaxByName } from "../../../feature-module/Api/TaxApi";
 
 const AddTax = ({ refreshTaxes, onTaxAdded }) => {
     const [tax, setTax] = useState("");
@@ -56,6 +56,21 @@ const AddTax = ({ refreshTaxes, onTaxAdded }) => {
         
         try {
             const taxValue = parseFloat(tax);
+            // Check for duplicate tax
+            const existingTax = await getTaxByName(taxValue);
+            if (existingTax && existingTax.responseDto) {
+                MySwal.fire({
+                    title: "Error!",
+                    text: "A tax with this percentage already exists.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
+                return;
+            }
+
             const response = await saveTax(taxValue);
             
             if (response && response.responseDto) {
@@ -112,7 +127,6 @@ const AddTax = ({ refreshTaxes, onTaxAdded }) => {
 
     return (
         <>
-            {/* Add Tax */}
             <div className="modal fade" id="add-units-tax">
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
@@ -127,6 +141,7 @@ const AddTax = ({ refreshTaxes, onTaxAdded }) => {
                                         className="close"
                                         data-bs-dismiss="modal"
                                         aria-label="Close"
+                                        onClick={resetForm}
                                     >
                                         <span aria-hidden="true">×</span>
                                     </button>
@@ -162,7 +177,6 @@ const AddTax = ({ refreshTaxes, onTaxAdded }) => {
                     </div>
                 </div>
             </div>
-            {/* /Add Tax */}
         </>
     );
 };
