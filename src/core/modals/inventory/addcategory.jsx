@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import PropTypes from 'prop-types';
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { saveProductCategory } from "../../../feature-module/Api/ProductCategoryApi";
+import { saveProductCategory, getProductCategoryByName } from "../../../feature-module/Api/ProductCategoryApi";
 
 const AddCategory = ({ refreshCategories, onCategoryAdded }) => {
   const [categoryName, setCategoryName] = useState("");
@@ -49,6 +49,21 @@ const AddCategory = ({ refreshCategories, onCategoryAdded }) => {
     }
 
     try {
+      // Check for duplicate category
+      const existingCategory = await getProductCategoryByName(categoryName);
+      if (existingCategory && existingCategory.responseDto) {
+        MySwal.fire({
+          title: "Error!",
+          text: "A category with this name already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: {
+            confirmButton: "btn btn-primary",
+          },
+        });
+        return;
+      }
+
       const response = await saveProductCategory(categoryName);
       if (response && response.responseDto) {
         MySwal.fire({
@@ -105,7 +120,6 @@ const AddCategory = ({ refreshCategories, onCategoryAdded }) => {
 
   return (
     <>
-      {/* Add Category */}
       <div className="modal fade" id="add-units-category">
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
@@ -120,6 +134,7 @@ const AddCategory = ({ refreshCategories, onCategoryAdded }) => {
                     className="close"
                     data-bs-dismiss="modal"
                     aria-label="Close"
+                    onClick={resetForm}
                   >
                     <span aria-hidden="true">×</span>
                   </button>
@@ -154,7 +169,6 @@ const AddCategory = ({ refreshCategories, onCategoryAdded }) => {
           </div>
         </div>
       </div>
-      {/* /Add Category */}
     </>
   );
 };
