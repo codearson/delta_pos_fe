@@ -488,6 +488,7 @@ const Pos = () => {
               padding: 2px 0;
               text-align: left;
               font-size: 10px;
+              font-weight: bold;
             }
             .receipt-items th {
               border-bottom: 1px dashed #000;
@@ -715,6 +716,7 @@ const Pos = () => {
                 padding: 2px 0;
                 text-align: left;
                 font-size: 10px;
+                font-weight: bold;
               }
               .receipt-items th {
                 border-bottom: 1px dashed #000;
