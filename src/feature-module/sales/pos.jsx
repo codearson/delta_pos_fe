@@ -9,6 +9,7 @@ import Numpad from "../components/Pos Components/Pos_Numpad";
 import PaymentButtons from "../components/Pos Components/Pos_Payment";
 import FunctionButtons from "../components/Pos Components/Pos_Function";
 import PriceCheckPopup from "../components/Pos Components/PriceCheckPopup";
+import NotificationPopup from "../components/Pos Components/NotificationPopup";
 import { getProductByBarcode } from "../Api/productApi";
 import { saveTransaction, fetchTransactions } from "../Api/TransactionApi";
 import { fetchCustomers } from "../Api/customerApi";
@@ -37,6 +38,7 @@ const Pos = () => {
   const [userDetails, setUserDetails] = useState({ firstName: "", lastName: "" });
   const [branchDetails, setBranchDetails] = useState({ branchName: "", branchCode: "", address: "" });
   const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
+  const [notification, setNotification] = useState(null);
   const barcodeInputRef = useRef(null);
 
   useEffect(() => {
@@ -75,6 +77,15 @@ const Pos = () => {
     };
   }, [showBillPopup]);
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -83,9 +94,17 @@ const Pos = () => {
 
   const handleTabChange = (newTab) => setActiveTab(newTab);
 
+  const showNotification = (message) => {
+    setNotification(message);
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
   const handleCategorySelect = (category) => {
     if (isPaymentStarted) {
-      alert("Cannot add items after payment has started. Please complete or reset the transaction.");
+      showNotification("Cannot add items after payment has started. Please complete or reset the transaction.");
       return;
     }
     if (activeTab === "category" && category?.name) {
@@ -180,7 +199,7 @@ const Pos = () => {
 
   const handleBarcodeSearch = async (barcode) => {
     if (isPaymentStarted) {
-      alert("Cannot add items after payment has started. Please complete or reset the transaction.");
+      showNotification("Cannot add items after payment has started. Please complete or reset the transaction.");
       return;
     }
     if (barcode.length < 3) return;
@@ -201,13 +220,7 @@ const Pos = () => {
 
       const qty = inputStage === "price" && pendingQty ? pendingQty : 1;
       if (inputStage === "price" && inputValue !== "0") {
-        alert("Invalid Qty: Cannot set custom price for barcoded items");
-        resetInput();
-        return;
-      }
-
-      if (qty > quantity) {
-        alert(`Insufficient stock for ${name}. Available: ${quantity}, Requested: ${qty}`);
+        showNotification("Invalid Qty: Cannot set custom price for barcoded items");
         resetInput();
         return;
       }
@@ -256,14 +269,14 @@ const Pos = () => {
 
   const handleVoidLine = () => {
     if (selectedRowIndex === null) {
-      alert("Please select a row to void.");
+      showNotification("Please select a row to void.");
       return;
     }
     if (isPaymentStarted) {
       const selectedItem = selectedItems.concat(paymentMethods)[selectedRowIndex];
       if (selectedItem.amount) {
         if (selectedItem.type === "Card") {
-          alert("Card payments cannot be voided.");
+          showNotification("Card payments cannot be voided.");
           return;
         }
         const paymentIndex = selectedRowIndex - selectedItems.length;
@@ -274,7 +287,7 @@ const Pos = () => {
           setIsPaymentStarted(false);
         }
       } else {
-        alert("Cannot void items after payment has started.");
+        showNotification("Cannot void items after payment has started.");
       }
     } else {
       const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
@@ -286,7 +299,7 @@ const Pos = () => {
 
   const handleVoidAll = () => {
     if (isPaymentStarted) {
-      alert("Cannot void all items after payment has started.");
+      showNotification("Cannot void all items after payment has started.");
       return;
     }
     setSelectedItems([]);
@@ -334,7 +347,6 @@ const Pos = () => {
         });
       }
     } catch (error) {
-      console.error("Error fetching branch or user details:", error);
       setBranchDetails({
         branchName: "Unknown Branch",
         branchCode: "N/A",
@@ -393,24 +405,60 @@ const Pos = () => {
     if (result.success) {
       setShowBillPopup(true);
     } else {
-      alert("Failed to save transaction: " + result.error);
+      showNotification("Failed to save transaction: " + result.error);
     }
   };
 
   const handlePrintBill = () => {
     const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showNotification("Failed to open print window. Please allow popups for this site and try again.");
+      return;
+    }
+
+    const formattedDate = transactionDate && !isNaN(new Date(transactionDate).getTime())
+      ? new Date(transactionDate).toLocaleString()
+      : currentTime.toLocaleString();
+
     printWindow.document.write(`
       <html>
         <head>
           <title>Receipt</title>
           <style>
+            @media print {
+              @page {
+                size: 80mm auto; /* Set width to 80mm for SNBC U80II, height auto for continuous roll */
+                margin: 0; /* Remove default margins */
+              }
+              body {
+                margin: 0 auto; /* Center the content horizontally */
+                padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
+                font-family: font-family: Arial, sans-serif;
+                width: 80mm; /* Fixed width for SNBC U80II */
+                min-height: 100%; /* Ensure body takes full height of content */
+                box-sizing: border-box;
+              }
+              /* Hide browser headers and footers */
+              header, footer, nav, .print-header, .print-footer {
+                display: none !important;
+              }
+              /* Ensure content stays centered */
+              html, body {
+                width: 80mm;
+                height: auto;
+                margin: 0 auto; /* Center in print preview */
+                overflow: hidden; /* Prevent extra space */
+              }
+            }
             body {
               font-family: 'Courier New', Courier, monospace;
               width: 80mm;
-              margin: 0 auto;
-              padding: 10px;
+              margin: 0 auto; /* Center on page */
+              padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
               font-size: 12px;
               line-height: 1.2;
+              box-sizing: border-box;
+              text-align: center; /* Center text within the receipt */
             }
             .receipt-header {
               text-align: center;
@@ -422,6 +470,7 @@ const Pos = () => {
             }
             .receipt-details {
               margin-bottom: 10px;
+              text-align: center; /* Center details */
             }
             .receipt-details p {
               margin: 2px 0;
@@ -430,6 +479,8 @@ const Pos = () => {
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 10px;
+              margin-left: auto;
+              margin-right: auto;
             }
             .receipt-items th, .receipt-items td {
               padding: 2px 0;
@@ -458,13 +509,13 @@ const Pos = () => {
         <body>
           <div class="receipt-header">
             <h2>Delta POS</h2>
-            <p>${branchDetails.branchName}</p>
-            <p>Branch Code: ${branchDetails.branchCode}</p>
-            <p>${branchDetails.address}</p>
+            <p>${branchDetails.branchName || "Unknown Branch"}</p>
+            <p>Branch Code: ${branchDetails.branchCode || "N/A"}</p>
+            <p>${branchDetails.address || "N/A"}</p>
           </div>
           <div class="receipt-details">
-            <p>Date: ${transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}</p>
-            <p>Cashier: ${userDetails.firstName} ${userDetails.lastName}</p>
+            <p>Date: ${formattedDate}</p>
+            <p>Cashier: ${userDetails.firstName || "Unknown"} ${userDetails.lastName || ""}</p>
             ${customerName ? `<p>Customer: ${customerName}</p>` : ""}
           </div>
           <div class="divider"></div>
@@ -478,30 +529,34 @@ const Pos = () => {
               </tr>
             </thead>
             <tbody>
-              ${selectedItems
-                .map(
-                  (item) => `
-                    <tr>
-                      <td>${item.qty}</td>
-                      <td>${item.name}</td>
-                      <td>${item.price.toFixed(2)}</td>
-                      <td class="total-column">${item.total.toFixed(2)}</td>
-                    </tr>
-                  `
-                )
-                .join("")}
+              ${selectedItems.length > 0
+                ? selectedItems
+                    .map(
+                      (item) => `
+                        <tr>
+                          <td>${item.qty}</td>
+                          <td>${item.name}</td>
+                          <td>${item.price.toFixed(2)}</td>
+                          <td class="total-column">${item.total.toFixed(2)}</td>
+                        </tr>
+                      `
+                    )
+                    .join("")
+                : "<tr><td colspan='4'>No items</td></tr>"}
             </tbody>
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
             <p>Total: ${totalValue.toFixed(2)}</p>
-            ${paymentMethods
-              .map(
-                (method) => `
-                  <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                `
-              )
-              .join("")}
+            ${paymentMethods.length > 0
+              ? paymentMethods
+                  .map(
+                    (method) => `
+                      <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                    `
+                  )
+                  .join("")
+              : "<p>No payments recorded</p>"}
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
@@ -513,20 +568,34 @@ const Pos = () => {
       </html>
     `);
     printWindow.document.close();
+    printWindow.focus();
     printWindow.print();
     printWindow.close();
   };
 
   const handlePrintLastBill = async () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showNotification("Failed to open print window. Please allow popups for this site and try again.");
+      return;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head><title>Receipt</title></head>
+        <body><p>Loading receipt...</p></body>
+      </html>
+    `);
+
     try {
       const transactions = await fetchTransactions();
       if (transactions.length === 0) {
-        alert("No transactions found or insufficient permissions.");
+        printWindow.document.write("<p>No transactions found or insufficient permissions.</p>");
+        showNotification("No transactions found or insufficient permissions.");
         return;
       }
 
       const lastTransaction = transactions[transactions.length - 1];
-
       const items = lastTransaction.transactionDetailsList.map((detail) => ({
         qty: detail.quantity,
         name: detail.productDto.name || "Unknown Item",
@@ -568,19 +637,53 @@ const Pos = () => {
 
       const customer = lastTransaction.customerDto.name || "";
 
-      const printWindow = window.open("", "_blank");
+      const transactionDate = lastTransaction.transactionDate
+        ? new Date(lastTransaction.transactionDate)
+        : new Date();
+      const formattedDate = isNaN(transactionDate.getTime())
+        ? currentTime.toLocaleString()
+        : transactionDate.toLocaleString();
+
+      printWindow.document.open();
       printWindow.document.write(`
         <html>
           <head>
-            <title>Last Receipt</title>
+            <title>Receipt</title>
             <style>
+              @media print {
+                @page {
+                  size: 80mm auto; /* Set width to 80mm for SNBC U80II, height auto for continuous roll */
+                  margin: 0; /* Remove default margins */
+                }
+                body {
+                  margin: 0 auto; /* Center the content horizontally */
+                  padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
+                  font-family: font-family: Arial, sans-serif;
+                  width: 80mm; /* Fixed width for SNBC U80II */
+                  min-height: 100%; /* Ensure body takes full height of content */
+                  box-sizing: border-box;
+                }
+                /* Hide browser headers and footers */
+                header, footer, nav, .print-header, .print-footer {
+                  display: none !important;
+                }
+                /* Ensure content stays centered */
+                html, body {
+                  width: 80mm;
+                  height: auto;
+                  margin: 0 auto; /* Center in print preview */
+                  overflow: hidden; /* Prevent extra space */
+                }
+              }
               body {
                 font-family: 'Courier New', Courier, monospace;
                 width: 80mm;
-                margin: 0 auto;
-                padding: 10px;
+                margin: 0 auto; /* Center on page */
+                padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
                 font-size: 12px;
                 line-height: 1.2;
+                box-sizing: border-box;
+                text-align: center; /* Center text within the receipt */
               }
               .receipt-header {
                 text-align: center;
@@ -592,6 +695,7 @@ const Pos = () => {
               }
               .receipt-details {
                 margin-bottom: 10px;
+                text-align: center; /* Center details */
               }
               .receipt-details p {
                 margin: 2px 0;
@@ -600,6 +704,8 @@ const Pos = () => {
                 width: 100%;
                 border-collapse: collapse;
                 margin-bottom: 10px;
+                margin-left: auto;
+                margin-right: auto;
               }
               .receipt-items th, .receipt-items td {
                 padding: 2px 0;
@@ -633,7 +739,7 @@ const Pos = () => {
               <p>${address}</p>
             </div>
             <div class="receipt-details">
-              <p>Date: ${new Date(lastTransaction.transactionDate).toLocaleString()}</p>
+              <p>Date: ${formattedDate}</p>
               <p>Cashier: ${firstName} ${lastName}</p>
               ${customer ? `<p>Customer: ${customer}</p>` : ""}
             </div>
@@ -683,11 +789,13 @@ const Pos = () => {
         </html>
       `);
       printWindow.document.close();
+      printWindow.focus();
       printWindow.print();
       printWindow.close();
     } catch (error) {
-      console.error("Error printing last bill:", error);
-      alert("Failed to fetch or print the last transaction.");
+      printWindow.document.write(`<p>Failed to load receipt: ${error.message}</p>`);
+      printWindow.document.close();
+      showNotification("Failed to fetch or print the last transaction: " + error.message);
     }
   };
 
@@ -739,6 +847,7 @@ const Pos = () => {
               selectedRowIndex={selectedRowIndex}
               onRowSelect={handleRowSelect}
               isPaymentStarted={isPaymentStarted}
+              showNotification={showNotification}
             />
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
@@ -755,6 +864,8 @@ const Pos = () => {
                   totalValue={totalValue}
                   setBalance={setBalance}
                   setIsPaymentStarted={setIsPaymentStarted}
+                  paymentMethods={paymentMethods}
+                  showNotification={showNotification}
                 />
                 <FunctionButtons
                   onVoidLine={handleVoidLine}
@@ -778,12 +889,12 @@ const Pos = () => {
                   <p>Grand Total: {totalValue.toFixed(2)}</p>
                   {paymentMethods.map((method, index) => (
                     <p key={index}>
-                      {method.type}: {method.amount.toFixed(2)}
+                      {method.type}: ${method.amount.toFixed(2)}
                     </p>
                   ))}
                   <p>
                     <span className="balance-label">Balance:</span>{" "}
-                    <span className="balance-value">{balance.toFixed(2)}</span>
+                    <span className="balance-value">${balance.toFixed(2)}</span>
                   </p>
                 </div>
               </div>
@@ -809,6 +920,10 @@ const Pos = () => {
               />
             </div>
           </div>
+        )}
+
+        {notification && (
+          <NotificationPopup message={notification} onClose={closeNotification} />
         )}
       </div>
     </div>

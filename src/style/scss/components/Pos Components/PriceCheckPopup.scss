@@ -1,4 +1,3 @@
-// Variables from Pos_Header.scss
 $pos-dark: #212121;
 $gray-700: #374151;
 $gray-300: #d1d5db;
@@ -108,31 +107,34 @@ $dark-text: white;
     margin-bottom: 1rem;
 
     table {
-      width: 100%; // Full width of the popup
-      border-collapse: collapse; // Clean edges
+      width: 100%;
+      border-collapse: collapse;
       font-size: 1rem;
       background-color: $light-bg;
 
       td {
-        padding: 0.5rem; // Consistent padding
-        text-align: left; // Left-align text
-        border-bottom: 1px solid $gray-300; // Row separation
+        padding: 0.5rem;
+        text-align: left;
+        border-bottom: 1px solid $gray-300;
       }
 
       td:first-child {
-        font-weight: 600; // Bold labels (Item, Price, Stock)
-        width: 30%; // Fixed width for labels
-        background-color: lighten($gray-300, 10%); // Slightly lighter background for labels
+        font-weight: 600;
+        width: 30%;
+        background-color: lighten($gray-300, 10%);
       }
 
       td:last-child {
-        font-weight: 500; // Normal weight for values
+        font-weight: 500;
+        white-space: normal;
+        word-wrap: break-word;
+        overflow: visible;
       }
     }
   }
 
   .close-btn {
-    width: 100%; // Full width of the popup
+    width: 100%;
     padding: 0.5rem 1rem;
     background-color: $pos-blue;
     color: white;
@@ -174,7 +176,7 @@ $dark-text: white;
 
     .item-details {
       table {
-        font-size: 0.9rem; // Slightly smaller for medium screens
+        font-size: 0.9rem;
       }
     }
   }
@@ -202,7 +204,12 @@ $dark-text: white;
 
     .item-details {
       table {
-        font-size: 0.85rem; // Smaller for mobile
+        font-size: 0.85rem;
+        td:last-child {
+          white-space: normal;
+          word-wrap: break-word;
+          overflow: visible;
+        }
       }
     }
   }

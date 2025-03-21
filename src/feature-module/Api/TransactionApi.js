@@ -5,7 +5,6 @@ export const saveTransaction = async (transactionData) => {
   try {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
-      console.error("No access token found in localStorage");
       return { success: false, error: "No access token" };
     }
 
@@ -22,7 +21,6 @@ export const saveTransaction = async (transactionData) => {
 
     return { success: true, data: response.data };
   } catch (error) {
-    console.error("Error saving transaction:", error);
     return { success: false, error: error.message };
   }
 };
@@ -31,13 +29,11 @@ export const fetchTransactions = async () => {
   try {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
-      console.error("No access token found in localStorage");
       return [];
     }
 
     const decodedToken = decodeJwt(accessToken);
     if (!decodedToken) {
-      console.error("Failed to decode JWT token");
       return [];
     }
 
