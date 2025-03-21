@@ -61,6 +61,8 @@ export const Pos_Calculator = ({
       }))]
     : selectedItems;
 
+  const reversedDisplayItems = [...displayItems].reverse();
+
   return (
     <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <div className="search-bar">
@@ -91,12 +93,12 @@ export const Pos_Calculator = ({
               <span className="price-column">Price</span>
               <span className="total-column">Total</span>
             </div>
-            {displayItems.length > 0 &&
-              displayItems.map((item, index) => (
+            {reversedDisplayItems.length > 0 &&
+              reversedDisplayItems.map((item, index) => (
                 <div
                   key={index}
-                  className={`result-row ${selectedRowIndex === index ? "selected" : ""}`}
-                  onClick={() => onRowSelect(index)}
+                  className={`result-row ${selectedRowIndex === (reversedDisplayItems.length - 1 - index) ? "selected" : ""}`}
+                  onClick={() => onRowSelect(reversedDisplayItems.length - 1 - index)}
                 >
                   <span className="qty-column">{item.qty}</span>
                   <span className="item-column">{item.name}</span>

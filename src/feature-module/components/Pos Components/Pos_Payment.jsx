@@ -9,9 +9,24 @@ const Pos_Payment = ({
   totalValue,
   setBalance,
   setIsPaymentStarted,
+  paymentMethods, // Added as a prop
 }) => {
   const handlePayment = (type) => {
-    const amount = parseFloat(inputValue) || 0;
+    let amount;
+    // Check if inputValue is "0" or empty (no amount entered)
+    if (!inputValue || inputValue === "0") {
+      const currentTotal = totalValue;
+      const totalPaidSoFar = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+      const remainingBalance = currentTotal - totalPaidSoFar;
+
+      // If no payments have been made yet, use the total value
+      // Otherwise, use the remaining balance (if negative, take absolute value)
+      amount = totalPaidSoFar === 0 ? currentTotal : Math.abs(remainingBalance);
+    } else {
+      // Use the entered amount if provided
+      amount = parseFloat(inputValue) || 0;
+    }
+
     if (amount > 0 && totalValue > 0) {
       const paymentData = { type, amount };
       setPaymentMethods((prevMethods) => {
@@ -51,6 +66,12 @@ Pos_Payment.propTypes = {
   totalValue: PropTypes.number.isRequired,
   setBalance: PropTypes.func.isRequired,
   setIsPaymentStarted: PropTypes.func.isRequired,
+  paymentMethods: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string,
+      amount: PropTypes.number,
+    })
+  ).isRequired,
 };
 
 export default Pos_Payment;
