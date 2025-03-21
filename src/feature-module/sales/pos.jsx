@@ -427,16 +427,18 @@ const Pos = () => {
           <style>
             @media print {
               @page {
-                size: 80mm auto; /* Set width to 80mm for SNBC U80II, height auto for continuous roll */
+                size: 72mm auto; /* Set width to 80mm for SNBC U80II, height auto for continuous roll */
                 margin: 0; /* Remove default margins */
               }
               body {
                 margin: 0 auto; /* Center the content horizontally */
-                padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
-                font-family: font-family: Arial, sans-serif;
-                width: 80mm; /* Fixed width for SNBC U80II */
+                padding: 0 10px; /* No top/bottom padding, 10px left/right */
+                font-family: Arial, sans-serif;
+                width: 72mm; /* Fixed width for SNBC U80II */
                 min-height: 100%; /* Ensure body takes full height of content */
                 box-sizing: border-box;
+                font-weight: bold;
+                color: #000;
               }
               /* Hide browser headers and footers */
               header, footer, nav, .print-header, .print-footer {
@@ -444,7 +446,7 @@ const Pos = () => {
               }
               /* Ensure content stays centered */
               html, body {
-                width: 80mm;
+                width: 72mm;
                 height: auto;
                 margin: 0 auto; /* Center in print preview */
                 overflow: hidden; /* Prevent extra space */
@@ -452,9 +454,9 @@ const Pos = () => {
             }
             body {
               font-family: 'Courier New', Courier, monospace;
-              width: 80mm;
+              width: 72mm;
               margin: 0 auto; /* Center on page */
-              padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
+              padding: 0 10px; /* No top/bottom padding, 10px left/right */
               font-size: 12px;
               line-height: 1.2;
               box-sizing: border-box;
@@ -652,16 +654,18 @@ const Pos = () => {
             <style>
               @media print {
                 @page {
-                  size: 80mm auto; /* Set width to 80mm for SNBC U80II, height auto for continuous roll */
+                  size: 72mm auto; /* Set width to 72mm for SNBC U80II, height auto for continuous roll */
                   margin: 0; /* Remove default margins */
                 }
                 body {
                   margin: 0 auto; /* Center the content horizontally */
-                  padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
-                  font-family: font-family: Arial, sans-serif;
-                  width: 80mm; /* Fixed width for SNBC U80II */
+                  padding: 0 10px; /* No top/bottom padding, 10px left/right */
+                  font-family: Arial, sans-serif;
+                  width: 72mm; /* Fixed width for SNBC U80II */
                   min-height: 100%; /* Ensure body takes full height of content */
                   box-sizing: border-box;
+                  font-weight: bold;
+                  color: #000;
                 }
                 /* Hide browser headers and footers */
                 header, footer, nav, .print-header, .print-footer {
@@ -669,7 +673,7 @@ const Pos = () => {
                 }
                 /* Ensure content stays centered */
                 html, body {
-                  width: 80mm;
+                  width: 72mm;
                   height: auto;
                   margin: 0 auto; /* Center in print preview */
                   overflow: hidden; /* Prevent extra space */
@@ -677,9 +681,9 @@ const Pos = () => {
               }
               body {
                 font-family: 'Courier New', Courier, monospace;
-                width: 80mm;
+                width: 72mm;
                 margin: 0 auto; /* Center on page */
-                padding: 2cm 10px; /* 2cm top and bottom padding, 10px left and right */
+                padding: 0 10px; /* No top/bottom padding, 10px left/right */
                 font-size: 12px;
                 line-height: 1.2;
                 box-sizing: border-box;
@@ -720,7 +724,7 @@ const Pos = () => {
               }
               .receipt-footer {
                 text-align: center;
-                margin-top: 10px;
+                margin-top: personally10px;
               }
               .receipt-footer p {
                 margin: 2px 0;
