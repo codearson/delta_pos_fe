@@ -427,7 +427,7 @@ const Pos = () => {
           <style>
             @media print {
               @page {
-                size: 72mm auto; /* Set width to 80mm for SNBC U80II, height auto for continuous roll */
+                size: 72mm auto; /* Set width to 72mm for SNBC U80II, height auto for continuous roll */
                 margin: 0; /* Remove default margins */
               }
               body {
@@ -488,6 +488,7 @@ const Pos = () => {
               padding: 2px 0;
               text-align: left;
               font-size: 10px;
+              font-weight: bold;
             }
             .receipt-items th {
               border-bottom: 1px dashed #000;
@@ -532,9 +533,9 @@ const Pos = () => {
             </thead>
             <tbody>
               ${selectedItems.length > 0
-                ? selectedItems
-                    .map(
-                      (item) => `
+        ? selectedItems
+          .map(
+            (item) => `
                         <tr>
                           <td>${item.qty}</td>
                           <td>${item.name}</td>
@@ -542,29 +543,32 @@ const Pos = () => {
                           <td class="total-column">${item.total.toFixed(2)}</td>
                         </tr>
                       `
-                    )
-                    .join("")
-                : "<tr><td colspan='4'>No items</td></tr>"}
+          )
+          .join("")
+        : "<tr><td colspan='4'>No items</td></tr>"}
             </tbody>
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
             <p>Total: ${totalValue.toFixed(2)}</p>
             ${paymentMethods.length > 0
-              ? paymentMethods
-                  .map(
-                    (method) => `
+        ? paymentMethods
+          .map(
+            (method) => `
                       <p>${method.type}: ${method.amount.toFixed(2)}</p>
                     `
-                  )
-                  .join("")
-              : "<p>No payments recorded</p>"}
+          )
+          .join("")
+        : "<p>No payments recorded</p>"}
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
           <div class="receipt-footer">
             <p>Thank You for Shopping with Us!</p>
             <p>Powered by Delta POS</p>
+            <p>(deltapos.codearson@gmail.com)</p>
+            <p>(0094762963979)</p>
+            <p>================================================</p>
           </div>
         </body>
       </html>
@@ -715,6 +719,7 @@ const Pos = () => {
                 padding: 2px 0;
                 text-align: left;
                 font-size: 10px;
+                font-weight: bold;
               }
               .receipt-items th {
                 border-bottom: 1px dashed #000;
@@ -724,7 +729,7 @@ const Pos = () => {
               }
               .receipt-footer {
                 text-align: center;
-                margin-top: personally10px;
+                margin-top: 10px;
               }
               .receipt-footer p {
                 margin: 2px 0;
@@ -759,8 +764,8 @@ const Pos = () => {
               </thead>
               <tbody>
                 ${items
-                  .map(
-                    (item) => `
+          .map(
+            (item) => `
                       <tr>
                         <td>${item.qty}</td>
                         <td>${item.name}</td>
@@ -768,26 +773,29 @@ const Pos = () => {
                         <td class="total-column">${item.total.toFixed(2)}</td>
                       </tr>
                     `
-                  )
-                  .join("")}
+          )
+          .join("")}
               </tbody>
             </table>
             <div class="divider"></div>
             <div class="receipt-details">
               <p>Total: ${totalAmount.toFixed(2)}</p>
               ${paymentMethods
-                .map(
-                  (method) => `
+          .map(
+            (method) => `
                     <p>${method.type}: ${method.amount.toFixed(2)}</p>
                   `
-                )
-                .join("")}
+          )
+          .join("")}
               <p>Balance: ${calculatedBalance.toFixed(2)}</p>
             </div>
             <div class="divider"></div>
             <div class="receipt-footer">
               <p>Thank You for Shopping with Us!</p>
               <p>Powered by Delta POS</p>
+              <p>(deltapos.codearson@gmail.com)</p>
+              <p>(0094762963979)</p>
+              <p>================================================</p>
             </div>
           </body>
         </html>
