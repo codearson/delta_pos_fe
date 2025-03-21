@@ -36,7 +36,12 @@ const Pos = () => {
   const [showBillPopup, setShowBillPopup] = useState(false);
   const [transactionDate, setTransactionDate] = useState(null);
   const [userDetails, setUserDetails] = useState({ firstName: "", lastName: "" });
-  const [branchDetails, setBranchDetails] = useState({ branchName: "", branchCode: "", address: "" });
+  const [branchDetails, setBranchDetails] = useState({ 
+    branchName: "", 
+    branchCode: "", 
+    address: "",
+    shopName: ""
+  });
   const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
   const [notification, setNotification] = useState(null);
   const barcodeInputRef = useRef(null);
@@ -316,6 +321,8 @@ const Pos = () => {
     const userId = !isNaN(parseInt(userIdRaw)) ? parseInt(userIdRaw) : 1;
     const branchId = !isNaN(parseInt(branchIdRaw)) ? parseInt(branchIdRaw) : 3;
 
+    let shopDetailsId = 1; // Default value
+
     try {
       const branches = await fetchBranches();
       const branch = branches.find((b) => b.id === branchId);
@@ -324,12 +331,15 @@ const Pos = () => {
           branchName: branch.branchName || "Unknown Branch",
           branchCode: branch.branchCode || "N/A",
           address: branch.address || "N/A",
+          shopName: branch.shopDetailsDto?.name || "Unknown Shop"
         });
+        shopDetailsId = branch.shopDetailsId || 1;
       } else {
         setBranchDetails({
           branchName: "Unknown Branch",
           branchCode: "N/A",
           address: "N/A",
+          shopName: "Unknown Shop"
         });
       }
 
@@ -351,6 +361,7 @@ const Pos = () => {
         branchName: "Unknown Branch",
         branchCode: "N/A",
         address: "N/A",
+        shopName: "Unknown Shop"
       });
       setUserDetails({
         firstName: "Unknown",
@@ -385,7 +396,7 @@ const Pos = () => {
       isActive: 1,
       totalAmount: totalValue,
       branchDto: { id: branchId },
-      shopDetailsDto: { id: 1 },
+      shopDetailsDto: { id: shopDetailsId },
       customerDto: { id: customerId },
       userDto: { id: userId },
       transactionDetailsList: selectedItems.map((item) => ({
@@ -427,40 +438,38 @@ const Pos = () => {
           <style>
             @media print {
               @page {
-                size: 72mm auto; /* Set width to 72mm for SNBC U80II, height auto for continuous roll */
-                margin: 0; /* Remove default margins */
+                size: 72mm auto;
+                margin: 0;
               }
               body {
-                margin: 0 auto; /* Center the content horizontally */
-                padding: 0 10px; /* No top/bottom padding, 10px left/right */
+                margin: 0 auto;
+                padding: 0 10px;
                 font-family: Arial, sans-serif;
-                width: 72mm; /* Fixed width for SNBC U80II */
-                min-height: 100%; /* Ensure body takes full height of content */
+                width: 72mm;
+                min-height: 100%;
                 box-sizing: border-box;
                 font-weight: bold;
                 color: #000;
               }
-              /* Hide browser headers and footers */
               header, footer, nav, .print-header, .print-footer {
                 display: none !important;
               }
-              /* Ensure content stays centered */
               html, body {
                 width: 72mm;
                 height: auto;
-                margin: 0 auto; /* Center in print preview */
-                overflow: hidden; /* Prevent extra space */
+                margin: 0 auto;
+                overflow: hidden;
               }
             }
             body {
               font-family: 'Courier New', Courier, monospace;
               width: 72mm;
-              margin: 0 auto; /* Center on page */
-              padding: 0 10px; /* No top/bottom padding, 10px left/right */
+              margin: 0 auto;
+              padding: 0 10px;
               font-size: 12px;
               line-height: 1.2;
               box-sizing: border-box;
-              text-align: center; /* Center text within the receipt */
+              text-align: center;
             }
             .receipt-header {
               text-align: center;
@@ -472,7 +481,7 @@ const Pos = () => {
             }
             .receipt-details {
               margin-bottom: 10px;
-              text-align: center; /* Center details */
+              text-align: center;
             }
             .receipt-details p {
               margin: 2px 0;
@@ -511,14 +520,14 @@ const Pos = () => {
         </head>
         <body>
           <div class="receipt-header">
-            <h2>Delta POS</h2>
-            <p>${branchDetails.branchName || "Unknown Branch"}</p>
-            <p>Branch Code: ${branchDetails.branchCode || "N/A"}</p>
-            <p>${branchDetails.address || "N/A"}</p>
+            <h2>${branchDetails.shopName}</h2>
+            <p>${branchDetails.branchName}</p>
+            <p>Branch Code: ${branchDetails.branchCode}</p>
+            <p>${branchDetails.address}</p>
           </div>
           <div class="receipt-details">
             <p>Date: ${formattedDate}</p>
-            <p>Cashier: ${userDetails.firstName || "Unknown"} ${userDetails.lastName || ""}</p>
+            <p>Cashier: ${userDetails.firstName} ${userDetails.lastName || ""}</p>
             ${customerName ? `<p>Customer: ${customerName}</p>` : ""}
           </div>
           <div class="divider"></div>
@@ -623,6 +632,7 @@ const Pos = () => {
       let branchName = branchDetails.branchName;
       let branchCode = branchDetails.branchCode;
       let address = branchDetails.address;
+      let shopName = branchDetails.shopName;
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
 
@@ -632,6 +642,7 @@ const Pos = () => {
         branchName = branch.branchName || "Unknown Branch";
         branchCode = branch.branchCode || "N/A";
         address = branch.address || "N/A";
+        shopName = branch.shopDetailsDto?.name || "Unknown Shop";
       }
 
       const usersResponse = await fetchUsers();
@@ -658,40 +669,38 @@ const Pos = () => {
             <style>
               @media print {
                 @page {
-                  size: 72mm auto; /* Set width to 72mm for SNBC U80II, height auto for continuous roll */
-                  margin: 0; /* Remove default margins */
+                  size: 72mm auto;
+                  margin: 0;
                 }
                 body {
-                  margin: 0 auto; /* Center the content horizontally */
-                  padding: 0 10px; /* No top/bottom padding, 10px left/right */
+                  margin: 0 auto;
+                  padding: 0 10px;
                   font-family: Arial, sans-serif;
-                  width: 72mm; /* Fixed width for SNBC U80II */
-                  min-height: 100%; /* Ensure body takes full height of content */
+                  width: 72mm;
+                  min-height: 100%;
                   box-sizing: border-box;
                   font-weight: bold;
                   color: #000;
                 }
-                /* Hide browser headers and footers */
                 header, footer, nav, .print-header, .print-footer {
                   display: none !important;
                 }
-                /* Ensure content stays centered */
                 html, body {
                   width: 72mm;
                   height: auto;
-                  margin: 0 auto; /* Center in print preview */
-                  overflow: hidden; /* Prevent extra space */
+                  margin: 0 auto;
+                  overflow: hidden;
                 }
               }
               body {
                 font-family: 'Courier New', Courier, monospace;
                 width: 72mm;
-                margin: 0 auto; /* Center on page */
-                padding: 0 10px; /* No top/bottom padding, 10px left/right */
+                margin: 0 auto;
+                padding: 0 10px;
                 font-size: 12px;
                 line-height: 1.2;
                 box-sizing: border-box;
-                text-align: center; /* Center text within the receipt */
+                text-align: center;
               }
               .receipt-header {
                 text-align: center;
@@ -703,7 +712,7 @@ const Pos = () => {
               }
               .receipt-details {
                 margin-bottom: 10px;
-                text-align: center; /* Center details */
+                text-align: center;
               }
               .receipt-details p {
                 margin: 2px 0;
@@ -742,7 +751,7 @@ const Pos = () => {
           </head>
           <body>
             <div class="receipt-header">
-              <h2>Delta POS</h2>
+              <h2>${shopName}</h2>
               <p>${branchName}</p>
               <p>Branch Code: ${branchCode}</p>
               <p>${address}</p>
