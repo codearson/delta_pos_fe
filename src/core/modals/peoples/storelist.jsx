@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Edit } from "react-feather";
-import { Table } from "antd";
+import Table from "../../../core/pagination/datatable";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import Breadcrumbs from "../../breadcrumbs";

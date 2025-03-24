@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Edit } from "feather-icons-react/build/IconComponents";
-import { Table } from "antd";
+import Table from "../../core/pagination/datatable";
 import Swal from "sweetalert2";
 import CustomerModal from "../../core/modals/peoples/customerModal";
 import { saveCustomer, fetchCustomers, updateCustomer, updateCustomerStatus } from "../Api/customerApi";
@@ -20,7 +20,6 @@ const Customers = () => {
   const data = useSelector((state) => state.toggle_header);
   const [customers, setCustomers] = useState([]);
   const [allCustomers, setAllCustomers] = useState([]);
-  const [selectedRows, setSelectedRows] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showActive, setShowActive] = useState(true);
@@ -91,21 +90,6 @@ const Customers = () => {
     }
 
     setCustomers(filteredData.reverse());
-  };
-
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      const allIds = customers.map((customer) => customer.id);
-      setSelectedRows(allIds);
-    } else {
-      setSelectedRows([]);
-    }
-  };
-
-  const handleRowSelect = (id) => {
-    setSelectedRows(prev =>
-      prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
-    );
   };
 
   const handleSaveCustomer = async (customerData) => {
@@ -283,29 +267,6 @@ const Customers = () => {
   };
 
   const columns = [
-    {
-      title: (
-        <label className="checkboxs">
-          <input
-            type="checkbox"
-            checked={selectedRows.length === customers.length && customers.length > 0}
-            onChange={handleSelectAll}
-          />
-          <span className="checkmarks" />
-        </label>
-      ),
-      render: (record) => (
-        <label className="checkboxs">
-          <input
-            type="checkbox"
-            checked={selectedRows.includes(record.id)}
-            onChange={() => handleRowSelect(record.id)}
-          />
-          <span className="checkmarks" />
-        </label>
-      ),
-      width: 50,
-    },
     {
       title: "Customer Name",
       dataIndex: "name",

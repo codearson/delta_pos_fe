@@ -72,7 +72,7 @@ const AddCustomProductModal = ({ onSave, onUpdate, selectedProduct }) => {
 
     const validateForm = () => {
         const newErrors = {};
-        if (!formData.name.trim()) newErrors.name = "Product name is required";
+        if (!formData.name.trim()) newErrors.name = "Category name is required";
         if (!formData.icon.trim()) newErrors.icon = "Icon is required";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -165,7 +165,7 @@ const AddCustomProductModal = ({ onSave, onUpdate, selectedProduct }) => {
                                     <div className="col-lg-12">
                                         <div className="input-blocks">
                                             <label>
-                                                Product Name <span className="text-danger">*</span>
+                                                Category Name <span className="text-danger">*</span>
                                             </label>
                                             <input
                                                 type="text"
@@ -214,7 +214,7 @@ const AddCustomProductModal = ({ onSave, onUpdate, selectedProduct }) => {
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
                         <div className="modal-header border-0 custom-modal-header">
-                            <h4 className="page-title">Edit Custom Product</h4>
+                            <h4 className="page-title">Edit Custom Category</h4>
                             <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">×</span>
                             </button>
@@ -225,7 +225,7 @@ const AddCustomProductModal = ({ onSave, onUpdate, selectedProduct }) => {
                                     <div className="col-lg-12">
                                         <div className="input-blocks">
                                             <label>
-                                                Product Name <span className="text-danger">*</span>
+                                                Category Name <span className="text-danger">*</span>
                                             </label>
                                             <input
                                                 type="text"

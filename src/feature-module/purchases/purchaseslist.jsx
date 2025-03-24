@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Table } from "antd";
+import Table from "../../core/pagination/datatable";
 import Swal from "sweetalert2";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,7 +18,6 @@ const PurchasesList = () => {
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
     const [purchases, setPurchases] = useState([]);
-    const [selectedRows, setSelectedRows] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setIsLoading] = useState(true);
 
@@ -69,21 +68,6 @@ const PurchasesList = () => {
         setPurchases(filteredData);
     };
 
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            const allIds = purchases.map((purchase) => purchase.id);
-            setSelectedRows(allIds);
-        } else {
-            setSelectedRows([]);
-        }
-    };
-
-    const handleRowSelect = (id) => {
-        setSelectedRows((prev) =>
-            prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-        );
-    };
-
     const handleSavePurchase = async (purchaseData) => {
         try {
             const result = await savePurchase(purchaseData);
@@ -123,7 +107,6 @@ const PurchasesList = () => {
                     const response = await deleteAllPurchases();
                     if (response) {
                         await fetchPurchasesData();
-                        setSelectedRows([]);
                         Swal.fire({
                             title: "Deleted!",
                             text: "All purchases have been deleted.",
@@ -255,29 +238,6 @@ const PurchasesList = () => {
     };
 
     const columns = [
-        {
-            title: (
-                <label className="checkboxs">
-                    <input
-                        type="checkbox"
-                        checked={selectedRows.length === purchases.length && purchases.length > 0}
-                        onChange={handleSelectAll}
-                    />
-                    <span className="checkmarks" />
-                </label>
-            ),
-            render: (record) => (
-                <label className="checkboxs">
-                    <input
-                        type="checkbox"
-                        checked={selectedRows.includes(record.id)}
-                        onChange={() => handleRowSelect(record.id)}
-                    />
-                    <span className="checkmarks" />
-                </label>
-            ),
-            width: 50,
-        },
         {
             title: "Barcode",
             dataIndex: "barcode",
