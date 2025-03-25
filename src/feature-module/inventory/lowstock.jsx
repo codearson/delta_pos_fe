@@ -327,10 +327,10 @@ const LowStock = () => {
               <li>
                 <div className="status-toggle d-flex justify-content-between align-items-center">
                   <input type="checkbox" id="user2" className="check" defaultChecked="true" />
-                  <label htmlFor="user2" className="checktoggle">
+                  {/* <label htmlFor="user2" className="checktoggle">
                     checkbox
                   </label>
-                  Notify
+                  Notify */}
                 </div>
               </li>
               <li>
