@@ -208,7 +208,7 @@ const Header = () => {
         </Link>
         {/* Header Menu */}
         <ul className="nav user-menu">
-          {/* Search */}
+          {/* Search
           <li className="nav-item nav-searchinputs">
             <div className="top-nav-search">
               <Link to="#" className="responsive-search">
@@ -307,7 +307,7 @@ const Header = () => {
                 </div>
               </form>
             </div>
-          </li>
+          </li> */}
           {/* /Search */}
 
           {/* Select Store */}
