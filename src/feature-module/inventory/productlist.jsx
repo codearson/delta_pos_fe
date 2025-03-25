@@ -87,12 +87,14 @@ const ProductList = () => {
       }));
     setCategories(formattedCategories);
 
-    const formattedTaxes = taxesData.map(tax => ({
+    const formattedTaxes = taxesData
+    .filter(tax => tax.isActive === true)
+    .map(tax => ({
       value: tax.id,
       label: `${tax.taxPercentage}%`
     }));
-    setTaxes(formattedTaxes);
-  };
+  setTaxes(formattedTaxes);
+};
 
   useEffect(() => {
     const loadInitialData = async () => {
