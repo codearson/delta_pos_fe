@@ -15,6 +15,8 @@ import { saveTransaction } from "../Api/TransactionApi";
 import { fetchCustomers } from "../Api/customerApi";
 import { fetchBranches } from "../Api/StockApi";
 import { fetchUsers } from "../Api/UserApi";
+import Barcode from "react-barcode";
+import html2canvas from "html2canvas";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -36,16 +38,17 @@ const Pos = () => {
   const [showBillPopup, setShowBillPopup] = useState(false);
   const [transactionDate, setTransactionDate] = useState(null);
   const [userDetails, setUserDetails] = useState({ firstName: "", lastName: "" });
-  const [branchDetails, setBranchDetails] = useState({ 
-    branchName: "", 
-    branchCode: "", 
+  const [branchDetails, setBranchDetails] = useState({
+    branchName: "",
+    branchCode: "",
     address: "",
-    shopName: ""
+    shopName: "",
   });
   const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
   const [notification, setNotification] = useState(null);
   const [lastTransaction, setLastTransaction] = useState(null);
   const barcodeInputRef = useRef(null);
+  const barcodeRef = useRef(null); // Ref for the hidden barcode
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -196,11 +199,10 @@ const Pos = () => {
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         resetInput();
       }
-      // Check balance before saving transaction
       if (isPaymentStarted && selectedItems.length > 0) {
         if (balance < 0) {
           showNotification("Balance is less than 0. Please add sufficient payment.");
-          return; // Prevent saving the transaction
+          return;
         }
         handleSaveTransaction();
       }
@@ -336,7 +338,7 @@ const Pos = () => {
           branchName: branch.branchName || "Unknown Branch",
           branchCode: branch.branchCode || "N/A",
           address: branch.address || "N/A",
-          shopName: branch.shopDetailsDto?.name || "Unknown Shop"
+          shopName: branch.shopDetailsDto?.name || "Unknown Shop",
         });
         shopDetailsId = branch.shopDetailsId || 1;
       } else {
@@ -344,7 +346,7 @@ const Pos = () => {
           branchName: "Unknown Branch",
           branchCode: "N/A",
           address: "N/A",
-          shopName: "Unknown Shop"
+          shopName: "Unknown Shop",
         });
       }
 
@@ -366,7 +368,7 @@ const Pos = () => {
         branchName: "Unknown Branch",
         branchCode: "N/A",
         address: "N/A",
-        shopName: "Unknown Shop"
+        shopName: "Unknown Shop",
       });
       setUserDetails({
         firstName: "Unknown",
@@ -386,8 +388,8 @@ const Pos = () => {
     }
 
     const combinedPaymentMethods = [];
-    const cashPayments = paymentMethods.filter(m => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
-    const cardPayments = paymentMethods.filter(m => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
+    const cashPayments = paymentMethods.filter((m) => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
+    const cardPayments = paymentMethods.filter((m) => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
 
     if (cashPayments > 0) {
       combinedPaymentMethods.push({ type: "Cash", amount: cashPayments });
@@ -408,7 +410,7 @@ const Pos = () => {
         productDto: { id: item.id },
         quantity: item.qty,
         unitPrice: item.price,
-        discount: 0.00,
+        discount: 0.0,
       })),
       transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
         paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
@@ -419,30 +421,25 @@ const Pos = () => {
 
     const result = await saveTransaction(transactionData);
     if (result.success) {
-      // Log the result to inspect its structure
-      console.log("saveTransaction result:", result);
-
-      // Extract Transaction ID from the response
-      // Adjust this based on the actual structure of result
       let transactionId;
       if (result.data?.id) {
-        transactionId = result.data.id; // Case 1: result.data.id
+        transactionId = result.data.id;
       } else if (result.data?.responseDto?.id) {
-        transactionId = result.data.responseDto.id; // Case 2: result.data.responseDto.id
+        transactionId = result.data.responseDto.id;
       } else if (result.payload?.id) {
-        transactionId = result.payload.id; // Case 3: result.payload.id
+        transactionId = result.payload.id;
       } else {
-        transactionId = 0; // Fallback if ID is not found
+        transactionId = 0;
         showNotification("Warning: Transaction ID not found in API response. Please check the backend response.");
       }
 
       setLastTransaction({
-        id: transactionId, // Store the Transaction ID
+        id: transactionId,
         transactionDetailsList: selectedItems.map((item) => ({
           productDto: { id: item.id, name: item.name },
           quantity: item.qty,
           unitPrice: item.price,
-          discount: 0.00,
+          discount: 0.0,
         })),
         totalAmount: totalValue,
         transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
@@ -460,7 +457,7 @@ const Pos = () => {
     }
   };
 
-  const handlePrintBill = () => {
+  const handlePrintBill = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
@@ -471,15 +468,24 @@ const Pos = () => {
       ? new Date(transactionDate).toLocaleString()
       : currentTime.toLocaleString();
 
-    // Format Transaction ID as a 10-digit string
     const transactionId = lastTransaction?.id || 0;
     const formattedTransactionId = transactionId.toString().padStart(10, "0");
+
+    let barcodeDataUrl = "";
+    try {
+      if (barcodeRef.current) {
+        const canvas = await html2canvas(barcodeRef.current, { scale: 2 });
+        barcodeDataUrl = canvas.toDataURL("image/png");
+      }
+    } catch (error) {
+      console.error("Failed to generate barcode image:", error);
+      showNotification("Failed to generate barcode image.");
+    }
 
     printWindow.document.write(`
       <html>
         <head>
           <title>Receipt</title>
-          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
           <style>
             @media print {
               @page {
@@ -488,12 +494,12 @@ const Pos = () => {
               }
               body {
                 margin: 0 auto;
-                padding: 0 10px;
-                font-family: Arial, sans-serif;
+                padding: 0 5px;
+                font-family: 'Courier New', Courier, monospace;
                 width: 72mm;
                 min-height: 100%;
                 box-sizing: border-box;
-                font-weight: bold;
+                font-weight: normal;
                 color: #000;
               }
               header, footer, nav, .print-header, .print-footer {
@@ -510,7 +516,7 @@ const Pos = () => {
               font-family: 'Courier New', Courier, monospace;
               width: 72mm;
               margin: 0 auto;
-              padding: 0 10px;
+              padding: 0 5px;
               font-size: 12px;
               line-height: 1.2;
               box-sizing: border-box;
@@ -518,15 +524,16 @@ const Pos = () => {
             }
             .receipt-header {
               text-align: center;
-              margin-bottom: 10px;
+              margin-bottom: 5px;
             }
             .receipt-header h2 {
               margin: 0;
               font-size: 14px;
+              font-weight: bold;
             }
             .receipt-details {
-              margin-bottom: 10px;
-              text-align: center;
+              margin-bottom: 5px;
+              text-align: left;
             }
             .receipt-details p {
               margin: 2px 0;
@@ -534,15 +541,14 @@ const Pos = () => {
             .receipt-items {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 10px;
+              margin-bottom: 5px;
               margin-left: auto;
               margin-right: auto;
             }
             .receipt-items th, .receipt-items td {
               padding: 2px 0;
               text-align: left;
-              font-size: 10px;
-              font-weight: bold;
+              font-size: 12px;
             }
             .receipt-items th {
               border-bottom: 1px dashed #000;
@@ -552,7 +558,7 @@ const Pos = () => {
             }
             .receipt-footer {
               text-align: center;
-              margin-top: 10px;
+              margin-top: 5px;
             }
             .receipt-footer p {
               margin: 2px 0;
@@ -565,7 +571,7 @@ const Pos = () => {
               text-align: center;
               margin: 5px 0;
             }
-            #barcode {
+            .barcode-container img {
               width: 100%;
               height: 30px;
             }
@@ -576,12 +582,11 @@ const Pos = () => {
             <h2>${branchDetails.shopName}</h2>
             <p>${branchDetails.branchName}</p>
             <p>Branch Code: ${branchDetails.branchCode}</p>
-            <p>${branchDetails.address}</p>
           </div>
           <div class="receipt-details">
             <p>Date: ${formattedDate}</p>
             <p>Cashier: ${userDetails.firstName} ${userDetails.lastName || ""}</p>
-            ${customerName ? `<p>Customer: ${customerName}</p>` : "<p>Customer: Local Customer </p>"}
+            ${customerName ? `<p>Customer: ${customerName}</p>` : "<p>Customer: Local Customer</p>"}
             <p>Transaction ID: ${formattedTransactionId}</p>
           </div>
           <div class="divider"></div>
@@ -627,7 +632,7 @@ const Pos = () => {
           </div>
           <div class="divider"></div>
           <div class="barcode-container">
-            <canvas id="barcode"></canvas>
+            ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode" />` : "<p>Barcode failed to render</p>"}
           </div>
           <div class="divider"></div>
           <div class="receipt-footer">
@@ -638,34 +643,26 @@ const Pos = () => {
             <p>================================================</p>
           </div>
           <script>
-            // Generate barcode for Transaction ID
-            JsBarcode("#barcode", "${formattedTransactionId}", {
-              format: "CODE128",
-              width: 1,
-              height: 30,
-              displayValue: false
-            }).init();
-            // Wait for the barcode to render before printing
             setTimeout(() => {
               window.print();
               window.close();
-            }, 500); // 500ms delay to ensure barcode renders
+            }, 500);
           </script>
         </body>
       </html>
     `);
+
     printWindow.document.close();
     printWindow.focus();
   };
 
-  const handlePrintLastBill = () => {
+  const handlePrintLastBill = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
 
-    // Check if there is a last transaction stored locally
     if (!lastTransaction) {
       printWindow.document.write("<p>No previous transaction found.</p>");
       showNotification("No previous transaction found.");
@@ -695,24 +692,20 @@ const Pos = () => {
       const userId = lastTransaction.userDto.id;
       let branchName = branchDetails.branchName;
       let branchCode = branchDetails.branchCode;
-      let address = branchDetails.address;
       let shopName = branchDetails.shopName;
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
 
-      // Use the already fetched branch and user details if available
-      if (!branchName || !branchCode || !address || !shopName) {
+      if (!branchName || !branchCode || !shopName) {
         const branches = fetchBranches();
         const branch = branches.find((b) => b.id === branchId);
         if (branch) {
           branchName = branch.branchName || "Unknown Branch";
           branchCode = branch.branchCode || "N/A";
-          address = branch.address || "N/A";
           shopName = branch.shopDetailsDto?.name || "Unknown Shop";
         } else {
           branchName = "Unknown Branch";
           branchCode = "N/A";
-          address = "N/A";
           shopName = "Unknown Shop";
         }
       }
@@ -730,7 +723,6 @@ const Pos = () => {
       }
 
       const customer = lastTransaction.customerDto.name || "";
-
       const transactionDate = lastTransaction.transactionDate
         ? new Date(lastTransaction.transactionDate)
         : new Date();
@@ -738,16 +730,24 @@ const Pos = () => {
         ? currentTime.toLocaleString()
         : transactionDate.toLocaleString();
 
-      // Format Transaction ID as a 10-digit string
       const transactionId = lastTransaction.id || 0;
       const formattedTransactionId = transactionId.toString().padStart(10, "0");
 
-      printWindow.document.open();
+      let barcodeDataUrl = "";
+      try {
+        if (barcodeRef.current) {
+          const canvas = await html2canvas(barcodeRef.current, { scale: 2 });
+          barcodeDataUrl = canvas.toDataURL("image/png");
+        }
+      } catch (error) {
+        console.error("Failed to generate barcode image:", error);
+        showNotification("Failed to generate barcode image.");
+      }
+
       printWindow.document.write(`
         <html>
           <head>
             <title>Receipt</title>
-            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
             <style>
               @media print {
                 @page {
@@ -756,12 +756,12 @@ const Pos = () => {
                 }
                 body {
                   margin: 0 auto;
-                  padding: 0 10px;
-                  font-family: Arial, sans-serif;
+                  padding: 0 5px;
+                  font-family: 'Courier New', Courier, monospace;
                   width: 72mm;
                   min-height: 100%;
                   box-sizing: border-box;
-                  font-weight: bold;
+                  font-weight: normal;
                   color: #000;
                 }
                 header, footer, nav, .print-header, .print-footer {
@@ -778,7 +778,7 @@ const Pos = () => {
                 font-family: 'Courier New', Courier, monospace;
                 width: 72mm;
                 margin: 0 auto;
-                padding: 0 10px;
+                padding: 0 5px;
                 font-size: 12px;
                 line-height: 1.2;
                 box-sizing: border-box;
@@ -786,15 +786,16 @@ const Pos = () => {
               }
               .receipt-header {
                 text-align: center;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
               }
               .receipt-header h2 {
                 margin: 0;
                 font-size: 14px;
+                font-weight: bold;
               }
               .receipt-details {
-                margin-bottom: 10px;
-                text-align: center;
+                margin-bottom: 5px;
+                text-align: left;
               }
               .receipt-details p {
                 margin: 2px 0;
@@ -802,15 +803,14 @@ const Pos = () => {
               .receipt-items {
                 width: 100%;
                 border-collapse: collapse;
-                margin-bottom: 10px;
+                margin-bottom: 5px;
                 margin-left: auto;
                 margin-right: auto;
               }
               .receipt-items th, .receipt-items td {
                 padding: 2px 0;
                 text-align: left;
-                font-size: 10px;
-                font-weight: bold;
+                font-size: 12px;
               }
               .receipt-items th {
                 border-bottom: 1px dashed #000;
@@ -820,7 +820,7 @@ const Pos = () => {
               }
               .receipt-footer {
                 text-align: center;
-                margin-top: 10px;
+                margin-top: 5px;
               }
               .receipt-footer p {
                 margin: 2px 0;
@@ -833,7 +833,7 @@ const Pos = () => {
                 text-align: center;
                 margin: 5px 0;
               }
-              #barcode {
+              .barcode-container img {
                 width: 100%;
                 height: 30px;
               }
@@ -844,7 +844,6 @@ const Pos = () => {
               <h2>${shopName}</h2>
               <p>${branchName}</p>
               <p>Branch Code: ${branchCode}</p>
-              <p>${address}</p>
             </div>
             <div class="receipt-details">
               <p>Date: ${formattedDate}</p>
@@ -891,7 +890,7 @@ const Pos = () => {
             </div>
             <div class="divider"></div>
             <div class="barcode-container">
-              <canvas id="barcode"></canvas>
+              ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode" />` : "<p>Barcode failed to render</p>"}
             </div>
             <div class="divider"></div>
             <div class="receipt-footer">
@@ -902,22 +901,15 @@ const Pos = () => {
               <p>================================================</p>
             </div>
             <script>
-              // Generate barcode for Transaction ID
-              JsBarcode("#barcode", "${formattedTransactionId}", {
-                format: "CODE128",
-                width: 1,
-                height: 30,
-                displayValue: false
-              }).init();
-              // Wait for the barcode to render before printing
               setTimeout(() => {
                 window.print();
                 window.close();
-              }, 500); // 500ms delay to ensure barcode renders
+              }, 500);
             </script>
           </body>
         </html>
       `);
+
       printWindow.document.close();
       printWindow.focus();
     } catch (error) {
@@ -1044,17 +1036,25 @@ const Pos = () => {
           <div className="price-check-popup-overlay">
             <div className="price-check-popup">
               <h2>Price Check</h2>
-              <PriceCheckPopup
-                onClose={handleClosePriceCheckPopup}
-                darkMode={darkMode}
-              />
+              <PriceCheckPopup onClose={handleClosePriceCheckPopup} darkMode={darkMode} />
             </div>
           </div>
         )}
 
-        {notification && (
-          <NotificationPopup message={notification} onClose={closeNotification} />
-        )}
+        {notification && <NotificationPopup message={notification} onClose={closeNotification} />}
+
+        {/* Hidden div to render the barcode */}
+        <div style={{ position: "absolute", left: "-9999px" }}>
+          <div ref={barcodeRef}>
+            <Barcode
+              value={(lastTransaction?.id || 0).toString().padStart(10, "0")}
+              format="CODE128"
+              width={1}
+              height={30}
+              displayValue={false}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

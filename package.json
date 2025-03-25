@@ -43,7 +43,7 @@
     "react-apexcharts": "^1.4.1",
     "react-awesome-slider": "^4.1.0",
     "react-awesome-stars-rating": "^0.16.1",
-    "react-barcode": "^1.5.3",
+    "react-barcode": "^1.6.1",
     "react-barcode-reader": "^0.0.2",
     "react-bootstrap": "^2.10.0",
     "react-bootstrap-daterangepicker": "^8.0.0",
