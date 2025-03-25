@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Edit } from "feather-icons-react/build/IconComponents";
-import { Table } from "antd";
+import Table from "../../core/pagination/datatable";
 import Swal from "sweetalert2";
 import AddCustomProductModal from "../../core/modals/inventory/customproductlistmodal";
 import { fetchProducts, updateProductStatus } from "../Api/productApi";
@@ -20,7 +20,6 @@ const CustomProductList = () => {
   const data = useSelector((state) => state.toggle_header);
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
-  const [selectedRows, setSelectedRows] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showActive, setShowActive] = useState(true);
@@ -66,7 +65,7 @@ const CustomProductList = () => {
         setProducts([]);
         Swal.fire({
           title: "Warning!",
-          text: "No custom product data received from the server.",
+          text: "No custom category data received from the server.",
           icon: "warning",
           confirmButtonText: "OK",
         });
@@ -76,7 +75,7 @@ const CustomProductList = () => {
       setProducts([]);
       Swal.fire({
         title: "Error!",
-        text: "Failed to fetch custom products: " + error.message,
+        text: "Failed to fetch custom categories: " + error.message,
         icon: "error",
         confirmButtonText: "OK",
       });
@@ -95,28 +94,13 @@ const CustomProductList = () => {
     setProducts(filteredData.reverse());
   };
 
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      const allIds = products.map((product) => product.id);
-      setSelectedRows(allIds);
-    } else {
-      setSelectedRows([]);
-    }
-  };
-
-  const handleRowSelect = (id) => {
-    setSelectedRows((prev) =>
-      prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]
-    );
-  };
-
   const handleToggleStatus = (productId, currentStatus) => {
     setTogglingId(productId);
     const newStatusText = currentStatus ? "Inactive" : "Active";
 
     Swal.fire({
       title: "Are you sure?",
-      text: `Do you want to change this product to ${newStatusText}?`,
+      text: `Do you want to change this category to ${newStatusText}?`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#3085d6",
@@ -132,7 +116,7 @@ const CustomProductList = () => {
             await fetchProductsData(false);
             Swal.fire({
               title: "Success!",
-              text: `Product status changed to ${newStatusText}.`,
+              text: `Category status changed to ${newStatusText}.`,
               icon: "success",
               confirmButtonText: "OK",
               customClass: { confirmButton: "btn btn-success" },
@@ -143,7 +127,7 @@ const CustomProductList = () => {
         } catch (error) {
           Swal.fire({
             title: "Error!",
-            text: "Failed to update product status: " + error.message,
+            text: "Failed to update category status: " + error.message,
             icon: "error",
             confirmButtonText: "OK",
             customClass: { confirmButton: "btn btn-danger" },
@@ -163,8 +147,8 @@ const CustomProductList = () => {
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      doc.text(`Custom Product List (${showActive ? "Active" : "Inactive"})`, 14, 15);
-      const tableColumn = ["Product Name"];
+      doc.text(`Custom Category List (${showActive ? "Active" : "Inactive"})`, 14, 15);
+      const tableColumn = ["Category Name"];
       const tableRows = products.map((product) => [product.name || ""]);
       autoTable(doc, {
         head: [tableColumn],
@@ -174,7 +158,7 @@ const CustomProductList = () => {
         styles: { fontSize: 10 },
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       });
-      doc.save(`custom_product_list_${showActive ? "active" : "inactive"}.pdf`);
+      doc.save(`custom_category_list_${showActive ? "active" : "inactive"}.pdf`);
     } catch (error) {
       Swal.fire({
         title: "Error!",
@@ -190,21 +174,21 @@ const CustomProductList = () => {
       if (!products || products.length === 0) {
         Swal.fire({
           title: "No Data",
-          text: "There are no custom products to export",
+          text: "There are no custom categories to export",
           icon: "warning",
           confirmButtonText: "OK",
         });
         return;
       }
       const worksheetData = products.map((product) => ({
-        "Product Name": product.name || "",
+        "Category Name": product.name || "",
         Icon: product.icon || "📦",
       }));
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "CustomProducts");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "CustomCategories");
       worksheet["!cols"] = [{ wch: 20 }, { wch: 10 }];
-      XLSX.writeFile(workbook, `custom_product_list_${showActive ? "active" : "inactive"}.xlsx`);
+      XLSX.writeFile(workbook, `custom_category_list_${showActive ? "active" : "inactive"}.xlsx`);
     } catch (error) {
       Swal.fire({
         title: "Error!",
@@ -225,30 +209,7 @@ const CustomProductList = () => {
 
   const columns = [
     {
-      title: (
-        <label className="checkboxs">
-          <input
-            type="checkbox"
-            checked={selectedRows.length === products.length && products.length > 0}
-            onChange={handleSelectAll}
-          />
-          <span className="checkmarks" />
-        </label>
-      ),
-      render: (record) => (
-        <label className="checkboxs">
-          <input
-            type="checkbox"
-            checked={selectedRows.includes(record.id)}
-            onChange={() => handleRowSelect(record.id)}
-          />
-          <span className="checkmarks" />
-        </label>
-      ),
-      width: 50,
-    },
-    {
-      title: "Product Name",
+      title: "Category Name",
       dataIndex: "name",
       render: (text) => <Link to="#">{text}</Link>,
       sorter: (a, b) => (a.name || "").length - (b.name || "").length,
@@ -309,8 +270,8 @@ const CustomProductList = () => {
         <div className="page-header">
           <div className="add-item d-flex flex-column">
             <div className="page-title">
-              <h4>Custom Product List</h4>
-              <h6>Manage Your Custom Products</h6>
+              <h4>Custom Category List</h4>
+              <h6>Manage Your Custom Categories</h6>
             </div>
             <div className="status-toggle-btns mt-2">
               <div className="btn-group" role="group">
@@ -377,7 +338,7 @@ const CustomProductList = () => {
               onClick={handleAddClick}
             >
               <PlusCircle className="me-2 iconsize" />
-              Add New Custom Product
+              Add New Custom Category
             </Link>
           </div>
         </div>

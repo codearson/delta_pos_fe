@@ -11,7 +11,7 @@ import FunctionButtons from "../components/Pos Components/Pos_Function";
 import PriceCheckPopup from "../components/Pos Components/PriceCheckPopup";
 import NotificationPopup from "../components/Pos Components/NotificationPopup";
 import { getProductByBarcode } from "../Api/productApi";
-import { saveTransaction, fetchTransactions } from "../Api/TransactionApi";
+import { saveTransaction } from "../Api/TransactionApi";
 import { fetchCustomers } from "../Api/customerApi";
 import { fetchBranches } from "../Api/StockApi";
 import { fetchUsers } from "../Api/UserApi";
@@ -44,6 +44,7 @@ const Pos = () => {
   });
   const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [lastTransaction, setLastTransaction] = useState(null);
   const barcodeInputRef = useRef(null);
 
   useEffect(() => {
@@ -61,10 +62,6 @@ const Pos = () => {
       const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
       const newBalance = totalPaid - currentTotal;
       setBalance(newBalance);
-
-      if (newBalance >= 0 && selectedItems.length > 0) {
-        handleSaveTransaction();
-      }
     } else {
       setBalance(0);
     }
@@ -199,6 +196,14 @@ const Pos = () => {
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         resetInput();
       }
+      // Check balance before saving transaction
+      if (isPaymentStarted && selectedItems.length > 0) {
+        if (balance < 0) {
+          showNotification("Balance is less than 0. Please add sufficient payment.");
+          return; // Prevent saving the transaction
+        }
+        handleSaveTransaction();
+      }
     }
   };
 
@@ -321,7 +326,7 @@ const Pos = () => {
     const userId = !isNaN(parseInt(userIdRaw)) ? parseInt(userIdRaw) : 1;
     const branchId = !isNaN(parseInt(branchIdRaw)) ? parseInt(branchIdRaw) : 3;
 
-    let shopDetailsId = 1; // Default value
+    let shopDetailsId = 1;
 
     try {
       const branches = await fetchBranches();
@@ -414,6 +419,41 @@ const Pos = () => {
 
     const result = await saveTransaction(transactionData);
     if (result.success) {
+      // Log the result to inspect its structure
+      console.log("saveTransaction result:", result);
+
+      // Extract Transaction ID from the response
+      // Adjust this based on the actual structure of result
+      let transactionId;
+      if (result.data?.id) {
+        transactionId = result.data.id; // Case 1: result.data.id
+      } else if (result.data?.responseDto?.id) {
+        transactionId = result.data.responseDto.id; // Case 2: result.data.responseDto.id
+      } else if (result.payload?.id) {
+        transactionId = result.payload.id; // Case 3: result.payload.id
+      } else {
+        transactionId = 0; // Fallback if ID is not found
+        showNotification("Warning: Transaction ID not found in API response. Please check the backend response.");
+      }
+
+      setLastTransaction({
+        id: transactionId, // Store the Transaction ID
+        transactionDetailsList: selectedItems.map((item) => ({
+          productDto: { id: item.id, name: item.name },
+          quantity: item.qty,
+          unitPrice: item.price,
+          discount: 0.00,
+        })),
+        totalAmount: totalValue,
+        transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
+          paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
+          amount: method.amount,
+        })),
+        branchDto: { id: branchId },
+        userDto: { id: userId },
+        customerDto: { name: customerName || "Local Customer" },
+        transactionDate: new Date(),
+      });
       setShowBillPopup(true);
     } else {
       showNotification("Failed to save transaction: " + result.error);
@@ -431,10 +471,15 @@ const Pos = () => {
       ? new Date(transactionDate).toLocaleString()
       : currentTime.toLocaleString();
 
+    // Format Transaction ID as a 10-digit string
+    const transactionId = lastTransaction?.id || 0;
+    const formattedTransactionId = transactionId.toString().padStart(10, "0");
+
     printWindow.document.write(`
       <html>
         <head>
           <title>Receipt</title>
+          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
           <style>
             @media print {
               @page {
@@ -516,6 +561,14 @@ const Pos = () => {
               border-top: 1px dashed #000;
               margin: 5px 0;
             }
+            .barcode-container {
+              text-align: center;
+              margin: 5px 0;
+            }
+            #barcode {
+              width: 100%;
+              height: 30px;
+            }
           </style>
         </head>
         <body>
@@ -528,7 +581,8 @@ const Pos = () => {
           <div class="receipt-details">
             <p>Date: ${formattedDate}</p>
             <p>Cashier: ${userDetails.firstName} ${userDetails.lastName || ""}</p>
-            ${customerName ? `<p>Customer: ${customerName}</p>` : ""}
+            ${customerName ? `<p>Customer: ${customerName}</p>` : "<p>Customer: Local Customer </p>"}
+            <p>Transaction ID: ${formattedTransactionId}</p>
           </div>
           <div class="divider"></div>
           <table class="receipt-items">
@@ -572,6 +626,10 @@ const Pos = () => {
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
+          <div class="barcode-container">
+            <canvas id="barcode"></canvas>
+          </div>
+          <div class="divider"></div>
           <div class="receipt-footer">
             <p>Thank You for Shopping with Us!</p>
             <p>Powered by Delta POS</p>
@@ -579,38 +637,44 @@ const Pos = () => {
             <p>(0094762963979)</p>
             <p>================================================</p>
           </div>
+          <script>
+            // Generate barcode for Transaction ID
+            JsBarcode("#barcode", "${formattedTransactionId}", {
+              format: "CODE128",
+              width: 1,
+              height: 30,
+              displayValue: false
+            }).init();
+            // Wait for the barcode to render before printing
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500); // 500ms delay to ensure barcode renders
+          </script>
         </body>
       </html>
     `);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
-    printWindow.close();
   };
 
-  const handlePrintLastBill = async () => {
+  const handlePrintLastBill = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
 
-    printWindow.document.write(`
-      <html>
-        <head><title>Receipt</title></head>
-        <body><p>Loading receipt...</p></body>
-      </html>
-    `);
+    // Check if there is a last transaction stored locally
+    if (!lastTransaction) {
+      printWindow.document.write("<p>No previous transaction found.</p>");
+      showNotification("No previous transaction found.");
+      printWindow.document.close();
+      printWindow.close();
+      return;
+    }
 
     try {
-      const transactions = await fetchTransactions();
-      if (transactions.length === 0) {
-        printWindow.document.write("<p>No transactions found or insufficient permissions.</p>");
-        showNotification("No transactions found or insufficient permissions.");
-        return;
-      }
-
-      const lastTransaction = transactions[transactions.length - 1];
       const items = lastTransaction.transactionDetailsList.map((detail) => ({
         qty: detail.quantity,
         name: detail.productDto.name || "Unknown Item",
@@ -636,20 +700,33 @@ const Pos = () => {
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
 
-      const branches = await fetchBranches();
-      const branch = branches.find((b) => b.id === branchId);
-      if (branch) {
-        branchName = branch.branchName || "Unknown Branch";
-        branchCode = branch.branchCode || "N/A";
-        address = branch.address || "N/A";
-        shopName = branch.shopDetailsDto?.name || "Unknown Shop";
+      // Use the already fetched branch and user details if available
+      if (!branchName || !branchCode || !address || !shopName) {
+        const branches = fetchBranches();
+        const branch = branches.find((b) => b.id === branchId);
+        if (branch) {
+          branchName = branch.branchName || "Unknown Branch";
+          branchCode = branch.branchCode || "N/A";
+          address = branch.address || "N/A";
+          shopName = branch.shopDetailsDto?.name || "Unknown Shop";
+        } else {
+          branchName = "Unknown Branch";
+          branchCode = "N/A";
+          address = "N/A";
+          shopName = "Unknown Shop";
+        }
       }
 
-      const usersResponse = await fetchUsers();
-      const user = usersResponse.payload.find((u) => u.id === userId);
-      if (user) {
-        firstName = user.firstName || "Unknown";
-        lastName = user.lastName || "";
+      if (!firstName || !lastName) {
+        const usersResponse = fetchUsers();
+        const user = usersResponse.payload.find((u) => u.id === userId);
+        if (user) {
+          firstName = user.firstName || "Unknown";
+          lastName = user.lastName || "";
+        } else {
+          firstName = "Unknown";
+          lastName = "";
+        }
       }
 
       const customer = lastTransaction.customerDto.name || "";
@@ -661,11 +738,16 @@ const Pos = () => {
         ? currentTime.toLocaleString()
         : transactionDate.toLocaleString();
 
+      // Format Transaction ID as a 10-digit string
+      const transactionId = lastTransaction.id || 0;
+      const formattedTransactionId = transactionId.toString().padStart(10, "0");
+
       printWindow.document.open();
       printWindow.document.write(`
         <html>
           <head>
             <title>Receipt</title>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
             <style>
               @media print {
                 @page {
@@ -747,6 +829,14 @@ const Pos = () => {
                 border-top: 1px dashed #000;
                 margin: 5px 0;
               }
+              .barcode-container {
+                text-align: center;
+                margin: 5px 0;
+              }
+              #barcode {
+                width: 100%;
+                height: 30px;
+              }
             </style>
           </head>
           <body>
@@ -760,6 +850,7 @@ const Pos = () => {
               <p>Date: ${formattedDate}</p>
               <p>Cashier: ${firstName} ${lastName}</p>
               ${customer ? `<p>Customer: ${customer}</p>` : ""}
+              <p>Transaction ID: ${formattedTransactionId}</p>
             </div>
             <div class="divider"></div>
             <table class="receipt-items">
@@ -799,6 +890,10 @@ const Pos = () => {
               <p>Balance: ${calculatedBalance.toFixed(2)}</p>
             </div>
             <div class="divider"></div>
+            <div class="barcode-container">
+              <canvas id="barcode"></canvas>
+            </div>
+            <div class="divider"></div>
             <div class="receipt-footer">
               <p>Thank You for Shopping with Us!</p>
               <p>Powered by Delta POS</p>
@@ -806,17 +901,29 @@ const Pos = () => {
               <p>(0094762963979)</p>
               <p>================================================</p>
             </div>
+            <script>
+              // Generate barcode for Transaction ID
+              JsBarcode("#barcode", "${formattedTransactionId}", {
+                format: "CODE128",
+                width: 1,
+                height: 30,
+                displayValue: false
+              }).init();
+              // Wait for the barcode to render before printing
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 500); // 500ms delay to ensure barcode renders
+            </script>
           </body>
         </html>
       `);
       printWindow.document.close();
       printWindow.focus();
-      printWindow.print();
-      printWindow.close();
     } catch (error) {
       printWindow.document.write(`<p>Failed to load receipt: ${error.message}</p>`);
       printWindow.document.close();
-      showNotification("Failed to fetch or print the last transaction: " + error.message);
+      showNotification("Failed to print the last transaction: " + error.message);
     }
   };
 
@@ -904,18 +1011,20 @@ const Pos = () => {
             <div className="bill-popup">
               <div className="bill-content">
                 <h2>Transaction Receipt</h2>
-                <p>Date: {transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}</p>
+                <p>
+                  Date: {transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}
+                </p>
                 {customerName && <p>Customer: {customerName}</p>}
                 <div className="bill-summary centered">
                   <p>Grand Total: {totalValue.toFixed(2)}</p>
                   {paymentMethods.map((method, index) => (
                     <p key={index}>
-                      {method.type}: ${method.amount.toFixed(2)}
+                      {method.type}: {method.amount.toFixed(2)}
                     </p>
                   ))}
                   <p>
                     <span className="balance-label">Balance:</span>{" "}
-                    <span className="balance-value">${balance.toFixed(2)}</span>
+                    <span className="balance-value">{balance.toFixed(2)}</span>
                   </p>
                 </div>
               </div>

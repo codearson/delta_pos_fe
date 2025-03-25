@@ -44,13 +44,13 @@ const Pos_Payment = ({
   return (
     <div className="col-span-3 grid grid-rows-2 gap-1">
       <button
-        className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg text-base font-bold transition-colors shadow-md hover:shadow-lg border-0"
+        className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg text-base font-bold transition-colors shadow-md hover:shadow-lg border-0"
         onClick={() => handlePayment("Cash")}
       >
         💵 Cash
       </button>
       <button
-        className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg text-base font-bold transition-colors shadow-md hover:shadow-lg border-0"
+        className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg text-base font-bold transition-colors shadow-md hover:shadow-lg border-0"
         onClick={() => handlePayment("Card")}
       >
         💳 Card

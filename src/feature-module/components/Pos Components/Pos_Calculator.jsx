@@ -51,14 +51,35 @@ export const Pos_Calculator = ({
     .filter((method) => method.type === "Card")
     .reduce((sum, method) => sum + method.amount, 0);
 
-  const displayItems = isPaymentStarted && balance < 0
-    ? [...selectedItems, ...paymentMethods.map((method, index) => ({
-        id: `payment-${index}`,
-        name: `${method.type} Payment`,
-        qty: 1,
-        price: method.amount,
-        total: method.amount,
-      }))]
+  // Updated displayItems logic to show both cash and card payments when isPaymentStarted is true
+  const displayItems = isPaymentStarted
+    ? [
+        ...selectedItems,
+        // Add cash payment row if cashTotal > 0
+        ...(cashTotal > 0
+          ? [
+              {
+                id: `payment-cash`,
+                name: `Cash Payment`,
+                qty: 1,
+                price: cashTotal,
+                total: cashTotal,
+              },
+            ]
+          : []),
+        // Add card payment rows if cardTotal > 0 (removed balance < 0 condition)
+        ...(cardTotal > 0
+          ? paymentMethods
+              .filter((method) => method.type === "Card")
+              .map((method, index) => ({
+                id: `payment-card-${index}`,
+                name: `${method.type} Payment`,
+                qty: 1,
+                price: method.amount,
+                total: method.amount,
+              }))
+          : []),
+      ]
     : selectedItems;
 
   const reversedDisplayItems = [...displayItems].reverse();
