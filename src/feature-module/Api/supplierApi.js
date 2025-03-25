@@ -9,13 +9,6 @@ export const fetchSuppliers = async () => {
             return [];
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
-            return [];
-        }
-
         const response = await axios.get(`${BASE_BACKEND_URL}/supplier/getAll`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -33,13 +26,6 @@ export const saveSupplier = async (supplierData) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            return null;
-        }
-
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
             return null;
         }
 
@@ -61,13 +47,6 @@ export const updateSupplier = async (supplierData) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            return null;
-        }
-
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
             return null;
         }
 
@@ -97,13 +76,6 @@ export const updateSupplierStatus = async (supplierId, status) => {
             return null;
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
-            return null;
-        }
-
         const response = await axios.put(
             `${BASE_BACKEND_URL}/supplier/updateStatus?supplierId=${supplierId}&status=${status}`,
             {},
@@ -120,11 +92,3 @@ export const updateSupplierStatus = async (supplierId, status) => {
         return null;
     }
 };
-
-function decodeJwt(token) {
-    try {
-        return JSON.parse(atob(token.split('.')[1]));
-    } catch (error) {
-        return null;
-    }
-}

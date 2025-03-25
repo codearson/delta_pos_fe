@@ -32,16 +32,6 @@ export const fetchTransactions = async () => {
       return [];
     }
 
-    const decodedToken = decodeJwt(accessToken);
-    if (!decodedToken) {
-      return [];
-    }
-
-    const userRole = decodedToken?.roles[0]?.authority;
-    if (userRole !== "ROLE_ADMIN") {
-      return [];
-    }
-
     const response = await axios.get(`${BASE_BACKEND_URL}/transaction/getAll`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -57,11 +47,3 @@ export const fetchTransactions = async () => {
     return [];
   }
 };
-
-function decodeJwt(token) {
-  try {
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch (error) {
-    return null;
-  }
-}

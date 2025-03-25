@@ -9,13 +9,6 @@ export const fetchUserRoles = async () => {
             return [];
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
-            return [];
-        }
-
         const response = await axios.get(`${BASE_BACKEND_URL}/userRole/getAll`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -28,11 +21,3 @@ export const fetchUserRoles = async () => {
         return [];
     }
 };
-
-function decodeJwt(token) {
-    try {
-        return JSON.parse(atob(token.split('.')[1]));
-    } catch (error) {
-        return null;
-    }
-}
