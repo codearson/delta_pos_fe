@@ -12,7 +12,7 @@ import Swal from 'sweetalert2';
 import Table from '../../core/pagination/datatable';
 import AddUsers from '../../core/modals/usermanagement/addusers';
 import EditUser from '../../core/modals/usermanagement/edituser';
-import { fetchUsers, updateUserStatus } from '../Api/UserApi';
+import { fetchUsers, updateUserStatus, decodeJwt } from '../Api/UserApi';
 import { fetchUserRoles } from '../Api/UserRoleApi';
 import ChangePassword from '../../core/modals/usermanagement/changePassword';
 import jsPDF from "jspdf";
@@ -37,12 +37,14 @@ const Users = () => {
     const [roleOptions, setRoleOptions] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState(null);
     const [branchOptions, setBranchOptions] = useState([]);
+    const [isManager, setIsManager] = useState(false);
 
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
     const MySwal = withReactContent(Swal);
 
     useEffect(() => {
+        checkUserRole();
         loadInitialData();
     }, []);
 
@@ -51,6 +53,15 @@ const Users = () => {
             loadUsers(false);
         }
     }, [currentPage, pageSize, showActive, selectedRole]);
+
+    const checkUserRole = () => {
+        const accessToken = localStorage.getItem("accessToken");
+        if (accessToken) {
+            const decodedToken = decodeJwt(accessToken);
+            const userRole = decodedToken?.roles[0]?.authority;
+            setIsManager(userRole === "ROLE_MANAGER");
+        }
+    };
 
     const loadInitialData = async () => {
         setInitialLoading(true);
@@ -491,16 +502,18 @@ const Users = () => {
                                                 <i data-feather="search" className="feather-search" />
                                             </Link>
                                         </div>
-                                        <div style={{ width: '200px' }}>
-                                            <Select
-                                                className="select"
-                                                options={roleOptions}
-                                                placeholder="Select Role"
-                                                value={selectedRole}
-                                                onChange={handleRoleChange}
-                                                isClearable
-                                            />
-                                        </div>
+                                        {!isManager && (
+                                            <div style={{ width: '200px' }}>
+                                                <Select
+                                                    className="select"
+                                                    options={roleOptions}
+                                                    placeholder="Select Role"
+                                                    value={selectedRole}
+                                                    onChange={handleRoleChange}
+                                                    isClearable
+                                                />
+                                            </div>
+                                        )}
                                         <div style={{ width: '200px' }}>
                                             <Select
                                                 className="select"

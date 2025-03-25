@@ -9,13 +9,6 @@ export const saveBranch = async (branchData) => {
         throw new Error("No access token found. Please log in.");
     }
 
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-        throw new Error("Access denied. Only admins can perform this action.");
-    }
-
     const response = await axios.post(`${BASE_BACKEND_URL}/branch/save`, branchData, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -34,13 +27,6 @@ export const updateBranch = async (branchData) => {
         throw new Error("No access token found. Please log in.");
     }
 
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-        throw new Error("Access denied. Only admins can perform this action.");
-    }
-
     const response = await axios.post(`${BASE_BACKEND_URL}/branch/update`, branchData, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -51,19 +37,11 @@ export const updateBranch = async (branchData) => {
     return response.data;
 };
 
-// Update Branch Status API
 export const updateBranchStatus = async (branchId, status = 0) => {
     const accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
         throw new Error("No access token found. Please log in.");
-    }
-
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-        throw new Error("Access denied. Only admins can perform this action.");
     }
 
     const response = await axios.put(
@@ -84,7 +62,6 @@ export const updateBranchStatus = async (branchId, status = 0) => {
     return response.data.responseDto;
 };
 
-// Get Branch By Name API
 export const getBranchByName = async (branchName) => {
     const accessToken = localStorage.getItem("accessToken");
 
@@ -104,11 +81,3 @@ export const getBranchByName = async (branchName) => {
 
     return response.data;
 };
-
-function decodeJwt(token) {
-    try {
-        return JSON.parse(atob(token.split('.')[1]));
-    } catch (error) {
-        return null;
-    }
-}

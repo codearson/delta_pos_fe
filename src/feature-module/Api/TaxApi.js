@@ -10,13 +10,6 @@ export const saveTax = async (tax) => {
             return null;
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-        if (userRole !== "ROLE_ADMIN") {
-            //console.error("Access denied. Only admins can save tax.");
-            return null;
-        }
-
         const taxData = {
             taxPercentage: Number(tax),
             isActive: true,
@@ -47,13 +40,6 @@ export const fetchTaxes = async () => {
             return [];
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-        if (userRole !== "ROLE_ADMIN") {
-            //console.error("Access denied. Only admins can save tax.");
-            return null;
-        }
-
         const response = await axios.get(`${BASE_BACKEND_URL}/tax/getAll`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -73,13 +59,6 @@ export const getTaxByName = async (taxPercentage) => {
         const accessToken = localStorage.getItem("accessToken");
         if (!accessToken) {
             //console.error("No access token found. Please log in.");
-            return null;
-        }
-
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-        if (userRole !== "ROLE_ADMIN") {
-            //console.error("Access denied. Only admins can perform this action.");
             return null;
         }
 
@@ -105,13 +84,6 @@ export const updateTax = async (taxId, updatedData) => {
         const accessToken = localStorage.getItem("accessToken");
         if (!accessToken) {
             console.error("No access token found. Please log in.");
-            return null;
-        }
-
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-        if (userRole !== "ROLE_ADMIN") {
-            console.error("Access denied. Only admins can update taxes.");
             return null;
         }
 
@@ -143,13 +115,6 @@ export const updateTaxStatus = async (taxId, status = 0) => {
             return null;
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-        if (userRole !== "ROLE_ADMIN") {
-            //console.error("Access denied. Only admins can update tax status.");
-            return null;
-        }
-
         const response = await axios.put(
             `${BASE_BACKEND_URL}/tax/updateStatus?id=${taxId}&status=${status}`,
             {},
@@ -166,13 +131,3 @@ export const updateTaxStatus = async (taxId, status = 0) => {
         return null;
     }
 };
-
-// Token Convert
-function decodeJwt(token) {
-    try {
-        return JSON.parse(atob(token.split('.')[1]));
-    } catch (error) {
-        //console.error("Error decoding JWT:", error);
-        return null;
-    }
-}

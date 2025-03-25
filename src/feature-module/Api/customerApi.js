@@ -1,25 +1,10 @@
 import { BASE_BACKEND_URL } from "./config"; 
 import axios from "axios";
 
-function decodeJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (error) {
-    return null;
-  }
-}
-
 export const saveCustomer = async (customerData) => {
     const accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
-      return null;
-    }
-
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
       return null;
     }
 
@@ -41,13 +26,6 @@ export const fetchCustomers = async () => {
       return [];
     }
 
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-      return [];
-    }
-
     const response = await axios.get(`${BASE_BACKEND_URL}/customer/getAll`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -62,13 +40,6 @@ export const updateCustomer = async (customerData) => {
     const accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
-      return null;
-    }
-
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
       return null;
     }
 
@@ -87,13 +58,6 @@ export const updateCustomerStatus = async (customerId, status) => {
     const accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
-      return null;
-    }
-
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
       return null;
     }
 

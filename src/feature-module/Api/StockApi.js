@@ -10,14 +10,6 @@ export const fetchStocks = async () => {
       return [];
     }
 
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-      console.error("Access denied. Only admins can fetch stocks.");
-      return [];
-    }
-
     const response = await axios.get(`${BASE_BACKEND_URL}/stock/getAll`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -37,14 +29,6 @@ export const saveStock = async (stockData) => {
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
-      return null;
-    }
-
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-      console.error("Access denied. Only admins can save stocks.");
       return null;
     }
 
@@ -94,13 +78,6 @@ export const updateStockStatus = async (stockId, status = 0) => {
       return null;
     }
 
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-      return null;
-    }
-
     const response = await axios.put(
       `${BASE_BACKEND_URL}/stock/updateStatus?stockId=${stockId}&status=${status}`,
       {},
@@ -127,14 +104,6 @@ export const getStockByName = async (name) => {
       return null;
     }
 
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-      console.error("Access denied. Only admins can perform this action.");
-      return null;
-    }
-
     const response = await axios.get(
       `${BASE_BACKEND_URL}/stock/getByName?name=${name}&isActive=1`,
       {
@@ -157,14 +126,6 @@ export const getStockByBarcode = async (barcode) => {
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
-      return null;
-    }
-
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-      console.error("Access denied. Only admins can perform this action.");
       return null;
     }
 
@@ -199,19 +160,10 @@ export const fetchBranches = async () => {
       },
     });
 
-    console.log('Branches response:', response.data); // Debug log
+    console.log('Branches response:', response.data);
     return response.data.responseDto || [];
   } catch (error) {
     console.error("Error fetching branches:", error.response?.data || error.message);
     throw error;
   }
 };
-
-function decodeJwt(token) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (error) {
-    console.error("Error decoding JWT:", error);
-    return null;
-  }
-}
