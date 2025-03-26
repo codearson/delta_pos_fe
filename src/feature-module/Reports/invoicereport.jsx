@@ -41,7 +41,7 @@ const Invoicereport = () => {
 
   useEffect(() => {
     handleFilter();
-  }, [selectedBranch, selectedUser]);
+  }, [selectedBranch, selectedUser, searchTerm]);
 
   const getBranchOptions = () => {
     const uniqueBranches = [...new Set(transactions.map(t => t.branchDto?.branchName).filter(Boolean))];
@@ -51,6 +51,10 @@ const Invoicereport = () => {
   const getUserOptions = () => {
     const uniqueUsers = [...new Set(transactions.map(t => t.userDto?.firstName).filter(Boolean))];
     return uniqueUsers.sort();
+  };
+
+  const formatTransactionId = (id) => {
+    return id ? String(id).padStart(10, '0') : "N/A";
   };
 
   const handleFilter = () => {
@@ -71,12 +75,14 @@ const Invoicereport = () => {
         const shopName = transaction.shopDetailsDto?.name?.toLowerCase() || "";
         const userName = transaction.userDto?.firstName?.toLowerCase() || "";
         const customerName = transaction.customerDto?.name?.toLowerCase() || "";
+        const transactionId = formatTransactionId(transaction.id).toLowerCase();
 
         return (
           branchName.includes(value) ||
           shopName.includes(value) ||
           userName.includes(value) ||
-          customerName.includes(value)
+          customerName.includes(value) ||
+          transactionId.includes(value)
         );
       });
     }
@@ -86,7 +92,6 @@ const Invoicereport = () => {
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
-    handleFilter();
   };
 
   const handleViewDetails = (transaction) => {
@@ -102,6 +107,7 @@ const Invoicereport = () => {
   const exportToPDFData = () => {
     if (isLoading) return [];
     return filteredTransactions.map((transaction) => ({
+      "Transaction ID": formatTransactionId(transaction.id),
       "Branch Name": transaction.branchDto?.branchName || "N/A",
       "Shop Name": transaction.shopDetailsDto?.name || "N/A",
       "User Name": transaction.userDto?.firstName || "N/A",
@@ -116,6 +122,7 @@ const Invoicereport = () => {
   const exportToExcelData = () => {
     if (isLoading) return [];
     return filteredTransactions.map((transaction) => ({
+      "Transaction ID": formatTransactionId(transaction.id),
       "Branch Name": transaction.branchDto?.branchName || "N/A",
       "Shop Name": transaction.shopDetailsDto?.name || "N/A",
       "User Name": transaction.userDto?.firstName || "N/A",
@@ -142,6 +149,12 @@ const Invoicereport = () => {
   };
 
   const columns = [
+    {
+      title: "Transaction ID",
+      dataIndex: "id",
+      render: (id) => formatTransactionId(id),
+      sorter: (a, b) => (a.id || 0) - (b.id || 0),
+    },
     {
       title: "Branch Name",
       dataIndex: "branchDto",
@@ -290,6 +303,10 @@ const Invoicereport = () => {
               <div className="receipt-details">
                 <div className="row">
                   <div className="col-md-6">
+                    <p>
+                      <strong>Transaction ID:</strong>{" "}
+                      {formatTransactionId(selectedTransaction.id)}
+                    </p>
                     <p>
                       <strong>Date & Time:</strong>{" "}
                       {selectedTransaction.dateTime
