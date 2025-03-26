@@ -72,7 +72,7 @@ $table-border: #dee2e6;
   min-height: 13vh;
   border-radius: $radius;
   text-align: center;
-  background-color: $pos-teal;
+  background-color: $pos-teal; // Teal color
   border: none;
   outline: none;
   box-shadow: none;
@@ -80,12 +80,12 @@ $table-border: #dee2e6;
 
   &:hover {
     transform: scale(1.02);
-    background-color: $teal-500;
+    background-color: $teal-500; // Lighter teal on hover
   }
 
   @media (prefers-color-scheme: dark) {
     &:hover {
-      background-color: $teal-900;
+      background-color: $teal-900; // Darker teal on hover
     }
   }
 
@@ -379,119 +379,206 @@ $table-border: #dee2e6;
 .purchase-popup {
   background-color: $light-bg;
   padding: 2rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 500px;
-  max-width: 100%;
-  border: 2px solid $table-border;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+  width: 600px; // Increased width
+  max-width: 90%;
+  max-height: 70vh; // Reduced height
+  border: 4px solid #bfdbfe;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  overflow-y: auto;
+  gap: 1.5rem;
+  position: relative; // For positioning the close button
 
-  &.simple-popup {
-    background-color: $popup-bg;
-    border-color: $table-border;
+  &.dark-mode {
+    background-color: $dark-bg;
+    color: $dark-text;
+    border-color: $bg-gray-600;
+    .purchase-popup-input,
+    .purchase-popup-button {
+      border-color: $bg-gray-600;
+      background-color: $dark-bg;
+      color: $dark-text;
+    }
+    .purchase-popup-status {
+      color: $text-gray-600;
+    }
+  }
+
+  .purchase-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .purchase-popup-title {
     font-size: 1.5rem;
-    font-weight: 600;
-    color: #000000;
+    font-weight: 700;
+    color: $text-black;
     text-align: center;
-    margin-bottom: 1rem;
+    flex: 1;
+  }
+
+  .purchase-popup-close {
+    background-color: $red-500;
+    color: $dark-text;
+    border: none;
+    border-radius: 0.25rem; // Slightly curved corners
+    width: 30px;
+    height: 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: $red-600;
+    }
   }
 
   .purchase-popup-input-container {
     .purchase-popup-input {
-      border: 1px solid $table-border;
-      padding: 0.5rem;
-      border-radius: 0.25rem;
+      border: 2px solid $bg-gray-600;
+      padding: 0.75rem;
+      border-radius: 0.5rem;
       width: 100%;
       font-size: 1rem;
       outline: none;
-      background-color: #ffffff;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
       &:focus {
-        border-color: $pos-blue;
-        box-shadow: 0 0 0 2px rgba(0, 0, 255, 0.2);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
       }
     }
 
     .purchase-popup-status {
       font-size: 0.9rem;
-      color: #666666;
+      color: $text-gray-600;
       margin-top: 0.5rem;
       text-align: center;
     }
   }
 
-  .purchase-table {
+  .purchase-popup-table-container {
+    max-height: 300px; // Fixed height for the table container
+    overflow-y: auto; // Add scrollbar when content overflows
+  }
+
+  .purchase-popup-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 1rem;
-  }
-
-  .simple-table {
-    border: 1px solid $table-border;
-    border-radius: 0.25rem;
 
     th,
     td {
       padding: 8px;
       text-align: left;
-      border-bottom: 1px solid $table-border;
-      color: #000000;
+      border-bottom: 1px solid $bg-gray-600;
+      color: $text-black;
     }
 
     th {
-      background-color: $table-header-bg;
-      color: #ffffff;
+      background-color: $bg-gray-700;
+      color: $dark-text;
       font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     tr {
-      background-color: #ffffff;
-
+      cursor: pointer;
       &:hover {
         background-color: #F5F5F5;
       }
     }
+
+    .selected {
+      background-color: #bfdbfe;
+    }
+
+    .no-data {
+      text-align: center;
+      color: $text-gray-600;
+      font-style: italic;
+    }
+  }
+
+  .purchase-popup-details {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid $bg-gray-600;
+    border-radius: 0.5rem;
+    background-color: #f3f4f6; // Softer background
+    color: $text-black;
   }
 
   .purchase-popup-actions {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; // Space buttons between left and right
     gap: 1rem;
     margin-top: 1.5rem;
 
     .purchase-popup-button {
-      padding: 0.5rem 1rem;
-      border-radius: 0.25rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
       font-size: 1rem;
       font-weight: 600;
-      transition: background-color 0.2s ease;
-      width: 100px;
+      transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      width: 120px;
       text-align: center;
-      border: none;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
 
       &:hover {
-        opacity: 0.9;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -4px rgba(0, 0, 0, 0.1);
       }
 
       &.add {
         background-color: $green-500;
         color: $dark-text;
+        &:hover {
+          background-color: $green-600;
+          transform: scale(1.015);
+        }
       }
 
-      &.cancel {
+      &.clear {
         background-color: $red-500;
         color: $dark-text;
+        &:hover {
+          background-color: $red-600;
+          transform: scale(1.015);
+        }
+        &:disabled {
+          background-color: $bg-gray-700;
+          color: $dark-text;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
       }
 
       &.print {
         background-color: $orange-500;
         color: $dark-text;
+        &:hover {
+          background-color: $orange-600;
+          transform: scale(1.015);
+        }
+        &:disabled {
+          background-color: $bg-gray-700;
+          color: $dark-text;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
       }
     }
   }

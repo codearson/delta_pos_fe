@@ -9,13 +9,6 @@ export const fetchPurchases = async () => {
             return [];
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
-            return [];
-        }
-
         const response = await axios.get(`${BASE_BACKEND_URL}/purchaseList/getAll`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -33,13 +26,6 @@ export const savePurchase = async (purchaseData) => {
 
     if (!accessToken) {
         throw new Error("Authentication required: No access token found");
-    }
-
-    const decodedToken = decodeJwt(accessToken);
-    const userRole = decodedToken?.roles[0]?.authority;
-
-    if (userRole !== "ROLE_ADMIN") {
-        throw new Error("Permission denied: Admin role required");
     }
 
     const existingPurchases = await fetchPurchases();
@@ -70,13 +56,6 @@ export const deleteAllPurchases = async () => {
             return null;
         }
 
-        const decodedToken = decodeJwt(accessToken);
-        const userRole = decodedToken?.roles[0]?.authority;
-
-        if (userRole !== "ROLE_ADMIN") {
-            return null;
-        }
-
         const response = await axios.delete(`${BASE_BACKEND_URL}/purchaseList/deleteAll`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -88,11 +67,3 @@ export const deleteAllPurchases = async () => {
         return null;
     }
 };
-
-function decodeJwt(token) {
-    try {
-        return JSON.parse(atob(token.split(".")[1]));
-    } catch (error) {
-        return null;
-    }
-}

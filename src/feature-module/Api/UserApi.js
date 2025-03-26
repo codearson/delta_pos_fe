@@ -12,7 +12,7 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
         const decodedToken = decodeJwt(accessToken);
         const userRole = decodedToken?.roles[0]?.authority;
 
-        if (userRole !== "ROLE_ADMIN") {
+        if (userRole !== "ROLE_ADMIN" && userRole !== "ROLE_MANAGER") {
             return { payload: [], totalRecords: 0 };
         }
 
@@ -25,9 +25,19 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
             }
         );
 
+        let userData = response.data.responseDto.payload || [];
+        let totalCount = response.data.responseDto.totalRecords || 0;
+
+        if (userRole === "ROLE_MANAGER") {
+            userData = userData.filter(user => 
+                user.userRoleDto?.userRole === "USER"
+            );
+            totalCount = userData.length;
+        }
+
         return {
-            payload: response.data.responseDto.payload || [],
-            totalRecords: response.data.responseDto.totalRecords || 0
+            payload: userData,
+            totalRecords: totalCount
         };
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -91,7 +101,7 @@ export const updateUser = async (userData) => {
         const decodedToken = decodeJwt(accessToken);
         const userRole = decodedToken?.roles[0]?.authority;
 
-        if (userRole !== "ROLE_ADMIN") {
+        if (userRole !== "ROLE_ADMIN" && userRole !== "ROLE_MANAGER") {
             return null;
         }
 
@@ -124,7 +134,7 @@ export const updateUserStatus = async (userId, status) => {
         const decodedToken = decodeJwt(accessToken);
         const userRole = decodedToken?.roles[0]?.authority;
 
-        if (userRole !== "ROLE_ADMIN") {
+        if (userRole !== "ROLE_ADMIN" && userRole !== "ROLE_MANAGER") {
             return null;
         }
 
@@ -156,7 +166,7 @@ export const updatePassword = async (userId, password, changedByUserId) => {
         const decodedToken = decodeJwt(accessToken);
         const userRole = decodedToken?.roles[0]?.authority;
 
-        if (userRole !== "ROLE_ADMIN") {
+        if (userRole !== "ROLE_ADMIN" && userRole !== "ROLE_MANAGER") {
             return null;
         }
 

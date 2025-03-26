@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
 import Select from 'react-select'
-import { updateUser } from '../../../feature-module/Api/UserApi';
+import { updateUser, decodeJwt } from '../../../feature-module/Api/UserApi';
 import withReactContent from 'sweetalert2-react-content';
 import Swal from 'sweetalert2';
 import { fetchBranches } from '../../../feature-module/Api/StockApi'
@@ -14,6 +14,7 @@ const EditUser = ({ user, onUpdate }) => {
     const [selectedBranch, setSelectedBranch] = useState(null);
     const [roleOptions, setRoleOptions] = useState([]);
     const [selectedRole, setSelectedRole] = useState(null);
+    const [isManager, setIsManager] = useState(false);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -48,12 +49,26 @@ const EditUser = ({ user, onUpdate }) => {
                 label: role.userRole
             }));
             setRoleOptions(formattedRoles);
+            
+            if (isManager) {
+                const userRole = formattedRoles.find(role => role.label === "USER");
+                if (userRole) {
+                    setSelectedRole(userRole);
+                }
+            }
         } catch (error) {
             console.error('Error loading user roles:', error);
         }
     };
 
     useEffect(() => {
+        const accessToken = localStorage.getItem("accessToken");
+        if (accessToken) {
+            const decodedToken = decodeJwt(accessToken);
+            const userRole = decodedToken?.roles[0]?.authority;
+            setIsManager(userRole === "ROLE_MANAGER");
+        }
+
         loadBranches();
         loadUserRoles();
         if (user) {
@@ -130,6 +145,8 @@ const EditUser = ({ user, onUpdate }) => {
     };
 
     const handleRoleChange = (selectedOption) => {
+        if (isManager) return;
+        
         setSelectedRole(selectedOption);
         setFormData(prev => ({
             ...prev,
@@ -284,6 +301,22 @@ const EditUser = ({ user, onUpdate }) => {
         setErrors({});
     };
 
+    useEffect(() => {
+        if (isManager && roleOptions.length > 0) {
+            const userRole = roleOptions.find(role => role.label === "USER");
+            if (userRole) {
+                setSelectedRole(userRole);
+                setFormData(prev => ({
+                    ...prev,
+                    userRoleDto: {
+                        id: userRole.value,
+                        userRole: userRole.label
+                    }
+                }));
+            }
+        }
+    }, [isManager, roleOptions]);
+
     return (
         <div>
             <div className="modal fade" id="edit-units">
@@ -383,6 +416,7 @@ const EditUser = ({ user, onUpdate }) => {
                                                         onChange={handleRoleChange}
                                                         placeholder="Choose Role"
                                                         isSearchable={true}
+                                                        isDisabled={isManager}
                                                     />
                                                     {errors.role && <span className="error-message text-danger">{errors.role}</span>}
                                                 </div>
