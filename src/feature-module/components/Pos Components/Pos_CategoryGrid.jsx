@@ -1,11 +1,12 @@
+// src/feature-module/components/Pos Components/Pos_CategoryGrid.jsx
+
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_CategoryGrid.scss";
 import Pos_BarcodeCreation from "./Pos_BarcodeCreation";
-import { savePurchase, fetchPurchases } from "../../Api/purchaseListApi";
-import { getProductByBarcode } from "../../Api/productApi";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable"; // Import jspdf-autotable
+import { savePurchase, fetchPurchases, deleteAllPurchases } from "../../Api/purchaseListApi";
+import jsPDF from "jspdf"; // Correct import for jsPDF
+import autoTable from "jspdf-autotable"; // Explicitly import autoTable
 import { quickAccess, fetchCustomCategories } from "../../../core/json/Posdata";
 
 const PAGE_SIZE = 15;
@@ -22,46 +23,34 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   const [error, setError] = useState("");
   // State for View Purchase Popup
   const [purchases, setPurchases] = useState([]);
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
 
   useEffect(() => {
     if (typeof items === "function") {
-      items().then((fetchedCategories) => {
-        setCategories(fetchedCategories || []);
-        setPageIndex(0);
-      });
+      items()
+        .then((fetchedCategories) => {
+          setCategories(fetchedCategories || []);
+          setPageIndex(0);
+        })
+        .catch((err) => {
+          console.error("Error fetching categories:", err);
+          setCategories([]); // Fallback to empty array to prevent breaking other functionality
+        });
     } else if (items instanceof Promise) {
-      items.then((fetchedCategories) => {
-        setCategories(fetchedCategories || []);
-        setPageIndex(0);
-      });
+      items
+        .then((fetchedCategories) => {
+          setCategories(fetchedCategories || []);
+          setPageIndex(0);
+        })
+        .catch((err) => {
+          console.error("Error fetching categories:", err);
+          setCategories([]);
+        });
     } else {
       setCategories(items || []);
       setPageIndex(0);
     }
   }, [items]);
-
-  useEffect(() => {
-    if (showViewPurchasePopup) {
-      const loadPurchasesAndProducts = async () => {
-        const data = await fetchPurchases();
-        const purchasesWithProducts = await Promise.all(
-          data.map(async (purchase) => {
-            try {
-              const productData = await getProductByBarcode(purchase.barcode);
-              return {
-                ...purchase,
-                productName: productData?.responseDto?.[0]?.name || "Unknown Product",
-              };
-            } catch (err) {
-              return { ...purchase, productName: "Unknown Product" };
-            }
-          })
-        );
-        setPurchases(purchasesWithProducts);
-      };
-      loadPurchasesAndProducts();
-    }
-  }, [showViewPurchasePopup]);
 
   const start = pageIndex * PAGE_SIZE;
   const end = start + PAGE_SIZE;
@@ -124,6 +113,17 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
         setShowAddPurchasePopup(true);
       } else if (item.isViewPurchase) {
         setShowViewPurchasePopup(true);
+        const loadPurchases = async () => {
+          try {
+            const data = await fetchPurchases();
+            setPurchases(data || []);
+          } catch (err) {
+            console.error("Failed to load purchases:", err.message);
+            setError(err.message);
+            setPurchases([]); // Fallback to empty array to prevent breaking other functionality
+          }
+        };
+        loadPurchases();
       } else {
         onCategorySelect(item);
       }
@@ -147,27 +147,22 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   };
 
   // Handlers for Add Purchase Popup
-  const handleBarcodeChange = async (e) => {
+  const handleBarcodeChange = (e) => {
     const value = e.target.value.trim();
     setBarcode(value);
     setError("");
-
-    if (!value) {
-      setProductStatus("Please enter a barcode");
+    if (value === "") {
+      setProductStatus("");
       return;
     }
-
-    try {
-      const productData = await getProductByBarcode(value);
-      if (productData && productData.responseDto && productData.responseDto.length > 0) {
-        const product = productData.responseDto[0];
-        setProductStatus(`Product: ${product.name}`);
-      } else {
-        setProductStatus("No product found for this barcode");
-      }
-    } catch (err) {
-      setProductStatus("Error fetching product");
-      setError("Failed to fetch product details");
+    const parsedValue = parseInt(value, 10);
+    if (!isNaN(parsedValue)) {
+      const foundProduct = categories.find((item) => item.id === parsedValue);
+      setProductStatus(
+        foundProduct ? `Product: ${foundProduct.name}` : "No product found"
+      );
+    } else {
+      setProductStatus("No product found");
     }
   };
 
@@ -184,41 +179,110 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
       setProductStatus("");
       setError("");
     } catch (err) {
-      setError(err.message || "Failed to save purchase");
+      console.error("Failed to add purchase:", err.message);
+      setError(err.message || "Failed to add purchase");
+    }
+  };
+
+  // Handlers for View Purchase Popup
+  const handleRowClick = (purchase) => {
+    setSelectedPurchase(purchase);
+  };
+
+  const handleClearTable = async () => {
+    try {
+      await deleteAllPurchases(); // Call the API to delete all purchases
+      setPurchases([]);
+      setSelectedPurchase(null);
+      setError("");
+    } catch (err) {
+      console.error("Failed to clear purchases:", err.message);
+      setError(err.message || "Failed to clear purchases");
     }
   };
 
   const handlePrintPurchase = () => {
+    if (!selectedPurchase) return;
+
     const doc = new jsPDF({
       orientation: "portrait",
       unit: "mm",
       format: "a4",
     });
 
-    // Simple PDF design
-    doc.setFillColor(0, 0, 255); // Solid blue header
-    doc.rect(10, 10, 190, 20, 'F'); // Header rectangle
-    doc.setTextColor(255, 255, 255); // White text
-    doc.setFontSize(20);
-    doc.text("Purchase List", 20, 22);
-
-    // Simple table in PDF using autoTable
-    autoTable(doc, {
-      startY: 30,
-      head: [['Barcode', 'Product Name']],
-      body: purchases.map(purchase => [purchase.barcode, purchase.productName || "Unknown Product"]),
-      headStyles: { fillColor: [0, 0, 255], textColor: [255, 255, 255], fontSize: 12 },
-      bodyStyles: { textColor: [0, 0, 0], fontSize: 10 },
-      theme: 'plain', // Simple theme
-      styles: { cellPadding: 5, font: 'helvetica', lineWidth: 0.1, lineColor: [0, 0, 0] },
-      margin: { top: 30 },
+    // Set document properties
+    doc.setProperties({
+      title: `Purchase Details - ${selectedPurchase.barcode}`,
+      author: "POS System",
+      creator: "POS System",
     });
 
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, doc.lastAutoTable.finalY + 10);
-    doc.text("Thank you!", 180, doc.lastAutoTable.finalY + 10, { align: "right" });
+    // Add a header
+    doc.setFontSize(20);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Purchase Details", 105, 20, { align: "center" });
 
-    doc.save("purchase_list.pdf");
+    // Add a subtitle with the date
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 30, { align: "center" });
+
+    // Add a horizontal line
+    doc.setDrawColor(0, 102, 204);
+    doc.setLineWidth(0.5);
+    doc.line(20, 35, 190, 35);
+
+    // Prepare table data
+    const tableData = [
+      ["Barcode", selectedPurchase.barcode],
+      // Add more fields if available, e.g.:
+      // ["Product Name", selectedPurchase.productName || "N/A"],
+      // ["Date", selectedPurchase.date || "N/A"],
+    ];
+
+    // Use the imported autoTable function
+    autoTable(doc, {
+      startY: 40,
+      head: [["Field", "Value"]],
+      body: tableData,
+      theme: "striped",
+      styles: {
+        fontSize: 12,
+        cellPadding: 3,
+        textColor: [40, 40, 40],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.1,
+      },
+      headStyles: {
+        fillColor: [0, 102, 204], // Blue header
+        textColor: [255, 255, 255], // White text
+        fontSize: 14,
+        fontStyle: "bold",
+      },
+      alternateRowStyles: {
+        fillColor: [240, 240, 240], // Light gray for alternate rows
+      },
+      margin: { left: 20, right: 20 },
+    });
+
+    // Add a footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${i} of ${pageCount}`, 190, 287, { align: "right" });
+    }
+
+    // Save the PDF
+    doc.save(`purchase_${selectedPurchase.barcode}.pdf`);
+  };
+
+  const handleCloseViewPurchasePopup = () => {
+    setShowViewPurchasePopup(false);
+    setSelectedPurchase(null);
+    setPurchases([]);
+    setError("");
   };
 
   return (
@@ -231,20 +295,31 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
       )}
       {showAddPurchasePopup && (
         <div className="purchase-popup-overlay">
-          <div className="purchase-popup simple-popup">
-            <h2 className="purchase-popup-title">Add Purchase List</h2>
+          <div className="purchase-popup">
+            <div className="purchase-popup-header">
+              <h2 className="purchase-popup-title">Add Purchase List</h2>
+              <button
+                onClick={() => {
+                  setShowAddPurchasePopup(false);
+                  setBarcode("");
+                  setProductStatus("");
+                  setError("");
+                }}
+                className="purchase-popup-close"
+              >
+                ×
+              </button>
+            </div>
             <div className="purchase-popup-input-container">
               <input
                 type="text"
                 value={barcode}
                 onChange={handleBarcodeChange}
-                placeholder="Enter barcode number *"
+                placeholder="Enter barcode number"
                 className="purchase-popup-input"
-                required
-                autoFocus
               />
               <p className="purchase-popup-status">
-                {productStatus || "Enter a barcode to check product"}
+                {productStatus || "Enter a barcode to check"}
               </p>
               {error && (
                 <p className="purchase-popup-status" style={{ color: "red" }}>
@@ -254,20 +329,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             </div>
             <div className="purchase-popup-actions">
               <button
-                onClick={() => {
-                  setShowAddPurchasePopup(false);
-                  setBarcode("");
-                  setProductStatus("");
-                  setError("");
-                }}
-                className="purchase-popup-button cancel"
-              >
-                Cancel
-              </button>
-              <button
                 onClick={handleAddPurchase}
                 className="purchase-popup-button add"
-                disabled={!barcode.trim()}
               >
                 Add
               </button>
@@ -277,40 +340,60 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
       )}
       {showViewPurchasePopup && (
         <div className="purchase-popup-overlay">
-          <div className="purchase-popup simple-popup">
-            <h2 className="purchase-popup-title">View Purchase List</h2>
-            {purchases.length > 0 ? (
-              <table className="purchase-table simple-table">
+          <div className="purchase-popup">
+            <div className="purchase-popup-header">
+              <h2 className="purchase-popup-title">View Purchase List</h2>
+              <button
+                onClick={handleCloseViewPurchasePopup}
+                className="purchase-popup-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="purchase-popup-table-container">
+              <table className="purchase-popup-table">
                 <thead>
                   <tr>
                     <th>Barcode</th>
-                    <th>Product Name</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {purchases.map((purchase) => (
-                    <tr key={purchase.barcode}>
-                      <td style={{ color: "#000000" }}>{purchase.barcode}</td>
-                      <td style={{ color: "#000000" }}>{purchase.productName}</td>
+                  {purchases.length > 0 ? (
+                    purchases.map((purchase) => (
+                      <tr
+                        key={purchase.barcode}
+                        className={selectedPurchase === purchase ? "selected" : ""}
+                        onClick={() => handleRowClick(purchase)}
+                      >
+                        <td>{purchase.barcode}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="1" className="no-data">
+                        {error || "No purchases found"}
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
-            ) : (
-              <p className="purchase-popup-status">No purchases found</p>
+            </div>
+            {selectedPurchase && (
+              <div className="purchase-popup-details">
+                <p><strong>Barcode:</strong> {selectedPurchase.barcode}</p>
+              </div>
             )}
             <div className="purchase-popup-actions">
               <button
-                onClick={() => {
-                  setShowViewPurchasePopup(false);
-                  setPurchases([]);
-                }}
-                className="purchase-popup-button cancel"
+                onClick={handleClearTable}
+                disabled={purchases.length === 0} // Enable only if data exists
+                className="purchase-popup-button clear"
               >
-                Cancel
+                Clear
               </button>
               <button
                 onClick={handlePrintPurchase}
+                disabled={!selectedPurchase}
                 className="purchase-popup-button print"
               >
                 Print
