@@ -1,27 +1,26 @@
-// src/style/scss/components/Pos Components/Pos_CategoryGrid.scss
-
-$pos-blue: #2EB6E8; // Blue for category buttons
-$blue-500: #0095ff; // Hover color for category buttons (light mode)
-$blue-900: #2eb6e8; // Hover color for category buttons (dark mode)
-$pos-teal: #26A69A; // Teal for Quick Access buttons
-$teal-500: #4DB6AC; // Lighter teal for hover (light mode)
-$teal-900: #00695C; // Darker teal for hover (dark mode)
+$pos-blue: #2EB6E8;
+$blue-500: #0095ff;
+$blue-900: #2eb6e8;
+$pos-teal: #26A69A;
+$teal-500: #4DB6AC;
+$teal-900: #00695C;
 $radius: 0.5rem;
-
-// Colors for popups
-$bg-gray-600: #e0e7ff; // Lighter gray for borders
-$bg-gray-700: #4b5e7d; // Softer gray for table header
-$text-gray-600: #4b5563; // Softer text color for status
-$text-black: #1f2937; // Darker text for better contrast
-$light-bg: #f9fafb; // Softer white background
-$dark-bg: #1f2937; // Dark mode background
-$dark-text: #e5e7eb; // Dark mode text
-$green-500: rgb(34, 197, 94); // Add button
-$green-600: rgb(22, 163, 74);
-$red-500: #ef4444; // Clear button
-$red-600: #dc2626;
-$orange-500: #f59e0b; // Print button (softer orange)
-$orange-600: #d97706;
+$bg-gray-600: #4b5563;
+$bg-gray-700: #374151;
+$text-gray-600: #6b7280;
+$text-black: #000000;
+$light-bg: #ffffff;
+$dark-bg: #212121;
+$dark-text: #ffffff;
+$green-500: #34D399;
+$green-600: #10B981;
+$red-500: #EF4444;
+$red-600: #DC2626;
+$orange-500: #F59E0B;
+$orange-600: #D97706;
+$popup-bg: #f8f9fa;
+$table-header-bg: #2EB6E8;
+$table-border: #dee2e6;
 
 .grid {
   display: grid;
@@ -39,7 +38,6 @@ $orange-600: #d97706;
   height: 40vh;
 }
 
-// Style for category buttons (blue)
 .category-btn {
   padding: 1rem;
   min-width: 6rem;
@@ -68,7 +66,6 @@ $orange-600: #d97706;
   }
 }
 
-// Style for Quick Access buttons (teal)
 .quick-access-btn {
   padding: 1rem;
   min-width: 6rem;
@@ -126,7 +123,249 @@ $orange-600: #d97706;
   padding-right: 0.25rem;
 }
 
-// Popup styles
+// Sales Popup Styles
+.sales-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.sales-popup {
+  background-color: $popup-bg;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 1400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: none;
+  height: 90vh;
+}
+
+.sales-popup-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: $text-black;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid $pos-blue;
+  padding-bottom: 0.5rem;
+}
+
+.sales-table-container {
+  max-height: 65vh;
+  overflow-y: auto;
+  border-radius: 0.5rem;
+  background-color: $light-bg;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sales-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+
+  th,
+  td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid $table-border;
+  }
+
+  th {
+    background-color: $table-header-bg;
+    color: $dark-text;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  tr.even-row {
+    background-color: #f2f2f2;
+  }
+
+  tr.odd-row {
+    background-color: $light-bg;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .action-btn {
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+
+    &.print-btn {
+      background-color: $orange-500;
+      color: $dark-text;
+
+      &:hover {
+        background-color: $orange-600;
+      }
+    }
+
+    &.view-btn {
+      background-color: $blue-500;
+      color: $dark-text;
+
+      &:hover {
+        background-color: $blue-900;
+      }
+    }
+
+    .action-icon {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.dropdown-details {
+  padding: 1rem;
+  background-color: #f1f3f5;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.details-section {
+  margin-bottom: 1.5rem;
+
+  h6 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: $pos-blue;
+    margin-bottom: 0.75rem;
+  }
+}
+
+.details-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+
+  th,
+  td {
+    padding: 0.75rem;
+    text-align: left;
+    border: 1px solid $table-border;
+  }
+
+  &.items-table {
+    th {
+      background-color: $pos-teal;
+      color: $dark-text;
+      font-weight: 500;
+    }
+
+    tr {
+      background-color: $light-bg;
+
+      &:hover {
+        background-color: #e6f3f2;
+      }
+    }
+  }
+
+  &.payment-table {
+    th {
+      background-color: $green-500;
+      color: $dark-text;
+      font-weight: 500;
+    }
+
+    tr {
+      background-color: $light-bg;
+
+      &:hover {
+        background-color: #e9f7ef;
+      }
+    }
+  }
+
+  .no-data {
+    text-align: center;
+    color: $text-gray-600;
+    font-style: italic;
+  }
+}
+
+.sales-popup-message {
+  font-size: 1rem;
+  color: $text-gray-600;
+  text-align: center;
+  padding: 1rem;
+}
+
+.sales-footer {
+  margin-top: 1.5rem;
+}
+
+.sales-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  .pagination-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+  }
+
+  .pagination-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.3rem;
+    background-color: $blue-500;
+    color: $dark-text;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: $blue-900;
+    }
+
+    &:disabled {
+      background-color: $bg-gray-600;
+      cursor: not-allowed;
+    }
+
+    &.close-btn {
+      background-color: $red-500;
+
+      &:hover {
+        background-color: $red-600;
+      }
+    }
+  }
+
+  span {
+    font-size: 1rem;
+    color: $text-black;
+  }
+}
+
+// Reuse existing styles for other popups
 .purchase-popup-overlay {
   position: fixed;
   inset: 0;
@@ -234,8 +473,9 @@ $orange-600: #d97706;
     border-collapse: collapse;
     margin-top: 1rem;
 
-    th, td {
-      padding: 0.75rem;
+    th,
+    td {
+      padding: 8px;
       text-align: left;
       border-bottom: 1px solid $bg-gray-600;
       color: $text-black;
@@ -253,7 +493,7 @@ $orange-600: #d97706;
     tr {
       cursor: pointer;
       &:hover {
-        background-color: #e5e7eb; // Softer hover color
+        background-color: #F5F5F5;
       }
     }
 
@@ -347,6 +587,9 @@ $orange-600: #d97706;
 @media (max-width: 768px) {
   .grid-cols-5 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sales-popup {
+    width: 95%;
   }
 }
 
