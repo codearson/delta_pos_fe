@@ -208,8 +208,11 @@ const Header = () => {
         </Link>
         {/* Header Menu */}
         <ul className="nav user-menu">
-          {/* Search
-          <li className="nav-item nav-searchinputs">
+          {/* Placeholder to maintain layout */}
+          <li className="nav-item" style={{ flexGrow: 1 }}></li>
+
+          {/* Search */}
+          {/* <li className="nav-item nav-searchinputs">
             <div className="top-nav-search">
               <Link to="#" className="responsive-search">
                 <Search />
