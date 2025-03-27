@@ -47,8 +47,14 @@ const Pos = () => {
   const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
   const [notification, setNotification] = useState(null);
   const [lastTransaction, setLastTransaction] = useState(null);
+  const [showSuspendedTransactions, setShowSuspendedTransactions] = useState(false);
+  const [suspendedTransactions, setSuspendedTransactions] = useState(() => {
+    const saved = localStorage.getItem("suspendedTransactions");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [expandedTransactionId, setExpandedTransactionId] = useState(null); // New state for expanded transaction
   const barcodeInputRef = useRef(null);
-  const barcodeRef = useRef(null); // Ref for the hidden barcode
+  const barcodeRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -499,7 +505,7 @@ const Pos = () => {
                 width: 72mm;
                 min-height: 100%;
                 box-sizing: border-box;
-                font-weight: normal;
+                font-weight: bold;
                 color: #000;
               }
               header, footer, nav, .print-header, .print-footer {
@@ -547,6 +553,7 @@ const Pos = () => {
             }
             .receipt-items th, .receipt-items td {
               padding: 2px 0;
+              font-weight: bold;
               text-align: left;
               font-size: 12px;
             }
@@ -761,7 +768,7 @@ const Pos = () => {
                   width: 72mm;
                   min-height: 100%;
                   box-sizing: border-box;
-                  font-weight: normal;
+                  font-weight: bold;
                   color: #000;
                 }
                 header, footer, nav, .print-header, .print-footer {
@@ -940,6 +947,72 @@ const Pos = () => {
     resetInput();
   };
 
+  const handleSuspendTransaction = () => {
+    if (selectedItems.length === 0 && paymentMethods.length === 0) {
+      showNotification("No transaction to suspend.");
+      return;
+    }
+
+    const suspendedTransaction = {
+      id: Date.now(), // Unique ID based on timestamp
+      items: selectedItems,
+      totalValue,
+      paymentMethods,
+      balance,
+      isPaymentStarted,
+      customerName,
+      timestamp: new Date().toLocaleString(),
+    };
+
+    const updatedSuspendedTransactions = [...suspendedTransactions, suspendedTransaction];
+    setSuspendedTransactions(updatedSuspendedTransactions);
+    localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
+    showNotification("Transaction suspended successfully.");
+
+    // Reset current transaction
+    setSelectedItems([]);
+    setTotalValue(0);
+    setPaymentMethods([]);
+    setBalance(0);
+    setIsPaymentStarted(false);
+    setCustomerName("");
+    resetInput();
+  };
+
+  const handleRecallTransaction = () => {
+    if (suspendedTransactions.length === 0) {
+      showNotification("No suspended transactions available.");
+      return;
+    }
+    setShowSuspendedTransactions(true);
+  };
+
+  const handleCloseSuspendedPopup = () => {
+    setShowSuspendedTransactions(false);
+    setExpandedTransactionId(null); // Reset expanded state when closing
+  };
+
+  const handleRecallSelectedTransaction = (transaction) => {
+    setSelectedItems(transaction.items);
+    setTotalValue(transaction.totalValue);
+    setPaymentMethods(transaction.paymentMethods);
+    setBalance(transaction.balance);
+    setIsPaymentStarted(transaction.isPaymentStarted);
+    setCustomerName(transaction.customerName);
+    resetInput();
+
+    const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== transaction.id);
+    setSuspendedTransactions(updatedSuspendedTransactions);
+    localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
+    setShowSuspendedTransactions(false);
+    setExpandedTransactionId(null); // Reset expanded state
+    showNotification("Transaction recalled successfully.");
+  };
+
+  const toggleTransactionDetails = (id) => {
+    setExpandedTransactionId(expandedTransactionId === id ? null : id);
+  };
+
   return (
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <Sidebar darkMode={darkMode} />
@@ -992,6 +1065,8 @@ const Pos = () => {
                   onVoidAll={handleVoidAll}
                   onPrintLastBill={handlePrintLastBill}
                   onPriceCheck={handlePriceCheck}
+                  onSuspendTransaction={handleSuspendTransaction}
+                  onRecallTransaction={handleRecallTransaction}
                 />
               </div>
             </div>
@@ -1041,9 +1116,86 @@ const Pos = () => {
           </div>
         )}
 
+        {showSuspendedTransactions && (
+          <div className="suspended-transactions-overlay">
+            <div className={`suspended-transactions-popup ${darkMode ? "dark-mode" : ""}`}>
+              <h2>Suspended Transactions</h2>
+              <div className="suspended-list">
+                {suspendedTransactions.length > 0 ? (
+                  suspendedTransactions.map((transaction) => (
+                    <div key={transaction.id} className="suspended-item">
+                      <div className="suspended-info">
+                        <p>Timestamp: {transaction.timestamp}</p>
+                        <p>Total: {transaction.totalValue.toFixed(2)}</p>
+                        <p>Items: {transaction.items.length}</p>
+                        {transaction.customerName && <p>Customer: {transaction.customerName}</p>}
+                      </div>
+                      <div className="suspended-actions">
+                        <button
+                          className="details-btn"
+                          onClick={() => toggleTransactionDetails(transaction.id)}
+                        >
+                          <i className="feather-eye" />
+                        </button>
+                        <button
+                          className="recall-btn"
+                          onClick={() => handleRecallSelectedTransaction(transaction)}
+                        >
+                          Recall
+                        </button>
+                      </div>
+                      {expandedTransactionId === transaction.id && (
+                        <div className="details-container">
+                          <div className="transaction-details">
+                            <h3>Details</h3>
+                            <table className="details-table">
+                              <thead>
+                                <tr>
+                                  <th>Qty</th>
+                                  <th>Item</th>
+                                  <th>Price</th>
+                                  <th>Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {transaction.items.map((item, index) => (
+                                  <tr key={index}>
+                                    <td>{item.qty}</td>
+                                    <td>{item.name}</td>
+                                    <td>{item.price.toFixed(2)}</td>
+                                    <td>{item.total.toFixed(2)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            <p>Total: {transaction.totalValue.toFixed(2)}</p>
+                            <p>
+                              Payments:{" "}
+                              {transaction.paymentMethods.length > 0
+                                ? transaction.paymentMethods
+                                  .map((p) => `${p.type}: ${p.amount.toFixed(2)}`)
+                                  .join(", ")
+                                : "None"}
+                            </p>
+                            <p>Balance: {transaction.balance.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p>No suspended transactions.</p>
+                )}
+              </div>
+              <button className="close-btn" onClick={handleCloseSuspendedPopup}>
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
         {notification && <NotificationPopup message={notification} onClose={closeNotification} />}
 
-        {/* Hidden div to render the barcode */}
         <div style={{ position: "absolute", left: "-9999px" }}>
           <div ref={barcodeRef}>
             <Barcode
