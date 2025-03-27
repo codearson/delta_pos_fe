@@ -1,5 +1,3 @@
-// src/feature-module/components/Pos Components/Pos_CategoryGrid.jsx
-
 import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_CategoryGrid.scss";
@@ -12,6 +10,10 @@ import Barcode from "react-barcode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { fetchXReport } from "../../Api/TransactionApi";
+import { Printer } from "feather-icons-react/build/IconComponents";
+import { fetchZReport } from "../../Api/TransactionApi";
+import Swal from 'sweetalert2';
 
 const PAGE_SIZE = 15;
 const SALES_PAGE_SIZE = 10;
@@ -21,18 +23,23 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
   const [showAddPurchasePopup, setShowAddPurchasePopup] = useState(false);
   const [showViewPurchasePopup, setShowViewPurchasePopup] = useState(false);
+  const [showXReportPopup, setShowXReportPopup] = useState(false);
   const [showSalesListPopup, setShowSalesListPopup] = useState(false);
   const [categories, setCategories] = useState([]);
   const [barcode, setBarcode] = useState("");
   const [productStatus, setProductStatus] = useState("");
   const [error, setError] = useState("");
   const [purchases, setPurchases] = useState([]);
+  const [xReportData, setXReportData] = useState(null);
+  const popupRef = useRef(null);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [salesPageIndex, setSalesPageIndex] = useState(0);
   const [currentTransactionId, setCurrentTransactionId] = useState("0000000000");
   const barcodeRef = useRef(null);
+  const [zReportData, setZReportData] = useState(null);
+  const [showZReportPopup, setShowZReportPopup] = useState(false);
 
   useEffect(() => {
     if (typeof items === "function") {
@@ -91,6 +98,23 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   }, [showViewPurchasePopup]);
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setShowXReportPopup(false);
+        setXReportData(null);
+      }
+    };
+
+    if (showXReportPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showXReportPopup]);
+
+  useEffect(() => {
     if (showSalesListPopup) {
       const loadTransactions = async () => {
         try {
@@ -123,12 +147,16 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
       item.name === "Label Print"
         ? { ...item, isLabelPrint: true }
         : item.name === "Add Purchase List"
-        ? { ...item, isAddPurchase: true }
-        : item.name === "View Purchase List"
-        ? { ...item, isViewPurchase: true }
-        : item.name === "Sales List"
-        ? { ...item, isSalesList: true }
-        : item
+          ? { ...item, isAddPurchase: true }
+          : item.name === "View Purchase List"
+            ? { ...item, isViewPurchase: true }
+            : item.name === "Sales List"
+              ? { ...item, isSalesList: true }
+              : item.name === "X - Report"
+                ? { ...item, isXReport: true }
+                : item.name === "Z - Report"
+                  ? { ...item, isZReport: true }
+                  : item
     );
   }
 
@@ -160,6 +188,54 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
         setShowViewPurchasePopup(true);
       } else if (item.isSalesList) {
         setShowSalesListPopup(true);
+      } else if (item.isXReport) {
+        try {
+          const response = await fetchXReport();
+          if (response.success && response.data && response.data.responseDto) {
+            setXReportData(response.data);
+            setShowXReportPopup(true);
+          } else {
+            Swal.fire({
+              icon: 'info',
+              title: 'No Data Available',
+              text: 'No transaction data available for X-Report',
+              confirmButtonColor: '#3085d6',
+            });
+            console.error("Failed to fetch X-Report:", response.error);
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to fetch X-Report data',
+            confirmButtonColor: '#3085d6',
+          });
+          console.error("Error fetching X-Report:", error);
+        }
+      } else if (item.isZReport) {
+        try {
+          const response = await fetchZReport();
+          if (response.success && response.data && response.data.responseDto) {
+            setZReportData(response.data);
+            setShowZReportPopup(true);
+          } else {
+            Swal.fire({
+              icon: 'info',
+              title: 'No Data Available',
+              text: 'No transaction data available for Z-Report',
+              confirmButtonColor: '#3085d6',
+            });
+            console.error("Failed to fetch Z-Report:", response.error);
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to fetch Z-Report data',
+            confirmButtonColor: '#3085d6',
+          });
+          console.error("Error fetching Z-Report:", error);
+        }
       } else {
         onCategorySelect(item);
       }
@@ -295,6 +371,117 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     }
 
     doc.save(`purchase_${selectedPurchase.barcode}.pdf`);
+  };
+
+  const handlePrintXReport = () => {
+    if (!xReportData) return;
+
+    const printContent = `
+      <html>
+        <head>
+          <title>X Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .report-header { text-align: center; margin-bottom: 20px; }
+            .report-section { margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; }
+            h3 { margin: 10px 0; color: #333; }
+            .info-row { margin: 5px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="report-header">
+            <h2>X Report Details</h2>
+          </div>
+          
+          <div class="report-section">
+            <h3>Report Information</h3>
+            <div class="info-row">Generated By: ${xReportData.responseDto.reportGeneratedBy}</div>
+            <div class="info-row">Total Sales: ${xReportData.responseDto.totalSales.toFixed(2)}</div>
+            <div class="info-row">Total Transactions: ${xReportData.responseDto.totalTransactions}</div>
+            <div class="info-row">From: ${new Date(xReportData.responseDto.startDate).toLocaleString()}</div>
+            <div class="info-row">To: ${new Date(xReportData.responseDto.endDate).toLocaleString()}</div>
+          </div>
+
+          <div class="report-section">
+            <h3>Categories Breakdown</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${Object.entries(xReportData.responseDto.categoryTotals)
+                  .map(([category, amount]) => `
+                    <tr>
+                      <td>${category}</td>
+                      <td>${amount.toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="report-section">
+            <h3>Payment Methods</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${Object.entries(xReportData.responseDto.overallPaymentTotals)
+                  .map(([method, amount]) => `
+                    <tr>
+                      <td>${method}</td>
+                      <td>${amount.toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="report-section">
+            <h3>User Payment Details</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Payment Method</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${xReportData.responseDto.userPaymentDetails
+                  .map(user => 
+                    Object.entries(user.payments)
+                      .map(([method, amount]) => `
+                        <tr>
+                          <td>${user.userName}</td>
+                          <td>${method}</td>
+                          <td>${amount.toFixed(2)}</td>
+                        </tr>
+                      `).join('')
+                  ).join('')}
+              </tbody>
+            </table>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
 
   const handleCloseViewPurchasePopup = () => {
@@ -472,8 +659,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             </thead>
             <tbody>
               ${items
-                .map(
-                  (item) => `
+        .map(
+          (item) => `
                     <tr>
                       <td>${item.qty}</td>
                       <td>${item.name}</td>
@@ -481,20 +668,20 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                       <td class="total-column">${item.total.toFixed(2)}</td>
                     </tr>
                   `
-                )
-                .join("")}
+        )
+        .join("")}
             </tbody>
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
             <p>Total: ${totalAmount.toFixed(2)}</p>
             ${paymentMethods
-              .map(
-                (method) => `
+        .map(
+          (method) => `
                   <p>${method.type}: ${method.amount.toFixed(2)}</p>
                 `
-              )
-              .join("")}
+        )
+        .join("")}
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
@@ -521,6 +708,116 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
 
     printWindow.document.close();
     printWindow.focus();
+  };
+
+  const handlePrintZReport = () => {
+    if (!zReportData) return;
+
+    const printContent = `
+      <html>
+        <head>
+          <title>Z Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .report-header { text-align: center; margin-bottom: 20px; }
+            .report-section { margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; }
+            h3 { margin: 10px 0; color: #333; }
+            .info-row { margin: 5px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="report-header">
+            <h2>Z Report Details</h2>
+          </div>
+          
+          <div class="report-section">
+            <h3>Report Information</h3>
+            <div class="info-row">Generated By: ${zReportData.responseDto.reportGeneratedBy}</div>
+            <div class="info-row">Total Sales: ${zReportData.responseDto.fullyTotalSales.toFixed(2)}</div>
+            <div class="info-row">From: ${new Date(zReportData.responseDto.startDate).toLocaleString()}</div>
+            <div class="info-row">To: ${new Date(zReportData.responseDto.endDate).toLocaleString()}</div>
+          </div>
+
+          ${Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => `
+            <div class="report-section">
+              <h3>Date: ${new Date(date).toLocaleDateString()}</h3>
+              
+              <h4>Categories Breakdown</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.entries(data.categoryTotals)
+                    .map(([category, amount]) => `
+                      <tr>
+                        <td>${category}</td>
+                        <td>${amount.toFixed(2)}</td>
+                      </tr>
+                    `).join('')}
+                </tbody>
+              </table>
+
+              <h4>Payment Methods</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Method</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.entries(data.overallPaymentTotals)
+                    .map(([method, amount]) => `
+                      <tr>
+                        <td>${method}</td>
+                        <td>${amount.toFixed(2)}</td>
+                      </tr>
+                    `).join('')}
+                </tbody>
+              </table>
+
+              <h4>User Payment Details</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Payment Method</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Object.entries(data.userPaymentDetails)
+                    .map(([userName, payments]) => 
+                      Object.entries(payments)
+                        .map(([method, amount]) => `
+                          <tr>
+                            <td>${userName}</td>
+                            <td>${method}</td>
+                            <td>${amount.toFixed(2)}</td>
+                          </tr>
+                        `).join('')
+                    ).join('')}
+                </tbody>
+              </table>
+            </div>
+          `).join('')}
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
 
   const salesStart = salesPageIndex * SALES_PAGE_SIZE;
@@ -677,7 +974,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                             <td>{transaction.shopDetailsDto?.name || "N/A"}</td>
                             <td>{transaction.userDto?.firstName || "N/A"}</td>
                             <td>{transaction.customerDto?.name || "N/A"}</td>
-                            <td>{`LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`}</td>
+                            <td>{parseFloat(transaction.totalAmount || 0).toFixed(2)}</td>
                             <td>
                               {transaction.dateTime
                                 ? new Date(transaction.dateTime).toLocaleString()
@@ -698,8 +995,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                                     fill="currentColor"
                                     viewBox="0 0 16 16"
                                   >
-                                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-                                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+                                    <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z" />
+                                    <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z" />
                                   </svg>
                                 </button>
                                 <button
@@ -715,8 +1012,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                                     fill="currentColor"
                                     viewBox="0 0 16 16"
                                   >
-                                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" />
+                                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z" />
                                   </svg>
                                 </button>
                               </div>
@@ -741,17 +1038,15 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                                       </thead>
                                       <tbody>
                                         {transaction.transactionDetailsList &&
-                                        transaction.transactionDetailsList.length > 0 ? (
+                                          transaction.transactionDetailsList.length > 0 ? (
                                           transaction.transactionDetailsList.map((item, index) => (
                                             <tr key={index}>
                                               <td>{item.productDto?.name || "N/A"}</td>
                                               <td>{item.productDto?.barcode || "N/A"}</td>
-                                              <td>{`LKR ${parseFloat(item.unitPrice || 0).toFixed(2)}`}</td>
+                                              <td>{parseFloat(item.unitPrice || 0).toFixed(2)}</td>
                                               <td>{item.quantity || 0}</td>
-                                              <td>{`LKR ${parseFloat(item.discount || 0).toFixed(2)}`}</td>
-                                              <td>{`LKR ${parseFloat(
-                                                (item.unitPrice * item.quantity) - (item.discount || 0)
-                                              ).toFixed(2)}`}</td>
+                                              <td>{parseFloat(item.discount || 0).toFixed(2)}</td>
+                                              <td>{parseFloat((item.unitPrice * item.quantity) - (item.discount || 0)).toFixed(2)}</td>
                                             </tr>
                                           ))
                                         ) : (
@@ -775,11 +1070,11 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                                       </thead>
                                       <tbody>
                                         {transaction.transactionPaymentMethod &&
-                                        transaction.transactionPaymentMethod.length > 0 ? (
+                                          transaction.transactionPaymentMethod.length > 0 ? (
                                           transaction.transactionPaymentMethod.map((payment, index) => (
                                             <tr key={index}>
                                               <td>{payment.paymentMethodDto?.type || "N/A"}</td>
-                                              <td>{`LKR ${parseFloat(payment.amount || 0).toFixed(2)}`}</td>
+                                              <td>{parseFloat(payment.amount || 0).toFixed(2)}</td>
                                             </tr>
                                           ))
                                         ) : (
@@ -842,6 +1137,276 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           </div>
         </div>
       )}
+      
+      {showXReportPopup && xReportData && xReportData.responseDto && (
+        <div className="purchase-popup-overlay">
+          <div 
+            ref={popupRef}
+            className="purchase-popup simple-popup" 
+            style={{ 
+              maxWidth: '1200px',
+              maxHeight: '80vh',
+              overflow: 'auto'
+            }}
+          >
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="purchase-popup-title">X Report Details</h2>
+              <button className="btn btn-added" onClick={handlePrintXReport}>
+                <Printer className="me-2" /> Print
+              </button>
+            </div>
+
+            <div className="card">
+              <div className="card-body">
+                <div className="row" style={{ marginBottom: '20px' }}>
+                  <div className="col-md-6">
+                    <h4>Report Information</h4>
+                    <p><strong>Generated By:</strong> {xReportData.responseDto.reportGeneratedBy}</p>
+                    <p><strong>Total Sales:</strong> {xReportData.responseDto.totalSales.toFixed(2)}</p>
+                    <p><strong>Total Transactions:</strong> {xReportData.responseDto.totalTransactions}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <h4>Report Period</h4>
+                    <p><strong>From:</strong> {new Date(xReportData.responseDto.startDate).toLocaleString()}</p>
+                    <p><strong>To:</strong> {new Date(xReportData.responseDto.endDate).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <h4>Categories Breakdown</h4>
+                    <table className="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Category</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(xReportData.responseDto.categoryTotals).map(([category, amount]) => (
+                          <tr key={category}>
+                            <td>{category}</td>
+                            <td>{amount.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="col-md-6">
+                    <h4>Payment Methods</h4>
+                    <table className="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Method</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(xReportData.responseDto.overallPaymentTotals).map(([method, amount]) => (
+                          <tr key={method}>
+                            <td>{method}</td>
+                            <td>{amount.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="row mt-4">
+                  <div className="col-12">
+                    <h4>User Payment Details</h4>
+                    <div className="table-responsive">
+                      <table className="table table-bordered table-striped">
+                        <thead>
+                          <tr>
+                            <th style={{ 
+                              backgroundColor: '#f8f9fa', 
+                              fontWeight: '600',
+                              borderBottom: '2px solid #dee2e6'
+                            }}>User Name</th>
+                            <th style={{ 
+                              backgroundColor: '#f8f9fa', 
+                              fontWeight: '600',
+                              borderBottom: '2px solid #dee2e6'
+                            }}>Payment Method</th>
+                            <th style={{ 
+                              backgroundColor: '#f8f9fa', 
+                              fontWeight: '600',
+                              borderBottom: '2px solid #dee2e6'
+                            }}>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {xReportData.responseDto.userPaymentDetails.map((user) => (
+                            Object.entries(user.payments).map(([method, amount]) => (
+                              <tr key={`${user.userName}-${method}`}>
+                                <td style={{ padding: '12px 15px' }}>{user.userName}</td>
+                                <td style={{ padding: '12px 15px' }}>{method}</td>
+                                <td style={{ padding: '12px 15px' }}>{amount.toFixed(2)}</td>
+                              </tr>
+                            ))
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="purchase-popup-actions">
+              <button
+                onClick={() => {
+                  setShowXReportPopup(false);
+                  setXReportData(null);
+                }}
+                className="purchase-popup-button cancel"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showZReportPopup && zReportData && zReportData.responseDto && (
+        <div className="purchase-popup-overlay">
+          <div 
+            ref={popupRef}
+            className="purchase-popup simple-popup" 
+            style={{ 
+              maxWidth: '1200px',
+              maxHeight: '80vh',
+              overflow: 'auto'
+            }}
+          >
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h2 className="purchase-popup-title">Z Report Details</h2>
+              <button className="btn btn-added" onClick={handlePrintZReport}>
+                <Printer className="me-2" /> Print
+              </button>
+            </div>
+
+            <div className="card">
+              <div className="card-body">
+                <div className="row" style={{ marginBottom: '20px' }}>
+                  <div className="col-md-6">
+                    <h4>Report Information</h4>
+                    <p><strong>Generated By:</strong> {zReportData.responseDto.reportGeneratedBy}</p>
+                    <p><strong>Total Sales:</strong> {zReportData.responseDto.fullyTotalSales.toFixed(2)}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <h4>Report Period</h4>
+                    <p><strong>From:</strong> {new Date(zReportData.responseDto.startDate).toLocaleString()}</p>
+                    <p><strong>To:</strong> {new Date(zReportData.responseDto.endDate).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
+                  <div key={date}>
+                    <h4>Date: {new Date(date).toLocaleDateString()}</h4>
+                    
+                    <div className="row">
+                      <div className="col-md-6">
+                        <h4>Categories Breakdown</h4>
+                        <table className="table table-bordered">
+                          <thead>
+                            <tr>
+                              <th>Category</th>
+                              <th>Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(data.categoryTotals).map(([category, amount]) => (
+                              <tr key={category}>
+                                <td>{category}</td>
+                                <td>{amount.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="col-md-6">
+                        <h4>Payment Methods</h4>
+                        <table className="table table-bordered">
+                          <thead>
+                            <tr>
+                              <th>Method</th>
+                              <th>Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
+                              <tr key={method}>
+                                <td>{method}</td>
+                                <td>{amount.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="row mt-4">
+                      <div className="col-12">
+                        <h4>User Payment Details</h4>
+                        <div className="table-responsive">
+                          <table className="table table-bordered table-striped">
+                            <thead>
+                              <tr>
+                                <th style={{ 
+                                  backgroundColor: '#f8f9fa', 
+                                  fontWeight: '600',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>User Name</th>
+                                <th style={{ 
+                                  backgroundColor: '#f8f9fa', 
+                                  fontWeight: '600',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Payment Method</th>
+                                <th style={{ 
+                                  backgroundColor: '#f8f9fa', 
+                                  fontWeight: '600',
+                                  borderBottom: '2px solid #dee2e6'
+                                }}>Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) => (
+                                Object.entries(payments).map(([method, amount]) => (
+                                  <tr key={`${userName}-${method}`}>
+                                    <td style={{ padding: '12px 15px' }}>{userName}</td>
+                                    <td style={{ padding: '12px 15px' }}>{method}</td>
+                                    <td style={{ padding: '12px 15px' }}>{amount.toFixed(2)}</td>
+                                  </tr>
+                                ))
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="purchase-popup-actions">
+              <button
+                onClick={() => {
+                  setShowZReportPopup(false);
+                  setZReportData(null);
+                }}
+                className="purchase-popup-button cancel"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ position: "absolute", left: "-9999px" }}>
         <div ref={barcodeRef}>
           <Barcode
