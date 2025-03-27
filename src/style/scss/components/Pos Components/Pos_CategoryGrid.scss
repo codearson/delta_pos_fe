@@ -72,7 +72,7 @@ $table-border: #dee2e6;
   min-height: 13vh;
   border-radius: $radius;
   text-align: center;
-  background-color: $pos-teal; // Teal color
+  background-color: $pos-teal;
   border: none;
   outline: none;
   box-shadow: none;
@@ -80,12 +80,12 @@ $table-border: #dee2e6;
 
   &:hover {
     transform: scale(1.02);
-    background-color: $teal-500; // Lighter teal on hover
+    background-color: $teal-500;
   }
 
   @media (prefers-color-scheme: dark) {
     &:hover {
-      background-color: $teal-900; // Darker teal on hover
+      background-color: $teal-900;
     }
   }
 
@@ -123,7 +123,6 @@ $table-border: #dee2e6;
   padding-right: 0.25rem;
 }
 
-// Sales Popup Styles
 .sales-popup-overlay {
   position: fixed;
   inset: 0;
@@ -365,9 +364,12 @@ $table-border: #dee2e6;
   }
 }
 
-// Reuse existing styles for other popups
 .purchase-popup-overlay {
   position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
@@ -381,14 +383,14 @@ $table-border: #dee2e6;
   padding: 2rem;
   border-radius: 1rem;
   box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
-  width: 600px; // Increased width
+  width: 600px;
   max-width: 90%;
-  max-height: 70vh; // Reduced height
+  max-height: 70vh;
   border: 4px solid #bfdbfe;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  position: relative; // For positioning the close button
+  position: relative;
 
   &.dark-mode {
     background-color: $dark-bg;
@@ -402,6 +404,189 @@ $table-border: #dee2e6;
     }
     .purchase-popup-status {
       color: $text-gray-600;
+    }
+  }
+
+  &.simple-popup {
+    background-color: $popup-bg;
+    border-color: $table-border;
+    .card {
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+      .card-body {
+        padding: 15px;
+      }
+    }
+
+    table {
+      width: 100%;
+      margin-bottom: 1rem;
+      background-color: transparent;
+
+      th, td {
+        padding: 0.75rem;
+        vertical-align: top;
+        border-top: 1px solid #dee2e6;
+      }
+
+      thead th {
+        vertical-align: bottom;
+        border-bottom: 2px solid #dee2e6;
+        background-color: #f8f9fa;
+      }
+    }
+
+    h4 {
+      color: #333;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin-bottom: 0.5rem;
+      color: #666;
+
+      strong {
+        color: #333;
+      }
+    }
+
+    .table-bordered {
+      th, td {
+        border: 1px solid #dee2e6;
+      }
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      margin-right: -15px;
+      margin-left: -15px;
+    }
+
+    .col-md-6 {
+      flex: 0 0 50%;
+      max-width: 50%;
+      padding-right: 15px;
+      padding-left: 15px;
+    }
+
+    h4 {
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    table {
+      font-size: 14px;
+    }
+
+    .mt-3 {
+      margin-top: 1rem;
+    }
+
+    .col-12 {
+      flex: 0 0 100%;
+      max-width: 100%;
+      padding-right: 15px;
+      padding-left: 15px;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    .table {
+      width: 100%;
+      margin-bottom: 1rem;
+      color: #212529;
+      border-collapse: collapse;
+
+      &.table-bordered {
+        border: 1px solid #dee2e6;
+      }
+
+      &.table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0, 0, 0, 0.02);
+      }
+
+      th, td {
+        border: 1px solid #dee2e6;
+        vertical-align: middle;
+      }
+
+      th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-align: left;
+      }
+
+      td {
+        font-size: 14px;
+      }
+    }
+
+    .mt-4 {
+      margin-top: 1.5rem;
+    }
+
+    .card {
+      margin-bottom: 1rem;
+    }
+
+    .d-flex {
+      display: flex;
+    }
+
+    .justify-content-between {
+      justify-content: space-between;
+    }
+
+    .align-items-center {
+      align-items: center;
+    }
+
+    .mb-3 {
+      margin-bottom: 1rem;
+    }
+
+    .me-2 {
+      margin-right: 0.5rem;
+    }
+
+    .purchase-popup-button {
+      &.print {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background-color: $orange-500;
+        color: $dark-text;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: $orange-600;
+          transform: scale(1.015);
+        }
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
     }
   }
 
@@ -423,7 +608,7 @@ $table-border: #dee2e6;
     background-color: $red-500;
     color: $dark-text;
     border: none;
-    border-radius: 0.25rem; // Slightly curved corners
+    border-radius: 0.25rem;
     width: 30px;
     height: 30px;
     font-size: 1.2rem;
@@ -464,8 +649,8 @@ $table-border: #dee2e6;
   }
 
   .purchase-popup-table-container {
-    max-height: 300px; // Fixed height for the table container
-    overflow-y: auto; // Add scrollbar when content overflows
+    max-height: 300px;
+    overflow-y: auto;
   }
 
   .purchase-popup-table {
@@ -513,13 +698,13 @@ $table-border: #dee2e6;
     padding: 1rem;
     border: 1px solid $bg-gray-600;
     border-radius: 0.5rem;
-    background-color: #f3f4f6; // Softer background
+    background-color: #f3f4f6;
     color: $text-black;
   }
 
   .purchase-popup-actions {
     display: flex;
-    justify-content: space-between; // Space buttons between left and right
+    justify-content: space-between;
     gap: 1rem;
     margin-top: 1.5rem;
 
@@ -584,6 +769,15 @@ $table-border: #dee2e6;
   }
 }
 
+.x-report-content {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 15px;
+  background: #ffffff;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
 @media (max-width: 768px) {
   .grid-cols-5 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -614,5 +808,33 @@ $table-border: #dee2e6;
   }
   .text-sm {
     font-size: 0.8rem;
+  }
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+
+  &.btn-added {
+    background-color: $orange-500;
+    color: $dark-text;
+
+    &:hover {
+      background-color: $orange-600;
+      transform: scale(1.015);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+      margin-right: 0.5rem;
+    }
   }
 }

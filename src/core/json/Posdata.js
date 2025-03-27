@@ -4,8 +4,8 @@ import { fetchProducts } from "../../feature-module/Api/productApi";
 
 export const quickAccess = [
   // { id: 1, name: "Opening Amount", icon: "💰" },
-  { id: 4, name: "X - Report", icon: "📊" },
-  { id: 2, name: "Z - Report", icon: "🧾" },
+  { id: 4, name: "X - Report", icon: "📊", isXReport: true },
+  { id: 2, name: "Z - Report", icon: "🧾", isZReport: true },
   { id: 3, name: "Pay Out", icon: "💵" },
   { id: 5, name: "Banking", icon: "💰" },
   // { id: 6, name: "Logout", icon: "🚪" },
