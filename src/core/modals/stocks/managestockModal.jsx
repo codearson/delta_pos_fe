@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import PropTypes from 'prop-types';
 import { fetchProducts } from "../../../feature-module/Api/productApi";
-import { updateStock, saveStock, fetchBranches } from "../../../feature-module/Api/StockApi";
+import { updateStock, saveStock, fetchBranches, fetchStocks } from "../../../feature-module/Api/StockApi";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
@@ -106,7 +106,6 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
 
     let hasErrors = false;
 
-   
     if (!formData.branch?.value) {
       setErrors(prev => ({...prev, branch: 'Please select a branch'}));
       hasErrors = true;
@@ -127,19 +126,38 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
       return;
     }
 
-    const updatedData = {
-      id: selectedStock?.id,
-      isActive: 1,
-      quantity: parseInt(formData.quantity),
-      branchDto: {
-        id: parseInt(formData.branch?.value)
-      },
-      productDto: {
-        id: parseInt(formData.product?.value)
-      }
-    };
-
+    // Check for duplicate stock (same branch and product, excluding current stock)
     try {
+      const stocks = await fetchStocks();
+      const existingStock = stocks.find(stock => 
+        stock.branchDto.id === parseInt(formData.branch.value) &&
+        stock.productDto.id === parseInt(formData.product.value) &&
+        stock.id !== selectedStock?.id
+      );
+      
+      if (existingStock) {
+        MySwal.fire({
+          title: "Error!",
+          text: "A stock entry with this branch and product already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
+      const updatedData = {
+        id: selectedStock?.id,
+        isActive: 1,
+        quantity: parseInt(formData.quantity),
+        branchDto: {
+          id: parseInt(formData.branch?.value)
+        },
+        productDto: {
+          id: parseInt(formData.product?.value)
+        }
+      };
+
       const response = await updateStock(updatedData);
 
       if (response?.data?.status === true) {
@@ -228,7 +246,26 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
       return;
     }
 
-    const newStock = {
+    // Check for duplicate stock (same branch and product)
+    try {
+      const stocks = await fetchStocks();
+      const existingStock = stocks.find(stock => 
+        stock.branchDto.id === parseInt(formData.branch.value) &&
+        stock.productDto.id === parseInt(formData.product.value)
+      );
+      
+      if (existingStock) {
+        MySwal.fire({
+          title: "Error!",
+          text: "A stock entry with this branch and product already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
+      const newStock = {
         quantity: parseInt(formData.quantity),
         productDto: {
             id: parseInt(formData.product.value)
@@ -237,48 +274,47 @@ const ManageStockModal = ({ selectedStock, refreshData }) => {
             id: parseInt(formData.branch.value)
         },
         isActive: 1
-    };
+      };
 
-    try {
-        const response = await saveStock(newStock);
-        
-        if (response && response.status === true) {
-            MySwal.fire({
-                title: "Success!",
-                text: "Stock saved successfully!",
-                icon: "success",
-                confirmButtonText: "OK",
-                customClass: {
-                    confirmButton: "btn btn-primary",
-                },
-            });
-            
-            setFormData({
-                branch: null,
-                product: null,
-                quantity: ''
-            });
+      const response = await saveStock(newStock);
+      
+      if (response && response.status === true) {
+          MySwal.fire({
+              title: "Success!",
+              text: "Stock saved successfully!",
+              icon: "success",
+              confirmButtonText: "OK",
+              customClass: {
+                  confirmButton: "btn btn-primary",
+              },
+          });
+          
+          setFormData({
+              branch: null,
+              product: null,
+              quantity: ''
+          });
 
-            document.getElementById('add-units').classList.remove('show');
-            document.querySelector('.modal-backdrop').remove();
-            document.body.classList.remove('modal-open');
-            document.body.style.removeProperty('overflow');
-            document.body.style.removeProperty('padding-right');
-            
-            if (refreshData) {
-                refreshData();
-            }
-        } else {
-            MySwal.fire({
-                title: "Error!",
-                text: "Failed to save stock.",
-                icon: "error",
-                confirmButtonText: "OK",
-                customClass: {
-                    confirmButton: "btn btn-primary",
-                },
-            });
-        }
+          document.getElementById('add-units').classList.remove('show');
+          document.querySelector('.modal-backdrop').remove();
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('overflow');
+          document.body.style.removeProperty('padding-right');
+          
+          if (refreshData) {
+              refreshData();
+          }
+      } else {
+          MySwal.fire({
+              title: "Error!",
+              text: "Failed to save stock.",
+              icon: "error",
+              confirmButtonText: "OK",
+              customClass: {
+                  confirmButton: "btn btn-primary",
+              },
+          });
+      }
     } catch (err) {
         MySwal.fire({
             title: "Error!",
