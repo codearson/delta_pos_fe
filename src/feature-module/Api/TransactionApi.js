@@ -47,3 +47,49 @@ export const fetchTransactions = async () => {
     return [];
   }
 };
+
+export const fetchZReport = async () => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      return { success: false, error: "No access token" };
+    }
+
+    // Get userId from localStorage or your auth state management
+    const userId = localStorage.getItem("userId"); // Adjust this based on where you store the userId
+    
+    const response = await axios.get(`${BASE_BACKEND_URL}/transaction/zReport`, {
+      params: { userId },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const fetchXReport = async () => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      return { success: false, error: "No access token" };
+    }
+
+    // Get userId from localStorage or your auth state management
+    const userId = localStorage.getItem("userId"); // Adjust this based on where you store the userId
+
+    const response = await axios.get(`${BASE_BACKEND_URL}/transaction/xReport`, {
+      params: { userId },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
