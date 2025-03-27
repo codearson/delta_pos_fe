@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// export const BASE_BACKEND_URL = "https://deltaposbe-production.up.railway.app";
- export const BASE_BACKEND_URL = "http://localhost:8080";
+export const BASE_BACKEND_URL = "https://deltaposbe-production.up.railway.app";
+// export const BASE_BACKEND_URL = "http://localhost:8080";
 
 export const getAccessToken = async (username, password) => {
   try {
@@ -37,7 +37,7 @@ export const getUserByEmail = async (email) => {
   if (!accessToken) {
     return null;
   }
-  
+
   const response = await axios.get(
     `${BASE_BACKEND_URL}/user/getByEmailAddress?emailAddress=${email}`,
     {
@@ -46,7 +46,7 @@ export const getUserByEmail = async (email) => {
       },
     }
   );
-  
+
   if (response.data.responseDto?.length > 0) {
     return response.data.responseDto[0];
   }
