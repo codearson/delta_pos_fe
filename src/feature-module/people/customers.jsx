@@ -94,6 +94,38 @@ const Customers = () => {
 
   const handleSaveCustomer = async (customerData) => {
     try {
+      // Check for duplicate customer name
+      const existingCustomerByName = allCustomers.find(customer => 
+        customer.name.toLowerCase() === customerData.name.toLowerCase()
+      );
+      
+      if (existingCustomerByName) {
+        Swal.fire({
+          title: "Error!",
+          text: "A customer with this name already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
+      // Check for duplicate mobile number
+      const existingCustomerByMobile = allCustomers.find(customer => 
+        customer.mobileNumber === customerData.mobileNumber
+      );
+      
+      if (existingCustomerByMobile) {
+        Swal.fire({
+          title: "Error!",
+          text: "A customer with this mobile number already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
       const customerDataWithActive = { ...customerData, isActive: 1 };
       const result = await saveCustomer(customerDataWithActive);
       if (result) {
@@ -120,6 +152,40 @@ const Customers = () => {
 
   const handleUpdateCustomer = async (customerData) => {
     try {
+      // Check for duplicate customer name (excluding current customer)
+      const existingCustomerByName = allCustomers.find(customer => 
+        customer.name.toLowerCase() === customerData.name.toLowerCase() &&
+        customer.id !== customerData.id
+      );
+      
+      if (existingCustomerByName) {
+        Swal.fire({
+          title: "Error!",
+          text: "A customer with this name already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
+      // Check for duplicate mobile number (excluding current customer)
+      const existingCustomerByMobile = allCustomers.find(customer => 
+        customer.mobileNumber === customerData.mobileNumber &&
+        customer.id !== customerData.id
+      );
+      
+      if (existingCustomerByMobile) {
+        Swal.fire({
+          title: "Error!",
+          text: "A customer with this mobile number already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
       const result = await updateCustomer(customerData);
       if (result) {
         await fetchCustomersData(false);

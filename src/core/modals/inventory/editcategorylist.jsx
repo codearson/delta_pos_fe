@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from 'react-router-dom'
-import { updateProductCategory } from '../../../feature-module/Api/ProductCategoryApi'
+import { updateProductCategory, getProductCategoryByName } from '../../../feature-module/Api/ProductCategoryApi'
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 
@@ -24,23 +24,63 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
         }
         
         if (!selectedCategory) return;
-   
-        const updatedData = { 
-            productCategoryName: categoryName, 
-            isActive 
-        };
-   
+
         try {
+            // Check for existing category (excluding current category)
+            const existingCategory = await getProductCategoryByName(categoryName);
+            if (existingCategory?.responseDto && 
+                existingCategory.responseDto.id !== selectedCategory.id) {
+                Swal.fire({
+                    title: "Error!",
+                    text: "A category with this name already exists.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
+                return;
+            }
+
+            const updatedData = { 
+                productCategoryName: categoryName, 
+                isActive 
+            };
+
             const response = await updateProductCategory(selectedCategory.id, updatedData);
             if (response) {
-                Swal.fire("Success", "Category updated successfully!", "success");
+                Swal.fire({
+                    title: "Success",
+                    text: "Category updated successfully!",
+                    icon: "success",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
                 onUpdate();
                 document.getElementById('edit-category-close').click();
             } else {
-                Swal.fire("Error", "Failed to update category", "error");
+                Swal.fire({
+                    title: "Error",
+                    text: "Failed to update category",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
             }
         } catch (error) {
-            Swal.fire("Error", "Something went wrong", "error");
+            Swal.fire({
+                title: "Error",
+                text: "Something went wrong",
+                icon: "error",
+                confirmButtonText: "OK",
+                customClass: {
+                    confirmButton: "btn btn-primary",
+                },
+            });
         }
     };
 
