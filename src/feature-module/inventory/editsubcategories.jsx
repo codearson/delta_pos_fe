@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { updateTax } from '../Api/TaxApi';
+import { updateTax, getTaxByName } from '../Api/TaxApi';
 import Swal from 'sweetalert2';
 
 const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
@@ -45,6 +45,22 @@ const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
         }
 
         try {
+            // Check for existing tax percentage (excluding current tax)
+            const existingTax = await getTaxByName(taxPercentage);
+            if (existingTax?.responseDto && 
+                existingTax.responseDto.id !== selectedTax.id) {
+                Swal.fire({
+                    title: "Error!",
+                    text: "A tax with this percentage already exists.",
+                    icon: "error",
+                    confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
+                });
+                return;
+            }
+
             const updatedData = {
                 taxPercentage: Number(taxPercentage),
                 isActive: true

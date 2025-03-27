@@ -557,7 +557,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                 width: 72mm;
                 min-height: 100%;
                 box-sizing: border-box;
-                font-weight: normal;
+                font-weight: bold;
                 color: #000;
               }
               header, footer, nav, .print-header, .print-footer {

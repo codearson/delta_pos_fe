@@ -96,6 +96,76 @@ const Suppliers = () => {
 
   const handleSaveSupplier = async (supplierData) => {
     try {
+      // Check for duplicate supplier name
+      const existingSupplierByName = allSuppliers.find(supplier => 
+        supplier.name.toLowerCase() === supplierData.name.toLowerCase()
+      );
+      
+      if (existingSupplierByName) {
+        Swal.fire({
+          title: "Error!",
+          text: "A supplier with this name already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
+      // Check for duplicate email
+      if (supplierData.emailAddress) {
+        const existingSupplierByEmail = allSuppliers.find(supplier => 
+          supplier.emailAddress.toLowerCase() === supplierData.emailAddress.toLowerCase()
+        );
+        
+        if (existingSupplierByEmail) {
+          Swal.fire({
+            title: "Error!",
+            text: "A supplier with this email already exists.",
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+          return;
+        }
+      }
+
+      // Check for duplicate mobile number
+      if (supplierData.mobileNumber) {
+        const existingSupplierByMobile = allSuppliers.find(supplier => 
+          supplier.mobileNumber === supplierData.mobileNumber
+        );
+        
+        if (existingSupplierByMobile) {
+          Swal.fire({
+            title: "Error!",
+            text: "A supplier with this mobile number already exists.",
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+          return;
+        }
+      }
+
+      // Check for duplicate WhatsApp number
+      if (supplierData.whatsappNumber) {
+        const existingSupplierByWhatsApp = allSuppliers.find(supplier => 
+          supplier.whatsappNumber === supplierData.whatsappNumber
+        );
+        
+        if (existingSupplierByWhatsApp) {
+          Swal.fire({
+            title: "Error!",
+            text: "A supplier with this WhatsApp number already exists.",
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+          return;
+        }
+      }
+
       const supplierDataWithActive = { ...supplierData, isActive: 1 };
       const result = await saveSupplier(supplierDataWithActive);
       if (result) {
@@ -122,6 +192,80 @@ const Suppliers = () => {
 
   const handleUpdateSupplier = async (supplierData) => {
     try {
+      // Check for duplicate supplier name (excluding current supplier)
+      const existingSupplierByName = allSuppliers.find(supplier => 
+        supplier.name.toLowerCase() === supplierData.name.toLowerCase() &&
+        supplier.id !== supplierData.id
+      );
+      
+      if (existingSupplierByName) {
+        Swal.fire({
+          title: "Error!",
+          text: "A supplier with this name already exists.",
+          icon: "error",
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-danger" },
+        });
+        return;
+      }
+
+      // Check for duplicate email (excluding current supplier)
+      if (supplierData.emailAddress) {
+        const existingSupplierByEmail = allSuppliers.find(supplier => 
+          supplier.emailAddress.toLowerCase() === supplierData.emailAddress.toLowerCase() &&
+          supplier.id !== supplierData.id
+        );
+        
+        if (existingSupplierByEmail) {
+          Swal.fire({
+            title: "Error!",
+            text: "A supplier with this email already exists.",
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+          return;
+        }
+      }
+
+      // Check for duplicate mobile number (excluding current supplier)
+      if (supplierData.mobileNumber) {
+        const existingSupplierByMobile = allSuppliers.find(supplier => 
+          supplier.mobileNumber === supplierData.mobileNumber &&
+          supplier.id !== supplierData.id
+        );
+        
+        if (existingSupplierByMobile) {
+          Swal.fire({
+            title: "Error!",
+            text: "A supplier with this mobile number already exists.",
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+          return;
+        }
+      }
+
+      // Check for duplicate WhatsApp number (excluding current supplier)
+      if (supplierData.whatsappNumber) {
+        const existingSupplierByWhatsApp = allSuppliers.find(supplier => 
+          supplier.whatsappNumber === supplierData.whatsappNumber &&
+          supplier.id !== supplierData.id
+        );
+        
+        if (existingSupplierByWhatsApp) {
+          Swal.fire({
+            title: "Error!",
+            text: "A supplier with this WhatsApp number already exists.",
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+          return;
+        }
+      }
+
       const result = await updateSupplier(supplierData);
       if (result) {
         await fetchSuppliersData(false);

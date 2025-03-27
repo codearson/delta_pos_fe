@@ -213,6 +213,37 @@ const EditProduct = () => {
     }
 
     try {
+      // Check for duplicate product name
+      const products = await fetchProducts();
+      const existingProductByName = products.find(p => 
+        p.name.toLowerCase() === productName.toLowerCase() && p.id !== parseInt(productId)
+      );
+      
+      if (existingProductByName) {
+        MySwal.fire({
+          title: "Error!",
+          text: "A product with this name already exists.",
+          icon: "error",
+          confirmButtonText: "OK"
+        });
+        return;
+      }
+
+      // Check for duplicate barcode
+      const existingProductByBarcode = products.find(p => 
+        p.barcode === barcode && p.id !== parseInt(productId)
+      );
+      
+      if (existingProductByBarcode) {
+        MySwal.fire({
+          title: "Error!",
+          text: "A product with this barcode already exists.",
+          icon: "error",
+          confirmButtonText: "OK"
+        });
+        return;
+      }
+
       const productData = {
         id: parseInt(productId),
         name: productName,
