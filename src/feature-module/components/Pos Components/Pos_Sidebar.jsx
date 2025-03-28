@@ -1,41 +1,88 @@
-import React from "react";
-import PropTypes from "prop-types"; // Import PropTypes
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import { Link, useNavigate } from "react-router-dom";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
+import { all_routes } from "../../../Router/all_routes";
 import "../../../style/scss/components/Pos Components/Pos_Sidebar.scss";
 
 const Pos_Sidebar = ({ darkMode }) => {
+  const navigate = useNavigate();
+  const route = all_routes;
+
+  const [userDetails, setUserDetails] = useState({
+    firstName: "",
+    lastName: "",
+    userRole: "",
+  });
+
+  const circleColor = "#4ECDC4";
+
+  useEffect(() => {
+    const fetchUserDetails = () => {
+      const firstName = localStorage.getItem("firstName") || "Unknown";
+      const lastName = localStorage.getItem("lastName") || "";
+      const userRole = localStorage.getItem("userRole") || "";
+
+      setUserDetails({
+        firstName,
+        lastName,
+        userRole,
+      });
+    };
+
+    fetchUserDetails();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("firstName");
+    localStorage.removeItem("lastName");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("branchId");
+    navigate(route.signin);
+  };
+
+  const handleHomeClick = () => {
+    navigate(route.dashboard);
+  };
+
+  const firstLetter = userDetails.firstName.charAt(0).toUpperCase() || "U";
+
   return (
-    <aside className={`sidebar-container ${darkMode ? 'dark-mode' : ''}`}>
+    <aside className={`sidebar-container ${darkMode ? "dark-mode" : ""}`}>
       <div className="logo-section">
-        <div className="logo-text">
-          <span className="delta">Delta</span>
-          <span className="pos">POS</span>
-        </div>
+        <ImageWithBasePath
+          src="assets/img/logo-small.png"
+          alt="Logo"
+          className="logo-img"
+        />
       </div>
 
       <nav className="nav-section">
-        <Link to="/signin" className="nav-item active">
-          <div className="nav-icon home-icon">🏠</div>
-        </Link>
+        {(userDetails.userRole === "ADMIN" || userDetails.userRole === "MANAGER") && (
+          <button onClick={handleHomeClick} className="nav-item active">
+            <div className="nav-icon home-icon">🏠</div>
+          </button>
+        )}
       </nav>
 
       <div className="user-section">
         <div className="user-avatar">
-          <div className="avatar-circle">A</div>
-          <span className="user-role">Admin</span>
+          <div className="avatar-circle" style={{ backgroundColor: circleColor }}>
+            {firstLetter}
+          </div>
+          <span
+            className="user-role"
+            style={{ color: darkMode ? "#ffffff" : "#666" }} // Inline style for color
+          >
+            {userDetails.firstName || "User"}
+          </span>
         </div>
-        <Link
-          className="logout-button"
-          to="/signIn"
-          onClick={() => {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("userRole");
-          }}
-        >
+        <Link className="logout-button" to={route.signin} onClick={handleLogout}>
           <ImageWithBasePath
             src="assets/img/icons/log-out.svg"
-            alt="img"
+            alt="Logout"
             className="logout-icon"
           />
         </Link>
@@ -44,9 +91,8 @@ const Pos_Sidebar = ({ darkMode }) => {
   );
 };
 
-// Add PropTypes validation
 Pos_Sidebar.propTypes = {
-  darkMode: PropTypes.bool.isRequired, // Validate darkMode as a required boolean
+  darkMode: PropTypes.bool.isRequired,
 };
 
 export default Pos_Sidebar;
