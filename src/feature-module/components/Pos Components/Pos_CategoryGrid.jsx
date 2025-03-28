@@ -826,7 +826,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   const totalSalesPages = Math.ceil(transactions.length / SALES_PAGE_SIZE);
 
   return (
-    <div className="size">
+    <div className="pos-category-grid-container">
       <div className="grid grid-cols-5 gap-2">
         {paginatedItems.map(renderCategoryButton)}
       </div>
