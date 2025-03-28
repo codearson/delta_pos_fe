@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 // import Breadcrumbs from "../../core/breadcrumbs"; 
 // import { Link } from "react-router-dom";
-import { getAllByXReports } from "../Api/SalesReport";
+import { fetchXReport } from "../Api/TransactionApi";
 import { Printer, RefreshCw } from "react-feather";
 import { Tabs, Tab } from "react-bootstrap";
 
@@ -10,11 +10,45 @@ const PurchaseReport = () => {
   const [activeDetailTab, setActiveDetailTab] = useState("summary");
   
   const fetchReportData = async () => {
-    const data = await getAllByXReports();
-    
-    if (data && data.length > 0) {
-      const reversedData = [...data].reverse();
-      setLatestReport(reversedData[0]);
+    try {
+      const response = await fetchXReport();
+      if (response.success && response.data && response.data.responseDto) {
+        console.log('X Report Data:', response.data.responseDto);
+        
+        const transformedData = {
+          reportGeneratedBy: response.data.responseDto.reportGeneratedBy,
+          reportType: "X Report",
+          startDate: response.data.responseDto.startDate,
+          endDate: response.data.responseDto.endDate,
+          fullyTotalSales: response.data.responseDto.totalSales,
+          salesDateDetails: [{
+            salesDate: response.data.responseDto.startDate,
+            totalTransactions: response.data.responseDto.totalTransactions,
+            totalSales: response.data.responseDto.totalSales,
+            categoryTotals: Object.entries(response.data.responseDto.categoryTotals).map(([categoryName, categoryTotal]) => ({
+              categoryName,
+              categoryTotal
+            })),
+            overallPaymentTotals: Object.entries(response.data.responseDto.overallPaymentTotals).map(([paymentMethod, paymentTotal]) => ({
+              paymentMethod,
+              paymentTotal
+            })),
+            userPaymentDetails: response.data.responseDto.userPaymentDetails.map(user => 
+              Object.entries(user.payments).map(([paymentMethod, paymentTotal]) => ({
+                userName: user.userName,
+                paymentMethod,
+                paymentTotal
+              }))
+            ).flat()
+          }]
+        };
+        
+        setLatestReport(transformedData);
+      } else {
+        console.error("Failed to fetch X-Report:", response.error);
+      }
+    } catch (error) {
+      console.error("Error fetching X-Report:", error);
     }
   };
   
