@@ -62,9 +62,7 @@ const Pos_Sidebar = ({ darkMode }) => {
       <nav className="nav-section">
         {(userDetails.userRole === "ADMIN" || userDetails.userRole === "MANAGER") && (
           <button onClick={handleHomeClick} className="nav-item active">
-            <div className="nav-icon home-icon">
-              <img src="assets/img/dashboard.png" alt="dashboard" className="dashboard-img"/>
-            </div>
+            <div className="nav-icon home-icon">📊</div>
           </button>
         )}
       </nav>
@@ -76,7 +74,7 @@ const Pos_Sidebar = ({ darkMode }) => {
           </div>
           <span
             className="user-role"
-            style={{ color: darkMode ? "#ffffff" : "#666" }}
+            style={{ color: darkMode ? "#ffffff" : "#666" }} // Inline style for color
           >
             {userDetails.firstName || "User"}
           </span>
