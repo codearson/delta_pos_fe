@@ -130,6 +130,23 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     }
   }, [showSalesListPopup]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        setShowZReportPopup(false);
+        setZReportData(null);
+      }
+    };
+
+    if (showZReportPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showZReportPopup]);
+
   const start = pageIndex * PAGE_SIZE;
   const end = start + PAGE_SIZE;
 
@@ -197,8 +214,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           } else {
             Swal.fire({
               icon: 'info',
-              title: 'No Data Available',
-              text: 'No transaction data available for X-Report',
+              title: 'No Transaction Data',
+              text: 'Please make some transactions before getting X-Report',
               confirmButtonColor: '#3085d6',
             });
             console.error("Failed to fetch X-Report:", response.error);
@@ -207,13 +224,24 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Failed to fetch X-Report data',
+            text: 'Failed to generate X-Report. Please try again.',
             confirmButtonColor: '#3085d6',
           });
           console.error("Error fetching X-Report:", error);
         }
       } else if (item.isZReport) {
         try {
+          const xReportResponse = await fetchXReport();
+          if (!xReportResponse.success || !xReportResponse.data) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'X-Report Required',
+              text: 'Please generate an X-Report before getting Z-Report',
+              confirmButtonColor: '#3085d6',
+            });
+            return;
+          }
+
           const response = await fetchZReport();
           if (response.success && response.data && response.data.responseDto) {
             setZReportData(response.data);
@@ -221,8 +249,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           } else {
             Swal.fire({
               icon: 'info',
-              title: 'No Data Available',
-              text: 'No transaction data available for Z-Report',
+              title: 'No Transaction Data',
+              text: 'Please make some transactions before getting Z-Report',
               confirmButtonColor: '#3085d6',
             });
             console.error("Failed to fetch Z-Report:", response.error);
@@ -231,7 +259,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'Failed to fetch Z-Report data',
+            text: 'Failed to generate Z-Report. Please try again.',
             confirmButtonColor: '#3085d6',
           });
           console.error("Error fetching Z-Report:", error);
@@ -376,112 +404,147 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   const handlePrintXReport = () => {
     if (!xReportData) return;
 
-    const printContent = `
+    const printWindow = window.open('', '_blank', 'height=600,width=800');
+
+    printWindow.document.write(`
       <html>
         <head>
-          <title>X Report</title>
+          <title>X Report - ${xReportData.responseDto.reportGeneratedBy}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            .report-header { text-align: center; margin-bottom: 20px; }
-            .report-section { margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f5f5f5; }
-            h3 { margin: 10px 0; color: #333; }
-            .info-row { margin: 5px 0; }
+            @page {
+              size: 80mm 297mm;  /* Standard receipt width */
+              margin: 0;
+            }
+            body {
+              font-family: 'Courier New', monospace;
+              width: 80mm;
+              margin: 0;
+              padding: 10px;
+              font-size: 12px;
+            }
+            .receipt-header {
+              text-align: center;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
+            }
+            .receipt-title {
+              font-size: 16px;
+              font-weight: bold;
+              margin: 5px 0;
+            }
+            .info-row {
+              display: flex;
+              justify-content: space-between;
+              margin: 5px 0;
+            }
+            .section {
+              margin: 10px 0;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 10px;
+            }
+            .section-title {
+              font-weight: bold;
+              text-align: center;
+              margin: 5px 0;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              text-align: left;
+              padding: 3px 0;
+            }
+            .amount {
+              text-align: right;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 10px;
+              font-size: 10px;
+            }
           </style>
         </head>
         <body>
-          <div class="report-header">
-            <h2>X Report Details</h2>
-          </div>
-          
-          <div class="report-section">
-            <h3>Report Information</h3>
-            <div class="info-row">Generated By: ${xReportData.responseDto.reportGeneratedBy}</div>
-            <div class="info-row">Total Sales: ${xReportData.responseDto.totalSales.toFixed(2)}</div>
-            <div class="info-row">Total Transactions: ${xReportData.responseDto.totalTransactions}</div>
-            <div class="info-row">From: ${new Date(xReportData.responseDto.startDate).toLocaleString()}</div>
-            <div class="info-row">To: ${new Date(xReportData.responseDto.endDate).toLocaleString()}</div>
+          <div class="receipt-header">
+            <div class="receipt-title">X REPORT</div>
+            <div>${new Date(xReportData.responseDto.startDate).toLocaleDateString()}</div>
+            <div>Generated by: ${xReportData.responseDto.reportGeneratedBy}</div>
           </div>
 
-          <div class="report-section">
-            <h3>Categories Breakdown</h3>
+          <div class="section">
+            <div class="info-row">
+              <span>Period:</span>
+              <span>${new Date(xReportData.responseDto.startDate).toLocaleDateString()} - ${new Date(xReportData.responseDto.endDate).toLocaleDateString()}</span>
+            </div>
+            <div class="info-row">
+              <span>Total Sales:</span>
+              <span>$${xReportData.responseDto.totalSales.toFixed(2)}</span>
+            </div>
+            <div class="info-row">
+              <span>Total Transactions:</span>
+              <span>${xReportData.responseDto.totalTransactions}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Categories</div>
             <table>
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${Object.entries(xReportData.responseDto.categoryTotals)
-                  .map(([category, amount]) => `
-                    <tr>
-                      <td>${category}</td>
-                      <td>${amount.toFixed(2)}</td>
-                    </tr>
-                  `).join('')}
-              </tbody>
+              ${Object.entries(xReportData.responseDto.categoryTotals)
+        .map(([category, amount]) => `
+                  <tr>
+                    <td>${category}</td>
+                    <td class="amount">$${amount.toFixed(2)}</td>
+                  </tr>
+                `).join('')}
             </table>
           </div>
 
-          <div class="report-section">
-            <h3>Payment Methods</h3>
+          <div class="section">
+            <div class="section-title">Payment Methods</div>
             <table>
-              <thead>
-                <tr>
-                  <th>Method</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${Object.entries(xReportData.responseDto.overallPaymentTotals)
-                  .map(([method, amount]) => `
-                    <tr>
-                      <td>${method}</td>
-                      <td>${amount.toFixed(2)}</td>
-                    </tr>
-                  `).join('')}
-              </tbody>
+              ${Object.entries(xReportData.responseDto.overallPaymentTotals)
+        .map(([method, amount]) => `
+                  <tr>
+                    <td>${method}</td>
+                    <td class="amount">$${amount.toFixed(2)}</td>
+                  </tr>
+                `).join('')}
             </table>
           </div>
 
-          <div class="report-section">
-            <h3>User Payment Details</h3>
+          <div class="section">
+            <div class="section-title">User Payment Details</div>
             <table>
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Payment Method</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${xReportData.responseDto.userPaymentDetails
-                  .map(user => 
-                    Object.entries(user.payments)
-                      .map(([method, amount]) => `
-                        <tr>
-                          <td>${user.userName}</td>
-                          <td>${method}</td>
-                          <td>${amount.toFixed(2)}</td>
-                        </tr>
-                      `).join('')
-                  ).join('')}
-              </tbody>
+              ${xReportData.responseDto.userPaymentDetails
+        .map(user =>
+          Object.entries(user.payments)
+            .map(([method, amount]) => `
+                      <tr>
+                        <td>${user.userName.split(' ')[0]}</td>
+                        <td>${method}</td>
+                        <td class="amount">$${amount.toFixed(2)}</td>
+                      </tr>
+                    `).join('')
+        ).join('')}
             </table>
+          </div>
+
+          <div class="footer">
+            <div>*** End of X Report ***</div>
+            <div>Printed on ${new Date().toLocaleString()}</div>
           </div>
         </body>
       </html>
-    `;
+    `);
 
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   const handleCloseViewPurchasePopup = () => {
@@ -713,111 +776,155 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   const handlePrintZReport = () => {
     if (!zReportData) return;
 
-    const printContent = `
+    const printWindow = window.open('', '_blank', 'height=600,width=800');
+
+    printWindow.document.write(`
       <html>
         <head>
-          <title>Z Report</title>
+          <title>Z Report - ${zReportData.responseDto.reportGeneratedBy}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            .report-header { text-align: center; margin-bottom: 20px; }
-            .report-section { margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f5f5f5; }
-            h3 { margin: 10px 0; color: #333; }
-            .info-row { margin: 5px 0; }
+            @page {
+              size: 80mm 297mm;  /* Standard receipt width */
+              margin: 0;
+            }
+            body {
+              font-family: 'Courier New', monospace;
+              width: 80mm;
+              margin: 0;
+              padding: 10px;
+              font-size: 12px;
+            }
+            .receipt-header {
+              text-align: center;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 10px;
+              margin-bottom: 10px;
+            }
+            .receipt-title {
+              font-size: 16px;
+              font-weight: bold;
+              margin: 5px 0;
+            }
+            .info-row {
+              display: flex;
+              justify-content: space-between;
+              margin: 5px 0;
+            }
+            .section {
+              margin: 10px 0;
+              border-bottom: 1px dashed #000;
+              padding-bottom: 10px;
+            }
+            .section-title {
+              font-weight: bold;
+              text-align: center;
+              margin: 5px 0;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th, td {
+              text-align: left;
+              padding: 3px 0;
+            }
+            .amount {
+              text-align: right;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 10px;
+              font-size: 10px;
+            }
+            .date-header {
+              text-align: center;
+              font-weight: bold;
+              margin: 10px 0;
+              padding: 5px;
+              border-bottom: 1px dashed #000;
+            }
           </style>
         </head>
         <body>
-          <div class="report-header">
-            <h2>Z Report Details</h2>
-          </div>
-          
-          <div class="report-section">
-            <h3>Report Information</h3>
-            <div class="info-row">Generated By: ${zReportData.responseDto.reportGeneratedBy}</div>
-            <div class="info-row">Total Sales: ${zReportData.responseDto.fullyTotalSales.toFixed(2)}</div>
-            <div class="info-row">From: ${new Date(zReportData.responseDto.startDate).toLocaleString()}</div>
-            <div class="info-row">To: ${new Date(zReportData.responseDto.endDate).toLocaleString()}</div>
+          <div class="receipt-header">
+            <div class="receipt-title">Z REPORT</div>
+            <div>${new Date(zReportData.responseDto.startDate).toLocaleDateString()}</div>
+            <div>Generated by: ${zReportData.responseDto.reportGeneratedBy}</div>
           </div>
 
-          ${Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => `
-            <div class="report-section">
-              <h3>Date: ${new Date(date).toLocaleDateString()}</h3>
-              
-              <h4>Categories Breakdown</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Category</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <div class="section">
+            <div class="info-row">
+              <span>Period:</span>
+              <span>${new Date(zReportData.responseDto.startDate).toLocaleDateString()} - ${new Date(zReportData.responseDto.endDate).toLocaleDateString()}</span>
+            </div>
+            <div class="info-row">
+              <span>Total Sales:</span>
+              <span>$${zReportData.responseDto.fullyTotalSales.toFixed(2)}</span>
+            </div>
+          </div>
+
+          ${Object.entries(zReportData.responseDto.dateWiseTotals)
+        .map(([date, data]) => `
+              <div class="date-header">
+                ${new Date(date).toLocaleDateString()}
+              </div>
+
+              <div class="section">
+                <div class="section-title">Categories</div>
+                <table>
                   ${Object.entries(data.categoryTotals)
-                    .map(([category, amount]) => `
+            .map(([category, amount]) => `
                       <tr>
                         <td>${category}</td>
-                        <td>${amount.toFixed(2)}</td>
+                        <td class="amount">$${amount.toFixed(2)}</td>
                       </tr>
                     `).join('')}
-                </tbody>
-              </table>
+                </table>
+              </div>
 
-              <h4>Payment Methods</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Method</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <div class="section">
+                <div class="section-title">Payment Methods</div>
+                <table>
                   ${Object.entries(data.overallPaymentTotals)
-                    .map(([method, amount]) => `
+            .map(([method, amount]) => `
                       <tr>
                         <td>${method}</td>
-                        <td>${amount.toFixed(2)}</td>
+                        <td class="amount">$${amount.toFixed(2)}</td>
                       </tr>
                     `).join('')}
-                </tbody>
-              </table>
+                </table>
+              </div>
 
-              <h4>User Payment Details</h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th>Payment Method</th>
-                    <th>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${Object.entries(data.userPaymentDetails)
-                    .map(([userName, payments]) => 
-                      Object.entries(payments)
-                        .map(([method, amount]) => `
-                          <tr>
-                            <td>${userName}</td>
-                            <td>${method}</td>
-                            <td>${amount.toFixed(2)}</td>
-                          </tr>
-                        `).join('')
-                    ).join('')}
-                </tbody>
-              </table>
-            </div>
-          `).join('')}
+              <div class="section">
+                <div class="section-title">User Payment Details</div>
+                <table>
+                  ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
+                    Object.entries(payments).map(([method, amount]) => `
+                      <tr>
+                        <td>${userName.split(' ')[0]}</td>
+                        <td>${method}</td>
+                        <td class="amount">$${parseFloat(amount).toFixed(2)}</td>
+                      </tr>
+                    `).join('')
+                  ).join('')}
+                </table>
+              </div>
+            `).join('')}
+
+          <div class="footer">
+            <div>*** End of Z Report ***</div>
+            <div>Printed on ${new Date().toLocaleString()}</div>
+          </div>
         </body>
       </html>
-    `;
+    `);
 
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
   };
 
   const salesStart = salesPageIndex * SALES_PAGE_SIZE;
@@ -1137,13 +1244,13 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           </div>
         </div>
       )}
-      
+
       {showXReportPopup && xReportData && xReportData.responseDto && (
         <div className="purchase-popup-overlay">
-          <div 
+          <div
             ref={popupRef}
-            className="purchase-popup simple-popup" 
-            style={{ 
+            className="purchase-popup simple-popup"
+            style={{
               maxWidth: '1200px',
               maxHeight: '80vh',
               overflow: 'auto'
@@ -1220,18 +1327,18 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                       <table className="table table-bordered table-striped">
                         <thead>
                           <tr>
-                            <th style={{ 
-                              backgroundColor: '#f8f9fa', 
+                            <th style={{
+                              backgroundColor: '#f8f9fa',
                               fontWeight: '600',
                               borderBottom: '2px solid #dee2e6'
                             }}>User Name</th>
-                            <th style={{ 
-                              backgroundColor: '#f8f9fa', 
+                            <th style={{
+                              backgroundColor: '#f8f9fa',
                               fontWeight: '600',
                               borderBottom: '2px solid #dee2e6'
                             }}>Payment Method</th>
-                            <th style={{ 
-                              backgroundColor: '#f8f9fa', 
+                            <th style={{
+                              backgroundColor: '#f8f9fa',
                               fontWeight: '600',
                               borderBottom: '2px solid #dee2e6'
                             }}>Amount</th>
@@ -1241,7 +1348,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                           {xReportData.responseDto.userPaymentDetails.map((user) => (
                             Object.entries(user.payments).map(([method, amount]) => (
                               <tr key={`${user.userName}-${method}`}>
-                                <td style={{ padding: '12px 15px' }}>{user.userName}</td>
+                                <td style={{ padding: '12px 15px' }}>{user.userName.split(' ')[0]}</td>
                                 <td style={{ padding: '12px 15px' }}>{method}</td>
                                 <td style={{ padding: '12px 15px' }}>{amount.toFixed(2)}</td>
                               </tr>
@@ -1272,14 +1379,15 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
 
       {showZReportPopup && zReportData && zReportData.responseDto && (
         <div className="purchase-popup-overlay">
-          <div 
+          <div
             ref={popupRef}
-            className="purchase-popup simple-popup" 
-            style={{ 
+            className="purchase-popup simple-popup"
+            style={{
               maxWidth: '1200px',
               maxHeight: '80vh',
               overflow: 'auto'
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h2 className="purchase-popup-title">Z Report Details</h2>
@@ -1306,7 +1414,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                 {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
                   <div key={date}>
                     <h4>Date: {new Date(date).toLocaleDateString()}</h4>
-                    
+
                     <div className="row">
                       <div className="col-md-6">
                         <h4>Categories Breakdown</h4>
@@ -1355,33 +1463,33 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                           <table className="table table-bordered table-striped">
                             <thead>
                               <tr>
-                                <th style={{ 
-                                  backgroundColor: '#f8f9fa', 
+                                <th style={{
+                                  backgroundColor: '#f8f9fa',
                                   fontWeight: '600',
                                   borderBottom: '2px solid #dee2e6'
                                 }}>User Name</th>
-                                <th style={{ 
-                                  backgroundColor: '#f8f9fa', 
+                                <th style={{
+                                  backgroundColor: '#f8f9fa',
                                   fontWeight: '600',
                                   borderBottom: '2px solid #dee2e6'
                                 }}>Payment Method</th>
-                                <th style={{ 
-                                  backgroundColor: '#f8f9fa', 
+                                <th style={{
+                                  backgroundColor: '#f8f9fa',
                                   fontWeight: '600',
                                   borderBottom: '2px solid #dee2e6'
                                 }}>Amount</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) => (
-                                Object.entries(payments).map(([method, amount]) => (
-                                  <tr key={`${userName}-${method}`}>
-                                    <td style={{ padding: '12px 15px' }}>{userName}</td>
-                                    <td style={{ padding: '12px 15px' }}>{method}</td>
-                                    <td style={{ padding: '12px 15px' }}>{amount.toFixed(2)}</td>
+                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
+                                Object.entries(payments).map(([method, amount]) => `
+                                  <tr>
+                                    <td>${userName.split(' ')[0]}</td>
+                                    <td>${method}</td>
+                                    <td class="amount">$${parseFloat(amount).toFixed(2)}</td>
                                   </tr>
-                                ))
-                              ))}
+                                `).join('')
+                              )}
                             </tbody>
                           </table>
                         </div>
