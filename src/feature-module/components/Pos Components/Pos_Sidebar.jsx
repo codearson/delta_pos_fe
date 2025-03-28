@@ -47,7 +47,7 @@ const Pos_Sidebar = ({ darkMode }) => {
     navigate(route.dashboard);
   };
 
-  const firstLetter = userDetails.firstName.charAt(0).toUpperCase() || "U";
+  const firstLetter = userDetails.userRole.charAt(0).toUpperCase() || "U";
 
   return (
     <aside className={`sidebar-container ${darkMode ? "dark-mode" : ""}`}>
@@ -62,7 +62,9 @@ const Pos_Sidebar = ({ darkMode }) => {
       <nav className="nav-section">
         {(userDetails.userRole === "ADMIN" || userDetails.userRole === "MANAGER") && (
           <button onClick={handleHomeClick} className="nav-item active">
-            <div className="nav-icon home-icon">🏠</div>
+            <div className="nav-icon home-icon">
+              <img src="assets/img/dashboard.png" alt="dashboard" className="dashboard-img"/>
+            </div>
           </button>
         )}
       </nav>
@@ -74,7 +76,7 @@ const Pos_Sidebar = ({ darkMode }) => {
           </div>
           <span
             className="user-role"
-            style={{ color: darkMode ? "#ffffff" : "#666" }} // Inline style for color
+            style={{ color: darkMode ? "#ffffff" : "#666" }}
           >
             {userDetails.firstName || "User"}
           </span>
