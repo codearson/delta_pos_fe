@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 // import Breadcrumbs from "../../core/breadcrumbs"; 
 // import { Link } from "react-router-dom";
-import { getAllByXReports } from "../Api/SalesReport";
+import { fetchXReport } from "../Api/TransactionApi";
 import { Printer, RefreshCw } from "react-feather";
 import { Tabs, Tab } from "react-bootstrap";
 
@@ -10,11 +10,44 @@ const PurchaseReport = () => {
   const [activeDetailTab, setActiveDetailTab] = useState("summary");
   
   const fetchReportData = async () => {
-    const data = await getAllByXReports();
-    
-    if (data && data.length > 0) {
-      const reversedData = [...data].reverse();
-      setLatestReport(reversedData[0]);
+    try {
+      const response = await fetchXReport();
+      if (response.success && response.data && response.data.responseDto) {
+        console.log('X Report Data:', response.data.responseDto);
+        const transformedData = {
+          reportGeneratedBy: response.data.responseDto.reportGeneratedBy,
+          reportType: "X Report",
+          startDate: response.data.responseDto.startDate,
+          endDate: response.data.responseDto.endDate,
+          fullyTotalSales: response.data.responseDto.totalSales,
+          salesDateDetails: [{
+            salesDate: response.data.responseDto.startDate,
+            totalTransactions: response.data.responseDto.totalTransactions,
+            totalSales: response.data.responseDto.totalSales,
+            categoryTotals: Object.entries(response.data.responseDto.categoryTotals).map(([categoryName, categoryTotal]) => ({
+              categoryName,
+              categoryTotal
+            })),
+            overallPaymentTotals: Object.entries(response.data.responseDto.overallPaymentTotals).map(([paymentMethod, paymentTotal]) => ({
+              paymentMethod,
+              paymentTotal
+            })),
+            userPaymentDetails: response.data.responseDto.userPaymentDetails.map(user => 
+              Object.entries(user.payments).map(([paymentMethod, paymentTotal]) => ({
+                userName: user.userName,
+                paymentMethod,
+                paymentTotal
+              }))
+            ).flat()
+          }]
+        };
+        
+        setLatestReport(transformedData);
+      } else {
+        console.error("Failed to fetch X-Report:", response.error);
+      }
+    } catch (error) {
+      console.error("Error fetching X-Report:", error);
     }
   };
   
@@ -216,187 +249,189 @@ const PurchaseReport = () => {
   };
 
   return (
-    <div className="page-wrapper">
-      <div className="content">   
-        <div className="card">
-          <div className="card-body">
-            <div className="report-details">
-              <div className="d-flex justify-content-between align-items-center mb-4">
-                <h4 className="card-title mb-0 text-primary">X Report Details</h4>
-                <div className="d-flex">
-                  <button 
-                    className="btn btn-secondary d-flex align-items-center me-2"
-                    onClick={fetchReportData}
-                  >
-                    <RefreshCw className="me-1" size={16} />
-                  </button>
-                  <button 
-                    className="btn btn-primary d-flex align-items-center"
-                    onClick={printReport}
-                    disabled={!latestReport}
-                  >
-                    <Printer className="me-1" size={16} />
-                  </button>
+    <div className="pos-category-grid-container">
+      <div className="page-wrapper">
+        <div className="content">   
+          <div className="card">
+            <div className="card-body">
+              <div className="report-details">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                  <h4 className="card-title mb-0 text-primary">X Report Details</h4>
+                  <div className="d-flex">
+                    <button 
+                      className="btn btn-secondary d-flex align-items-center me-2"
+                      onClick={fetchReportData}
+                    >
+                      <RefreshCw className="me-1" size={16} />
+                    </button>
+                    <button 
+                      className="btn btn-primary d-flex align-items-center"
+                      onClick={printReport}
+                      disabled={!latestReport}
+                    >
+                      <Printer className="me-1" size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-              
-              {latestReport && (
-                <>
-                  <div className="report-header mb-4 p-3 bg-light rounded">
-                    <div className="row">
-                      <div className="col-md-6">
-                        <h5 className="text-dark">Report Information</h5>
-                        <p className="mb-1"><strong className="text-secondary">Generated By:</strong> <span className="text-dark">{latestReport.reportGeneratedBy}</span></p>
-                        <p className="mb-1"><strong className="text-secondary">Report Type:</strong> <span className="text-dark">{latestReport.reportType}</span></p>
-                      </div>
-                      <div className="col-md-6">
-                        <h5 className="text-dark">Report Period</h5>
-                        <p className="mb-1"><strong className="text-secondary">From:</strong> <span className="text-dark">{formatDate(latestReport.startDate)}</span></p>
-                        <p className="mb-1"><strong className="text-secondary">To:</strong> <span className="text-dark">{formatDate(latestReport.endDate)}</span></p>
-                        <p className="mb-1"><strong className="text-secondary">Total Sales:</strong> <span className="text-success">{formatCurrency(latestReport.fullyTotalSales)}</span></p>
+                
+                {latestReport && (
+                  <>
+                    <div className="report-header mb-4 p-3 bg-light rounded">
+                      <div className="row">
+                        <div className="col-md-6">
+                          <h5 className="text-dark">Report Information</h5>
+                          <p className="mb-1"><strong className="text-secondary">Generated By:</strong> <span className="text-dark">{latestReport.reportGeneratedBy}</span></p>
+                          <p className="mb-1"><strong className="text-secondary">Report Type:</strong> <span className="text-dark">{latestReport.reportType}</span></p>
+                        </div>
+                        <div className="col-md-6">
+                          <h5 className="text-dark">Report Period</h5>
+                          <p className="mb-1"><strong className="text-secondary">From:</strong> <span className="text-dark">{formatDate(latestReport.startDate)}</span></p>
+                          <p className="mb-1"><strong className="text-secondary">To:</strong> <span className="text-dark">{formatDate(latestReport.endDate)}</span></p>
+                          <p className="mb-1"><strong className="text-secondary">Total Sales:</strong> <span className="text-success">{formatCurrency(latestReport.fullyTotalSales)}</span></p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <Tabs
-                    activeKey={activeDetailTab}
-                    onSelect={(k) => setActiveDetailTab(k)}
-                    className="mb-4"
-                  >
-                    <Tab eventKey="summary" title="Daily Summary">
-                      {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
-                        <div className="table-responsive mt-3">
-                          <table className="table table-bordered table-striped">
-                            <thead className="thead-light bg-primary text-white">
-                              <tr>
-                                <th>Date</th>
-                                <th>Transactions</th>
-                                <th>Total Sales</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {latestReport.salesDateDetails.map((detail, index) => (
-                                <tr key={index}>
-                                  <td className="text-dark">{formatDate(detail.salesDate)}</td>
-                                  <td className="text-dark">{detail.totalTransactions}</td>
-                                  <td className="text-success">{formatCurrency(detail.totalSales)}</td>
+                    <Tabs
+                      activeKey={activeDetailTab}
+                      onSelect={(k) => setActiveDetailTab(k)}
+                      className="mb-4"
+                    >
+                      <Tab eventKey="summary" title="Daily Summary">
+                        {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
+                          <div className="table-responsive mt-3">
+                            <table className="table table-bordered table-striped">
+                              <thead className="thead-light bg-primary text-white">
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Transactions</th>
+                                  <th>Total Sales</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </Tab>
-                    <Tab eventKey="categories" title="Categories Breakdown">
-                      {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
-                        <div className="mt-3">
-                          {latestReport.salesDateDetails.map((dateDetail, dateIndex) => (
-                            <div key={dateIndex} className="mb-4">
-                              <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - Categories</h5>
-                              {dateDetail.categoryTotals && dateDetail.categoryTotals.length > 0 ? (
-                                <div className="table-responsive">
-                                  <table className="table table-bordered">
-                                    <thead className="thead-light bg-primary text-white">
-                                      <tr>
-                                        <th>Category</th>
-                                        <th>Amount</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {dateDetail.categoryTotals.map((category, catIndex) => (
-                                        <tr key={catIndex}>
-                                          <td className="text-dark">{category.categoryName}</td>
-                                          <td className="text-success">{formatCurrency(category.categoryTotal)}</td>
+                              </thead>
+                              <tbody>
+                                {latestReport.salesDateDetails.map((detail, index) => (
+                                  <tr key={index}>
+                                    <td className="text-dark">{formatDate(detail.salesDate)}</td>
+                                    <td className="text-dark">{detail.totalTransactions}</td>
+                                    <td className="text-success">{formatCurrency(detail.totalSales)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </Tab>
+                      <Tab eventKey="categories" title="Categories Breakdown">
+                        {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
+                          <div className="mt-3">
+                            {latestReport.salesDateDetails.map((dateDetail, dateIndex) => (
+                              <div key={dateIndex} className="mb-4">
+                                <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - Categories</h5>
+                                {dateDetail.categoryTotals && dateDetail.categoryTotals.length > 0 ? (
+                                  <div className="table-responsive">
+                                    <table className="table table-bordered">
+                                      <thead className="thead-light bg-primary text-white">
+                                        <tr>
+                                          <th>Category</th>
+                                          <th>Amount</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ) : (
-                                <p className="text-muted">No category data available for this date</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </Tab>
-                    <Tab eventKey="payments" title="Payment Methods">
-                      {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
-                        <div className="mt-3">
-                          {latestReport.salesDateDetails.map((dateDetail, dateIndex) => (
-                            <div key={dateIndex} className="mb-4">
-                              <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - Payment Methods</h5>
-                              {dateDetail.overallPaymentTotals && dateDetail.overallPaymentTotals.length > 0 ? (
-                                <div className="table-responsive">
-                                  <table className="table table-bordered">
-                                    <thead className="thead-light bg-primary text-white">
-                                      <tr>
-                                        <th>Payment Method</th>
-                                        <th>Amount</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {dateDetail.overallPaymentTotals.map((payment, payIndex) => (
-                                        <tr key={payIndex}>
-                                          <td className="text-dark">{payment.paymentMethod}</td>
-                                          <td className="text-success">{formatCurrency(payment.paymentTotal)}</td>
+                                      </thead>
+                                      <tbody>
+                                        {dateDetail.categoryTotals.map((category, catIndex) => (
+                                          <tr key={catIndex}>
+                                            <td className="text-dark">{category.categoryName}</td>
+                                            <td className="text-success">{formatCurrency(category.categoryTotal)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-muted">No category data available for this date</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Tab>
+                      <Tab eventKey="payments" title="Payment Methods">
+                        {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
+                          <div className="mt-3">
+                            {latestReport.salesDateDetails.map((dateDetail, dateIndex) => (
+                              <div key={dateIndex} className="mb-4">
+                                <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - Payment Methods</h5>
+                                {dateDetail.overallPaymentTotals && dateDetail.overallPaymentTotals.length > 0 ? (
+                                  <div className="table-responsive">
+                                    <table className="table table-bordered">
+                                      <thead className="thead-light bg-primary text-white">
+                                        <tr>
+                                          <th>Payment Method</th>
+                                          <th>Amount</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ) : (
-                                <p className="text-muted">No payment data available for this date</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </Tab>
-                    <Tab eventKey="users" title="User Payment Details">
-                      {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
-                        <div className="mt-3">
-                          {latestReport.salesDateDetails.map((dateDetail, dateIndex) => (
-                            <div key={dateIndex} className="mb-4">
-                              <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - User Payments</h5>
-                              {dateDetail.userPaymentDetails && dateDetail.userPaymentDetails.length > 0 ? (
-                                <div className="table-responsive">
-                                  <table className="table table-bordered">
-                                    <thead className="thead-light bg-primary text-white">
-                                      <tr>
-                                        <th>User</th>
-                                        <th>Payment Method</th>
-                                        <th>Amount</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {dateDetail.userPaymentDetails.map((userPayment, userIndex) => (
-                                        <tr key={userIndex}>
-                                          <td className="text-dark">{userPayment.userName}</td>
-                                          <td className="text-dark">{userPayment.paymentMethod}</td>
-                                          <td className="text-success">{formatCurrency(userPayment.paymentTotal)}</td>
+                                      </thead>
+                                      <tbody>
+                                        {dateDetail.overallPaymentTotals.map((payment, payIndex) => (
+                                          <tr key={payIndex}>
+                                            <td className="text-dark">{payment.paymentMethod}</td>
+                                            <td className="text-success">{formatCurrency(payment.paymentTotal)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-muted">No payment data available for this date</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Tab>
+                      <Tab eventKey="users" title="User Payment Details">
+                        {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
+                          <div className="mt-3">
+                            {latestReport.salesDateDetails.map((dateDetail, dateIndex) => (
+                              <div key={dateIndex} className="mb-4">
+                                <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - User Payments</h5>
+                                {dateDetail.userPaymentDetails && dateDetail.userPaymentDetails.length > 0 ? (
+                                  <div className="table-responsive">
+                                    <table className="table table-bordered">
+                                      <thead className="thead-light bg-primary text-white">
+                                        <tr>
+                                          <th>User</th>
+                                          <th>Payment Method</th>
+                                          <th>Amount</th>
                                         </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              ) : (
-                                <p className="text-muted">No user payment data available for this date</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </Tab>
-                  </Tabs>
-                </>
-              )}
-              
-              {!latestReport && (
-                <div className="alert alert-info mt-3">
-                  <p className="mb-0">No report data available yet.</p>
-                </div>
-              )}
+                                      </thead>
+                                      <tbody>
+                                        {dateDetail.userPaymentDetails.map((userPayment, userIndex) => (
+                                          <tr key={userIndex}>
+                                            <td className="text-dark">{userPayment.userName}</td>
+                                            <td className="text-dark">{userPayment.paymentMethod}</td>
+                                            <td className="text-success">{formatCurrency(userPayment.paymentTotal)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <p className="text-muted">No user payment data available for this date</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Tab>
+                    </Tabs>
+                  </>
+                )}
+                
+                {!latestReport && (
+                  <div className="alert alert-info mt-3">
+                    <p className="mb-0">No report data available yet.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
