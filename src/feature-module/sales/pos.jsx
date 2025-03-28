@@ -52,7 +52,7 @@ const Pos = () => {
     const saved = localStorage.getItem("suspendedTransactions");
     return saved ? JSON.parse(saved) : [];
   });
-  const [expandedTransactionId, setExpandedTransactionId] = useState(null); // New state for expanded transaction
+  const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const barcodeInputRef = useRef(null);
   const barcodeRef = useRef(null);
 
@@ -114,10 +114,6 @@ const Pos = () => {
   };
 
   const handleCategorySelect = (category) => {
-    if (isPaymentStarted) {
-      showNotification("Cannot add items after payment has started. Please complete or reset the transaction.");
-      return;
-    }
     if (activeTab === "category" && category?.name) {
       const qty = pendingQty || 1;
       const price = inputStage === "price" && inputValue !== "0" ? parseFloat(inputValue) : null;
@@ -216,10 +212,6 @@ const Pos = () => {
   };
 
   const handleBarcodeSearch = async (barcode) => {
-    if (isPaymentStarted) {
-      showNotification("Cannot add items after payment has started. Please complete or reset the transaction.");
-      return;
-    }
     if (barcode.length < 3) return;
 
     try {
@@ -290,39 +282,78 @@ const Pos = () => {
       showNotification("Please select a row to void.");
       return;
     }
-    if (isPaymentStarted) {
-      const selectedItem = selectedItems.concat(paymentMethods)[selectedRowIndex];
-      if (selectedItem.amount) {
-        if (selectedItem.type === "Card") {
-          showNotification("Card payments cannot be voided.");
-          return;
-        }
-        const paymentIndex = selectedRowIndex - selectedItems.length;
-        const newPaymentMethods = paymentMethods.filter((_, index) => index !== paymentIndex);
+
+    const cashTotal = paymentMethods
+      .filter((method) => method.type === "Cash")
+      .reduce((sum, method) => sum + method.amount, 0);
+    const cardPayments = paymentMethods.filter((method) => method.type === "Card");
+
+    const displayItems = isPaymentStarted
+      ? [
+          ...selectedItems,
+          ...(cashTotal > 0
+            ? [
+                {
+                  id: `payment-cash`,
+                  name: `Cash Payment`,
+                  qty: 1,
+                  price: cashTotal,
+                  total: cashTotal,
+                  type: "Cash",
+                },
+              ]
+            : []),
+          ...(cardPayments.length > 0
+            ? cardPayments.map((method, index) => ({
+                id: `payment-card-${index}`,
+                name: `${method.type} Payment`,
+                qty: 1,
+                price: method.amount,
+                total: method.amount,
+                type: "Card",
+              }))
+            : []),
+        ]
+      : selectedItems;
+
+    const selectedItem = displayItems[selectedRowIndex];
+
+    if (!selectedItem) {
+      showNotification("Invalid selection.");
+      return;
+    }
+
+    if (isPaymentStarted && selectedItem.type) {
+      if (selectedItem.type === "Card") {
+        showNotification("Card payments cannot be voided with Void Line.");
+        return;
+      }
+      if (selectedItem.type === "Cash") {
+        const newPaymentMethods = paymentMethods.filter((method) => method.type !== "Cash");
         setPaymentMethods(newPaymentMethods);
         setSelectedRowIndex(null);
         if (newPaymentMethods.length === 0) {
           setIsPaymentStarted(false);
         }
-      } else {
-        showNotification("Cannot void items after payment has started.");
+        showNotification("Cash payment voided.");
       }
     } else {
       const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
       setSelectedItems(newItems);
       setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
       setSelectedRowIndex(null);
+      showNotification("Item voided.");
     }
   };
 
   const handleVoidAll = () => {
-    if (isPaymentStarted) {
-      showNotification("Cannot void all items after payment has started.");
-      return;
-    }
     setSelectedItems([]);
     setTotalValue(0);
+    setPaymentMethods([]);
+    setBalance(0);
+    setIsPaymentStarted(false);
     setSelectedRowIndex(null);
+    showNotification("All items and payments voided.");
   };
 
   const handleCustomerAdded = (name) => setCustomerName(name);
@@ -647,7 +678,11 @@ const Pos = () => {
             <p>Powered by Delta POS</p>
             <p>(deltapos.codearson@gmail.com)</p>
             <p>(0094762963979)</p>
-            <p>================================================</p>
+            <p>=====================================
+            </p>
+            <p></p>
+            <p></p>
+            <p></p>
           </div>
           <script>
             setTimeout(() => {
@@ -954,7 +989,7 @@ const Pos = () => {
     }
 
     const suspendedTransaction = {
-      id: Date.now(), // Unique ID based on timestamp
+      id: Date.now(),
       items: selectedItems,
       totalValue,
       paymentMethods,
@@ -969,7 +1004,6 @@ const Pos = () => {
     localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
     showNotification("Transaction suspended successfully.");
 
-    // Reset current transaction
     setSelectedItems([]);
     setTotalValue(0);
     setPaymentMethods([]);
@@ -980,6 +1014,10 @@ const Pos = () => {
   };
 
   const handleRecallTransaction = () => {
+    if (selectedItems.length > 0) {
+      showNotification("Cannot recall a transaction while items are added. Please complete or void the current transaction.");
+      return;
+    }
     if (suspendedTransactions.length === 0) {
       showNotification("No suspended transactions available.");
       return;
@@ -989,7 +1027,7 @@ const Pos = () => {
 
   const handleCloseSuspendedPopup = () => {
     setShowSuspendedTransactions(false);
-    setExpandedTransactionId(null); // Reset expanded state when closing
+    setExpandedTransactionId(null);
   };
 
   const handleRecallSelectedTransaction = (transaction) => {
@@ -1005,8 +1043,18 @@ const Pos = () => {
     setSuspendedTransactions(updatedSuspendedTransactions);
     localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
     setShowSuspendedTransactions(false);
-    setExpandedTransactionId(null); // Reset expanded state
+    setExpandedTransactionId(null);
     showNotification("Transaction recalled successfully.");
+  };
+
+  const handleDeleteSuspendedTransaction = (id) => {
+    const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== id);
+    setSuspendedTransactions(updatedSuspendedTransactions);
+    localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
+    showNotification("Suspended transaction deleted successfully.");
+    if (updatedSuspendedTransactions.length === 0) {
+      setShowSuspendedTransactions(false);
+    }
   };
 
   const toggleTransactionDetails = (id) => {
@@ -1142,6 +1190,12 @@ const Pos = () => {
                           onClick={() => handleRecallSelectedTransaction(transaction)}
                         >
                           Recall
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={() => handleDeleteSuspendedTransaction(transaction.id)}
+                        >
+                          <i className="feather-trash-2" />
                         </button>
                       </div>
                       {expandedTransactionId === transaction.id && (

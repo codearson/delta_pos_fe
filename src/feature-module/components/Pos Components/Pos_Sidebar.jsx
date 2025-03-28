@@ -47,7 +47,7 @@ const Pos_Sidebar = ({ darkMode }) => {
     navigate(route.dashboard);
   };
 
-  const firstLetter = userDetails.firstName.charAt(0).toUpperCase() || "U";
+  const firstLetter = userDetails.userRole.charAt(0).toUpperCase() || "U";
 
   return (
     <aside className={`sidebar-container ${darkMode ? "dark-mode" : ""}`}>
@@ -62,7 +62,7 @@ const Pos_Sidebar = ({ darkMode }) => {
       <nav className="nav-section">
         {(userDetails.userRole === "ADMIN" || userDetails.userRole === "MANAGER") && (
           <button onClick={handleHomeClick} className="nav-item active">
-            <div className="nav-icon home-icon">🏠</div>
+            <div className="nav-icon home-icon">📊</div>
           </button>
         )}
       </nav>
