@@ -4,9 +4,8 @@ import { Link } from "react-router-dom";
 import { Eye } from "react-feather";
 import { fetchTransactions } from "../Api/TransactionApi";
 import { Modal, Button } from "react-bootstrap";
-import Table from "../../core/pagination/datatable";
-import "../../style/scss/pages/_invoicereport.scss";
 import Select from "react-select";
+import "../../style/scss/pages/_invoicereport.scss";
 
 const Invoicereport = () => {
   const [transactions, setTransactions] = useState([]);
@@ -17,16 +16,17 @@ const Invoicereport = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   useEffect(() => {
     const loadTransactions = async () => {
       try {
         setIsLoading(true);
-        const data = await fetchTransactions();
-        console.log("Transactions set to state:", data);
-        const reversedData = [...data].reverse();
-        setTransactions(reversedData);
-        setFilteredTransactions(reversedData);
+        const response = await fetchTransactions(currentPage, 10);
+        setTransactions(response.content);
+        setFilteredTransactions(response.content);
+        setTotalElements(response.totalElements);
       } catch (error) {
         console.error("Error in loadTransactions:", error);
         setTransactions([]);
@@ -37,7 +37,7 @@ const Invoicereport = () => {
     };
 
     loadTransactions();
-  }, []);
+  }, [currentPage]);
 
   useEffect(() => {
     handleFilter();
@@ -140,69 +140,69 @@ const Invoicereport = () => {
       setSearchTerm("");
       setSelectedBranch("");
       setSelectedUser("");
-      const data = await fetchTransactions();
-      setTransactions(data);
-      setFilteredTransactions([...data].reverse());
+      setCurrentPage(1);
+      const response = await fetchTransactions(1, 10);
+      setTransactions(response.content);
+      setFilteredTransactions(response.content);
+      setTotalElements(response.totalElements);
     } catch (error) {
       console.error("Error in handleRefresh:", error);
     }
   };
+
+  const handleNextPage = () => {
+    if (currentPage < Math.ceil(totalElements / 10)) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const totalPages = Math.ceil(totalElements / 10);
 
   const columns = [
     {
       title: "Transaction ID",
       dataIndex: "id",
       render: (id) => formatTransactionId(id),
-      sorter: (a, b) => (a.id || 0) - (b.id || 0),
     },
     {
       title: "Branch Name",
       dataIndex: "branchDto",
       render: (branchDto) => branchDto?.branchName || "N/A",
-      sorter: (a, b) =>
-        (a.branchDto?.branchName || "").localeCompare(
-          b.branchDto?.branchName || ""
-        ),
     },
     {
       title: "Shop Name",
       dataIndex: "shopDetailsDto",
       render: (shopDetailsDto) => shopDetailsDto?.name || "N/A",
-      sorter: (a, b) =>
-        (a.shopDetailsDto?.name || "").localeCompare(
-          b.shopDetailsDto?.name || ""
-        ),
     },
     {
       title: "User Name",
       dataIndex: "userDto",
       render: (userDto) => userDto?.firstName || "N/A",
-      sorter: (a, b) =>
-        (a.userDto?.firstName || "").localeCompare(b.userDto?.firstName || ""),
     },
     {
       title: "Customer Name",
       dataIndex: "customerDto",
       render: (customerDto) => customerDto?.name || "N/A",
-      sorter: (a, b) =>
-        (a.customerDto?.name || "").localeCompare(b.customerDto?.name || ""),
     },
     {
       title: "Total Amount",
       dataIndex: "totalAmount",
       render: (totalAmount) => `LKR ${parseFloat(totalAmount || 0).toFixed(2)}`,
-      sorter: (a, b) => (a.totalAmount || 0) - (b.totalAmount || 0),
     },
     {
       title: "Date Time",
       dataIndex: "dateTime",
-      render: (dateTime) =>
-        dateTime ? new Date(dateTime).toLocaleString() : "N/A",
-      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
+      render: (dateTime) => dateTime ? new Date(dateTime).toLocaleString() : "N/A",
     },
     {
       title: "Action",
-      dataIndex: "action",
+      key: "action",
       render: (_, record) => (
         <td className="action-table-data text-center">
           <div className="edit-delete-action d-flex justify-content-center align-items-center">
@@ -210,27 +210,108 @@ const Invoicereport = () => {
               className="p-2"
               to="#"
               onClick={() => handleViewDetails(record)}
+              style={{ textDecoration: 'none' }} // Inline style to remove underline
             >
               <Eye className="action-eye" />
             </Link>
           </div>
         </td>
       ),
-      sorter: false,
     },
   ];
+
+  // Add this custom style for the table
+  const tableStyle = {
+    table: {
+      borderCollapse: 'collapse',
+      width: '100%',
+      background: '#fff',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    },
+    thead: {
+      background: '#f8f9fa',
+    },
+    th: {
+      padding: '8px 10px',
+      textAlign: 'left',
+      fontWeight: '600',
+      fontSize: '14px',
+      color: '#333',
+      borderBottom: '2px solid #dee2e6'
+    },
+    td: {
+      padding: '0px 10px',
+      borderBottom: '1px solid #dee2e6'
+    },
+    tr: {
+      '&:hover': {
+        backgroundColor: '#f5f5f5'
+      }
+    }
+  };
+
+  // Add this new function to handle pagination display
+  const renderPaginationButtons = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="d-flex justify-content-center align-items-center mt-3">
+        <button
+          className="btn btn-sm btn-secondary mx-1"
+          onClick={handlePreviousPage}
+          disabled={currentPage === 1}
+        >
+          &lt;
+        </button>
+
+        <button
+          className={`btn btn-sm mx-1 ${currentPage === 1 ? 'btn-primary' : 'btn-outline-secondary'}`}
+          onClick={() => setCurrentPage(1)}
+        >
+          1
+        </button>
+
+        {currentPage !== 1 && currentPage !== totalPages && (
+          <button
+            className="btn btn-sm mx-1 btn-primary"
+          >
+            {currentPage}
+          </button>
+        )}
+
+        {totalPages > 1 && (
+          <button
+            className={`btn btn-sm mx-1 ${currentPage === totalPages ? 'btn-primary' : 'btn-outline-secondary'}`}
+            onClick={() => setCurrentPage(totalPages)}
+          >
+            {totalPages}
+          </button>
+        )}
+
+        <button
+          className="btn btn-sm btn-secondary mx-1"
+          onClick={handleNextPage}
+          disabled={currentPage >= totalPages}
+        >
+          &gt;
+        </button>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
       <div className="page-wrapper">
-        {/* You can add a loading spinner or message here if desired */}
+        <div>Loading...</div>
       </div>
     );
   }
 
   return (
     <div className="page-wrapper">
-      <div className="content">
+      <div className="content invoice-report">
         <Breadcrumbs
           maintitle="Transaction Report"
           subtitle="Manage Your Transaction Report"
@@ -279,14 +360,31 @@ const Invoicereport = () => {
               </div>
             </div>
             <div className="table-responsive">
-              <Table
-                className="table datanew"
-                columns={columns}
-                dataSource={filteredTransactions}
-                rowKey={(record) => record.id || Math.random()}
-                loading={filteredTransactions.length === 0}
-                pagination={{ pageSize: 10 }}
-              />
+              <table className="table custom-table" style={tableStyle.table}>
+                <thead style={tableStyle.thead}>
+                  <tr>
+                    {columns.map((column) => (
+                      <th key={column.dataIndex || column.key} style={tableStyle.th}>
+                        {column.title}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((record) => (
+                    <tr key={record.id} style={tableStyle.tr}>
+                      {columns.map((column) => (
+                        <td key={column.dataIndex || column.key} style={tableStyle.td}>
+                          {column.render
+                            ? column.render(record[column.dataIndex], record)
+                            : record[column.dataIndex]}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {renderPaginationButtons()}
             </div>
           </div>
         </div>
@@ -321,8 +419,8 @@ const Invoicereport = () => {
                       <strong>Status:</strong>{" "}
                       <span
                         className={`badge ${selectedTransaction.status?.toLowerCase() === "completed"
-                            ? "badge-linesuccess"
-                            : "badge-linedanger"
+                          ? "badge-linesuccess"
+                          : "badge-linedanger"
                           }`}
                       >
                         {selectedTransaction.status || "N/A"}

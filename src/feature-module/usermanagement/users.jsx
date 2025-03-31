@@ -341,17 +341,20 @@ const Users = () => {
         {
             title: "Status",
             dataIndex: "isActive",
-            render: (isActive, record) => (
-                <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={isActive}
-                        onChange={() => handleToggleStatus(record.id, isActive)}
-                        disabled={togglingId === record.id}
-                    />
-                </div>
-            ),
+            render: (isActive, record) => {
+                const isAdmin = record.userRoleDto?.userRole === "ADMIN";
+                return (
+                    <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={isActive}
+                            onChange={() => handleToggleStatus(record.id, isActive)}
+                            disabled={togglingId === record.id || isAdmin}
+                        />
+                    </div>
+                );
+            },
         },
         {
             title: 'Actions',

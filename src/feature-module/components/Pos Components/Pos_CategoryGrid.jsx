@@ -413,7 +413,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           <title>X Report - ${xReportData.responseDto.reportGeneratedBy}</title>
           <style>
             @page {
-              size: 80mm 297mm;  /* Standard receipt width */
+              size: 80mm 297mm;
               margin: 0;
             }
             body {
@@ -430,14 +430,19 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
               margin-bottom: 10px;
             }
             .receipt-title {
-              font-size: 16px;
-              font-weight: bold;
+              font-size: 20px;
+              font-family: 'Arial Black', sans-serif;
+              font-weight: 900;
               margin: 5px 0;
+              letter-spacing: 1px;
             }
             .info-row {
               display: flex;
               justify-content: space-between;
               margin: 5px 0;
+            }
+            .info-row span:last-child {
+              font-weight: bold;
             }
             .section {
               margin: 10px 0;
@@ -445,16 +450,25 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
               padding-bottom: 10px;
             }
             .section-title {
-              font-weight: bold;
+              font-family: 'Arial', sans-serif;
+              font-weight: 800;
+              font-size: 14px;
               text-align: center;
-              margin: 5px 0;
+              margin: 8px 0;
+              text-transform: uppercase;
             }
             table {
               width: 100%;
               border-collapse: collapse;
             }
-            th, td {
+            th {
+              font-family: 'Arial', sans-serif;
+              font-weight: 800;
               text-align: left;
+              padding: 3px 0;
+            }
+            td {
+              font-weight: bold;
               padding: 3px 0;
             }
             .amount {
@@ -464,6 +478,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
               text-align: center;
               margin-top: 10px;
               font-size: 10px;
+              font-weight: bold;
             }
           </style>
         </head>
@@ -481,7 +496,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             </div>
             <div class="info-row">
               <span>Total Sales:</span>
-              <span>$${xReportData.responseDto.totalSales.toFixed(2)}</span>
+              <span>${xReportData.responseDto.totalSales.toFixed(2)}</span>
             </div>
             <div class="info-row">
               <span>Total Transactions:</span>
@@ -496,7 +511,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
         .map(([category, amount]) => `
                   <tr>
                     <td>${category}</td>
-                    <td class="amount">$${amount.toFixed(2)}</td>
+                    <td class="amount">${amount.toFixed(2)}</td>
                   </tr>
                 `).join('')}
             </table>
@@ -509,7 +524,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
         .map(([method, amount]) => `
                   <tr>
                     <td>${method}</td>
-                    <td class="amount">$${amount.toFixed(2)}</td>
+                    <td class="amount">${amount.toFixed(2)}</td>
                   </tr>
                 `).join('')}
             </table>
@@ -525,7 +540,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                       <tr>
                         <td>${user.userName.split(' ')[0]}</td>
                         <td>${method}</td>
-                        <td class="amount">$${amount.toFixed(2)}</td>
+                        <td class="amount">${amount.toFixed(2)}</td>
                       </tr>
                     `).join('')
         ).join('')}
@@ -723,7 +738,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           <title>Z Report - ${zReportData.responseDto.reportGeneratedBy}</title>
           <style>
             @page {
-              size: 80mm 297mm;  /* Standard receipt width */
+              size: 80mm 297mm;
               margin: 0;
             }
             body {
@@ -740,14 +755,19 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
               margin-bottom: 10px;
             }
             .receipt-title {
-              font-size: 16px;
-              font-weight: bold;
+              font-size: 20px;
+              font-family: 'Arial Black', sans-serif;
+              font-weight: 900;
               margin: 5px 0;
+              letter-spacing: 1px;
             }
             .info-row {
               display: flex;
               justify-content: space-between;
               margin: 5px 0;
+            }
+            .info-row span:last-child {
+              font-weight: bold;
             }
             .section {
               margin: 10px 0;
@@ -755,16 +775,35 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
               padding-bottom: 10px;
             }
             .section-title {
-              font-weight: bold;
+              font-family: 'Arial', sans-serif;
+              font-weight: 800;
+              font-size: 14px;
               text-align: center;
-              margin: 5px 0;
+              margin: 8px 0;
+              text-transform: uppercase;
+            }
+            .date-header {
+              font-family: 'Arial', sans-serif;
+              font-weight: 800;
+              font-size: 16px;
+              text-align: center;
+              margin: 10px 0;
+              padding: 5px;
+              border-bottom: 1px dashed #000;
+              text-transform: uppercase;
             }
             table {
               width: 100%;
               border-collapse: collapse;
             }
-            th, td {
+            th {
+              font-family: 'Arial', sans-serif;
+              font-weight: 800;
               text-align: left;
+              padding: 3px 0;
+            }
+            td {
+              font-weight: bold;
               padding: 3px 0;
             }
             .amount {
@@ -774,13 +813,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
               text-align: center;
               margin-top: 10px;
               font-size: 10px;
-            }
-            .date-header {
-              text-align: center;
               font-weight: bold;
-              margin: 10px 0;
-              padding: 5px;
-              border-bottom: 1px dashed #000;
             }
           </style>
         </head>
@@ -798,7 +831,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             </div>
             <div class="info-row">
               <span>Total Sales:</span>
-              <span>$${zReportData.responseDto.fullyTotalSales.toFixed(2)}</span>
+              <span>${zReportData.responseDto.fullyTotalSales.toFixed(2)}</span>
             </div>
           </div>
 
@@ -815,7 +848,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             .map(([category, amount]) => `
                       <tr>
                         <td>${category}</td>
-                        <td class="amount">$${amount.toFixed(2)}</td>
+                        <td class="amount">${amount.toFixed(2)}</td>
                       </tr>
                     `).join('')}
                 </table>
@@ -828,7 +861,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             .map(([method, amount]) => `
                       <tr>
                         <td>${method}</td>
-                        <td class="amount">$${amount.toFixed(2)}</td>
+                        <td class="amount">${amount.toFixed(2)}</td>
                       </tr>
                     `).join('')}
                 </table>
@@ -842,7 +875,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                       <tr>
                         <td>${userName.split(' ')[0]}</td>
                         <td>${method}</td>
-                        <td class="amount">$${parseFloat(amount).toFixed(2)}</td>
+                        <td class="amount">${parseFloat(amount).toFixed(2)}</td>
                       </tr>
                     `).join('')
                   ).join('')}
@@ -1422,10 +1455,10 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                             <tbody>
                               ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
                                 Object.entries(payments).map(([method, amount]) => `
-                                  <tr key={\`\${userName}-\${method}\`}>
-                                    <td style={{ padding: '12px 15px' }}>${userName.split(' ')[0]}</td>
-                                    <td style={{ padding: '12px 15px' }}>${method}</td>
-                                    <td style={{ padding: '12px 15px' }}>${parseFloat(amount).toFixed(2)}</td>
+                                  <tr>
+                                    <td>${userName.split(' ')[0]}</td>
+                                    <td>${method}</td>
+                                    <td class="amount">${parseFloat(amount).toFixed(2)}</td>
                                   </tr>
                                 `).join('')
                               ).join('')}
