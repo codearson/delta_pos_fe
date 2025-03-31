@@ -288,6 +288,7 @@ const AddProduct = () => {
   const handleProductNameChange = (e) => {
     const value = e.target.value;
       setProductName(value);
+      
   };
 
   const handleBarcodeChange = (e) => {
