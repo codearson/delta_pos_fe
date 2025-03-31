@@ -90,7 +90,7 @@ const SalesReport = () => {
           <title>Z Report - ${selectedReport.reportGeneratedBy}</title>
           <style>
             @page {
-              size: 80mm 297mm;  /* Standard receipt width */
+              size: 80mm 297mm;
               margin: 0;
             }
             body {
@@ -107,14 +107,19 @@ const SalesReport = () => {
               margin-bottom: 10px;
             }
             .receipt-title {
-              font-size: 16px;
-              font-weight: bold;
+              font-size: 20px;
+              font-family: 'Arial Black', sans-serif;
+              font-weight: 900;
               margin: 5px 0;
+              letter-spacing: 1px;
             }
             .info-row {
               display: flex;
               justify-content: space-between;
               margin: 5px 0;
+            }
+            .info-row span {
+              font-weight: bold;
             }
             .section {
               margin: 10px 0;
@@ -122,9 +127,12 @@ const SalesReport = () => {
               padding-bottom: 10px;
             }
             .section-title {
-              font-weight: bold;
+              font-family: 'Arial', sans-serif;
+              font-weight: 800;
+              font-size: 14px;
               text-align: center;
-              margin: 5px 0;
+              margin: 8px 0;
+              text-transform: uppercase;
             }
             table {
               width: 100%;
@@ -133,6 +141,7 @@ const SalesReport = () => {
             th, td {
               text-align: left;
               padding: 3px 0;
+              font-weight: bold;
             }
             .amount {
               text-align: right;
@@ -144,14 +153,17 @@ const SalesReport = () => {
               text-align: center;
               margin-top: 10px;
               font-size: 10px;
+              font-weight: bold;
             }
             .date-header {
-              font-weight: bold;
+              font-family: 'Arial', sans-serif;
+              font-weight: 800;
+              font-size: 16px;
               text-align: center;
               padding: 5px 0;
-              border-bottom: 1px solid #000;
+              border-bottom: 1px dashed #000;
               margin: 15px 0 10px 0;
-              background-color: #f5f5f5;
+              text-transform: uppercase;
             }
           </style>
         </head>
@@ -165,7 +177,7 @@ const SalesReport = () => {
           <div class="section">
             <div class="info-row">
               <span>Total Sales:</span>
-              <span>$${formatCurrency(selectedReport.fullyTotalSales)}</span>
+              <span>${formatCurrency(selectedReport.fullyTotalSales)}</span>
             </div>
           </div>
           
@@ -180,7 +192,7 @@ const SalesReport = () => {
                   ${dateDetail.categoryTotals.map(category => `
                     <tr>
                       <td>${category.categoryName}</td>
-                      <td class="amount">$${formatCurrency(category.categoryTotal)}</td>
+                      <td class="amount">${formatCurrency(category.categoryTotal)}</td>
                     </tr>
                   `).join('')}
                 </table>
@@ -192,7 +204,7 @@ const SalesReport = () => {
                   ${dateDetail.overallPaymentTotals.map(payment => `
                     <tr>
                       <td>${payment.paymentMethod}</td>
-                      <td class="amount">$${formatCurrency(payment.paymentTotal)}</td>
+                      <td class="amount">${formatCurrency(payment.paymentTotal)}</td>
                     </tr>
                   `).join('')}
                 </table>
@@ -205,7 +217,7 @@ const SalesReport = () => {
                     <tr>
                       <td>${userPayment.userName.split(' ')[0]}</td>
                       <td>${userPayment.paymentMethod}</td>
-                      <td class="amount">$${formatCurrency(userPayment.paymentTotal)}</td>
+                      <td class="amount">${formatCurrency(userPayment.paymentTotal)}</td>
                     </tr>
                   `).join('')}
                 </table>

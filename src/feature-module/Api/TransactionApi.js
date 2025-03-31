@@ -25,26 +25,34 @@ export const saveTransaction = async (transactionData) => {
   }
 };
 
-export const fetchTransactions = async () => {
+export const fetchTransactions = async (pageNumber = 1, pageSize = 10) => {
   try {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
-      return [];
+      return { content: [], totalElements: 0 };
     }
 
-    const response = await axios.get(`${BASE_BACKEND_URL}/transaction/getAll`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/transaction/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}`, 
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
-    if (!response.data.responseDto || !Array.isArray(response.data.responseDto)) {
-      return [];
+    if (!response.data.status || !response.data.responseDto) {
+      return { content: [], totalElements: 0 };
     }
 
-    return response.data.responseDto;
+    return {
+      content: response.data.responseDto.payload || [],
+      totalElements: response.data.responseDto.totalRecords || 0,
+      pageNumber: response.data.responseDto.pageNumber,
+      pageSize: response.data.responseDto.pageSize
+    };
   } catch (error) {
-    return [];
+    return { content: [], totalElements: 0 };
   }
 };
 
