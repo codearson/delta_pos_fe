@@ -15,7 +15,7 @@ import { Printer } from "feather-icons-react/build/IconComponents";
 import { fetchZReport } from "../../Api/TransactionApi";
 import Swal from 'sweetalert2';
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 14; // Items per page (excluding the "More"/"Prev" button slot)
 const SALES_PAGE_SIZE = 10;
 
 const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) => {
@@ -147,9 +147,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     };
   }, [showZReportPopup]);
 
-  const start = pageIndex * PAGE_SIZE;
-  const end = start + PAGE_SIZE;
-
   let filteredCategories = items === fetchCustomCategories ? categories : items;
   if (filteredCategories instanceof Promise) {
     filteredCategories = categories;
@@ -157,7 +154,25 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     filteredCategories = [];
   }
 
-  let paginatedItems = filteredCategories.slice(start, end);
+  const totalItems = filteredCategories.length;
+
+  let paginatedItems = [];
+  if (pageIndex === 0) {
+    paginatedItems = filteredCategories.slice(0, PAGE_SIZE);
+    if (totalItems > PAGE_SIZE) {
+      paginatedItems.push({ id: "more", name: "More", icon: "➡️", isMore: true });
+    }
+  } else {
+    const start = pageIndex * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, totalItems);
+    paginatedItems = [
+      { id: "prev", name: "Prev", icon: "⬅️", isPrev: true },
+      ...filteredCategories.slice(start, end),
+    ];
+    if (end < totalItems) {
+      paginatedItems.push({ id: "more", name: "More", icon: "➡️", isMore: true });
+    }
+  }
 
   if (items === quickAccess) {
     paginatedItems = paginatedItems.map((item) =>
@@ -175,20 +190,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                   ? { ...item, isZReport: true }
                   : item
     );
-  }
-
-  if (pageIndex > 0 && items === fetchCustomCategories) {
-    paginatedItems = [
-      { id: "prev", name: "Prev", icon: "⬅️", isPrev: true },
-      ...paginatedItems.slice(1),
-    ];
-  }
-
-  if (items === fetchCustomCategories && end < filteredCategories.length) {
-    paginatedItems = [
-      ...paginatedItems.slice(0, 14),
-      { id: "more", name: "More", icon: "➡️", isMore: true },
-    ];
   }
 
   const renderCategoryButton = (item) => {
@@ -565,7 +566,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
       return;
     }
 
-    const formattedDate = transaction.dateTime
+    const formattedDate = transaction.dateTime && !isNaN(new Date(transaction.dateTime).getTime())
       ? new Date(transaction.dateTime).toLocaleString()
       : new Date().toLocaleString();
 
@@ -590,8 +591,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
 
     setCurrentTransactionId(formattedTransactionId);
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     let barcodeDataUrl = "";
     try {
       if (barcodeRef.current) {
@@ -600,7 +599,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
       }
     } catch (error) {
       console.error("Failed to generate barcode image:", error);
-      barcodeDataUrl = "";
+      alert("Failed to generate barcode image.");
     }
 
     printWindow.document.write(`
@@ -609,93 +608,26 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           <title>Receipt</title>
           <style>
             @media print {
-              @page {
-                size: 72mm auto;
-                margin: 0;
-              }
-              body {
-                margin: 0 auto;
-                padding: 0 5px;
-                font-family: 'Courier New', Courier, monospace;
-                width: 72mm;
-                min-height: 100%;
-                box-sizing: border-box;
-                font-weight: bold;
-                color: #000;
-              }
-              header, footer, nav, .print-header, .print-footer {
-                display: none !important;
-              }
-              html, body {
-                width: 72mm;
-                height: auto;
-                margin: 0 auto;
-                overflow: hidden;
-              }
+              @page { size: 72mm auto; margin: 0; }
+              body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+              header, footer, nav, .print-header, .print-footer { display: none !important; }
+              html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
             }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              width: 72mm;
-              margin: 0 auto;
-              padding: 0 5px;
-              font-size: 12px;
-              line-height: 1.2;
-              box-sizing: border-box;
-              text-align: center;
-            }
-            .receipt-header {
-              text-align: center;
-              margin-bottom: 5px;
-            }
-            .receipt-header h2 {
-              margin: 0;
-              font-size: 14px;
-              font-weight: bold;
-            }
-            .receipt-details {
-              margin-bottom: 5px;
-              text-align: left;
-            }
-            .receipt-details p {
-              margin: 2px 0;
-            }
-            .receipt-items {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 5px;
-              margin-left: auto;
-              margin-right: auto;
-            }
-            .receipt-items th, .receipt-items td {
-              padding: 2px 0;
-              text-align: left;
-              font-size: 12px;
-            }
-            .receipt-items th {
-              border-bottom: 1px dashed #000;
-            }
-            .receipt-items .total-column {
-              text-align: right;
-            }
-            .receipt-footer {
-              text-align: center;
-              margin-top: 5px;
-            }
-            .receipt-footer p {
-              margin: 2px 0;
-            }
-            .divider {
-              border-top: 1px dashed #000;
-              margin: 5px 0;
-            }
-            .barcode-container {
-              text-align: center;
-              margin: 5px 0;
-            }
-            .barcode-container img {
-              width: 100%;
-              height: 30px;
-            }
+            body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+            .receipt-header { text-align: center; margin-bottom: 5px; }
+            .receipt-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+            .receipt-details { margin-bottom: 5px; text-align: left; }
+            .receipt-details p { margin: 2px 0; }
+            .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-left: auto; margin-right: auto; }
+            .receipt-items th, .receipt-items td { padding: 2px 0; font-weight: bold; text-align: left; font-size: 12px; }
+            .receipt-items th { border-bottom: 1px dashed #000; }
+            .receipt-items .total-column { text-align: right; }
+            .receipt-footer { text-align: center; margin-top: 5px; }
+            .receipt-footer p { margin: 2px 0; }
+            .divider { border-top: 1px dashed #000; margin: 5px 0; }
+            .barcode-container { text-align: center; margin: 5px 0; }
+            .barcode-container img { width: 100%; height: 30px; }
+            .spacing { height: 10px; }
           </style>
         </head>
         <body>
@@ -703,6 +635,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             <h2>${transaction.shopDetailsDto?.name || "Unknown Shop"}</h2>
             <p>${transaction.branchDto?.branchName || "Unknown Branch"}</p>
             <p>Branch Code: ${transaction.branchDto?.branchCode || "N/A"}</p>
+            <p>Address: ${transaction.branchDto?.address || "N/A"}</p>
+            <p>Contact: ${transaction.branchDto?.contactNumber || "N/A"}</p>
           </div>
           <div class="receipt-details">
             <p>Date: ${formattedDate}</p>
@@ -721,9 +655,10 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
               </tr>
             </thead>
             <tbody>
-              ${items
-        .map(
-          (item) => `
+              ${items.length > 0
+        ? items
+          .map(
+            (item) => `
                     <tr>
                       <td>${item.qty}</td>
                       <td>${item.name}</td>
@@ -731,20 +666,23 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                       <td class="total-column">${item.total.toFixed(2)}</td>
                     </tr>
                   `
-        )
-        .join("")}
+          )
+          .join("")
+        : "<tr><td colspan='4'>No items</td></tr>"}
             </tbody>
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
             <p>Total: ${totalAmount.toFixed(2)}</p>
-            ${paymentMethods
-        .map(
-          (method) => `
+            ${paymentMethods.length > 0
+        ? paymentMethods
+          .map(
+            (method) => `
                   <p>${method.type}: ${method.amount.toFixed(2)}</p>
                 `
-        )
-        .join("")}
+          )
+          .join("")
+        : "<p>No payments recorded</p>"}
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
@@ -754,6 +692,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           <div class="divider"></div>
           <div class="receipt-footer">
             <p>Thank You for Shopping with Us!</p>
+            <div class="spacing"></div>
             <p>Powered by Delta POS</p>
             <p>(deltapos.codearson@gmail.com)</p>
             <p>(0094762963979)</p>
@@ -1253,7 +1192,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             style={{
               maxWidth: '1200px',
               maxHeight: '80vh',
-              overflow: 'auto'
+              overflow搭建: 'auto'
             }}
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1413,7 +1352,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
 
                 {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
                   <div key={date}>
-                    <h4>Date: {new Date(date).toLocaleDateString()}</h4>
+                    <h4>Date: ${new Date(date).toLocaleDateString()}</h4>
 
                     <div className="row">
                       <div className="col-md-6">
@@ -1428,8 +1367,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                           <tbody>
                             {Object.entries(data.categoryTotals).map(([category, amount]) => (
                               <tr key={category}>
-                                <td>{category}</td>
-                                <td>{amount.toFixed(2)}</td>
+                                <td>${category}</td>
+                                <td>${amount.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1447,8 +1386,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                           <tbody>
                             {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
                               <tr key={method}>
-                                <td>{method}</td>
-                                <td>{amount.toFixed(2)}</td>
+                                <td>${method}</td>
+                                <td>${amount.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1481,15 +1420,15 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
+                              ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
                                 Object.entries(payments).map(([method, amount]) => `
-                                  <tr>
-                                    <td>${userName.split(' ')[0]}</td>
-                                    <td>${method}</td>
-                                    <td class="amount">$${parseFloat(amount).toFixed(2)}</td>
+                                  <tr key={\`\${userName}-\${method}\`}>
+                                    <td style={{ padding: '12px 15px' }}>${userName.split(' ')[0]}</td>
+                                    <td style={{ padding: '12px 15px' }}>${method}</td>
+                                    <td style={{ padding: '12px 15px' }}>${parseFloat(amount).toFixed(2)}</td>
                                   </tr>
                                 `).join('')
-                              )}
+                              ).join('')}
                             </tbody>
                           </table>
                         </div>
