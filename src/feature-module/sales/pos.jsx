@@ -43,6 +43,7 @@ const Pos = () => {
     branchCode: "",
     address: "",
     shopName: "",
+    contactNumber: "",
   });
   const [showPriceCheckPopup, setShowPriceCheckPopup] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -52,7 +53,7 @@ const Pos = () => {
     const saved = localStorage.getItem("suspendedTransactions");
     return saved ? JSON.parse(saved) : [];
   });
-  const [expandedTransactionId, setExpandedTransactionId] = useState(null); // New state for expanded transaction
+  const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const barcodeInputRef = useRef(null);
   const barcodeRef = useRef(null);
 
@@ -114,10 +115,6 @@ const Pos = () => {
   };
 
   const handleCategorySelect = (category) => {
-    if (isPaymentStarted) {
-      showNotification("Cannot add items after payment has started. Please complete or reset the transaction.");
-      return;
-    }
     if (activeTab === "category" && category?.name) {
       const qty = pendingQty || 1;
       const price = inputStage === "price" && inputValue !== "0" ? parseFloat(inputValue) : null;
@@ -216,10 +213,6 @@ const Pos = () => {
   };
 
   const handleBarcodeSearch = async (barcode) => {
-    if (isPaymentStarted) {
-      showNotification("Cannot add items after payment has started. Please complete or reset the transaction.");
-      return;
-    }
     if (barcode.length < 3) return;
 
     try {
@@ -290,39 +283,78 @@ const Pos = () => {
       showNotification("Please select a row to void.");
       return;
     }
-    if (isPaymentStarted) {
-      const selectedItem = selectedItems.concat(paymentMethods)[selectedRowIndex];
-      if (selectedItem.amount) {
-        if (selectedItem.type === "Card") {
-          showNotification("Card payments cannot be voided.");
-          return;
-        }
-        const paymentIndex = selectedRowIndex - selectedItems.length;
-        const newPaymentMethods = paymentMethods.filter((_, index) => index !== paymentIndex);
+
+    const cashTotal = paymentMethods
+      .filter((method) => method.type === "Cash")
+      .reduce((sum, method) => sum + method.amount, 0);
+    const cardPayments = paymentMethods.filter((method) => method.type === "Card");
+
+    const displayItems = isPaymentStarted
+      ? [
+          ...selectedItems,
+          ...(cashTotal > 0
+            ? [
+                {
+                  id: `payment-cash`,
+                  name: `Cash Payment`,
+                  qty: 1,
+                  price: cashTotal,
+                  total: cashTotal,
+                  type: "Cash",
+                },
+              ]
+            : []),
+          ...(cardPayments.length > 0
+            ? cardPayments.map((method, index) => ({
+                id: `payment-card-${index}`,
+                name: `${method.type} Payment`,
+                qty: 1,
+                price: method.amount,
+                total: method.amount,
+                type: "Card",
+              }))
+            : []),
+        ]
+      : selectedItems;
+
+    const selectedItem = displayItems[selectedRowIndex];
+
+    if (!selectedItem) {
+      showNotification("Invalid selection.");
+      return;
+    }
+
+    if (isPaymentStarted && selectedItem.type) {
+      if (selectedItem.type === "Card") {
+        showNotification("Card payments cannot be voided with Void Line.");
+        return;
+      }
+      if (selectedItem.type === "Cash") {
+        const newPaymentMethods = paymentMethods.filter((method) => method.type !== "Cash");
         setPaymentMethods(newPaymentMethods);
         setSelectedRowIndex(null);
         if (newPaymentMethods.length === 0) {
           setIsPaymentStarted(false);
         }
-      } else {
-        showNotification("Cannot void items after payment has started.");
+        showNotification("Cash payment voided.");
       }
     } else {
       const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
       setSelectedItems(newItems);
       setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
       setSelectedRowIndex(null);
+      showNotification("Item voided.");
     }
   };
 
   const handleVoidAll = () => {
-    if (isPaymentStarted) {
-      showNotification("Cannot void all items after payment has started.");
-      return;
-    }
     setSelectedItems([]);
     setTotalValue(0);
+    setPaymentMethods([]);
+    setBalance(0);
+    setIsPaymentStarted(false);
     setSelectedRowIndex(null);
+    showNotification("All items and payments voided.");
   };
 
   const handleCustomerAdded = (name) => setCustomerName(name);
@@ -330,12 +362,12 @@ const Pos = () => {
   const handleSaveTransaction = async () => {
     const userIdRaw = localStorage.getItem("userId");
     const branchIdRaw = localStorage.getItem("branchId");
-
+  
     const userId = !isNaN(parseInt(userIdRaw)) ? parseInt(userIdRaw) : 1;
     const branchId = !isNaN(parseInt(branchIdRaw)) ? parseInt(branchIdRaw) : 3;
-
+  
     let shopDetailsId = 1;
-
+  
     try {
       const branches = await fetchBranches();
       const branch = branches.find((b) => b.id === branchId);
@@ -345,6 +377,7 @@ const Pos = () => {
           branchCode: branch.branchCode || "N/A",
           address: branch.address || "N/A",
           shopName: branch.shopDetailsDto?.name || "Unknown Shop",
+          contactNumber: branch.contactNumber || "N/A"  // Add this line
         });
         shopDetailsId = branch.shopDetailsId || 1;
       } else {
@@ -353,9 +386,10 @@ const Pos = () => {
           branchCode: "N/A",
           address: "N/A",
           shopName: "Unknown Shop",
+          contactNumber: "N/A"  // Add this line
         });
       }
-
+  
       const usersResponse = await fetchUsers();
       const user = usersResponse.payload.find((u) => u.id === userId);
       if (user) {
@@ -375,15 +409,17 @@ const Pos = () => {
         branchCode: "N/A",
         address: "N/A",
         shopName: "Unknown Shop",
+        contactNumber: "N/A"  // Add this line
       });
       setUserDetails({
         firstName: "Unknown",
         lastName: "",
       });
     }
-
+  
+    // Rest of the function remains unchanged...
     setTransactionDate(new Date());
-
+  
     let customerId = 1;
     if (customerName) {
       const customers = await fetchCustomers();
@@ -392,18 +428,18 @@ const Pos = () => {
         customerId = customer.id;
       }
     }
-
+  
     const combinedPaymentMethods = [];
     const cashPayments = paymentMethods.filter((m) => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
     const cardPayments = paymentMethods.filter((m) => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
-
+  
     if (cashPayments > 0) {
       combinedPaymentMethods.push({ type: "Cash", amount: cashPayments });
     }
     if (cardPayments > 0) {
       combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
     }
-
+  
     const transactionData = {
       status: "Completed",
       isActive: 1,
@@ -424,7 +460,7 @@ const Pos = () => {
         isActive: 1,
       })),
     };
-
+  
     const result = await saveTransaction(transactionData);
     if (result.success) {
       let transactionId;
@@ -438,7 +474,7 @@ const Pos = () => {
         transactionId = 0;
         showNotification("Warning: Transaction ID not found in API response. Please check the backend response.");
       }
-
+  
       setLastTransaction({
         id: transactionId,
         transactionDetailsList: selectedItems.map((item) => ({
@@ -469,14 +505,14 @@ const Pos = () => {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-
+  
     const formattedDate = transactionDate && !isNaN(new Date(transactionDate).getTime())
       ? new Date(transactionDate).toLocaleString()
       : currentTime.toLocaleString();
-
+  
     const transactionId = lastTransaction?.id || 0;
     const formattedTransactionId = transactionId.toString().padStart(10, "0");
-
+  
     let barcodeDataUrl = "";
     try {
       if (barcodeRef.current) {
@@ -487,101 +523,33 @@ const Pos = () => {
       console.error("Failed to generate barcode image:", error);
       showNotification("Failed to generate barcode image.");
     }
-
+  
     printWindow.document.write(`
       <html>
         <head>
           <title>Receipt</title>
           <style>
             @media print {
-              @page {
-                size: 72mm auto;
-                margin: 0;
-              }
-              body {
-                margin: 0 auto;
-                padding: 0 5px;
-                font-family: 'Courier New', Courier, monospace;
-                width: 72mm;
-                min-height: 100%;
-                box-sizing: border-box;
-                font-weight: bold;
-                color: #000;
-              }
-              header, footer, nav, .print-header, .print-footer {
-                display: none !important;
-              }
-              html, body {
-                width: 72mm;
-                height: auto;
-                margin: 0 auto;
-                overflow: hidden;
-              }
+              @page { size: 72mm auto; margin: 0; }
+              body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+              header, footer, nav, .print-header, .print-footer { display: none !important; }
+              html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
             }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              width: 72mm;
-              margin: 0 auto;
-              padding: 0 5px;
-              font-size: 12px;
-              line-height: 1.2;
-              box-sizing: border-box;
-              text-align: center;
-            }
-            .receipt-header {
-              text-align: center;
-              margin-bottom: 5px;
-            }
-            .receipt-header h2 {
-              margin: 0;
-              font-size: 14px;
-              font-weight: bold;
-            }
-            .receipt-details {
-              margin-bottom: 5px;
-              text-align: left;
-            }
-            .receipt-details p {
-              margin: 2px 0;
-            }
-            .receipt-items {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 5px;
-              margin-left: auto;
-              margin-right: auto;
-            }
-            .receipt-items th, .receipt-items td {
-              padding: 2px 0;
-              font-weight: bold;
-              text-align: left;
-              font-size: 12px;
-            }
-            .receipt-items th {
-              border-bottom: 1px dashed #000;
-            }
-            .receipt-items .total-column {
-              text-align: right;
-            }
-            .receipt-footer {
-              text-align: center;
-              margin-top: 5px;
-            }
-            .receipt-footer p {
-              margin: 2px 0;
-            }
-            .divider {
-              border-top: 1px dashed #000;
-              margin: 5px 0;
-            }
-            .barcode-container {
-              text-align: center;
-              margin: 5px 0;
-            }
-            .barcode-container img {
-              width: 100%;
-              height: 30px;
-            }
+            body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+            .receipt-header { text-align: center; margin-bottom: 5px; }
+            .receipt-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+            .receipt-details { margin-bottom: 5px; text-align: left; }
+            .receipt-details p { margin: 2px 0; }
+            .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-left: auto; margin-right: auto; }
+            .receipt-items th, .receipt-items td { padding: 2px 0; font-weight: bold; text-align: left; font-size: 12px; }
+            .receipt-items th { border-bottom: 1px dashed #000; }
+            .receipt-items .total-column { text-align: right; }
+            .receipt-footer { text-align: center; margin-top: 5px; }
+            .receipt-footer p { margin: 2px 0; }
+            .divider { border-top: 1px dashed #000; margin: 5px 0; }
+            .barcode-container { text-align: center; margin: 5px 0; }
+            .barcode-container img { width: 100%; height: 30px; }
+            .spacing { height: 10px; }
           </style>
         </head>
         <body>
@@ -589,6 +557,8 @@ const Pos = () => {
             <h2>${branchDetails.shopName}</h2>
             <p>${branchDetails.branchName}</p>
             <p>Branch Code: ${branchDetails.branchCode}</p>
+            <p>Address: ${branchDetails.address}</p>
+            <p>Contact: ${branchDetails.contactNumber || 'N/A'}</p>
           </div>
           <div class="receipt-details">
             <p>Date: ${formattedDate}</p>
@@ -611,13 +581,13 @@ const Pos = () => {
         ? selectedItems
           .map(
             (item) => `
-                        <tr>
-                          <td>${item.qty}</td>
-                          <td>${item.name}</td>
-                          <td>${item.price.toFixed(2)}</td>
-                          <td class="total-column">${item.total.toFixed(2)}</td>
-                        </tr>
-                      `
+                    <tr>
+                      <td>${item.qty}</td>
+                      <td>${item.name}</td>
+                      <td>${item.price.toFixed(2)}</td>
+                      <td class="total-column">${item.total.toFixed(2)}</td>
+                    </tr>
+                  `
           )
           .join("")
         : "<tr><td colspan='4'>No items</td></tr>"}
@@ -630,8 +600,8 @@ const Pos = () => {
         ? paymentMethods
           .map(
             (method) => `
-                      <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                    `
+                  <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                `
           )
           .join("")
         : "<p>No payments recorded</p>"}
@@ -644,10 +614,15 @@ const Pos = () => {
           <div class="divider"></div>
           <div class="receipt-footer">
             <p>Thank You for Shopping with Us!</p>
+            <div class="spacing"></div>
             <p>Powered by Delta POS</p>
             <p>(deltapos.codearson@gmail.com)</p>
             <p>(0094762963979)</p>
-            <p>================================================</p>
+            <p>=====================================
+            </p>
+            <p></p>
+            <p></p>
+            <p></p>
           </div>
           <script>
             setTimeout(() => {
@@ -658,7 +633,7 @@ const Pos = () => {
         </body>
       </html>
     `);
-
+  
     printWindow.document.close();
     printWindow.focus();
   };
@@ -669,7 +644,7 @@ const Pos = () => {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-
+  
     if (!lastTransaction) {
       printWindow.document.write("<p>No previous transaction found.</p>");
       showNotification("No previous transaction found.");
@@ -677,7 +652,7 @@ const Pos = () => {
       printWindow.close();
       return;
     }
-
+  
     try {
       const items = lastTransaction.transactionDetailsList.map((detail) => ({
         qty: detail.quantity,
@@ -685,40 +660,46 @@ const Pos = () => {
         price: detail.unitPrice,
         total: detail.quantity * detail.unitPrice,
       }));
-
+  
       const totalAmount = lastTransaction.totalAmount;
       const paymentMethods = lastTransaction.transactionPaymentMethod.map((method) => ({
         type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
         amount: method.amount,
       }));
-
+  
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
       const calculatedBalance = totalPaid - totalAmount;
-
+  
       const branchId = lastTransaction.branchDto.id;
       const userId = lastTransaction.userDto.id;
       let branchName = branchDetails.branchName;
       let branchCode = branchDetails.branchCode;
       let shopName = branchDetails.shopName;
+      let address = branchDetails.address;
+      let contactNumber = branchDetails.contactNumber;
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
-
-      if (!branchName || !branchCode || !shopName) {
-        const branches = fetchBranches();
+  
+      if (!branchName || !branchCode || !shopName || !address || !contactNumber) {
+        const branches = await fetchBranches(); // Added await
         const branch = branches.find((b) => b.id === branchId);
         if (branch) {
           branchName = branch.branchName || "Unknown Branch";
           branchCode = branch.branchCode || "N/A";
           shopName = branch.shopDetailsDto?.name || "Unknown Shop";
+          address = branch.address || "N/A";
+          contactNumber = branch.contactNumber || "N/A";
         } else {
           branchName = "Unknown Branch";
           branchCode = "N/A";
           shopName = "Unknown Shop";
+          address = "N/A";
+          contactNumber = "N/A";
         }
       }
-
+  
       if (!firstName || !lastName) {
-        const usersResponse = fetchUsers();
+        const usersResponse = await fetchUsers();
         const user = usersResponse.payload.find((u) => u.id === userId);
         if (user) {
           firstName = user.firstName || "Unknown";
@@ -728,7 +709,7 @@ const Pos = () => {
           lastName = "";
         }
       }
-
+  
       const customer = lastTransaction.customerDto.name || "";
       const transactionDate = lastTransaction.transactionDate
         ? new Date(lastTransaction.transactionDate)
@@ -736,10 +717,10 @@ const Pos = () => {
       const formattedDate = isNaN(transactionDate.getTime())
         ? currentTime.toLocaleString()
         : transactionDate.toLocaleString();
-
+  
       const transactionId = lastTransaction.id || 0;
       const formattedTransactionId = transactionId.toString().padStart(10, "0");
-
+  
       let barcodeDataUrl = "";
       try {
         if (barcodeRef.current) {
@@ -750,100 +731,33 @@ const Pos = () => {
         console.error("Failed to generate barcode image:", error);
         showNotification("Failed to generate barcode image.");
       }
-
+  
       printWindow.document.write(`
         <html>
           <head>
             <title>Receipt</title>
             <style>
               @media print {
-                @page {
-                  size: 72mm auto;
-                  margin: 0;
-                }
-                body {
-                  margin: 0 auto;
-                  padding: 0 5px;
-                  font-family: 'Courier New', Courier, monospace;
-                  width: 72mm;
-                  min-height: 100%;
-                  box-sizing: border-box;
-                  font-weight: bold;
-                  color: #000;
-                }
-                header, footer, nav, .print-header, .print-footer {
-                  display: none !important;
-                }
-                html, body {
-                  width: 72mm;
-                  height: auto;
-                  margin: 0 auto;
-                  overflow: hidden;
-                }
+                @page { size: 72mm auto; margin: 0; }
+                body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+                header, footer, nav, .print-header, .print-footer { display: none !important; }
+                html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
               }
-              body {
-                font-family: 'Courier New', Courier, monospace;
-                width: 72mm;
-                margin: 0 auto;
-                padding: 0 5px;
-                font-size: 12px;
-                line-height: 1.2;
-                box-sizing: border-box;
-                text-align: center;
-              }
-              .receipt-header {
-                text-align: center;
-                margin-bottom: 5px;
-              }
-              .receipt-header h2 {
-                margin: 0;
-                font-size: 14px;
-                font-weight: bold;
-              }
-              .receipt-details {
-                margin-bottom: 5px;
-                text-align: left;
-              }
-              .receipt-details p {
-                margin: 2px 0;
-              }
-              .receipt-items {
-                width: 100%;
-                border-collapse: collapse;
-                margin-bottom: 5px;
-                margin-left: auto;
-                margin-right: auto;
-              }
-              .receipt-items th, .receipt-items td {
-                padding: 2px 0;
-                text-align: left;
-                font-size: 12px;
-              }
-              .receipt-items th {
-                border-bottom: 1px dashed #000;
-              }
-              .receipt-items .total-column {
-                text-align: right;
-              }
-              .receipt-footer {
-                text-align: center;
-                margin-top: 5px;
-              }
-              .receipt-footer p {
-                margin: 2px 0;
-              }
-              .divider {
-                border-top: 1px dashed #000;
-                margin: 5px 0;
-              }
-              .barcode-container {
-                text-align: center;
-                margin: 5px 0;
-              }
-              .barcode-container img {
-                width: 100%;
-                height: 30px;
-              }
+              body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+              .receipt-header { text-align: center; margin-bottom: 5px; }
+              .receipt-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+              .receipt-details { margin-bottom: 5px; text-align: left; }
+              .receipt-details p { margin: 2px 0; }
+              .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-left: auto; margin-right: auto; }
+              .receipt-items th, .receipt-items td { padding: 2px 0; font-weight: bold; text-align: left; font-size: 12px; }
+              .receipt-items th { border-bottom: 1px dashed #000; }
+              .receipt-items .total-column { text-align: right; }
+              .receipt-footer { text-align: center; margin-top: 5px; }
+              .receipt-footer p { margin: 2px 0; }
+              .divider { border-top: 1px dashed #000; margin: 5px 0; }
+              .barcode-container { text-align: center; margin: 5px 0; }
+              .barcode-container img { width: 100%; height: 30px; }
+              .spacing { height: 10px; }
             </style>
           </head>
           <body>
@@ -851,6 +765,8 @@ const Pos = () => {
               <h2>${shopName}</h2>
               <p>${branchName}</p>
               <p>Branch Code: ${branchCode}</p>
+              <p>Address: ${address}</p>
+              <p>Contact: ${contactNumber}</p>
             </div>
             <div class="receipt-details">
               <p>Date: ${formattedDate}</p>
@@ -872,13 +788,13 @@ const Pos = () => {
                 ${items
           .map(
             (item) => `
-                      <tr>
-                        <td>${item.qty}</td>
-                        <td>${item.name}</td>
-                        <td>${item.price.toFixed(2)}</td>
-                        <td class="total-column">${item.total.toFixed(2)}</td>
-                      </tr>
-                    `
+                  <tr>
+                    <td>${item.qty}</td>
+                    <td>${item.name}</td>
+                    <td>${item.price.toFixed(2)}</td>
+                    <td class="total-column">${item.total.toFixed(2)}</td>
+                  </tr>
+                `
           )
           .join("")}
               </tbody>
@@ -902,6 +818,7 @@ const Pos = () => {
             <div class="divider"></div>
             <div class="receipt-footer">
               <p>Thank You for Shopping with Us!</p>
+              <div class="spacing"></div>
               <p>Powered by Delta POS</p>
               <p>(deltapos.codearson@gmail.com)</p>
               <p>(0094762963979)</p>
@@ -916,7 +833,7 @@ const Pos = () => {
           </body>
         </html>
       `);
-
+  
       printWindow.document.close();
       printWindow.focus();
     } catch (error) {
@@ -954,7 +871,7 @@ const Pos = () => {
     }
 
     const suspendedTransaction = {
-      id: Date.now(), // Unique ID based on timestamp
+      id: Date.now(),
       items: selectedItems,
       totalValue,
       paymentMethods,
@@ -969,7 +886,6 @@ const Pos = () => {
     localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
     showNotification("Transaction suspended successfully.");
 
-    // Reset current transaction
     setSelectedItems([]);
     setTotalValue(0);
     setPaymentMethods([]);
@@ -980,6 +896,10 @@ const Pos = () => {
   };
 
   const handleRecallTransaction = () => {
+    if (selectedItems.length > 0) {
+      showNotification("Cannot recall a transaction while items are added. Please complete or void the current transaction.");
+      return;
+    }
     if (suspendedTransactions.length === 0) {
       showNotification("No suspended transactions available.");
       return;
@@ -989,7 +909,7 @@ const Pos = () => {
 
   const handleCloseSuspendedPopup = () => {
     setShowSuspendedTransactions(false);
-    setExpandedTransactionId(null); // Reset expanded state when closing
+    setExpandedTransactionId(null);
   };
 
   const handleRecallSelectedTransaction = (transaction) => {
@@ -1005,8 +925,18 @@ const Pos = () => {
     setSuspendedTransactions(updatedSuspendedTransactions);
     localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
     setShowSuspendedTransactions(false);
-    setExpandedTransactionId(null); // Reset expanded state
+    setExpandedTransactionId(null);
     showNotification("Transaction recalled successfully.");
+  };
+
+  const handleDeleteSuspendedTransaction = (id) => {
+    const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== id);
+    setSuspendedTransactions(updatedSuspendedTransactions);
+    localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
+    showNotification("Suspended transaction deleted successfully.");
+    if (updatedSuspendedTransactions.length === 0) {
+      setShowSuspendedTransactions(false);
+    }
   };
 
   const toggleTransactionDetails = (id) => {
@@ -1142,6 +1072,12 @@ const Pos = () => {
                           onClick={() => handleRecallSelectedTransaction(transaction)}
                         >
                           Recall
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={() => handleDeleteSuspendedTransaction(transaction.id)}
+                        >
+                          <i className="feather-trash-2" />
                         </button>
                       </div>
                       {expandedTransactionId === transaction.id && (

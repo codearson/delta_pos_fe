@@ -287,9 +287,8 @@ const AddProduct = () => {
 
   const handleProductNameChange = (e) => {
     const value = e.target.value;
-    if (/^[A-Za-z\s\-_.,&()]+$/.test(value) || value === '') {
       setProductName(value);
-    }
+      
   };
 
   const handleBarcodeChange = (e) => {
