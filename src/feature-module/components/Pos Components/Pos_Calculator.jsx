@@ -51,11 +51,9 @@ export const Pos_Calculator = ({
     .filter((method) => method.type === "Card")
     .reduce((sum, method) => sum + method.amount, 0);
 
-  // Updated displayItems logic to show both cash and card payments when isPaymentStarted is true
   const displayItems = isPaymentStarted
     ? [
         ...selectedItems,
-        // Add cash payment row if cashTotal > 0
         ...(cashTotal > 0
           ? [
               {
@@ -64,10 +62,10 @@ export const Pos_Calculator = ({
                 qty: 1,
                 price: cashTotal,
                 total: cashTotal,
+                type: "Cash",
               },
             ]
           : []),
-        // Add card payment rows if cardTotal > 0 (removed balance < 0 condition)
         ...(cardTotal > 0
           ? paymentMethods
               .filter((method) => method.type === "Card")
@@ -77,6 +75,7 @@ export const Pos_Calculator = ({
                 qty: 1,
                 price: method.amount,
                 total: method.amount,
+                type: "Card",
               }))
           : []),
       ]
