@@ -144,26 +144,3 @@ export const getStockByBarcode = async (barcode) => {
     return null;
   }
 };
-
-export const fetchBranches = async () => {
-  try {
-    const accessToken = localStorage.getItem("accessToken");
-
-    if (!accessToken) {
-      throw new Error("No access token found. Please log in.");
-    }
-
-    const response = await axios.get(`${BASE_BACKEND_URL}/branch/getAll`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    console.log('Branches response:', response.data);
-    return response.data.responseDto || [];
-  } catch (error) {
-    console.error("Error fetching branches:", error.response?.data || error.message);
-    throw error;
-  }
-};

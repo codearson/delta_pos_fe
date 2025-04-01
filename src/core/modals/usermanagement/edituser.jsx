@@ -4,7 +4,7 @@ import Select from 'react-select'
 import { updateUser, decodeJwt } from '../../../feature-module/Api/UserApi';
 import withReactContent from 'sweetalert2-react-content';
 import Swal from 'sweetalert2';
-import { fetchBranches } from '../../../feature-module/Api/StockApi'
+import { fetchBranches } from '../../../feature-module/Api/BranchApi'
 import { fetchUserRoles } from '../../../feature-module/Api/UserRoleApi'
 
 const EditUser = ({ user, onUpdate }) => {

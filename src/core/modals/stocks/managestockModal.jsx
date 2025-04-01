@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import PropTypes from 'prop-types';
 import { fetchProducts } from "../../../feature-module/Api/productApi";
-import { updateStock, saveStock, fetchBranches, fetchStocks } from "../../../feature-module/Api/StockApi";
+import { updateStock, saveStock, fetchStocks } from "../../../feature-module/Api/StockApi";
+import { fetchBranches } from "../../../feature-module/Api/BranchApi";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
