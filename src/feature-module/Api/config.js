@@ -1,7 +1,8 @@
-// config.js
 import axios from "axios";
 
 export const BASE_BACKEND_URL = "https://deltaposbe-production.up.railway.app";
+//export const BASE_BACKEND_URL = "http://localhost:8080";
+ 
 
 export const getAccessToken = async (username, password) => {
   try {
