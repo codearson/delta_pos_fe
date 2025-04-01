@@ -6,8 +6,9 @@ import ManageStockModal from "../../core/modals/stocks/managestockModal";
 import { Edit } from "feather-icons-react/build/IconComponents";
 import Swal from "sweetalert2";
 import Table from "../../core/pagination/datatable";
-import { fetchStocks, updateStockStatus, fetchBranches } from "../Api/StockApi";
+import { fetchStocks, updateStockStatus } from "../Api/StockApi";
 import { fetchProducts } from "../Api/productApi";
+import { fetchBranches } from "../Api/BranchApi";
 import "../../style/scss/pages/_categorylist.scss";
 
 const Managestock = () => {

@@ -19,7 +19,7 @@ import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from "xlsx";
 import "../../style/scss/pages/_categorylist.scss";
-import { fetchBranches } from '../Api/StockApi';
+import { fetchBranches } from '../Api/BranchApi';
 
 const Users = () => {
     const [userData, setUserData] = useState({ payload: [], totalRecords: 0 });

@@ -13,7 +13,7 @@ import NotificationPopup from "../components/Pos Components/NotificationPopup";
 import { getProductByBarcode } from "../Api/productApi";
 import { saveTransaction } from "../Api/TransactionApi";
 import { fetchCustomers } from "../Api/customerApi";
-import { fetchBranches } from "../Api/StockApi";
+import { fetchBranches } from "../Api/BranchApi";
 import { fetchUsers } from "../Api/UserApi";
 import Barcode from "react-barcode";
 import html2canvas from "html2canvas";

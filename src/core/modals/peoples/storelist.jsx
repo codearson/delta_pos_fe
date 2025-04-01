@@ -6,7 +6,7 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import Breadcrumbs from "../../breadcrumbs";
 import BranchModal from "./branchModal";
-import { fetchBranches } from "../../../feature-module/Api/StockApi";
+import { fetchBranches } from "../../../feature-module/Api/BranchApi";
 import { saveBranch, updateBranch, updateBranchStatus } from "../../../feature-module/Api/BranchApi";
 
 const StoreList = () => {

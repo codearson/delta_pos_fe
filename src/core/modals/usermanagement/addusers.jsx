@@ -7,7 +7,7 @@ import { saveUser } from '../../../feature-module/Api/UserApi'
 import withReactContent from 'sweetalert2-react-content'
 import Swal from 'sweetalert2'
 import PropTypes from 'prop-types'
-import { fetchBranches } from '../../../feature-module/Api/StockApi'
+import { fetchBranches } from '../../../feature-module/Api/BranchApi'
 import { decodeJwt } from '../../../feature-module/Api/UserApi'
 
 const AddUsers = ({ onUpdate }) => {
