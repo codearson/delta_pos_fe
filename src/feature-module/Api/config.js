@@ -2,6 +2,7 @@ import axios from "axios";
 
 export const BASE_BACKEND_URL = "https://deltaposbe-production.up.railway.app";
 //export const BASE_BACKEND_URL = "http://localhost:8080";
+ 
 
 export const getAccessToken = async (username, password) => {
   try {
@@ -48,7 +49,12 @@ export const getUserByEmail = async (email) => {
   );
 
   if (response.data.responseDto?.length > 0) {
-    return response.data.responseDto[0];
+    const user = response.data.responseDto[0];
+    // Assuming the branchDto contains countryDto with priceSymbol
+    if (user.branchDto?.countryDto?.priceSymbol) {
+      localStorage.setItem("priceSymbol", user.branchDto.countryDto.priceSymbol);
+    }
+    return user;
   }
   return null;
 };

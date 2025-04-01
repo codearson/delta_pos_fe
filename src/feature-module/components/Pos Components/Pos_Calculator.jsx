@@ -1,3 +1,4 @@
+// Pos_Calculator.js
 import React, { useEffect } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
@@ -18,6 +19,8 @@ export const Pos_Calculator = ({
   onRowSelect,
   isPaymentStarted,
 }) => {
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$"; // Default to $ if not found
+
   const handleBarcodeChange = (e) => {
     const value = e.target.value.trim();
     setBarcodeInput(value);
@@ -122,8 +125,8 @@ export const Pos_Calculator = ({
                 >
                   <span className="qty-column">{item.qty}</span>
                   <span className="item-column">{item.name}</span>
-                  <span className="price-column">{item.price.toFixed(2)}</span>
-                  <span className="total-column">{item.total.toFixed(2)}</span>
+                  <span className="price-column">{priceSymbol}{item.price.toFixed(2)}</span>
+                  <span className="total-column">{priceSymbol}{item.total.toFixed(2)}</span>
                 </div>
               ))}
           </div>
@@ -143,31 +146,31 @@ export const Pos_Calculator = ({
         </div>
         <div className="summary-item">
           <span className="label">Cash Back</span>
-          <span className="value">0.00</span>
+          <span className="value">{priceSymbol}0.00</span>
         </div>
         <div className="summary-item">
           <span className="label">Discount</span>
-          <span className="value">0.00</span>
+          <span className="value">{priceSymbol}0.00</span>
         </div>
         <div className="summary-item">
           <span className="label">Balance</span>
-          <span className="value">{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
+          <span className="value">{priceSymbol}{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
         </div>
         <div className="divider" />
         <div className="total-summary">
           <span className="label">Grand Total</span>
-          <span className="value">{totalValue.toFixed(2)}</span>
+          <span className="value">{priceSymbol}{totalValue.toFixed(2)}</span>
         </div>
         {cashTotal > 0 && (
           <div className="summary-item">
             <span className="label">Cash</span>
-            <span className="value">{cashTotal.toFixed(2)}</span>
+            <span className="value">{priceSymbol}{cashTotal.toFixed(2)}</span>
           </div>
         )}
         {cardTotal > 0 && (
           <div className="summary-item">
             <span className="label">Card</span>
-            <span className="value">{cardTotal.toFixed(2)}</span>
+            <span className="value">{priceSymbol}{cardTotal.toFixed(2)}</span>
           </div>
         )}
       </div>
