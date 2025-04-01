@@ -3,6 +3,8 @@ import Breadcrumbs from "../../core/breadcrumbs";
 import { Link } from "react-router-dom";
 import { Eye } from "react-feather";
 import { fetchTransactions } from "../Api/TransactionApi";
+import { fetchBranches } from "../Api/BranchApi";
+import { fetchUsers } from "../Api/UserApi";
 import { Modal, Button } from "react-bootstrap";
 import Select from "react-select";
 import "../../style/scss/pages/_invoicereport.scss";
@@ -18,6 +20,35 @@ const Invoicereport = () => {
   const [selectedUser, setSelectedUser] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
+  const [branchOptions, setBranchOptions] = useState([]);
+  const [userOptions, setUserOptions] = useState([]);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        // Load branches
+        const branchesResponse = await fetchBranches();
+        const branches = branchesResponse.map(branch => ({
+          value: branch.branchName,
+          label: branch.branchName
+        }));
+        setBranchOptions(branches);
+
+        // Load users
+        const usersResponse = await fetchUsers(1, 100); // Assuming we want to load all users
+        const users = usersResponse.payload.map(user => ({
+          value: user.firstName,
+          label: `${user.firstName} ${user.lastName || ''}`
+        }));
+        setUserOptions(users);
+
+      } catch (error) {
+        console.error("Error loading dropdown data:", error);
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   useEffect(() => {
     const loadTransactions = async () => {
@@ -42,16 +73,6 @@ const Invoicereport = () => {
   useEffect(() => {
     handleFilter();
   }, [selectedBranch, selectedUser, searchTerm]);
-
-  const getBranchOptions = () => {
-    const uniqueBranches = [...new Set(transactions.map(t => t.branchDto?.branchName).filter(Boolean))];
-    return uniqueBranches.sort();
-  };
-
-  const getUserOptions = () => {
-    const uniqueUsers = [...new Set(transactions.map(t => t.userDto?.firstName).filter(Boolean))];
-    return uniqueUsers.sort();
-  };
 
   const formatTransactionId = (id) => {
     return id ? String(id).padStart(10, '0') : "N/A";
@@ -339,7 +360,7 @@ const Invoicereport = () => {
                   <div style={{ width: '200px' }}>
                     <Select
                       className="select"
-                      options={getBranchOptions().map(branch => ({ value: branch, label: branch }))}
+                      options={branchOptions}
                       placeholder="Select Branch"
                       value={selectedBranch ? { value: selectedBranch, label: selectedBranch } : null}
                       onChange={(selected) => setSelectedBranch(selected ? selected.value : "")}
@@ -349,7 +370,7 @@ const Invoicereport = () => {
                   <div style={{ width: '200px' }}>
                     <Select
                       className="select"
-                      options={getUserOptions().map(user => ({ value: user, label: user }))}
+                      options={userOptions}
                       placeholder="Select User"
                       value={selectedUser ? { value: selectedUser, label: selectedUser } : null}
                       onChange={(selected) => setSelectedUser(selected ? selected.value : "")}
