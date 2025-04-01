@@ -17,6 +17,7 @@ import Swal from 'sweetalert2';
 
 const PAGE_SIZE = 14; // Items per page (excluding the "More"/"Prev" button slot)
 const SALES_PAGE_SIZE = 10;
+const MAX_PAGES = 5; // For first 50 transactions (5 pages * 10 items)
 
 const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) => {
   const [pageIndex, setPageIndex] = useState(0);
@@ -118,9 +119,10 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     if (showSalesListPopup) {
       const loadTransactions = async () => {
         try {
-          const data = await fetchTransactions();
-          const last50Transactions = [...data].reverse().slice(0, 50);
-          setTransactions(last50Transactions);
+          // Fetch transactions for the current page (page numbers are 1-based)
+          const pageNumber = salesPageIndex + 1;
+          const data = await fetchTransactions(pageNumber, SALES_PAGE_SIZE);
+          setTransactions(data.content || []);
         } catch (error) {
           console.error("Error fetching transactions:", error);
           setTransactions([]);
@@ -128,7 +130,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
       };
       loadTransactions();
     }
-  }, [showSalesListPopup]);
+  }, [showSalesListPopup, salesPageIndex]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -899,10 +901,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     }, 500);
   };
 
-  const salesStart = salesPageIndex * SALES_PAGE_SIZE;
-  const salesEnd = salesStart + SALES_PAGE_SIZE;
-  const paginatedTransactions = transactions.slice(salesStart, salesEnd);
-  const totalSalesPages = Math.ceil(transactions.length / SALES_PAGE_SIZE);
+  const totalSalesPages = MAX_PAGES;
 
   return (
     <div className="pos-category-grid-container">
@@ -1045,7 +1044,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedTransactions.map((transaction, index) => (
+                      {transactions.map((transaction, index) => (
                         <React.Fragment key={transaction.id}>
                           <tr className={index % 2 === 0 ? "even-row" : "odd-row"}>
                             <td>{String(transaction.id).padStart(10, "0")}</td>
@@ -1190,7 +1189,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                       </span>
                       <button
                         onClick={() => setSalesPageIndex(salesPageIndex + 1)}
-                        disabled={salesPageIndex === totalSalesPages - 1}
+                        disabled={salesPageIndex === totalSalesPages - 1 || transactions.length < SALES_PAGE_SIZE}
                         className="pagination-btn"
                       >
                         Next
@@ -1225,7 +1224,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             style={{
               maxWidth: '1200px',
               maxHeight: '80vh',
-              overflow搭建: 'auto'
+              overflow: 'auto'
             }}
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
