@@ -49,13 +49,6 @@ const EditUser = ({ user, onUpdate }) => {
                 label: role.userRole
             }));
             setRoleOptions(formattedRoles);
-            
-            if (isManager) {
-                const userRole = formattedRoles.find(role => role.label === "USER");
-                if (userRole) {
-                    setSelectedRole(userRole);
-                }
-            }
         } catch (error) {
             console.error('Error loading user roles:', error);
         }
@@ -301,22 +294,6 @@ const EditUser = ({ user, onUpdate }) => {
         setErrors({});
     };
 
-    useEffect(() => {
-        if (isManager && roleOptions.length > 0) {
-            const userRole = roleOptions.find(role => role.label === "USER");
-            if (userRole) {
-                setSelectedRole(userRole);
-                setFormData(prev => ({
-                    ...prev,
-                    userRoleDto: {
-                        id: userRole.value,
-                        userRole: userRole.label
-                    }
-                }));
-            }
-        }
-    }, [isManager, roleOptions]);
-
     return (
         <div>
             <div className="modal fade" id="edit-units">
@@ -416,7 +393,6 @@ const EditUser = ({ user, onUpdate }) => {
                                                         onChange={handleRoleChange}
                                                         placeholder="Choose Role"
                                                         isSearchable={true}
-                                                        isDisabled={isManager}
                                                     />
                                                     {errors.role && <span className="error-message text-danger">{errors.role}</span>}
                                                 </div>

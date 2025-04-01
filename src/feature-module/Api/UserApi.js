@@ -30,7 +30,7 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
 
         if (userRole === "ROLE_MANAGER") {
             userData = userData.filter(user => 
-                user.userRoleDto?.userRole === "USER"
+                user.userRoleDto?.userRole === "USER" || user.userRoleDto?.userRole === "MANAGER"
             );
             totalCount = userData.length;
         }
