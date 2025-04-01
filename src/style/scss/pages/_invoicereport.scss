@@ -1,5 +1,7 @@
 .page-wrapper .invoice-report {
   .table-list-card {
+    position: relative;
+    
     .custom-table {
       width: 100%;
       margin-bottom: 1rem;
@@ -68,6 +70,8 @@
 
   .search-set {
     margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
 
     .search-path {
       .search-input {
@@ -83,6 +87,24 @@
           right: 10px;
           top: 50%;
           transform: translateY(-50%);
+        }
+      }
+
+      .select {
+        position: relative;
+        z-index: 3;
+
+        &__menu {
+          z-index: 4;
+        }
+
+        &__control {
+          min-height: 38px;
+          border-color: #dee2e6;
+        }
+
+        &__value-container {
+          padding: 2px 8px;
         }
       }
     }
