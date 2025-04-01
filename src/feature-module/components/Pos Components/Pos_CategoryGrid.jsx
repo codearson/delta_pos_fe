@@ -192,6 +192,75 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     );
   }
 
+  const getUserRole = () => {
+    const userRole = localStorage.getItem("userRole");
+    return userRole || "USER";
+  };
+
+  const handleZReportClick = async (item) => {
+    if (item.isZReport) {
+      try {
+        const userRole = getUserRole();
+        
+        const result = await Swal.fire({
+          title: 'Generate Z-Report?',
+          text: 'Are you sure you want to generate a Z-Report?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, generate it!',
+          cancelButtonText: 'No, cancel!'
+        });
+
+        if (result.isConfirmed) {
+          const xReportResponse = await fetchXReport();
+          if (!xReportResponse.success || !xReportResponse.data) {
+            Swal.fire({
+              icon: 'warning',
+              title: 'X-Report Required',
+              text: 'Please generate an X-Report before getting Z-Report',
+              confirmButtonColor: '#3085d6',
+            });
+            return;
+          }
+
+          const response = await fetchZReport();
+          if (response.success && response.data && response.data.responseDto) {
+            setZReportData(response.data);
+            
+            if (userRole === "USER") {
+              await Swal.fire({
+                icon: 'success',
+                title: 'Z-Report Generated Successfully',
+                text: 'The Z-Report has been generated.',
+                confirmButtonColor: '#3085d6',
+              });
+            } else if (userRole === "ADMIN" || userRole === "MANAGER") {
+              setShowZReportPopup(true);
+            }
+          } else {
+            Swal.fire({
+              icon: 'info',
+              title: 'No New Transactions',
+              text: 'Already got the Z-Report for current session',
+              confirmButtonColor: '#3085d6',
+            });
+            console.error("Failed to fetch Z-Report:", response.error);
+          }
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to generate Z-Report. Please try again.',
+          confirmButtonColor: '#3085d6',
+        });
+        console.error("Error fetching Z-Report:", error);
+      }
+    }
+  };
+
   const renderCategoryButton = (item) => {
     const handleClick = async () => {
       if (item.isPrev) {
@@ -208,18 +277,31 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
         setShowSalesListPopup(true);
       } else if (item.isXReport) {
         try {
-          const response = await fetchXReport();
-          if (response.success && response.data && response.data.responseDto) {
-            setXReportData(response.data);
-            setShowXReportPopup(true);
-          } else {
-            Swal.fire({
-              icon: 'info',
-              title: 'No Transaction Data',
-              text: 'Please make some transactions before getting X-Report',
-              confirmButtonColor: '#3085d6',
-            });
-            console.error("Failed to fetch X-Report:", response.error);
+          const result = await Swal.fire({
+            title: 'Generate X-Report?',
+            text: 'Are you sure you want to generate an X-Report?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, generate it!',
+            cancelButtonText: 'No, cancel!'
+          });
+
+          if (result.isConfirmed) {
+            const response = await fetchXReport();
+            if (response.success && response.data && response.data.responseDto) {
+              setXReportData(response.data);
+              setShowXReportPopup(true);
+            } else {
+              Swal.fire({
+                icon: 'info',
+                title: 'No New Transactions',
+                text: 'Already got the X-Report for current session',
+                confirmButtonColor: '#3085d6',
+              });
+              console.error("Failed to fetch X-Report:", response.error);
+            }
           }
         } catch (error) {
           Swal.fire({
@@ -231,40 +313,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           console.error("Error fetching X-Report:", error);
         }
       } else if (item.isZReport) {
-        try {
-          const xReportResponse = await fetchXReport();
-          if (!xReportResponse.success || !xReportResponse.data) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'X-Report Required',
-              text: 'Please generate an X-Report before getting Z-Report',
-              confirmButtonColor: '#3085d6',
-            });
-            return;
-          }
-
-          const response = await fetchZReport();
-          if (response.success && response.data && response.data.responseDto) {
-            setZReportData(response.data);
-            setShowZReportPopup(true);
-          } else {
-            Swal.fire({
-              icon: 'info',
-              title: 'No Transaction Data',
-              text: 'Please make some transactions before getting Z-Report',
-              confirmButtonColor: '#3085d6',
-            });
-            console.error("Failed to fetch Z-Report:", response.error);
-          }
-        } catch (error) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Failed to generate Z-Report. Please try again.',
-            confirmButtonColor: '#3085d6',
-          });
-          console.error("Error fetching Z-Report:", error);
-        }
+        await handleZReportClick(item);
       } else {
         onCategorySelect(item);
       }
@@ -1230,9 +1279,20 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h2 className="purchase-popup-title">X Report Details</h2>
-              <button className="btn btn-added" onClick={handlePrintXReport}>
-                <Printer className="me-2" /> Print
-              </button>
+              <div className="d-flex gap-2">
+                <button className="btn btn-added" onClick={handlePrintXReport}>
+                  <Printer className="me-2" /> Print
+                </button>
+                <button
+                  onClick={() => {
+                    setShowXReportPopup(false);
+                    setXReportData(null);
+                  }}
+                  className="btn btn-danger"
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
             <div className="card">
@@ -1333,18 +1393,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                 </div>
               </div>
             </div>
-
-            <div className="purchase-popup-actions">
-              <button
-                onClick={() => {
-                  setShowXReportPopup(false);
-                  setXReportData(null);
-                }}
-                className="purchase-popup-button cancel"
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -1363,9 +1411,20 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           >
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h2 className="purchase-popup-title">Z Report Details</h2>
-              <button className="btn btn-added" onClick={handlePrintZReport}>
-                <Printer className="me-2" /> Print
-              </button>
+              <div className="d-flex gap-2">
+                <button className="btn btn-added" onClick={handlePrintZReport}>
+                  <Printer className="me-2" /> Print
+                </button>
+                <button
+                  onClick={() => {
+                    setShowZReportPopup(false);
+                    setZReportData(null);
+                  }}
+                  className="btn btn-danger"
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
             <div className="card">
@@ -1453,15 +1512,15 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                               </tr>
                             </thead>
                             <tbody>
-                              ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
-                                Object.entries(payments).map(([method, amount]) => `
-                                  <tr>
-                                    <td>${userName.split(' ')[0]}</td>
-                                    <td>${method}</td>
-                                    <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
+                                Object.entries(payments).map(([method, amount]) => (
+                                  <tr key={`${userName}-${method}`}>
+                                    <td style={{ padding: '12px 15px' }}>{userName.split(' ')[0]}</td>
+                                    <td style={{ padding: '12px 15px' }}>{method}</td>
+                                    <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
                                   </tr>
-                                `).join('')
-                              ).join('')}
+                                ))
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -1470,18 +1529,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="purchase-popup-actions">
-              <button
-                onClick={() => {
-                  setShowZReportPopup(false);
-                  setZReportData(null);
-                }}
-                className="purchase-popup-button cancel"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
