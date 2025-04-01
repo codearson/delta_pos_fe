@@ -343,6 +343,7 @@ const Users = () => {
             dataIndex: "isActive",
             render: (isActive, record) => {
                 const isAdmin = record.userRoleDto?.userRole === "ADMIN";
+                const isManager = record.userRoleDto?.userRole === "MANAGER";
                 return (
                     <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
                         <input
@@ -350,7 +351,7 @@ const Users = () => {
                             type="checkbox"
                             checked={isActive}
                             onChange={() => handleToggleStatus(record.id, isActive)}
-                            disabled={togglingId === record.id || isAdmin}
+                            disabled={togglingId === record.id || isAdmin || isManager}
                         />
                     </div>
                 );
