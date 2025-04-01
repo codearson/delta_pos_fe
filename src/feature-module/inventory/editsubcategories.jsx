@@ -127,7 +127,7 @@ const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
                                         <div className="mb-3">
                                             <label className="form-label">Tax Percentage</label>
                                             <input
-                                                type="number"
+                                                type="text"
                                                 className={`form-control ${validationError ? 'is-invalid' : ''}`}
                                                 value={taxPercentage}
                                                 onChange={(e) => {
@@ -141,8 +141,6 @@ const EditSubcategories = ({ selectedTax, onTaxUpdated }) => {
                                                         }
                                                     }
                                                 }}
-                                                min="0"
-                                                max="100"
                                             />
                                             {validationError && (
                                                 <div className="invalid-feedback">

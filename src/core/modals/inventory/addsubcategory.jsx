@@ -32,7 +32,7 @@ const AddSubcategory = ({ onTaxCreated }) => {
         }
 
         try {
-            // Check for existing tax
+            // Check for duplicate tax
             const existingTax = await getTaxByName(taxPercentage);
             if (existingTax && existingTax.responseDto) {
                 Swal.fire({
@@ -47,7 +47,8 @@ const AddSubcategory = ({ onTaxCreated }) => {
                 return;
             }
 
-            const response = await saveTax(taxPercentage);
+            // Save the exact decimal value as a string to preserve precision
+            const response = await saveTax(taxPercentage.toString());
             if (response) {
                 Swal.fire({
                     title: 'Success',
@@ -123,7 +124,7 @@ const AddSubcategory = ({ onTaxCreated }) => {
                                         <div className="mb-3">
                                             <label className="form-label">Tax Percentage</label>
                                             <input 
-                                                type="number" 
+                                                type="text" 
                                                 className={`form-control ${showError ? 'is-invalid' : ''}`}
                                                 value={taxPercentage}
                                                 onChange={(e) => {
@@ -132,13 +133,13 @@ const AddSubcategory = ({ onTaxCreated }) => {
                                                         setTaxPercentage(value);
                                                         if (value !== '' && parseFloat(value) < 0) {
                                                             setShowError('Negative numbers are not allowed');
+                                                        } else if (value !== '' && parseFloat(value) > 100) {
+                                                            setShowError('Tax percentage must be between 0 and 100');
                                                         } else {
                                                             setShowError(false);
                                                         }
                                                     }
                                                 }}
-                                                min="0"
-                                                max="100"
                                             />
                                             {showError && (
                                                 <div className="invalid-feedback">
