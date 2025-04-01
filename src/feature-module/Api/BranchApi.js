@@ -23,8 +23,7 @@ export const fetchBranches = async () => {
       throw error;
     }
   };
-
-
+ 
 // Save Branch API
 export const saveBranch = async (branchData) => {
     const accessToken = localStorage.getItem("accessToken");

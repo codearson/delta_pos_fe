@@ -63,8 +63,7 @@ export const fetchZReport = async () => {
       return { success: false, error: "No access token" };
     }
 
-    // Get userId from localStorage or your auth state management
-    const userId = localStorage.getItem("userId"); // Adjust this based on where you store the userId
+    const userId = localStorage.getItem("userId");
     
     const response = await axios.get(`${BASE_BACKEND_URL}/transaction/zReport`, {
       params: { userId },
@@ -86,8 +85,7 @@ export const fetchXReport = async () => {
       return { success: false, error: "No access token" };
     }
 
-    // Get userId from localStorage or your auth state management
-    const userId = localStorage.getItem("userId"); // Adjust this based on where you store the userId
+    const userId = localStorage.getItem("userId");
 
     const response = await axios.get(`${BASE_BACKEND_URL}/transaction/xReport`, {
       params: { userId },
