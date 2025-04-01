@@ -42,14 +42,28 @@ const StoreList = () => {
         setIsLoading(true);
       }
       const branches = await fetchBranches();
-      if (Array.isArray(branches)) {
-        const normalizedData = branches.map(branch => ({
-          ...branch,
-          isActive: branch.isActive === 1 || branch.isActive === true
-        }));
+      console.log("Raw API response:", branches); // Debug the API response
+
+      if (Array.isArray(branches) && branches.length > 0) {
+        const normalizedData = branches.map(branch => {
+          console.log("Processing branch:", branch); // Debug each branch object
+          return {
+            branchCode: branch.branch_code || branch.branchCode || '',
+            branchName: branch.branch_name || branch.branchName || '',
+            address: branch.address || branch.Address || '',
+            contactNumber: branch.contact_number || branch.contactNumber || '',
+            emailAddress: branch.email_address || branch.emailAddress || '',
+            countryId: branch.country_id || branch.countryId || '',
+            shopDetailsId: branch.shop_details_id || branch.shopDetailsId || '',
+            isActive: branch.is_active === 1 || branch.isActive === true || branch.is_active === true,
+            id: branch.id || branch.ID || '', // Ensure the ID is included for rowKey
+          };
+        });
+        console.log("Normalized data:", normalizedData); // Debug the normalized data
         setBranchData(normalizedData);
         filterData(normalizedData, searchTerm);
       } else {
+        console.log("No branches found or invalid response:", branches);
         setBranchData([]);
         setFilteredBranches([]);
         Swal.fire({
@@ -60,6 +74,7 @@ const StoreList = () => {
         });
       }
     } catch (error) {
+      console.error("Error fetching branches:", error);
       Swal.fire({
         title: 'Error',
         text: 'Failed to load branches: ' + error.message,
@@ -75,6 +90,7 @@ const StoreList = () => {
 
   const filterData = (branchesData, query) => {
     let filtered = [...branchesData];
+    console.log("Filtering data with query:", query, "showActive:", showActive);
 
     if (query.trim() !== "") {
       filtered = filtered.filter(branch =>
@@ -88,6 +104,7 @@ const StoreList = () => {
       filtered = filtered.filter(branch => branch.isActive === showActive);
     }
 
+    console.log("Filtered data:", filtered);
     setFilteredBranches(filtered.reverse());
   };
 
@@ -137,29 +154,34 @@ const StoreList = () => {
 
   const columns = [
     {
-      title: "Branch Name",
-      dataIndex: "branchName",
-      sorter: (a, b) => a.branchName.length - b.branchName.length,
-    },
-    {
       title: "Branch Code",
       dataIndex: "branchCode",
-      sorter: (a, b) => a.branchCode.length - b.branchCode.length,
+      sorter: (a, b) => (a.branchCode || '').length - (b.branchCode || '').length,
     },
     {
       title: "Address",
       dataIndex: "address",
-      sorter: (a, b) => a.address.length - b.address.length,
+      sorter: (a, b) => (a.address || '').length - (b.address || '').length,
     },
     {
       title: "Contact Number",
       dataIndex: "contactNumber",
-      sorter: (a, b) => a.contactNumber.length - b.contactNumber.length,
+      sorter: (a, b) => (a.contactNumber || '').length - (b.contactNumber || '').length,
     },
     {
       title: "Email Address",
       dataIndex: "emailAddress",
-      sorter: (a, b) => a.emailAddress.length - b.emailAddress.length,
+      sorter: (a, b) => (a.emailAddress || '').length - (b.emailAddress || '').length,
+    },
+    {
+      title: "Country ID",
+      dataIndex: "countryId",
+      sorter: (a, b) => (a.countryId || 0) - (b.countryId || 0),
+    },
+    {
+      title: "Shop Details ID",
+      dataIndex: "shopDetailsId",
+      sorter: (a, b) => (a.shopDetailsId || 0) - (b.shopDetailsId || 0),
     },
     {
       title: "Status",
@@ -198,77 +220,25 @@ const StoreList = () => {
     },
   ];
 
-  const handleSaveBranch = async (branchData) => {
-    try {
-      const saveData = {
-        ...branchData,
-        isActive: 1
-      };
-
-      await saveBranch(saveData);
-      await loadBranches(false);
-
-      Swal.fire({
-        title: 'Success',
-        text: 'Branch saved successfully',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      });
-    } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || "Failed to save branch",
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
-    }
-  };
-
-  const handleUpdateBranch = async (branchData) => {
-    try {
-      const updateData = {
-        ...branchData,
-        id: selectedBranch.id,
-        isActive: selectedBranch.isActive // Preserve the current status
-      };
-
-      await updateBranch(updateData);
-      await loadBranches(false);
-      setSelectedBranch(null);
-
-      Swal.fire({
-        title: 'Success',
-        text: 'Branch updated successfully',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      });
-    } catch (error) {
-      Swal.fire({
-        title: 'Error',
-        text: error.response?.data?.message || "Failed to update branch",
-        icon: 'error',
-        confirmButtonText: 'OK'
-      });
-    }
-  };
-
   const handleDownloadPDF = () => {
     return filteredBranches.map(branch => ({
-      'Branch Name': branch.branchName,
-      'Branch Code': branch.branchCode,
-      'Address': branch.address,
-      'Contact Number': branch.contactNumber,
-      'Email Address': branch.emailAddress
+      'Branch Code': branch.branchCode || '',
+      'Address': branch.address || '',
+      'Contact Number': branch.contactNumber || '',
+      'Email Address': branch.emailAddress || '',
+      'Country ID': branch.countryId || '',
+      'Shop Details ID': branch.shopDetailsId || '',
     }));
   };
 
   const handleDownloadExcel = () => {
     return filteredBranches.map(branch => ({
-      'Branch Name': branch.branchName,
-      'Branch Code': branch.branchCode,
-      'Address': branch.address,
-      'Contact Number': branch.contactNumber,
-      'Email Address': branch.emailAddress
+      'Branch Code': branch.branchCode || '',
+      'Address': branch.address || '',
+      'Contact Number': branch.contactNumber || '',
+      'Email Address': branch.emailAddress || '',
+      'Country ID': branch.countryId || '',
+      'Shop Details ID': branch.shopDetailsId || '',
     }));
   };
 
@@ -284,7 +254,7 @@ const StoreList = () => {
   if (isLoading) {
     return (
       <div className="page-wrapper">
-        {/* You can add a loading spinner or message here if desired */}
+        <div>Loading...</div>
       </div>
     );
   }
@@ -356,8 +326,50 @@ const StoreList = () => {
         </div>
       </div>
       <BranchModal
-        onSave={handleSaveBranch}
-        onUpdate={handleUpdateBranch}
+        onSave={async (branchData) => {
+          try {
+            await saveBranch(branchData);
+            await loadBranches(false);
+            Swal.fire({
+              title: 'Success',
+              text: 'Branch saved successfully',
+              icon: 'success',
+              confirmButtonText: 'OK'
+            });
+          } catch (error) {
+            Swal.fire({
+              title: 'Error',
+              text: error.response?.data?.message || "Failed to save branch",
+              icon: 'error',
+              confirmButtonText: 'OK'
+            });
+          }
+        }}
+        onUpdate={async (branchData) => {
+          try {
+            const updateData = {
+              ...branchData,
+              id: selectedBranch.id,
+              is_active: selectedBranch.isActive, // Use snake_case for API
+            };
+            await updateBranch(updateData);
+            await loadBranches(false);
+            setSelectedBranch(null);
+            Swal.fire({
+              title: 'Success',
+              text: 'Branch updated successfully',
+              icon: 'success',
+              confirmButtonText: 'OK'
+            });
+          } catch (error) {
+            Swal.fire({
+              title: 'Error',
+              text: error.response?.data?.message || "Failed to update branch",
+              icon: 'error',
+              confirmButtonText: 'OK'
+            });
+          }
+        }}
         selectedBranch={selectedBranch}
       />
     </div>

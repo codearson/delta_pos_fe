@@ -8,13 +8,23 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
     address: '',
     contactNumber: '',
     emailAddress: '',
+    countryId: '',
+    shopDetailsId: '',
   });
 
   const [emailError, setEmailError] = useState('');
 
   useEffect(() => {
     if (selectedBranch) {
-      setFormData(selectedBranch);
+      setFormData({
+        branchName: selectedBranch.branchName || '',
+        branchCode: selectedBranch.branchCode || '',
+        address: selectedBranch.address || '',
+        contactNumber: selectedBranch.contactNumber || '',
+        emailAddress: selectedBranch.emailAddress || '',
+        countryId: selectedBranch.countryId || '',
+        shopDetailsId: selectedBranch.shopDetailsId || '',
+      });
     } else {
       setFormData({
         branchName: '',
@@ -22,6 +32,8 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
         address: '',
         contactNumber: '',
         emailAddress: '',
+        countryId: '',
+        shopDetailsId: '',
       });
     }
     setEmailError('');
@@ -29,7 +41,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     if (name === 'contactNumber') {
       const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
       setFormData(prev => ({
@@ -41,7 +53,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
         ...prev,
         [name]: value
       }));
-      
+
       // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (value && !emailRegex.test(value)) {
@@ -49,6 +61,13 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
       } else {
         setEmailError('');
       }
+    } else if (name === 'countryId' || name === 'shopDetailsId') {
+      // Ensure only numeric values for countryId and shopDetailsId
+      const numericValue = value.replace(/\D/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -59,24 +78,48 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate contact number
     if (!formData.contactNumber.match(/^\d{10}$/)) {
       return;
     }
-    
-    if (selectedBranch) {
-      onUpdate(formData);
-    } else {
-      onSave(formData);
+
+    // Validate email
+    if (emailError) {
+      return;
     }
-    
+
+    // Validate countryId and shopDetailsId (ensure they are not empty)
+    if (!formData.countryId || !formData.shopDetailsId) {
+      alert('Country ID and Shop Details ID are required.');
+      return;
+    }
+
+    // Prepare the data to match the API's expected snake_case keys
+    const submitData = {
+      branch_name: formData.branchName,
+      branch_code: formData.branchCode,
+      address: formData.address,
+      contact_number: formData.contactNumber,
+      email_address: formData.emailAddress,
+      country_id: formData.countryId,
+      shop_details_id: formData.shopDetailsId,
+    };
+
+    if (selectedBranch) {
+      onUpdate(submitData);
+    } else {
+      onSave(submitData);
+    }
+
     setFormData({
       branchName: '',
       branchCode: '',
       address: '',
       contactNumber: '',
       emailAddress: '',
+      countryId: '',
+      shopDetailsId: '',
     });
     setEmailError('');
   };
@@ -106,6 +149,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter branch name"
+                        required
                       />
                     </div>
                   </div>
@@ -119,6 +163,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter branch code"
+                        required
                       />
                     </div>
                   </div>
@@ -132,6 +177,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter address"
+                        required
                       />
                     </div>
                   </div>
@@ -162,12 +208,41 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter email address"
+                        required
                       />
                       {emailError && (
                         <div className="text-danger" style={{ fontSize: '0.875em', marginTop: '0.25rem' }}>
                           {emailError}
                         </div>
                       )}
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Country ID <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="countryId"
+                        value={formData.countryId}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter country ID"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Shop Details ID <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="shopDetailsId"
+                        value={formData.shopDetailsId}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter shop details ID"
+                        required
+                      />
                     </div>
                   </div>
                 </div>
@@ -204,6 +279,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter branch name"
+                        required
                       />
                     </div>
                   </div>
@@ -217,6 +293,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter branch code"
+                        required
                       />
                     </div>
                   </div>
@@ -230,6 +307,7 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter address"
+                        required
                       />
                     </div>
                   </div>
@@ -260,12 +338,41 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
                         onChange={handleInputChange}
                         className="form-control"
                         placeholder="Enter email address"
+                        required
                       />
                       {emailError && (
                         <div className="text-danger" style={{ fontSize: '0.875em', marginTop: '0.25rem' }}>
                           {emailError}
                         </div>
                       )}
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Country ID <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="countryId"
+                        value={formData.countryId}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter country ID"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-12">
+                    <div className="input-blocks">
+                      <label>Shop Details ID <span className="text-danger">*</span></label>
+                      <input
+                        type="text"
+                        name="shopDetailsId"
+                        value={formData.shopDetailsId}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        placeholder="Enter shop details ID"
+                        required
+                      />
                     </div>
                   </div>
                 </div>
