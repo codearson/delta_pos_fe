@@ -231,11 +231,17 @@ $light-text: #000000;
   h2 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
+    .dark-mode & {
+      color: $dark-text;
+    }
   }
 
   p {
     font-size: 1rem;
     margin: 0.25rem 0;
+    .dark-mode & {
+      color: $dark-text; // Ensure paragraph text is white in dark mode
+    }
   }
 }
 
@@ -249,6 +255,9 @@ $light-text: #000000;
 
   p {
     margin: 0.25rem 0;
+    .dark-mode & {
+      color: $dark-text;
+    }
   }
 
   .balance-label {
@@ -258,6 +267,9 @@ $light-text: #000000;
   .balance-value {
     font-weight: bold;
     color: red;
+    .dark-mode & {
+      color: #ff5555;
+    }
   }
 }
 
@@ -328,6 +340,11 @@ $light-text: #000000;
   h2 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
+    color: $text-black;
+
+    .dark-mode & {
+      color: $dark-text;
+    }
   }
 }
 
@@ -337,8 +354,8 @@ $light-text: #000000;
 
 .suspended-item {
   display: flex;
-  flex-direction: column; // Changed to column to stack elements vertically
-  align-items: flex-start; // Align items to the left
+  flex-direction: column;
+  align-items: flex-start;
   padding: 0.75rem;
   border-bottom: 1px solid $bg-gray-600;
   font-size: 0.9rem;
@@ -350,7 +367,7 @@ $light-text: #000000;
 
 .suspended-info {
   text-align: left;
-  width: 100%; // Ensure it takes full width
+  width: 100%;
 
   p {
     margin: 0.25rem 0;
@@ -360,9 +377,9 @@ $light-text: #000000;
 .suspended-actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.5rem; // Add spacing above the buttons
-  width: 100%; // Ensure it takes full width
-  justify-content: flex-start; // Align buttons to the left
+  margin-top: 0.5rem;
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .details-btn,
@@ -398,8 +415,8 @@ $light-text: #000000;
 }
 
 .details-container {
-  width: 100%; // Ensure the details take the full width
-  margin-top: 0.5rem; // Add spacing above the details
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
 .transaction-details {
@@ -667,5 +684,214 @@ $light-text: #000000;
   .bill-popup-overlay,
   .suspended-transactions-overlay {
     display: none !important;
+  }
+}
+
+.price-check-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.price-check-popup {
+  background: $text-white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+
+  &.dark-mode {
+    background: $dark-bg;
+    color: $dark-text;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: $text-black;
+
+    .dark-mode & {
+      color: $dark-text;
+    }
+  }
+}
+
+.add-product-prompt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.add-product-prompt {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+  &.dark-mode {
+    background: #333;
+    color: #e6e6e6;
+
+    h3 {
+      color: #ffffff;
+    }
+  }
+
+  h3 {
+    margin-bottom: 10px;
+  }
+
+  p {
+    margin-bottom: 20px;
+  }
+
+  .prompt-actions {
+    display: flex;
+    justify-content: space-around;
+
+    .btn {
+      padding: 10px 20px;
+    }
+  }
+}
+
+.add-product-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.add-product-form {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+  &.dark-mode {
+    background: #333;
+    color: #fff;
+
+    h2 {
+      color: #ffffff;
+    }
+
+    .form-group {
+      label {
+        color: #fff;
+      }
+
+      input {
+        background: #444;
+        color: #fff;
+        border-color: #555;
+      }
+
+      .react-select__control {
+        background: #444;
+        color: #fff;
+        border-color: #555;
+      }
+
+      .react-select__single-value {
+        color: #fff;
+      }
+
+      .react-select__menu {
+        background: #444;
+      }
+
+      .react-select__option {
+        background: #444;
+        color: #fff;
+      }
+
+      .react-select__option--is-focused {
+        background: #555;
+      }
+
+      .react-select__option--is-selected {
+        background: #666;
+        color: #fff;
+      }
+    }
+  }
+
+  h2 {
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .form-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+
+      label {
+        margin-bottom: 5px;
+      }
+
+      input,
+      .react-select__control {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      .is-invalid {
+        border-color: #dc3545;
+      }
+
+      .invalid-feedback,
+      .text-danger {
+        color: #dc3545;
+        font-size: 0.875em;
+        margin-top: 5px;
+      }
+    }
+  }
+
+  .form-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+
+    .btn {
+      padding: 10px 20px;
+    }
   }
 }

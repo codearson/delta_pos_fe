@@ -28,40 +28,65 @@ $dark-text: white;
   max-width: 500px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: background 0.3s, color 0.3s;
+  text-align: center;
 
   &.dark-mode {
-    background-color: $gray-700;
-    color: $dark-text;
+    background-color: $dark-bg !important;
+    color: $dark-text !important;
   }
 
   h2 {
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 1rem;
+    color: $light-text;
+    .price-check-popup.dark-mode & {
+      color: $dark-text !important;
+    }
   }
 }
 
 .price-check-content {
   &.dark-mode {
-    .barcode-field {
-      background-color: $dark-bg;
-      border-color: $gray-700;
-      color: $dark-text;
-    }
+    .barcode-input {
+      label {
+        color: $dark-text !important;
+      }
 
-    .close-btn {
-      background-color: $pos-blue;
-      &:hover {
-        background-color: darken($pos-blue, 10%);
+      .barcode-field {
+        background-color: $dark-bg !important;
+        border-color: $gray-700 !important;
+        color: $dark-text !important;
+
+        &::placeholder {
+          color: lighten($gray-700, 20%) !important;
+        }
       }
     }
 
+    .error-message {
+      color: #ff5555 !important;
+    }
+
     .item-details table {
-      background-color: $gray-700;
-      color: $dark-text;
+      background-color: $dark-bg !important;
+      color: $dark-text !important;
 
       td {
-        border-color: $gray-300;
+        border-color: $gray-700 !important;
+
+        &:first-child {
+          background-color: lighten($gray-700, 10%) !important;
+        }
+      }
+    }
+
+    .close-btn {
+      background-color: $pos-blue !important;
+      color: $dark-text !important;
+
+      &:hover {
+        background-color: darken($pos-blue, 10%) !important;
       }
     }
   }
@@ -82,12 +107,6 @@ $dark-text: white;
       border-radius: 0.25rem;
       font-size: 1rem;
       box-sizing: border-box;
-
-      &.dark-mode {
-        background-color: $dark-bg;
-        border-color: $gray-700;
-        color: $dark-text;
-      }
 
       &:focus {
         outline: none;
