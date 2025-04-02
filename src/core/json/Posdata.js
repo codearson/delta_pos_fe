@@ -12,7 +12,9 @@ export const quickAccess = [
   { id: 7, name: "Label Print", icon: "🏷️" },
   { id: 8, name: "Add Purchase List", icon: "➕" },
   { id: 9, name: "View Purchase List", icon: "🛍️" },
-  { id: 10, name: "Sales List", icon: "📋" }
+  { id: 10, name: "Sales List", icon: "📋" },
+  { id: 11, name: "Manual Discount", icon: "🪙" },
+  { id: 12, name: "Employee Discount", icon: "🎁" },
 ];
 
 export const fetchCustomCategories = async () => {
