@@ -15,9 +15,9 @@ import { Printer } from "feather-icons-react/build/IconComponents";
 import { fetchZReport } from "../../Api/TransactionApi";
 import Swal from 'sweetalert2';
 
-const PAGE_SIZE = 14; // Items per page (excluding the "More"/"Prev" button slot)
+const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
-const MAX_PAGES = 5; // For first 50 transactions (5 pages * 10 items)
+const MAX_PAGES = 5;
 
 const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) => {
   const [pageIndex, setPageIndex] = useState(0);
@@ -41,6 +41,17 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   const barcodeRef = useRef(null);
   const [zReportData, setZReportData] = useState(null);
   const [showZReportPopup, setShowZReportPopup] = useState(false);
+
+  // Add useEffect to listen for localStorage changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      // Force re-render when storage changes
+      setPageIndex(prev => prev + 1);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     if (typeof items === "function") {
@@ -177,21 +188,33 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   }
 
   if (items === quickAccess) {
-    paginatedItems = paginatedItems.map((item) =>
-      item.name === "Label Print"
-        ? { ...item, isLabelPrint: true }
-        : item.name === "Add Purchase List"
-          ? { ...item, isAddPurchase: true }
-          : item.name === "View Purchase List"
-            ? { ...item, isViewPurchase: true }
-            : item.name === "Sales List"
-              ? { ...item, isSalesList: true }
-              : item.name === "X - Report"
-                ? { ...item, isXReport: true }
-                : item.name === "Z - Report"
-                  ? { ...item, isZReport: true }
-                  : item
-    );
+    paginatedItems = paginatedItems
+      .filter(item => {
+        if (item.name === "Manual Discount") {
+          const manualEnabled = localStorage.getItem('manualDiscountEnabled');
+          return manualEnabled ? JSON.parse(manualEnabled) : true;
+        }
+        if (item.name === "Employee Discount") {
+          const employeeEnabled = localStorage.getItem('employeeDiscountEnabled');
+          return employeeEnabled ? JSON.parse(employeeEnabled) : true;
+        }
+        return true;
+      })
+      .map((item) =>
+        item.name === "Label Print"
+          ? { ...item, isLabelPrint: true }
+          : item.name === "Add Purchase List"
+            ? { ...item, isAddPurchase: true }
+            : item.name === "View Purchase List"
+              ? { ...item, isViewPurchase: true }
+              : item.name === "Sales List"
+                ? { ...item, isSalesList: true }
+                : item.name === "X - Report"
+                  ? { ...item, isXReport: true }
+                  : item.name === "Z - Report"
+                    ? { ...item, isZReport: true }
+                    : item
+      );
   }
 
   const getUserRole = () => {

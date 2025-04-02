@@ -1,120 +1,129 @@
-import React, { useState } from "react";
-import Breadcrumbs from "../../core/breadcrumbs";
-import { Filter, Sliders } from "react-feather";
+import React, { useState, useEffect } from "react";
+//import Breadcrumbs from "../../core/breadcrumbs";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
-import Select from "react-select";
 import { Link } from "react-router-dom";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { Archive, Box, Calendar, User, Edit, Trash2 } from "react-feather";
+import { Edit, Trash2 } from "react-feather";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import Table from "../../core/pagination/datatable";
 import StockadjustmentModal from "../../core/modals/stocks/stockadjustmentModal";
 import { useSelector } from "react-redux";
 
+const styles = `
+  .nav-tabs-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav-tabs-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    margin-left: 20px;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ff4444;
+    transition: .4s;
+    border-radius: 20px;
+  }
+
+  .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+
+  input:checked + .toggle-slider {
+    background-color: #00C851;
+  }
+
+  input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+  }
+
+  .toggle-label {
+    margin-right: 10px;
+    line-height: 20px;
+    color: #333;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  .toggle-wrapper {
+    display: flex;
+    align-items: center;
+  }
+`;
+
 const StockAdjustment = () => {
   const data = useSelector((state) => state.managestockdata);
+  const [manualDiscountEnabled, setManualDiscountEnabled] = useState(() => {
+    const saved = localStorage.getItem('manualDiscountEnabled');
+    return saved ? JSON.parse(saved) : true;
+  });
+  const [employeeDiscountEnabled, setEmployeeDiscountEnabled] = useState(() => {
+    const saved = localStorage.getItem('employeeDiscountEnabled');
+    return saved ? JSON.parse(saved) : true;
+  });
 
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const userRole = localStorage.getItem('userRole');
 
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
-  };
+  useEffect(() => {
+    localStorage.setItem('manualDiscountEnabled', JSON.stringify(manualDiscountEnabled));
+  }, [manualDiscountEnabled]);
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-  };
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
-  ];
+  useEffect(() => {
+    localStorage.setItem('employeeDiscountEnabled', JSON.stringify(employeeDiscountEnabled));
+  }, [employeeDiscountEnabled]);
 
-  const warehouseOptions = [
-    { value: "Choose Warehouse", label: "Choose Warehouse" },
-    { value: "Lobar Handy", label: "Lobar Handy" },
-    { value: "Quaint Warehouse", label: "Quaint Warehouse" },
-    { value: "Traditional Warehouse", label: "Traditional Warehouse" },
-    { value: "Cool Warehouse", label: "Cool Warehouse" },
-  ];
-
-  const productOptions = [
-    { value: "Choose Product", label: "Choose Product" },
-    { value: "Nike Jordan", label: "Nike Jordan" },
-    { value: "Apple Series 5 Watch", label: "Apple Series 5 Watch" },
-    { value: "Amazon Echo Dot", label: "Amazon Echo Dot" },
-    { value: "Lobar Handy", label: "Lobar Handy" },
-  ];
-
-  const personOptions = [
-    { value: "Choose Person", label: "Choose Person" },
-    { value: "Steven", label: "Steven" },
-    { value: "Gravely", label: "Gravely" },
-  ];
-
-  const columns = [
+  const manualDiscountColumns = [
     {
-      title: "Warehouse",
-      dataIndex: "Warehouse",
-      sorter: (a, b) => a.Warehouse.length - b.Warehouse.length,
+      title: "Transaction ID",
+      dataIndex: "transactionId",
+      sorter: (a, b) => a.transactionId.length - b.transactionId.length,
     },
     {
-      title: "Shop",
-      dataIndex: "Shop",
-      sorter: (a, b) => a.Shop.length - b.Shop.length,
+      title: "Date and Time",
+      dataIndex: "dateTime",
+      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
     },
     {
-      title: "Product",
-      dataIndex: "Product",
-      render: (text, record) => (
-        <span className="userimgname">
-          <Link to="#" className="product-img">
-            <ImageWithBasePath alt="img" src={record.Product.Image} />
-          </Link>
-          <Link to="#">{record.Product.Name}</Link>
+      title: "Discount",
+      dataIndex: "discount",
+      render: (text) => (
+        <span className="discount-amount">
+          {text}%
         </span>
       ),
-      sorter: (a, b) => a.Product.Name.length - b.Product.Name.length,
+      sorter: (a, b) => a.discount - b.discount,
     },
-
-    {
-      title: "Date",
-      dataIndex: "Date",
-      sorter: (a, b) => a.Email.length - b.Email.length,
-    },
-
-    {
-      title: "Person",
-      dataIndex: "Person",
-      render: (text, record) => (
-        <span className="userimgname">
-          <Link to="#" className="product-img">
-            <ImageWithBasePath alt="img" src={record.Person.Image} />
-          </Link>
-          <Link to="#">{record.Person.Name}</Link>
-        </span>
-      ),
-      sorter: (a, b) => a.Person.Name.length - b.Person.Name.length,
-    },
-
-    {
-      title: "Notes",
-      // dataIndex: "Quantity",
-      render: () => (
-        <Link
-          to="#"
-          className="view-note"
-          data-bs-toggle="modal"
-          data-bs-target="#view-notes"
-        >
-          View Note
-        </Link>
-      ),
-      sorter: (a, b) => a.Notes.length - b.Notes.length,
-    },
-
     {
       title: "Action",
       dataIndex: "action",
@@ -122,7 +131,6 @@ const StockAdjustment = () => {
         <td className="action-table-data">
           <div className="edit-delete-action">
             <div className="input-block add-lists"></div>
-
             <Link
               className="me-2 p-2"
               to="#"
@@ -131,7 +139,6 @@ const StockAdjustment = () => {
             >
               <Edit className="feather-edit" />
             </Link>
-
             <Link
               className="confirm-text p-2"
               to="#"
@@ -142,7 +149,58 @@ const StockAdjustment = () => {
           </div>
         </td>
       ),
-      sorter: (a, b) => a.createdby.length - b.createdby.length,
+    },
+  ];
+
+  const employeeDiscountColumns = [
+    {
+      title: "Employee Name",
+      dataIndex: "employeeName",
+      render: (text, record) => (
+        <span className="userimgname">
+          <Link to="#" className="product-img">
+            <ImageWithBasePath alt="img" src={record.employeeImage} />
+          </Link>
+          <Link to="#">{text}</Link>
+        </span>
+      ),
+      sorter: (a, b) => a.employeeName.length - b.employeeName.length,
+    },
+    {
+      title: "Discount",
+      dataIndex: "discount",
+      render: (text) => (
+        <span className="discount-amount">
+          {text}%
+        </span>
+      ),
+      sorter: (a, b) => a.discount - b.discount,
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      render: () => (
+        <td className="action-table-data">
+          <div className="edit-delete-action">
+            <div className="input-block add-lists"></div>
+            <Link
+              className="me-2 p-2"
+              to="#"
+              data-bs-toggle="modal"
+              data-bs-target="#edit-units"
+            >
+              <Edit className="feather-edit" />
+            </Link>
+            <Link
+              className="confirm-text p-2"
+              to="#"
+              onClick={showConfirmationAlert}
+            >
+              <Trash2 className="feather-trash-2" />
+            </Link>
+          </div>
+        </td>
+      ),
     },
   ];
 
@@ -173,137 +231,66 @@ const StockAdjustment = () => {
       }
     });
   };
+
   return (
     <div className="page-wrapper">
-      <div className="content">
-        <Breadcrumbs
-          maintitle="Stock Adjustment"
-          subtitle=" Manage your stock adjustment"
-          addButton="Add New"
-        />
-        {/* /product list */}
-        <div className="card table-list-card">
+      <style>{styles}</style>
+      <div className="content">   
+        {/* Manual Discount Section */}
+        <div className="card mb-4">
           <div className="card-body">
-            <div className="table-top">
-              <div className="search-set">
-                <div className="search-input">
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="form-control form-control-sm formsearch"
-                  />
-                  <Link to className="btn btn-searchset">
-                    <i data-feather="search" className="feather-search" />
-                  </Link>
-                </div>
-              </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                >
-                  <Filter
-                    className="filter-icon"
-                    onClick={toggleFilterVisibility}
-                  />
-                  <span onClick={toggleFilterVisibility}>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h4 className="card-title">Manual Discount</h4>
+              {(userRole === 'MANAGER' || userRole === 'ADMIN') && (
+                <div className="toggle-wrapper">
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={manualDiscountEnabled}
+                      onChange={() => setManualDiscountEnabled(!manualDiscountEnabled)}
                     />
-                  </span>
-                </Link>
-              </div>
-              <div className="form-sort stylewidth">
-                <Sliders className="info-img" />
-
-                <Select
-                  className="select "
-                  options={options}
-                  placeholder="Sort by Date"
-                />
-              </div>
-            </div>
-            {/* /Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-2 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Archive className="info-img" />
-                      <Select
-                        className="select"
-                        options={warehouseOptions}
-                        placeholder="Choose Warehouse"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-2 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Box className="info-img" />
-                      <Select
-                        className="select"
-                        options={productOptions}
-                        placeholder="Choose Product"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-2 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Calendar className="info-img" />
-                      <div className="input-groupicon">
-                        <DatePicker
-                          selected={selectedDate}
-                          onChange={handleDateChange}
-                          dateFormat="dd/MM/yyyy"
-                          placeholderText="Choose Date"
-                          className="datetimepicker"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-2 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <User className="info-img" />
-                      <Select
-                        className="select"
-                        options={personOptions}
-                        placeholder="Choose Person"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-4 col-sm-6 col-12 ms-auto">
-                    <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto">
-                        {" "}
-                        <i
-                          data-feather="search"
-                          className="feather-search"
-                        />{" "}
-                        Search{" "}
-                      </a>
-                    </div>
-                  </div>
+                    <span className="toggle-slider"></span>
+                  </label>
                 </div>
-              </div>
+              )}
             </div>
-            {/* /Filter */}
             <div className="table-responsive">
               <Table
                 className="table datanew"
-                columns={columns}
-                dataSource={data}
+                columns={manualDiscountColumns}
+                dataSource={manualDiscountEnabled ? data.filter(item => item.type === 'manual') : []}
               />
             </div>
           </div>
         </div>
-        {/* /product list */}
+
+        {/* Employee Discount Section */}
+        <div className="card">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h4 className="card-title">Employee Discount</h4>
+              {(userRole === 'MANAGER' || userRole === 'ADMIN') && (
+                <div className="toggle-wrapper">
+                  <label className="toggle-switch">
+                    <input 
+                      type="checkbox" 
+                      checked={employeeDiscountEnabled}
+                      onChange={() => setEmployeeDiscountEnabled(!employeeDiscountEnabled)}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                </div>
+              )}
+            </div>
+            <div className="table-responsive">
+              <Table
+                className="table datanew"
+                columns={employeeDiscountColumns}
+                dataSource={employeeDiscountEnabled ? data.filter(item => item.type === 'employee') : []}
+              />
+            </div>
+          </div>
+        </div>
       </div>
       <StockadjustmentModal />
     </div>
