@@ -147,6 +147,18 @@ const StoreList = () => {
       sorter: (a, b) => a.branchCode.length - b.branchCode.length,
     },
     {
+      title: "Country",
+      dataIndex: "countryDto",
+      render: (countryDto) => countryDto?.countryName || '-',
+      sorter: (a, b) => (a.countryDto?.countryName || '').length - (b.countryDto?.countryName || '').length,
+    },
+    {
+      title: "Shop Details",
+      dataIndex: "shopDetailsDto",
+      render: (shopDetailsDto) => shopDetailsDto?.name || '-',
+      sorter: (a, b) => (a.shopDetailsDto?.name || '').length - (b.shopDetailsDto?.name || '').length,
+    },
+    {
       title: "Address",
       dataIndex: "address",
       sorter: (a, b) => a.address.length - b.address.length,
@@ -202,6 +214,8 @@ const StoreList = () => {
     try {
       const saveData = {
         ...branchData,
+        countryDto: { id: branchData.countryDto.value },
+        shopDetailsDto: { id: branchData.shopDetailsDto.value },
         isActive: 1
       };
 
@@ -229,7 +243,9 @@ const StoreList = () => {
       const updateData = {
         ...branchData,
         id: selectedBranch.id,
-        isActive: selectedBranch.isActive // Preserve the current status
+        countryDto: { id: branchData.countryDto.value },
+        shopDetailsDto: { id: branchData.shopDetailsDto.value },
+        isActive: selectedBranch.isActive
       };
 
       await updateBranch(updateData);
@@ -256,6 +272,8 @@ const StoreList = () => {
     return filteredBranches.map(branch => ({
       'Branch Name': branch.branchName,
       'Branch Code': branch.branchCode,
+      'Country': branch.countryDto?.countryName || '-',
+      'Shop Details': branch.shopDetailsDto?.name || '-',
       'Address': branch.address,
       'Contact Number': branch.contactNumber,
       'Email Address': branch.emailAddress
@@ -266,6 +284,8 @@ const StoreList = () => {
     return filteredBranches.map(branch => ({
       'Branch Name': branch.branchName,
       'Branch Code': branch.branchCode,
+      'Country': branch.countryDto?.countryName || '-',
+      'Shop Details': branch.shopDetailsDto?.name || '-',
       'Address': branch.address,
       'Contact Number': branch.contactNumber,
       'Email Address': branch.emailAddress
