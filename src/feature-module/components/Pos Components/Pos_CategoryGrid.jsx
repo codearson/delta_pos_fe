@@ -19,7 +19,7 @@ const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
 const MAX_PAGES = 5;
 
-const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) => {
+const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onManualDiscount }) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
   const [showAddPurchasePopup, setShowAddPurchasePopup] = useState(false);
@@ -130,7 +130,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
     if (showSalesListPopup) {
       const loadTransactions = async () => {
         try {
-          // Fetch transactions for the current page (page numbers are 1-based)
           const pageNumber = salesPageIndex + 1;
           const data = await fetchTransactions(pageNumber, SALES_PAGE_SIZE);
           setTransactions(data.content || []);
@@ -339,6 +338,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
         }
       } else if (item.isZReport) {
         await handleZReportClick(item);
+      } else if (item.name === "Manual Discount") {
+        onManualDiscount();
       } else {
         onCategorySelect(item);
       }
@@ -763,14 +764,12 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           <div class="divider"></div>
           <div class="receipt-details">
             <p>Total: ${totalAmount.toFixed(2)}</p>
+            ${transaction.manualDiscount > 0 ? `<p>Manual Discount: ${transaction.manualDiscount.toFixed(2)}</p>` : ''}
+            <p>Grand Total: ${(totalAmount - (transaction.manualDiscount || 0)).toFixed(2)}</p>
             ${paymentMethods.length > 0
-        ? paymentMethods
-          .map(
-            (method) => `
-                  <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                `
-          )
-          .join("")
+        ? paymentMethods.map((method) => `
+                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                  `).join('')
         : "<p>No payments recorded</p>"}
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
@@ -1583,6 +1582,7 @@ Pos_CategoryGrid.propTypes = {
     PropTypes.func,
   ]),
   onCategorySelect: PropTypes.func.isRequired,
+  onManualDiscount: PropTypes.func.isRequired,
 };
 
 export default Pos_CategoryGrid;

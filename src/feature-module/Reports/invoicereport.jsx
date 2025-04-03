@@ -436,6 +436,12 @@ const Invoicereport = () => {
                       <strong>Total Amount:</strong> LKR{" "}
                       {parseFloat(selectedTransaction.totalAmount || 0).toFixed(2)}
                     </p>
+                    {selectedTransaction.manualDiscount > 0 && (
+                      <p>
+                        <strong>Manual Discount:</strong> LKR{" "}
+                        {parseFloat(selectedTransaction.manualDiscount || 0).toFixed(2)}
+                      </p>
+                    )}
                     <p>
                       <strong>Status:</strong>{" "}
                       <span

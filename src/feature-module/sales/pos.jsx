@@ -56,6 +56,7 @@ const Pos = () => {
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const barcodeInputRef = useRef(null);
   const barcodeRef = useRef(null);
+  const [manualDiscount, setManualDiscount] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -69,13 +70,13 @@ const Pos = () => {
   useEffect(() => {
     if (isPaymentStarted) {
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-      const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+      const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0) - manualDiscount;
       const newBalance = totalPaid - currentTotal;
       setBalance(newBalance);
     } else {
       setBalance(0);
     }
-  }, [selectedItems, paymentMethods, isPaymentStarted]);
+  }, [selectedItems, paymentMethods, isPaymentStarted, manualDiscount]);
 
   useEffect(() => {
     let timer;
@@ -292,6 +293,18 @@ const Pos = () => {
     const displayItems = isPaymentStarted
       ? [
           ...selectedItems,
+          ...(manualDiscount > 0
+            ? [
+                {
+                  id: "manual-discount",
+                  name: "Manual Discount",
+                  qty: 1,
+                  price: -manualDiscount,
+                  total: -manualDiscount,
+                  type: "Discount",
+                },
+              ]
+            : []),
           ...(cashTotal > 0
             ? [
                 {
@@ -315,12 +328,33 @@ const Pos = () => {
               }))
             : []),
         ]
-      : selectedItems;
+      : [
+          ...selectedItems,
+          ...(manualDiscount > 0
+            ? [
+                {
+                  id: "manual-discount",
+                  name: "Manual Discount",
+                  qty: 1,
+                  price: -manualDiscount,
+                  total: -manualDiscount,
+                  type: "Discount",
+                },
+              ]
+            : []),
+        ];
 
     const selectedItem = displayItems[selectedRowIndex];
 
     if (!selectedItem) {
       showNotification("Invalid selection.");
+      return;
+    }
+
+    if (selectedItem.type === "Discount") {
+      setManualDiscount(0);
+      setSelectedRowIndex(null);
+      showNotification("Manual discount voided.");
       return;
     }
 
@@ -337,14 +371,15 @@ const Pos = () => {
           setIsPaymentStarted(false);
         }
         showNotification("Cash payment voided.");
+        return;
       }
-    } else {
-      const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
-      setSelectedItems(newItems);
-      setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-      setSelectedRowIndex(null);
-      showNotification("Item voided.");
     }
+    
+    const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
+    setSelectedItems(newItems);
+    setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+    setSelectedRowIndex(null);
+    showNotification("Item voided.");
   };
 
   const handleVoidAll = () => {
@@ -354,10 +389,25 @@ const Pos = () => {
     setBalance(0);
     setIsPaymentStarted(false);
     setSelectedRowIndex(null);
+    setManualDiscount(0);
     showNotification("All items and payments voided.");
   };
 
   const handleCustomerAdded = (name) => setCustomerName(name);
+
+  const handleManualDiscount = () => {
+    if (inputValue === "0") {
+      showNotification("Please enter a discount amount first");
+      return;
+    }
+    if (selectedItems.length === 0) {
+      showNotification("Please add items to the transaction before applying a discount");
+      return;
+    }
+    const discount = parseFloat(inputValue);
+    setManualDiscount(discount);
+    resetInput();
+  };
 
   const handleSaveTransaction = async () => {
     const userIdRaw = localStorage.getItem("userId");
@@ -377,7 +427,7 @@ const Pos = () => {
           branchCode: branch.branchCode || "N/A",
           address: branch.address || "N/A",
           shopName: branch.shopDetailsDto?.name || "Unknown Shop",
-          contactNumber: branch.contactNumber || "N/A"  // Add this line
+          contactNumber: branch.contactNumber || "N/A"
         });
         shopDetailsId = branch.shopDetailsId || 1;
       } else {
@@ -386,7 +436,7 @@ const Pos = () => {
           branchCode: "N/A",
           address: "N/A",
           shopName: "Unknown Shop",
-          contactNumber: "N/A"  // Add this line
+          contactNumber: "N/A"
         });
       }
   
@@ -403,99 +453,90 @@ const Pos = () => {
           lastName: "",
         });
       }
-    } catch (error) {
-      setBranchDetails({
-        branchName: "Unknown Branch",
-        branchCode: "N/A",
-        address: "N/A",
-        shopName: "Unknown Shop",
-        contactNumber: "N/A"  // Add this line
-      });
-      setUserDetails({
-        firstName: "Unknown",
-        lastName: "",
-      });
-    }
   
-    // Rest of the function remains unchanged...
-    setTransactionDate(new Date());
+      setTransactionDate(new Date());
   
-    let customerId = 1;
-    if (customerName) {
-      const customers = await fetchCustomers();
-      const customer = customers.find((c) => c.name === customerName && c.isActive === true);
-      if (customer) {
-        customerId = customer.id;
+      let customerId = 1;
+      if (customerName) {
+        const customers = await fetchCustomers();
+        const customer = customers.find((c) => c.name === customerName && c.isActive === true);
+        if (customer) {
+          customerId = customer.id;
+        }
       }
-    }
   
-    const combinedPaymentMethods = [];
-    const cashPayments = paymentMethods.filter((m) => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
-    const cardPayments = paymentMethods.filter((m) => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
+      const combinedPaymentMethods = [];
+      const cashPayments = paymentMethods.filter((m) => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
+      const cardPayments = paymentMethods.filter((m) => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
   
-    if (cashPayments > 0) {
-      combinedPaymentMethods.push({ type: "Cash", amount: cashPayments });
-    }
-    if (cardPayments > 0) {
-      combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
-    }
+      if (cashPayments > 0) {
+        combinedPaymentMethods.push({ type: "Cash", amount: cashPayments });
+      }
+      if (cardPayments > 0) {
+        combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
+      }
   
-    const transactionData = {
-      status: "Completed",
-      isActive: 1,
-      totalAmount: totalValue,
-      branchDto: { id: branchId },
-      shopDetailsDto: { id: shopDetailsId },
-      customerDto: { id: customerId },
-      userDto: { id: userId },
-      transactionDetailsList: selectedItems.map((item) => ({
-        productDto: { id: item.id },
-        quantity: item.qty,
-        unitPrice: item.price,
-        discount: 0.0,
-      })),
-      transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
-        paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
-        amount: method.amount,
+      const transactionData = {
+        status: "Completed",
         isActive: 1,
-      })),
-    };
-  
-    const result = await saveTransaction(transactionData);
-    if (result.success) {
-      let transactionId;
-      if (result.data?.id) {
-        transactionId = result.data.id;
-      } else if (result.data?.responseDto?.id) {
-        transactionId = result.data.responseDto.id;
-      } else if (result.payload?.id) {
-        transactionId = result.payload.id;
-      } else {
-        transactionId = 0;
-        showNotification("Warning: Transaction ID not found in API response. Please check the backend response.");
-      }
-  
-      setLastTransaction({
-        id: transactionId,
+        totalAmount: totalValue - manualDiscount,
+        manualDiscount: manualDiscount,
+        branchDto: { id: branchId },
+        shopDetailsDto: { id: shopDetailsId },
+        customerDto: { id: customerId },
+        userDto: { id: userId },
         transactionDetailsList: selectedItems.map((item) => ({
-          productDto: { id: item.id, name: item.name },
+          productDto: { id: item.id },
           quantity: item.qty,
           unitPrice: item.price,
           discount: 0.0,
         })),
-        totalAmount: totalValue,
         transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
           paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
           amount: method.amount,
+          isActive: 1,
         })),
-        branchDto: { id: branchId },
-        userDto: { id: userId },
-        customerDto: { name: customerName || "Local Customer" },
-        transactionDate: new Date(),
-      });
-      setShowBillPopup(true);
-    } else {
-      showNotification("Failed to save transaction: " + result.error);
+      };
+  
+      const result = await saveTransaction(transactionData);
+      if (result.success) {
+        let transactionId;
+        if (result.data?.id) {
+          transactionId = result.data.id;
+        } else if (result.data?.responseDto?.id) {
+          transactionId = result.data.responseDto.id;
+        } else if (result.payload?.id) {
+          transactionId = result.payload.id;
+        } else {
+          transactionId = 0;
+          showNotification("Warning: Transaction ID not found in API response. Please check the backend response.");
+        }
+  
+        setLastTransaction({
+          id: transactionId,
+          transactionDetailsList: selectedItems.map((item) => ({
+            productDto: { id: item.id, name: item.name },
+            quantity: item.qty,
+            unitPrice: item.price,
+            discount: 0.0,
+          })),
+          totalAmount: totalValue - manualDiscount,
+          manualDiscount: manualDiscount,
+          transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
+            paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
+            amount: method.amount,
+          })),
+          branchDto: { id: branchId },
+          userDto: { id: userId },
+          customerDto: { name: customerName || "Local Customer" },
+          transactionDate: new Date(),
+        });
+        setShowBillPopup(true);
+      } else {
+        showNotification("Failed to save transaction: " + result.error);
+      }
+    } catch (error) {
+      showNotification("Error saving transaction: " + error.message);
     }
   };
 
@@ -596,15 +637,11 @@ const Pos = () => {
           <div class="divider"></div>
           <div class="receipt-details">
             <p>Total: ${totalValue.toFixed(2)}</p>
-            ${paymentMethods.length > 0
-        ? paymentMethods
-          .map(
-            (method) => `
-                  <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                `
-          )
-          .join("")
-        : "<p>No payments recorded</p>"}
+            ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
+            <p>Grand Total: ${(totalValue - manualDiscount).toFixed(2)}</p>
+            ${paymentMethods.map((method) => `
+              <p>${method.type}: ${method.amount.toFixed(2)}</p>
+            `).join('')}
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
@@ -618,11 +655,7 @@ const Pos = () => {
             <p>Powered by Delta POS</p>
             <p>(deltapos.codearson@gmail.com)</p>
             <p>(0094762963979)</p>
-            <p>=====================================
-            </p>
-            <p></p>
-            <p></p>
-            <p></p>
+            <p>=====================================</p>
           </div>
           <script>
             setTimeout(() => {
@@ -802,13 +835,9 @@ const Pos = () => {
             <div class="divider"></div>
             <div class="receipt-details">
               <p>Total: ${totalAmount.toFixed(2)}</p>
-              ${paymentMethods
-          .map(
-            (method) => `
-                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                  `
-          )
-          .join("")}
+              ${paymentMethods.map((method) => `
+                <p>${method.type}: ${method.amount.toFixed(2)}</p>
+              `).join('')}
               <p>Balance: ${calculatedBalance.toFixed(2)}</p>
             </div>
             <div class="divider"></div>
@@ -852,6 +881,7 @@ const Pos = () => {
     setIsPaymentStarted(false);
     setSelectedRowIndex(null);
     setCustomerName("");
+    setManualDiscount(0);
     resetInput();
   };
 
@@ -878,6 +908,7 @@ const Pos = () => {
       balance,
       isPaymentStarted,
       customerName,
+      manualDiscount,
       timestamp: new Date().toLocaleString(),
     };
 
@@ -892,6 +923,7 @@ const Pos = () => {
     setBalance(0);
     setIsPaymentStarted(false);
     setCustomerName("");
+    setManualDiscount(0);
     resetInput();
   };
 
@@ -919,6 +951,7 @@ const Pos = () => {
     setBalance(transaction.balance);
     setIsPaymentStarted(transaction.isPaymentStarted);
     setCustomerName(transaction.customerName);
+    setManualDiscount(transaction.manualDiscount || 0);
     resetInput();
 
     const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== transaction.id);
@@ -970,13 +1003,14 @@ const Pos = () => {
               selectedRowIndex={selectedRowIndex}
               onRowSelect={handleRowSelect}
               isPaymentStarted={isPaymentStarted}
-              showNotification={showNotification}
+              manualDiscount={manualDiscount}
             />
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
               <CategoryGrid
                 items={activeTab === "category" ? fetchCustomCategories : quickAccess}
                 onCategorySelect={handleCategorySelect}
+                onManualDiscount={handleManualDiscount}
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
@@ -989,6 +1023,7 @@ const Pos = () => {
                   setIsPaymentStarted={setIsPaymentStarted}
                   paymentMethods={paymentMethods}
                   showNotification={showNotification}
+                  manualDiscount={manualDiscount}
                 />
                 <FunctionButtons
                   onVoidLine={handleVoidLine}
@@ -1013,9 +1048,11 @@ const Pos = () => {
                 </p>
                 {customerName && <p>Customer: {customerName}</p>}
                 <div className="bill-summary centered">
-                  <p>Grand Total: {totalValue.toFixed(2)}</p>
-                  {paymentMethods.map((method, index) => (
-                    <p key={index}>
+                  <p>Total: {totalValue.toFixed(2)}</p>
+                  {manualDiscount > 0 && <p>Manual Discount: {manualDiscount.toFixed(2)}</p>}
+                  <p>Grand Total: {(totalValue - manualDiscount).toFixed(2)}</p>
+                  {paymentMethods.map((method) => (
+                    <p key={method.type}>
                       {method.type}: {method.amount.toFixed(2)}
                     </p>
                   ))}
@@ -1105,6 +1142,10 @@ const Pos = () => {
                               </tbody>
                             </table>
                             <p>Total: {transaction.totalValue.toFixed(2)}</p>
+                            {transaction.manualDiscount > 0 && (
+                              <p>Manual Discount: {transaction.manualDiscount.toFixed(2)}</p>
+                            )}
+                            <p>Grand Total: {(transaction.totalValue - (transaction.manualDiscount || 0)).toFixed(2)}</p>
                             <p>
                               Payments:{" "}
                               {transaction.paymentMethods.length > 0
