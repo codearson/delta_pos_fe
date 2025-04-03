@@ -80,6 +80,25 @@ const styles = `
     display: flex;
     align-items: center;
   }
+
+  /* Manual Discount card styling */
+  .card.mb-4 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .card.mb-4 .card-body {
+    padding: 0.75rem 1rem;
+  }
+
+  .card.mb-4 .card-title {
+    margin-bottom: 0;
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .card.mb-4 .d-flex {
+    margin-bottom: 0 !important;
+  }
 `;
 
 const StockAdjustment = () => {
@@ -102,55 +121,6 @@ const StockAdjustment = () => {
   useEffect(() => {
     localStorage.setItem('employeeDiscountEnabled', JSON.stringify(employeeDiscountEnabled));
   }, [employeeDiscountEnabled]);
-
-  const manualDiscountColumns = [
-    {
-      title: "Transaction ID",
-      dataIndex: "transactionId",
-      sorter: (a, b) => a.transactionId.length - b.transactionId.length,
-    },
-    {
-      title: "Date and Time",
-      dataIndex: "dateTime",
-      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime),
-    },
-    {
-      title: "Discount",
-      dataIndex: "discount",
-      render: (text) => (
-        <span className="discount-amount">
-          {text}%
-        </span>
-      ),
-      sorter: (a, b) => a.discount - b.discount,
-    },
-    {
-      title: "Action",
-      dataIndex: "action",
-      render: () => (
-        <td className="action-table-data">
-          <div className="edit-delete-action">
-            <div className="input-block add-lists"></div>
-            <Link
-              className="me-2 p-2"
-              to="#"
-              data-bs-toggle="modal"
-              data-bs-target="#edit-units"
-            >
-              <Edit className="feather-edit" />
-            </Link>
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={showConfirmationAlert}
-            >
-              <Trash2 className="feather-trash-2" />
-            </Link>
-          </div>
-        </td>
-      ),
-    },
-  ];
 
   const employeeDiscountColumns = [
     {
@@ -253,13 +223,6 @@ const StockAdjustment = () => {
                   </label>
                 </div>
               )}
-            </div>
-            <div className="table-responsive">
-              <Table
-                className="table datanew"
-                columns={manualDiscountColumns}
-                dataSource={manualDiscountEnabled ? data.filter(item => item.type === 'manual') : []}
-              />
             </div>
           </div>
         </div>
