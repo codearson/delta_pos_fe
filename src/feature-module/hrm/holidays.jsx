@@ -1,499 +1,437 @@
-import React from 'react'
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 import ImageWithBasePath from '../../core/img/imagewithbasebath';
-import { ChevronUp, RotateCcw } from 'feather-icons-react/build/IconComponents';
+import { ChevronUp, RotateCcw, PlusCircle, Edit } from 'feather-icons-react/build/IconComponents';
 import { setToogleHeader } from '../../core/redux/action';
-import { FileText, Filter, Layout, PlusCircle, Sliders, StopCircle, Users } from 'react-feather';
 import Select from 'react-select';
-import withReactContent from 'sweetalert2-react-content';
 import Swal from 'sweetalert2';
-import Table from '../../core/pagination/datatable.jsx'
+import withReactContent from 'sweetalert2-react-content';
+import Table from '../../core/pagination/datatable.jsx';
 import AddHolidays from '../../core/modals/hrm/addholidays.jsx';
 import EditHolidays from '../../core/modals/hrm/editholidays.jsx';
+import { fetchHolidays, updateHolidayStatus } from '../Api/HolidayApi.js';
+import { jsPDF } from "jspdf";
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import "../../style/scss/pages/_categorylist.scss";
 
 const Holidays = () => {
     const dispatch = useDispatch();
-    const data = useSelector((state) => state.toggle_header);
-    const dataSource = useSelector((state) => state.holiday_data);
+    const headerToggleState = useSelector((state) => state.toggle_header);
+    const [holidays, setHolidays] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [selectedHoliday, setSelectedHoliday] = useState(null);
+    const [togglingId, setTogglingId] = useState(null);
+    const [showActive, setShowActive] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedUser, setSelectedUser] = useState(null);
 
-    const [isFilterVisible, setIsFilterVisible] = useState(false);
-    const toggleFilterVisibility = () => {
-        setIsFilterVisible((prevVisibility) => !prevVisibility);
+    const MySwal = withReactContent(Swal);
+
+    useEffect(() => {
+        loadInitialData();
+    }, []);
+
+    useEffect(() => {
+        if (!isLoading) {
+            fetchHolidaysData(false);
+        }
+    }, [showActive]);
+
+    const loadInitialData = async () => {
+        setIsLoading(true);
+        await fetchHolidaysData(true);
+        setIsLoading(false);
     };
-    const [isLayoutVisible, setIsLayoutVisible] = useState(false);
-    const handleLayoutClick = () => {
-        setIsLayoutVisible(!isLayoutVisible);
+
+    const fetchHolidaysData = async (isInitial = false) => {
+        try {
+            if (isInitial) {
+                setIsLoading(true);
+            }
+            const data = await fetchHolidays();
+            if (Array.isArray(data)) {
+                const normalizedData = data.map(holiday => ({
+                    ...holiday,
+                    isActive: holiday.isActive === 1 || holiday.isActive === true
+                }));
+                setHolidays(normalizedData.reverse());
+            } else {
+                setHolidays([]);
+                Swal.fire({
+                    title: "Warning!",
+                    text: "No holiday data received from the server.",
+                    icon: "warning",
+                });
+            }
+        } catch (error) {
+            Swal.fire({
+                title: "Error!",
+                text: "Failed to fetch holidays: " + error.message,
+                icon: "error",
+            });
+        } finally {
+            if (isInitial) {
+                setIsLoading(false);
+            }
+        }
     };
-    const oldandlatestvalue = [
-        { value: 'date', label: 'Sort by Date' },
-        { value: 'newest', label: 'Newest' },
-        { value: 'oldest', label: 'Oldest' },
-    ];
-    const hod = [
-        { value: 'Choose HOD', label: 'Choose HOD' },
-        { value: 'Mitchum Daniel', label: 'Mitchum Daniel' },
-        { value: 'Susan Lopez', label: 'Susan Lopez' },
-    ];
-    const status = [
-        { value: 'Choose Status', label: 'Choose Status' },
-        { value: 'Mitchum Daniel', label: 'Mitchum Daniel' },
-        { value: 'Susan Lopez', label: 'Susan Lopez' },
-    ];
-   
-    const holidays = [
-        { value: 'Choose Holiday', label: 'Choose Holiday' },
-        { value: 'UI/UX', label: 'UI/UX' },
-        { value: 'HR', label: 'HR' },
-        { value: 'Admin', label: 'Admin' },
-        { value: 'Engineering', label: 'Engineering' },
+
+    const handleToggleStatus = (holidayId, currentStatus) => {
+        setTogglingId(holidayId);
+        const newStatus = currentStatus ? 0 : 1;
+        const newStatusText = currentStatus ? 'Inactive' : 'Active';
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to change this holiday to ${newStatusText}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, change it!'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const response = await updateHolidayStatus(holidayId, newStatus);
+                    if (response) {
+                        await fetchHolidaysData(false);
+                        Swal.fire({
+                            title: "Success!",
+                            text: `Holiday status changed to ${newStatusText}.`,
+                            icon: "success",
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Failed to update holiday status: " + error.message,
+                        icon: "error",
+                    });
+                }
+            }
+            setTogglingId(null);
+        });
+    };
+
+    const statusOptions = [
+        { value: 'Pending', label: 'Pending' },
+        { value: 'Approved', label: 'Approved' },
+        { value: 'Declined', label: 'Declined' },
     ];
 
-    const renderTooltip = (props) => (
-        <Tooltip id="pdf-tooltip" {...props}>
-            Pdf
-        </Tooltip>
-    );
-    const renderExcelTooltip = (props) => (
-        <Tooltip id="excel-tooltip" {...props}>
-            Excel
-        </Tooltip>
-    );
-    const renderPrinterTooltip = (props) => (
-        <Tooltip id="printer-tooltip" {...props}>
-            Printer
-        </Tooltip>
-    );
-    const renderRefreshTooltip = (props) => (
-        <Tooltip id="refresh-tooltip" {...props}>
-            Refresh
-        </Tooltip>
-    );
-    const renderCollapseTooltip = (props) => (
-        <Tooltip id="refresh-tooltip" {...props}>
-            Collapse
-        </Tooltip>
+    const userOptions = Array.from(
+        new Set(holidays.map(holiday => {
+            const fullName = holiday.userDto ? `${holiday.userDto.firstName || ''} ${holiday.userDto.lastName || ''}`.trim() : 'N/A';
+            return fullName;
+        }))
     )
+        .filter(name => name !== 'N/A')
+        .map(name => ({
+            value: name,
+            label: name
+        }));
+
+    const filteredHolidays = holidays
+        .filter(holiday => showActive ? holiday.isActive : !holiday.isActive)
+        .filter(holiday =>
+            holiday.description.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .filter(holiday =>
+            selectedStatus ? holiday.status === selectedStatus.value : true
+        )
+        .filter(holiday => {
+            if (!selectedUser) return true;
+            const fullName = holiday.userDto ? `${holiday.userDto.firstName || ''} ${holiday.userDto.lastName || ''}`.trim() : 'N/A';
+            return fullName === selectedUser.value;
+        });
+
+    const exportToPDF = () => {
+        try {
+            const doc = new jsPDF();
+            doc.text("Holiday List", 14, 15);
+            const tableColumn = ["Description", "Start Date", "End Date", "Status", "User Name"];
+            const tableRows = filteredHolidays.map(holiday => [
+                holiday.description || "",
+                holiday.startDate || "",
+                holiday.endDate || "",
+                holiday.status || "",
+                holiday.userDto ? `${holiday.userDto.firstName || ''} ${holiday.userDto.lastName || ''}`.trim() : 'N/A',
+            ]);
+
+            autoTable(doc, {
+                head: [tableColumn],
+                body: tableRows,
+                startY: 20,
+                theme: 'grid',
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            });
+            doc.save("holiday_list.pdf");
+        } catch (error) {
+            MySwal.fire({
+                title: "Error!",
+                text: "Failed to generate PDF: " + error.message,
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+        }
+    };
+
+    const exportToExcel = () => {
+        try {
+            if (!filteredHolidays || filteredHolidays.length === 0) {
+                MySwal.fire({
+                    title: "No Data",
+                    text: "There are no holidays to export",
+                    icon: "warning",
+                    confirmButtonText: "OK",
+                });
+                return;
+            }
+            const worksheetData = filteredHolidays.map(holiday => ({
+                "Description": holiday.description || "",
+                "Start Date": holiday.startDate || "",
+                "End Date": holiday.endDate || "",
+                "Status": holiday.status || "",
+                "User Name": holiday.userDto ? `${holiday.userDto.firstName || ''} ${holiday.userDto.lastName || ''}`.trim() : 'N/A',
+            }));
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Holidays");
+            worksheet["!cols"] = [
+                { wch: 30 },
+                { wch: 15 },
+                { wch: 15 },
+                { wch: 10 },
+                { wch: 20 },
+                { wch: 10 }
+            ];
+            XLSX.writeFile(workbook, "holiday_list.xlsx");
+        } catch (error) {
+            MySwal.fire({
+                title: "Error!",
+                text: "Failed to export to Excel: " + error.message,
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+        }
+    };
 
     const columns = [
         {
-            title: "Name",
-            dataIndex: "name",
-            sorter: (a, b) => a.name.length - b.name.length,
+            title: "Description",
+            dataIndex: "description",
+            sorter: (a, b) => a.description.length - b.description.length,
         },
         {
-            title: "date",
-            dataIndex: "date",
-            sorter: (a, b) => a.date.length - b.date.length,
+            title: "Start Date",
+            dataIndex: "startDate",
+            sorter: (a, b) => a.startDate.localeCompare(b.startDate),
         },
         {
-            title: "duration",
-            dataIndex: "duration",
-            sorter: (a, b) => a.duration.length - b.duration.length,
+            title: "End Date",
+            dataIndex: "endDate",
+            sorter: (a, b) => a.endDate.localeCompare(b.endDate),
         },
-        {
-            title: "createdon",
-            dataIndex: "createdon",
-            sorter: (a, b) => a.createdon.length - b.createdon.length,
-        },
-
         {
             title: "Status",
             dataIndex: "status",
             render: (text) => (
-                <span className="badge badge-linesuccess">
-                    <Link to="#"> {text}</Link>
+                <span className={`badge ${text === 'Approved' ? 'badge-linesuccess' : text === 'Pending' ? 'badge-linewarning' : 'badge-linedanger'}`}>
+                    {text}
                 </span>
             ),
             sorter: (a, b) => a.status.length - b.status.length,
         },
-
+        {
+            title: "User Name",
+            dataIndex: "userDto",
+            render: (userDto) => {
+                const fullName = userDto ? `${userDto.firstName || ''} ${userDto.lastName || ''}`.trim() : '';
+                return fullName || 'N/A';
+            },
+            sorter: (a, b) => {
+                const nameA = a.userDto ? `${a.userDto.firstName || ''} ${a.userDto.lastName || ''}`.trim() : '';
+                const nameB = b.userDto ? `${b.userDto.firstName || ''} ${b.userDto.lastName || ''}`.trim() : '';
+                return nameA.localeCompare(nameB);
+            },
+        },
+        {
+            title: "Active",
+            dataIndex: "isActive",
+            render: (isActive, record) => (
+                <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={() => handleToggleStatus(record.id, isActive)}
+                        disabled={togglingId === record.id}
+                    />
+                </div>
+            ),
+        },
         {
             title: "Actions",
             dataIndex: "actions",
-            key: "actions",
-            render: () => (
+            render: (_, record) => (
                 <td className="action-table-data">
                     <div className="edit-delete-action">
-
                         <Link
                             className="me-2 p-2"
                             to="#"
                             data-bs-toggle="modal"
                             data-bs-target="#edit-department"
+                            onClick={() => setSelectedHoliday(record)}
                         >
-                            <i data-feather="edit" className="feather-edit"></i>
-                        </Link>
-                        <Link className="confirm-text p-2" to="#">
-                            <i
-                                data-feather="trash-2"
-                                className="feather-trash-2"
-                                onClick={showConfirmationAlert}
-                            ></i>
+                            <Edit className="feather-edit" />
                         </Link>
                     </div>
                 </td>
             ),
         },
     ];
-    const MySwal = withReactContent(Swal);
-    const showConfirmationAlert = () => {
-        MySwal.fire({
-            title: 'Are you sure?',
-            text: 'You won\'t be able to revert this!',
-            showCancelButton: true,
-            confirmButtonColor: '#00ff00',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonColor: '#ff0000',
-            cancelButtonText: 'Cancel',
-        }).then((result) => {
-            if (result.isConfirmed) {
 
-                MySwal.fire({
-                    title: 'Deleted!',
-                    text: 'Your file has been deleted.',
-                    className: "btn btn-success",
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'btn btn-success',
-                    },
-                });
-            } else {
-                MySwal.close();
-            }
+    const renderTooltip = (props) => <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>;
+    const renderExcelTooltip = (props) => <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>;
+    const renderRefreshTooltip = (props) => <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>;
+    const renderCollapseTooltip = (props) => <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>;
 
-        });
-    };
+    if (isLoading) {
+        return <div className="page-wrapper">Loading...</div>;
+    }
+
     return (
-        <div>
-            <div className="page-wrapper">
-                <div className="content">
-                    <div className="page-header">
-                        <div className="add-item d-flex">
-                            <div className="page-title">
-                                <h4>Holiday</h4>
-                                <h6>Manage your Holiday</h6>
+        <div className="page-wrapper">
+            <div className="content">
+                <div className="page-header">
+                    <div className="add-item d-flex flex-column">
+                        <div className="page-title">
+                            <h4>Staff Leave</h4>
+                            <h6>Manage your Staff Leave</h6>
+                        </div>
+                        <div className="status-toggle-btns mt-2">
+                            <div className="btn-group" role="group">
+                                <button
+                                    type="button"
+                                    className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                                    onClick={() => setShowActive(true)}
+                                >
+                                    Active
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                                    onClick={() => setShowActive(false)}
+                                >
+                                    Inactive
+                                </button>
                             </div>
                         </div>
-                        <ul className="table-top-head">
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderTooltip}>
-                                    <Link>
-                                        <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-                                    <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                                        <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderPrinterTooltip}>
-
-                                    <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                                        <i data-feather="printer" className="feather-printer" />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-
-                                    <Link data-bs-toggle="tooltip" data-bs-placement="top">
-                                        <RotateCcw />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
-
-                                    <Link
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="top"
-                                        id="collapse-header"
-                                        className={data ? "active" : ""}
-                                        onClick={() => { dispatch(setToogleHeader(!data)) }}
-                                    >
-                                        <ChevronUp />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                        </ul>
-                        <div className="page-btn">
-                            <Link
-                                to=""
-                                className="btn btn-added"
-                                data-bs-toggle="modal"
-                                data-bs-target="#add-department"
-                            >
-                                <PlusCircle className="me-2" />
-                                Add New Holiday
-                            </Link>
-                        </div>
                     </div>
-                    {/* /product list */}
-                    <div className="card table-list-card">
-                        <div className="card-body pb-0">
-                            <div className="table-top">
-                                <div className="input-blocks search-set mb-0">
+                    <ul className="table-top-head">
+                        <li>
+                            <OverlayTrigger placement="top" overlay={renderTooltip}>
+                                <Link onClick={exportToPDF}>
+                                    <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                                </Link>
+                            </OverlayTrigger>
+                        </li>
+                        <li>
+                            <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
+                                <Link onClick={exportToExcel}>
+                                    <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                                </Link>
+                            </OverlayTrigger>
+                        </li>
+                        <li>
+                            <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
+                                <Link onClick={() => fetchHolidaysData(false)}>
+                                    <RotateCcw />
+                                </Link>
+                            </OverlayTrigger>
+                        </li>
+                        <li>
+                            <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+                                <Link
+                                    id="collapse-header"
+                                    className={headerToggleState ? "active" : ""}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        dispatch(setToogleHeader(!headerToggleState));
+                                    }}
+                                >
+                                    <ChevronUp />
+                                </Link>
+                            </OverlayTrigger>
+                        </li>
+                    </ul>
+                    <div className="page-btn">
+                        <Link
+                            className="btn btn-added"
+                            data-bs-toggle="modal"
+                            data-bs-target="#add-department"
+                            onClick={() => setSelectedHoliday(null)}
+                        >
+                            <PlusCircle className="me-2" />
+                            Add New
+                        </Link>
+                    </div>
+                </div>
+                <div className="card table-list-card">
+                    <div className="card-body pb-0">
+                        <div className="table-top">
+                            <div className="search-set">
+                                <div className="search-path d-flex align-items-center gap-2" style={{ width: '100%' }}>
                                     <div className="search-input">
                                         <input
                                             type="text"
-                                            placeholder="Search"
+                                            placeholder="Search by description"
                                             className="form-control form-control-sm formsearch"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
                                         />
-                                        <Link to className="btn btn-searchset">
+                                        <Link to="#" className="btn btn-searchset">
                                             <i data-feather="search" className="feather-search" />
                                         </Link>
                                     </div>
-                                </div>
-                                <div className="search-path d-flex align-items-center search-path-new">
-                                    <Link className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`} id="filter_search">
-                                        <Filter
-                                            className="filter-icon"
-                                            onClick={toggleFilterVisibility}
+                                    <div style={{ width: '200px' }}>
+                                        <Select
+                                            className="select"
+                                            options={statusOptions}
+                                            placeholder="Filter by Status"
+                                            value={selectedStatus}
+                                            onChange={setSelectedStatus}
+                                            isClearable
                                         />
-                                        <span onClick={toggleFilterVisibility}>
-                                            <ImageWithBasePath src="assets/img/icons/closes.svg" alt="img" />
-                                        </span>
-                                    </Link>
-                                    <div className={`layout-hide-box ${isLayoutVisible ? 'layout-show-box' : 'layout-hide-box'}`}>
-                                        <Link to="#" className="me-3 layout-box" onClick={handleLayoutClick}>
-                                            <Layout />
-                                        </Link>
-                                        {isLayoutVisible && (
-
-                                            <div className="layout-drop-item card">
-                                                <div className="drop-item-head">
-                                                    <h5>Want to manage datatable?</h5>
-                                                    <p>
-                                                        Please drag and drop your column to reorder your table and
-                                                        enable see option as you want.
-                                                    </p>
-                                                </div>
-                                                <ul>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Shop
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option1"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option1" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Product
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option2"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option2" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Reference No
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option3"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option3" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Date
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option4"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option4" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Responsible Person
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option5"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option5" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Notes
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option6"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option6" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Quantity
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option7"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option7" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                    <li>
-                                                        <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                            <span className="status-label">
-                                                                <i data-feather="menu" className="feather-menu" />
-                                                                Actions
-                                                            </span>
-                                                            <input
-                                                                type="checkbox"
-                                                                id="option8"
-                                                                className="check"
-                                                                defaultChecked="true"
-                                                            />
-                                                            <label htmlFor="option8" className="checktoggle">
-                                                                {" "}
-                                                            </label>
-                                                        </div>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        )}
                                     </div>
-
-                                </div>
-                                <div className="form-sort">
-                                    <Sliders className="info-img" />
-                                    <Select
-                                        className="select"
-                                        options={oldandlatestvalue}
-                                        placeholder="Newest"
-                                    />
-                                </div>
-                            </div>
-                            {/* /Filter */}
-                            <div
-                                className={`card${isFilterVisible ? " visible" : ""}`}
-                                id="filter_inputs"
-                                style={{ display: isFilterVisible ? "block" : "none" }}
-                            >
-                                <div className="card-body pb-0">
-                                    <div className="row">
-                                        <div className="col-lg-3 col-sm-6 col-12">
-                                            <div className="input-blocks">
-                                                <FileText className="info-img" />
-
-                                                <Select
-                                                    className="select"
-                                                    options={holidays}
-                                                    placeholder="Choose Holiday"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-3 col-sm-6 col-12">
-                                            <div className="input-blocks">
-                                                <Users className="info-img" />
-                                                <Select
-                                                    className="select"
-                                                    options={hod}
-                                                    placeholder="Choose Holiday"
-                                                />
-
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-3 col-sm-6 col-12">
-                                            <div className="input-blocks">
-                                                <StopCircle className="info-img" />
-
-                                                <Select
-                                                    className="select"
-                                                    options={status}
-                                                    placeholder="Choose Status"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="col-lg-3 col-sm-6 col-12 ms-auto">
-                                            <div className="input-blocks">
-                                                <Link className="btn btn-filters ms-auto">
-                                                    {" "}
-                                                    <i data-feather="search" className="feather-search" />{" "}
-                                                    Search{" "}
-                                                </Link>
-                                            </div>
-                                        </div>
+                                    <div style={{ width: '200px' }}>
+                                        <Select
+                                            className="select"
+                                            options={userOptions}
+                                            placeholder="Filter by User"
+                                            value={selectedUser}
+                                            onChange={setSelectedUser}
+                                            isClearable
+                                        />
                                     </div>
                                 </div>
                             </div>
-                            {/* /Filter */}
-                            {/* product list */}
-                            <div className="table-responsive">
-                            <Table columns={columns} dataSource={dataSource} />
-                            </div>
-                            {/* /product list */}
+                        </div>
+                        <div className="table-responsive">
+                            <Table columns={columns} dataSource={filteredHolidays} rowKey={(record) => record.id} />
                         </div>
                     </div>
                 </div>
             </div>
-            <AddHolidays />
-            <EditHolidays />
+            <AddHolidays onSave={() => fetchHolidaysData(false)} />
+            <EditHolidays selectedHoliday={selectedHoliday} onUpdate={() => fetchHolidaysData(false)} />
         </div>
-    )
-}
+    );
+};
 
-export default Holidays
+export default Holidays;
