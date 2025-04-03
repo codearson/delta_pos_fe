@@ -10,13 +10,16 @@ import PaymentButtons from "../components/Pos Components/Pos_Payment";
 import FunctionButtons from "../components/Pos Components/Pos_Function";
 import PriceCheckPopup from "../components/Pos Components/PriceCheckPopup";
 import NotificationPopup from "../components/Pos Components/NotificationPopup";
-import { getProductByBarcode } from "../Api/productApi";
+import { getProductByBarcode, saveProduct } from "../Api/productApi";
 import { saveTransaction } from "../Api/TransactionApi";
 import { fetchCustomers } from "../Api/customerApi";
 import { fetchBranches } from "../Api/BranchApi";
 import { fetchUsers } from "../Api/UserApi";
 import Barcode from "react-barcode";
 import html2canvas from "html2canvas";
+import { fetchProductCategories } from "../Api/ProductCategoryApi";
+import { fetchTaxes } from "../Api/TaxApi";
+import Select from "react-select";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -57,6 +60,23 @@ const Pos = () => {
   const barcodeInputRef = useRef(null);
   const barcodeRef = useRef(null);
   const [manualDiscount, setManualDiscount] = useState(0);
+
+  const [showAddProductPrompt, setShowAddProductPrompt] = useState(false);
+  const [showAddProductForm, setShowAddProductForm] = useState(false);
+  const [scannedBarcode, setScannedBarcode] = useState("");
+  const [userRole] = useState(localStorage.getItem("userRole") || "USER");
+
+  const [productName, setProductName] = useState("");
+  const [barcode, setBarcode] = useState("");
+  const [category, setCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [quantity, setQuantity] = useState("");
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [pricePerUnit, setPricePerUnit] = useState("");
+  const [taxType, setTaxType] = useState(null);
+  const [taxes, setTaxes] = useState([]);
+  const [lowStock, setLowStock] = useState("");
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -99,6 +119,14 @@ const Pos = () => {
     }
   }, [notification]);
 
+  useEffect(() => {
+    if (showAddProductForm) {
+      loadCategoriesData();
+      loadTaxesData();
+      setBarcode(scannedBarcode);
+    }
+  }, [showAddProductForm, scannedBarcode]);
+
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -113,6 +141,19 @@ const Pos = () => {
 
   const closeNotification = () => {
     setNotification(null);
+  };
+
+  const playErrorSound = () => {
+    const audio = new Audio("/error-sound.wav");
+    audio
+      .play()
+      .then(() => {
+        console.log("Error sound played successfully");
+      })
+      .catch((error) => {
+        console.error("Error playing sound:", error);
+        showNotification("Failed to play error sound. Check console for details.");
+      });
   };
 
   const handleCategorySelect = (category) => {
@@ -219,6 +260,12 @@ const Pos = () => {
     try {
       const product = await getProductByBarcode(barcode);
       if (!product || !product.responseDto || product.responseDto.length === 0) {
+        playErrorSound();
+        showNotification("Barcode not found in the database.");
+        if (["ADMIN", "MANAGER"].includes(userRole)) {
+          setScannedBarcode(barcode);
+          setShowAddProductPrompt(true);
+        }
         resetInput();
         return;
       }
@@ -412,12 +459,12 @@ const Pos = () => {
   const handleSaveTransaction = async () => {
     const userIdRaw = localStorage.getItem("userId");
     const branchIdRaw = localStorage.getItem("branchId");
-  
+
     const userId = !isNaN(parseInt(userIdRaw)) ? parseInt(userIdRaw) : 1;
     const branchId = !isNaN(parseInt(branchIdRaw)) ? parseInt(branchIdRaw) : 3;
-  
+
     let shopDetailsId = 1;
-  
+
     try {
       const branches = await fetchBranches();
       const branch = branches.find((b) => b.id === branchId);
@@ -439,7 +486,7 @@ const Pos = () => {
           contactNumber: "N/A"
         });
       }
-  
+
       const usersResponse = await fetchUsers();
       const user = usersResponse.payload.find((u) => u.id === userId);
       if (user) {
@@ -546,14 +593,14 @@ const Pos = () => {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-  
+
     const formattedDate = transactionDate && !isNaN(new Date(transactionDate).getTime())
       ? new Date(transactionDate).toLocaleString()
       : currentTime.toLocaleString();
-  
+
     const transactionId = lastTransaction?.id || 0;
     const formattedTransactionId = transactionId.toString().padStart(10, "0");
-  
+
     let barcodeDataUrl = "";
     try {
       if (barcodeRef.current) {
@@ -564,7 +611,7 @@ const Pos = () => {
       console.error("Failed to generate barcode image:", error);
       showNotification("Failed to generate barcode image.");
     }
-  
+
     printWindow.document.write(`
       <html>
         <head>
@@ -666,7 +713,7 @@ const Pos = () => {
         </body>
       </html>
     `);
-  
+
     printWindow.document.close();
     printWindow.focus();
   };
@@ -677,7 +724,7 @@ const Pos = () => {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-  
+
     if (!lastTransaction) {
       printWindow.document.write("<p>No previous transaction found.</p>");
       showNotification("No previous transaction found.");
@@ -685,7 +732,7 @@ const Pos = () => {
       printWindow.close();
       return;
     }
-  
+
     try {
       const items = lastTransaction.transactionDetailsList.map((detail) => ({
         qty: detail.quantity,
@@ -693,16 +740,16 @@ const Pos = () => {
         price: detail.unitPrice,
         total: detail.quantity * detail.unitPrice,
       }));
-  
+
       const totalAmount = lastTransaction.totalAmount;
       const paymentMethods = lastTransaction.transactionPaymentMethod.map((method) => ({
         type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
         amount: method.amount,
       }));
-  
+
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
       const calculatedBalance = totalPaid - totalAmount;
-  
+
       const branchId = lastTransaction.branchDto.id;
       const userId = lastTransaction.userDto.id;
       let branchName = branchDetails.branchName;
@@ -712,9 +759,9 @@ const Pos = () => {
       let contactNumber = branchDetails.contactNumber;
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
-  
+
       if (!branchName || !branchCode || !shopName || !address || !contactNumber) {
-        const branches = await fetchBranches(); // Added await
+        const branches = await fetchBranches();
         const branch = branches.find((b) => b.id === branchId);
         if (branch) {
           branchName = branch.branchName || "Unknown Branch";
@@ -730,7 +777,7 @@ const Pos = () => {
           contactNumber = "N/A";
         }
       }
-  
+
       if (!firstName || !lastName) {
         const usersResponse = await fetchUsers();
         const user = usersResponse.payload.find((u) => u.id === userId);
@@ -742,7 +789,7 @@ const Pos = () => {
           lastName = "";
         }
       }
-  
+
       const customer = lastTransaction.customerDto.name || "";
       const transactionDate = lastTransaction.transactionDate
         ? new Date(lastTransaction.transactionDate)
@@ -750,10 +797,10 @@ const Pos = () => {
       const formattedDate = isNaN(transactionDate.getTime())
         ? currentTime.toLocaleString()
         : transactionDate.toLocaleString();
-  
+
       const transactionId = lastTransaction.id || 0;
       const formattedTransactionId = transactionId.toString().padStart(10, "0");
-  
+
       let barcodeDataUrl = "";
       try {
         if (barcodeRef.current) {
@@ -764,7 +811,7 @@ const Pos = () => {
         console.error("Failed to generate barcode image:", error);
         showNotification("Failed to generate barcode image.");
       }
-  
+
       printWindow.document.write(`
         <html>
           <head>
@@ -862,7 +909,7 @@ const Pos = () => {
           </body>
         </html>
       `);
-  
+
       printWindow.document.close();
       printWindow.focus();
     } catch (error) {
@@ -976,6 +1023,112 @@ const Pos = () => {
     setExpandedTransactionId(expandedTransactionId === id ? null : id);
   };
 
+  const handleAddProductPromptClose = () => {
+    setShowAddProductPrompt(false);
+    setScannedBarcode("");
+  };
+
+  const handleAddProductClick = () => {
+    setShowAddProductPrompt(false);
+    setShowAddProductForm(true);
+  };
+
+  const handleAddProductFormClose = () => {
+    setShowAddProductForm(false);
+    setScannedBarcode("");
+    resetProductForm();
+  };
+
+  const resetProductForm = () => {
+    setProductName("");
+    setBarcode(scannedBarcode);
+    setCategory(null);
+    setQuantity("");
+    setPurchasePrice("");
+    setPricePerUnit("");
+    setTaxType(null);
+    setLowStock("");
+    setFormErrors({});
+  };
+
+  const loadCategoriesData = async () => {
+    try {
+      const data = await fetchProductCategories();
+      setCategories(
+        data
+          .filter((cat) => cat.isActive && cat.productCategoryName.toLowerCase() !== "custom")
+          .map((cat) => ({ value: cat.id, label: cat.productCategoryName }))
+      );
+    } catch (error) {
+      setCategories([]);
+      showNotification("Failed to load categories.");
+    }
+  };
+
+  const loadTaxesData = async () => {
+    try {
+      const data = await fetchTaxes();
+      setTaxes(
+        data
+          .filter((tax) => tax.isActive)
+          .map((tax) => ({ value: tax.id, label: `${tax.taxPercentage}%` }))
+      );
+    } catch (error) {
+      setTaxes([]);
+      showNotification("Failed to load taxes.");
+    }
+  };
+
+  const validateProductForm = () => {
+    const errors = {};
+    if (!productName.trim()) errors.productName = "Product name is required";
+    if (!barcode.trim()) errors.barcode = "Barcode is required";
+    if (!category) errors.category = "Category is required";
+    if (!quantity || isNaN(quantity) || parseInt(quantity) < 0) errors.quantity = "Valid quantity is required";
+    if (!purchasePrice || isNaN(purchasePrice) || parseFloat(purchasePrice) < 0)
+      errors.purchasePrice = "Valid purchase price is required";
+    if (!pricePerUnit || isNaN(pricePerUnit) || parseFloat(pricePerUnit) < 0)
+      errors.pricePerUnit = "Valid price per unit is required";
+    if (!taxType) errors.taxType = "Tax type is required";
+    if (!lowStock || isNaN(lowStock) || parseInt(lowStock) < 0) errors.lowStock = "Valid low stock is required";
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveProduct = async () => {
+    if (!validateProductForm()) {
+      showNotification("Please fix the errors in the form.");
+      return;
+    }
+
+    const productData = {
+      name: productName,
+      barcode: barcode,
+      pricePerUnit: parseFloat(pricePerUnit),
+      taxDto: { id: parseInt(taxType.value) },
+      isActive: true,
+      productCategoryDto: { id: parseInt(category.value) },
+      expiryDate: "2025-12-31T23:59:59",
+      createdDate: new Date().toISOString(),
+      lowStock: parseInt(lowStock),
+      purchasePrice: parseFloat(purchasePrice),
+      quantity: parseInt(quantity),
+    };
+
+    try {
+      const response = await saveProduct(productData);
+      if (response) {
+        showNotification("Product added successfully!");
+        handleAddProductFormClose();
+      } else {
+        showNotification("Failed to save product.");
+      }
+    } catch (error) {
+      showNotification("Error saving product: " + error.message);
+    }
+  };
+
   return (
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <Sidebar darkMode={darkMode} />
@@ -1040,7 +1193,7 @@ const Pos = () => {
 
         {showBillPopup && (
           <div className="bill-popup-overlay">
-            <div className="bill-popup">
+            <div className={`bill-popup ${darkMode ? "dark-mode" : ""}`}>
               <div className="bill-content">
                 <h2>Transaction Receipt</h2>
                 <p>
@@ -1076,7 +1229,7 @@ const Pos = () => {
 
         {showPriceCheckPopup && (
           <div className="price-check-popup-overlay">
-            <div className="price-check-popup">
+            <div className={`price-check-popup ${darkMode ? "dark-mode" : ""}`}>
               <h2>Price Check</h2>
               <PriceCheckPopup onClose={handleClosePriceCheckPopup} darkMode={darkMode} />
             </div>
@@ -1171,7 +1324,224 @@ const Pos = () => {
           </div>
         )}
 
+        {showAddProductPrompt && (
+          <div className="add-product-prompt-overlay">
+            <div className={`add-product-prompt ${darkMode ? "dark-mode" : ""}`}>
+              <h3>Barcode Not Found</h3>
+              <p>Barcode {scannedBarcode} was not found in the database.</p>
+              <div className="prompt-actions">
+                <button onClick={handleAddProductClick} className="btn btn-primary">
+                  Add Product
+                </button>
+                <button onClick={handleAddProductPromptClose} className="btn btn-secondary">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAddProductForm && (
+          <div className="add-product-form-overlay">
+            <div className={`add-product-form ${darkMode ? "dark-mode" : ""}`}>
+              <h2>Add New Product</h2>
+              <div className="form-content">
+                <div className="form-group">
+                  <label>Product Name</label>
+                  <input
+                    type="text"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    className={formErrors.productName ? "is-invalid" : ""}
+                  />
+                  {formErrors.productName && (
+                    <div className="invalid-feedback">{formErrors.productName}</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Barcode</label>
+                  <input
+                    type="text"
+                    value={barcode}
+                    onChange={(e) => setBarcode(e.target.value)}
+                    className={formErrors.barcode ? "is-invalid" : ""}
+                  />
+                  {formErrors.barcode && (
+                    <div className="invalid-feedback">{formErrors.barcode}</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Category</label>
+                  <Select
+                    options={categories}
+                    value={category}
+                    onChange={setCategory}
+                    placeholder="Select Category"
+                    className={formErrors.category ? "is-invalid" : ""}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#444" : "#fff",
+                        borderColor: darkMode ? "#666" : "#ccc",
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: darkMode ? "#ccc" : "#999",
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#444" : "#fff",
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? darkMode
+                            ? "#666"
+                            : "#e0e0e0"
+                          : state.isFocused
+                            ? darkMode
+                              ? "#555"
+                              : "#f0f0f0"
+                            : darkMode
+                              ? "#444"
+                              : "#fff",
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                    }}
+                  />
+                  {formErrors.category && (
+                    <div className="text-danger">{formErrors.category}</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Quantity</label>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    className={formErrors.quantity ? "is-invalid" : ""}
+                  />
+                  {formErrors.quantity && (
+                    <div className="invalid-feedback">{formErrors.quantity}</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Purchase Price</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={purchasePrice}
+                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    className={formErrors.purchasePrice ? "is-invalid" : ""}
+                  />
+                  {formErrors.purchasePrice && (
+                    <div className="invalid-feedback">{formErrors.purchasePrice}</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Price Per Unit</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={pricePerUnit}
+                    onChange={(e) => setPricePerUnit(e.target.value)}
+                    className={formErrors.pricePerUnit ? "is-invalid" : ""}
+                  />
+                  {formErrors.pricePerUnit && (
+                    <div className="invalid-feedback">{formErrors.pricePerUnit}</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Tax Percentage</label>
+                  <Select
+                    options={taxes}
+                    value={taxType}
+                    onChange={setTaxType}
+                    placeholder="Select Tax"
+                    className={formErrors.taxType ? "is-invalid" : ""}
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#444" : "#fff",
+                        borderColor: darkMode ? "#666" : "#ccc",
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                      placeholder: (base) => ({
+                        ...base,
+                        color: darkMode ? "#ccc" : "#999",
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#444" : "#fff",
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? darkMode
+                            ? "#666"
+                            : "#e0e0e0"
+                          : state.isFocused
+                            ? darkMode
+                              ? "#555"
+                              : "#f0f0f0"
+                            : darkMode
+                              ? "#444"
+                              : "#fff",
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: darkMode ? "#fff" : "#000",
+                      }),
+                    }}
+                  />
+                  {formErrors.taxType && (
+                    <div className="text-danger">{formErrors.taxType}</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Low Stock</label>
+                  <input
+                    type="number"
+                    value={lowStock}
+                    onChange={(e) => setLowStock(e.target.value)}
+                    className={formErrors.lowStock ? "is-invalid" : ""}
+                  />
+                  {formErrors.lowStock && (
+                    <div className="invalid-feedback">{formErrors.lowStock}</div>
+                  )}
+                </div>
+              </div>
+              <div className="form-actions">
+                <button onClick={handleSaveProduct} className="btn btn-primary">
+                  Save Product
+                </button>
+                <button onClick={handleAddProductFormClose} className="btn btn-secondary">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {notification && <NotificationPopup message={notification} onClose={closeNotification} />}
+
+        <audio preload="auto" style={{ display: "none" }}>
+          <source src="/error-sound.wav" type="audio/wav" />
+        </audio>
 
         <div style={{ position: "absolute", left: "-9999px" }}>
           <div ref={barcodeRef}>
