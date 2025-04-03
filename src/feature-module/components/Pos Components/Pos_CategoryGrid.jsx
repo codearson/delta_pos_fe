@@ -649,52 +649,52 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
   };
 
   const handlePrintBill = async (transaction) => {
-    const printWindow = window.open("", "_blank");
+    const printWindow = window.open("", "_blank", "height=600,width=800");
     if (!printWindow) {
       alert("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-
+  
     const formattedDate = transaction.dateTime && !isNaN(new Date(transaction.dateTime).getTime())
       ? new Date(transaction.dateTime).toLocaleString()
       : new Date().toLocaleString();
-
+  
     const transactionId = transaction.id || 0;
     const formattedTransactionId = transactionId.toString().padStart(10, "0");
-
+  
     const items = transaction.transactionDetailsList.map((detail) => ({
       qty: detail.quantity,
       name: detail.productDto?.name || "Unknown Item",
       price: detail.unitPrice,
       total: detail.quantity * detail.unitPrice,
     }));
-
+  
     const totalAmount = transaction.totalAmount;
     const paymentMethods = transaction.transactionPaymentMethod.map((method) => ({
       type: method.paymentMethodDto?.type || "Unknown",
       amount: method.amount,
     }));
-
     const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
     const balance = totalPaid - totalAmount;
-
+  
     setCurrentTransactionId(formattedTransactionId);
-
+  
     let barcodeDataUrl = "";
     try {
       if (barcodeRef.current) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
         const canvas = await html2canvas(barcodeRef.current, { scale: 2 });
         barcodeDataUrl = canvas.toDataURL("image/png");
       }
     } catch (error) {
       console.error("Failed to generate barcode image:", error);
-      alert("Failed to generate barcode image.");
+      barcodeDataUrl = "";
     }
-
+  
     printWindow.document.write(`
       <html>
         <head>
-          <title>Receipt</title>
+          <title>Receipt - Transaction ${formattedTransactionId}</title>
           <style>
             @media print {
               @page { size: 72mm auto; margin: 0; }
@@ -715,7 +715,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             .receipt-footer p { margin: 2px 0; }
             .divider { border-top: 1px dashed #000; margin: 5px 0; }
             .barcode-container { text-align: center; margin: 5px 0; }
-            .barcode-container img { width: 100%; height: 30px; }
+            .barcode-container img { width: 100%; max-width: 60mm; height: 30px; }
             .spacing { height: 10px; }
           </style>
         </head>
@@ -776,7 +776,9 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
           </div>
           <div class="divider"></div>
           <div class="barcode-container">
-            ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode" />` : "<p>Barcode failed to render</p>"}
+            ${barcodeDataUrl
+        ? `<img src="${barcodeDataUrl}" alt="Barcode for Transaction ${formattedTransactionId}" />`
+        : "<p>Barcode failed to render</p>"}
           </div>
           <div class="divider"></div>
           <div class="receipt-footer">
@@ -787,18 +789,18 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect }) =
             <p>(0094762963979)</p>
             <p>================================================</p>
           </div>
-          <script>
-            setTimeout(() => {
-              window.print();
-              window.close();
-            }, 500);
-          </script>
         </body>
       </html>
     `);
-
+  
     printWindow.document.close();
     printWindow.focus();
+  
+    // Delay printing to ensure the barcode image loads
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   const handlePrintZReport = () => {

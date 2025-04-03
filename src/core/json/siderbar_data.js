@@ -176,7 +176,7 @@ export const SidebarData = [
           //   { label: "Admin Leaves", link: "/leaves-admin" },
           //   { label: "Leave Types", link: "/leave-types" },
           // ]},
-          { label: "Holidays", link: "/holidays", icon:  <Icon.CreditCard />,showSubRoute: false },
+          { label: "Staff Leave", link: "/holidays", icon:  <Icon.CreditCard />,showSubRoute: false },
 
           // { label: "Payroll", link: "#", icon:  <Icon.DollarSign />,showSubRoute: false,  submenu: true,   submenuItems: [
           //   // { label: "Employee Salary", link: "payroll-list" },
