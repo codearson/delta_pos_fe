@@ -18,6 +18,7 @@ export const Pos_Calculator = ({
   selectedRowIndex,
   onRowSelect,
   isPaymentStarted,
+  manualDiscount,
 }) => {
   const priceSymbol = localStorage.getItem("priceSymbol") || "$"; // Default to $ if not found
 
@@ -57,6 +58,18 @@ export const Pos_Calculator = ({
   const displayItems = isPaymentStarted
     ? [
         ...selectedItems,
+        ...(manualDiscount > 0
+          ? [
+              {
+                id: "manual-discount",
+                name: "Manual Discount",
+                qty: 1,
+                price: manualDiscount,
+                total: manualDiscount,
+                type: "Discount",
+              },
+            ]
+          : []),
         ...(cashTotal > 0
           ? [
               {
@@ -82,7 +95,21 @@ export const Pos_Calculator = ({
               }))
           : []),
       ]
-    : selectedItems;
+    : [
+        ...selectedItems,
+        ...(manualDiscount > 0
+          ? [
+              {
+                id: "manual-discount",
+                name: "Manual Discount",
+                qty: 1,
+                price: manualDiscount,
+                total: manualDiscount,
+                type: "Discount",
+              },
+            ]
+          : []),
+      ];
 
   const reversedDisplayItems = [...displayItems].reverse();
 
@@ -152,6 +179,12 @@ export const Pos_Calculator = ({
           <span className="label">Discount</span>
           <span className="value">{priceSymbol}0.00</span>
         </div>
+        {manualDiscount > 0 && (
+          <div className="summary-item">
+            <span className="label">Manual Discount</span>
+            <span className="value">{priceSymbol}{manualDiscount.toFixed(2)}</span>
+          </div>
+        )}
         <div className="summary-item">
           <span className="label">Balance</span>
           <span className="value">{priceSymbol}{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
@@ -159,7 +192,7 @@ export const Pos_Calculator = ({
         <div className="divider" />
         <div className="total-summary">
           <span className="label">Grand Total</span>
-          <span className="value">{priceSymbol}{totalValue.toFixed(2)}</span>
+          <span className="value">{priceSymbol}{(totalValue - manualDiscount).toFixed(2)}</span>
         </div>
         {cashTotal > 0 && (
           <div className="summary-item">
@@ -206,6 +239,7 @@ Pos_Calculator.propTypes = {
   selectedRowIndex: PropTypes.number,
   onRowSelect: PropTypes.func.isRequired,
   isPaymentStarted: PropTypes.bool.isRequired,
+  manualDiscount: PropTypes.number.isRequired,
 };
 
 export default Pos_Calculator;
