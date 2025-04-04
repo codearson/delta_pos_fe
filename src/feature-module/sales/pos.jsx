@@ -60,6 +60,7 @@ const Pos = () => {
   const barcodeInputRef = useRef(null);
   const barcodeRef = useRef(null);
   const [manualDiscount, setManualDiscount] = useState(0);
+  const [manualDiscounts, setManualDiscounts] = useState([]);
 
   const [showAddProductPrompt, setShowAddProductPrompt] = useState(false);
   const [showAddProductForm, setShowAddProductForm] = useState(false);
@@ -340,17 +341,15 @@ const Pos = () => {
     const displayItems = isPaymentStarted
       ? [
           ...selectedItems,
-          ...(manualDiscount > 0
-            ? [
-                {
-                  id: "manual-discount",
-                  name: "Manual Discount",
-                  qty: 1,
-                  price: -manualDiscount,
-                  total: -manualDiscount,
-                  type: "Discount",
-                },
-              ]
+          ...(manualDiscounts.length > 0
+            ? manualDiscounts.map((discount, index) => ({
+                id: `manual-discount-${index}`,
+                name: "Manual Discount",
+                qty: 1,
+                price: -discount,
+                total: -discount,
+                type: "Discount",
+              }))
             : []),
           ...(cashTotal > 0
             ? [
@@ -377,17 +376,15 @@ const Pos = () => {
         ]
       : [
           ...selectedItems,
-          ...(manualDiscount > 0
-            ? [
-                {
-                  id: "manual-discount",
-                  name: "Manual Discount",
-                  qty: 1,
-                  price: -manualDiscount,
-                  total: -manualDiscount,
-                  type: "Discount",
-                },
-              ]
+          ...(manualDiscounts.length > 0
+            ? manualDiscounts.map((discount, index) => ({
+                id: `manual-discount-${index}`,
+                name: "Manual Discount",
+                qty: 1,
+                price: -discount,
+                total: -discount,
+                type: "Discount",
+              }))
             : []),
         ];
 
@@ -399,10 +396,16 @@ const Pos = () => {
     }
 
     if (selectedItem.type === "Discount") {
-      setManualDiscount(0);
-      setSelectedRowIndex(null);
-      showNotification("Manual discount voided.");
-      return;
+      const discountIndex = parseInt(selectedItem.id.split("-").pop());
+      if (!isNaN(discountIndex) && discountIndex >= 0 && discountIndex < manualDiscounts.length) {
+        const newManualDiscounts = [...manualDiscounts];
+        const removedDiscount = newManualDiscounts.splice(discountIndex, 1)[0];
+        setManualDiscounts(newManualDiscounts);
+        setManualDiscount(prevDiscount => prevDiscount - removedDiscount);
+        setSelectedRowIndex(null);
+        showNotification("Manual discount voided.");
+        return;
+      }
     }
 
     if (isPaymentStarted && selectedItem.type) {
@@ -437,6 +440,7 @@ const Pos = () => {
     setIsPaymentStarted(false);
     setSelectedRowIndex(null);
     setManualDiscount(0);
+    setManualDiscounts([]);
     showNotification("All items and payments voided.");
   };
 
@@ -452,7 +456,16 @@ const Pos = () => {
       return;
     }
     const discount = parseFloat(inputValue);
-    setManualDiscount(discount);
+    const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+    const totalDiscount = manualDiscount + discount;
+    
+    if (totalDiscount > currentTotal) {
+      showNotification("Manual discount cannot exceed the total value of items");
+      return;
+    }
+    
+    setManualDiscount(prevDiscount => prevDiscount + discount);
+    setManualDiscounts(prevDiscounts => [...prevDiscounts, discount]);
     resetInput();
   };
 
@@ -929,6 +942,7 @@ const Pos = () => {
     setSelectedRowIndex(null);
     setCustomerName("");
     setManualDiscount(0);
+    setManualDiscounts([]);
     resetInput();
   };
 
@@ -956,6 +970,7 @@ const Pos = () => {
       isPaymentStarted,
       customerName,
       manualDiscount,
+      manualDiscounts,
       timestamp: new Date().toLocaleString(),
     };
 
@@ -971,6 +986,7 @@ const Pos = () => {
     setIsPaymentStarted(false);
     setCustomerName("");
     setManualDiscount(0);
+    setManualDiscounts([]);
     resetInput();
   };
 
@@ -999,6 +1015,7 @@ const Pos = () => {
     setIsPaymentStarted(transaction.isPaymentStarted);
     setCustomerName(transaction.customerName);
     setManualDiscount(transaction.manualDiscount || 0);
+    setManualDiscounts(transaction.manualDiscounts || []);
     resetInput();
 
     const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== transaction.id);
@@ -1157,6 +1174,7 @@ const Pos = () => {
               onRowSelect={handleRowSelect}
               isPaymentStarted={isPaymentStarted}
               manualDiscount={manualDiscount}
+              manualDiscounts={manualDiscounts}
             />
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />

@@ -19,6 +19,7 @@ export const Pos_Calculator = ({
   onRowSelect,
   isPaymentStarted,
   manualDiscount,
+  manualDiscounts,
 }) => {
   const priceSymbol = localStorage.getItem("priceSymbol") || "$"; // Default to $ if not found
 
@@ -58,17 +59,15 @@ export const Pos_Calculator = ({
   const displayItems = isPaymentStarted
     ? [
         ...selectedItems,
-        ...(manualDiscount > 0
-          ? [
-              {
-                id: "manual-discount",
-                name: "Manual Discount",
-                qty: 1,
-                price: manualDiscount,
-                total: manualDiscount,
-                type: "Discount",
-              },
-            ]
+        ...(manualDiscounts.length > 0
+          ? manualDiscounts.map((discount, index) => ({
+              id: `manual-discount-${index}`,
+              name: "Manual Discount",
+              qty: 1,
+              price: discount,
+              total: discount,
+              type: "Discount",
+            }))
           : []),
         ...(cashTotal > 0
           ? [
@@ -97,17 +96,15 @@ export const Pos_Calculator = ({
       ]
     : [
         ...selectedItems,
-        ...(manualDiscount > 0
-          ? [
-              {
-                id: "manual-discount",
-                name: "Manual Discount",
-                qty: 1,
-                price: manualDiscount,
-                total: manualDiscount,
-                type: "Discount",
-              },
-            ]
+        ...(manualDiscounts.length > 0
+          ? manualDiscounts.map((discount, index) => ({
+              id: `manual-discount-${index}`,
+              name: "Manual Discount",
+              qty: 1,
+              price: discount,
+              total: discount,
+              type: "Discount",
+            }))
           : []),
       ];
 
@@ -240,6 +237,7 @@ Pos_Calculator.propTypes = {
   onRowSelect: PropTypes.func.isRequired,
   isPaymentStarted: PropTypes.bool.isRequired,
   manualDiscount: PropTypes.number.isRequired,
+  manualDiscounts: PropTypes.arrayOf(PropTypes.number).isRequired,
 };
 
 export default Pos_Calculator;
