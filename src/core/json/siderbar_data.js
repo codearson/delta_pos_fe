@@ -69,16 +69,25 @@ export const SidebarData = [
           // { label: "Print QR Code", link: "/qrcode", icon:  <Icon.Maximize  />,showSubRoute: false,submenu: false }
         ]
       },
+      // {
+      //   label: "Stock",
+      //   submenuOpen: true,
+      //   submenuHdr: "Stock",
+      //   submenu: true,
+      //   showSubRoute: false,
+      //   submenuItems: [
+      //     { label: "Manage Stock", link: "/manage-stocks", icon:  <Icon.Package />,showSubRoute: false,submenu: false }
+      //   ]
+      // },
       {
-        label: "Stock",
+        label: "Discount",
         submenuOpen: true,
-        submenuHdr: "Stock",
+        submenuHdr: "Discount",
         submenu: true,
         showSubRoute: false,
         submenuItems: [
-         // { label: "Manage Stock", link: "/manage-stocks", icon:  <Icon.Package />,showSubRoute: false,submenu: false },
-          { label: "Discount", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
-          // { label: "Stock Transfer", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
+          { label: "Discount Toggle", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+          { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
         ]
       },
       {
