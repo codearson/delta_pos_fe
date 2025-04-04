@@ -485,7 +485,7 @@ const Users = () => {
                                 data-bs-target="#add-units"
                             >
                                 <PlusCircle className="me-2" />
-                                Add New User
+                                Add New 
                             </a>
                         </div>
                     </div>

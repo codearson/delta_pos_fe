@@ -338,7 +338,7 @@ const CustomProductList = () => {
               onClick={handleAddClick}
             >
               <PlusCircle className="me-2 iconsize" />
-              Add New Custom Category
+              Add New 
             </Link>
           </div>
         </div>

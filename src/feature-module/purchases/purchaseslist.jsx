@@ -314,7 +314,7 @@ const PurchasesList = () => {
                             data-bs-target="#add-units"
                         >
                             <PlusCircle className="me-2 iconsize" />
-                            Add New Purchase
+                            Add New 
                         </Link>
                         <button className="btn btn-danger btn-added me-2" onClick={handleDeleteAll}>
                             Delete All
