@@ -14,6 +14,7 @@ import { fetchXReport } from "../../Api/TransactionApi";
 import { Printer } from "feather-icons-react/build/IconComponents";
 import { fetchZReport } from "../../Api/TransactionApi";
 import Swal from 'sweetalert2';
+import { getAllManagerToggles } from "../../Api/ManagerToggle";
 
 const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
@@ -41,6 +42,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   const barcodeRef = useRef(null);
   const [zReportData, setZReportData] = useState(null);
   const [showZReportPopup, setShowZReportPopup] = useState(false);
+  const [managerToggles, setManagerToggles] = useState([]);
 
   // Add useEffect to listen for localStorage changes
   useEffect(() => {
@@ -159,6 +161,19 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
     };
   }, [showZReportPopup]);
 
+  useEffect(() => {
+    const fetchToggles = async () => {
+      try {
+        const toggles = await getAllManagerToggles();
+        setManagerToggles(toggles.responseDto);
+      } catch (error) {
+        console.error('Error fetching manager toggles:', error);
+      }
+    };
+    
+    fetchToggles();
+  }, []);
+
   let filteredCategories = items === fetchCustomCategories ? categories : items;
   if (filteredCategories instanceof Promise) {
     filteredCategories = categories;
@@ -187,33 +202,38 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   }
 
   if (items === quickAccess) {
-    paginatedItems = paginatedItems
-      .filter(item => {
-        if (item.name === "Manual Discount") {
-          const manualEnabled = localStorage.getItem('manualDiscountEnabled');
-          return manualEnabled ? JSON.parse(manualEnabled) : true;
-        }
-        if (item.name === "Employee Discount") {
-          const employeeEnabled = localStorage.getItem('employeeDiscountEnabled');
-          return employeeEnabled ? JSON.parse(employeeEnabled) : true;
-        }
-        return true;
-      })
-      .map((item) =>
-        item.name === "Label Print"
-          ? { ...item, isLabelPrint: true }
-          : item.name === "Add Purchase List"
-            ? { ...item, isAddPurchase: true }
-            : item.name === "View Purchase List"
-              ? { ...item, isViewPurchase: true }
-              : item.name === "Sales List"
-                ? { ...item, isSalesList: true }
-                : item.name === "X - Report"
-                  ? { ...item, isXReport: true }
-                  : item.name === "Z - Report"
-                    ? { ...item, isZReport: true }
-                    : item
-      );
+    // Get active toggles and create button items
+    const activeToggleButtons = managerToggles
+      .filter(toggle => toggle.isActive)
+      .map(toggle => ({
+        id: toggle.id,
+        name: toggle.action,
+        icon: toggle.action === "Manual Discount" ? "🪙" : 
+              toggle.action === "Employee Discount" ? "🎁" : "⚙️",
+        isToggle: true
+      }));
+
+    // Combine with existing quick access items
+    paginatedItems = [
+      ...paginatedItems.filter(item => 
+        !["Manual Discount", "Employee Discount"].includes(item.name)
+      ),
+      ...activeToggleButtons
+    ].map((item) =>
+      item.name === "Label Print"
+        ? { ...item, isLabelPrint: true }
+        : item.name === "Add Purchase List"
+          ? { ...item, isAddPurchase: true }
+          : item.name === "View Purchase List"
+            ? { ...item, isViewPurchase: true }
+            : item.name === "Sales List"
+              ? { ...item, isSalesList: true }
+              : item.name === "X - Report"
+                ? { ...item, isXReport: true }
+                : item.name === "Z - Report"
+                  ? { ...item, isZReport: true }
+                  : item
+    );
   }
 
   const getUserRole = () => {
@@ -338,8 +358,14 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
         }
       } else if (item.isZReport) {
         await handleZReportClick(item);
-      } else if (item.name === "Manual Discount") {
-        onManualDiscount();
+      } else if (item.isToggle) {
+        // Handle toggle button clicks
+        if (item.name === "Manual Discount") {
+          onManualDiscount();
+        } else if (item.name === "Employee Discount") {
+          // Add your employee discount handler here
+          console.log("Employee Discount clicked");
+        }
       } else {
         onCategorySelect(item);
       }
