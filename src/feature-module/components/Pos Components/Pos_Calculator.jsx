@@ -1,4 +1,3 @@
-// Pos_Calculator.js
 import React, { useEffect } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
@@ -51,9 +50,7 @@ export const Pos_Calculator = ({
   const cashTotal = paymentMethods
     .filter((method) => method.type === "Cash")
     .reduce((sum, method) => sum + method.amount, 0);
-  const cardTotal = paymentMethods
-    .filter((method) => method.type === "Card")
-    .reduce((sum, method) => sum + method.amount, 0);
+  const cardPayments = paymentMethods.filter((method) => method.type === "Card");
 
   const displayItems = isPaymentStarted
     ? [
@@ -64,8 +61,8 @@ export const Pos_Calculator = ({
                 id: "manual-discount",
                 name: "Manual Discount",
                 qty: 1,
-                price: manualDiscount,
-                total: manualDiscount,
+                price: -manualDiscount,
+                total: -manualDiscount,
                 type: "Discount",
               },
             ]
@@ -82,17 +79,15 @@ export const Pos_Calculator = ({
               },
             ]
           : []),
-        ...(cardTotal > 0
-          ? paymentMethods
-              .filter((method) => method.type === "Card")
-              .map((method, index) => ({
-                id: `payment-card-${index}`,
-                name: `${method.type} Payment`,
-                qty: 1,
-                price: method.amount,
-                total: method.amount,
-                type: "Card",
-              }))
+        ...(cardPayments.length > 0
+          ? cardPayments.map((method, index) => ({
+              id: `payment-card-${index}`,
+              name: `${method.type} Payment`,
+              qty: 1,
+              price: method.amount,
+              total: method.amount,
+              type: "Card",
+            }))
           : []),
       ]
     : [
@@ -103,8 +98,8 @@ export const Pos_Calculator = ({
                 id: "manual-discount",
                 name: "Manual Discount",
                 qty: 1,
-                price: manualDiscount,
-                total: manualDiscount,
+                price: -manualDiscount,
+                total: -manualDiscount,
                 type: "Discount",
               },
             ]
@@ -147,7 +142,12 @@ export const Pos_Calculator = ({
               reversedDisplayItems.map((item, index) => (
                 <div
                   key={index}
-                  className={`result-row ${selectedRowIndex === (reversedDisplayItems.length - 1 - index) ? "selected" : ""}`}
+                  className={`result-row 
+                    ${selectedRowIndex === (reversedDisplayItems.length - 1 - index) ? "selected" : ""}
+                    ${item.type === "Cash" ? "cash-row" : ""}
+                    ${item.type === "Card" ? "card-row" : ""}
+                    ${item.type === "Discount" ? "discount-row" : ""}
+                  `}
                   onClick={() => onRowSelect(reversedDisplayItems.length - 1 - index)}
                 >
                   <span className="qty-column">{item.qty}</span>
@@ -187,7 +187,7 @@ export const Pos_Calculator = ({
         )}
         <div className="summary-item">
           <span className="label">Balance</span>
-          <span className="value">{priceSymbol}{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
+          <span className="value red-text">{priceSymbol}{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
         </div>
         <div className="divider" />
         <div className="total-summary">
@@ -200,12 +200,12 @@ export const Pos_Calculator = ({
             <span className="value">{priceSymbol}{cashTotal.toFixed(2)}</span>
           </div>
         )}
-        {cardTotal > 0 && (
-          <div className="summary-item">
+        {cardPayments.length > 0 && cardPayments.map((method, index) => (
+          <div key={index} className="summary-item">
             <span className="label">Card</span>
-            <span className="value">{priceSymbol}{cardTotal.toFixed(2)}</span>
+            <span className="value">{priceSymbol}{method.amount.toFixed(2)}</span>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

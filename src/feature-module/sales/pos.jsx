@@ -60,7 +60,6 @@ const Pos = () => {
   const barcodeInputRef = useRef(null);
   const barcodeRef = useRef(null);
   const [manualDiscount, setManualDiscount] = useState(0);
-
   const [showAddProductPrompt, setShowAddProductPrompt] = useState(false);
   const [showAddProductForm, setShowAddProductForm] = useState(false);
   const [scannedBarcode, setScannedBarcode] = useState("");
@@ -91,7 +90,7 @@ const Pos = () => {
     if (isPaymentStarted) {
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
       const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0) - manualDiscount;
-      const newBalance = totalPaid - currentTotal;
+      const newBalance = currentTotal - totalPaid;
       setBalance(newBalance);
     } else {
       setBalance(0);
@@ -158,39 +157,66 @@ const Pos = () => {
 
   const handleCategorySelect = (category) => {
     if (activeTab === "category" && category?.name) {
-      const qty = pendingQty || 1;
-      const price = inputStage === "price" && inputValue !== "0" ? parseFloat(inputValue) : null;
-      if (price) {
-        const total = qty * price;
-        const newItem = { id: category.id, name: category.name, qty, price, total };
+      const parsedInput = parseFloat(inputValue);
+      if (parsedInput > 0) {
+        // If in qty stage and no "×" was pressed, treat inputValue as price with qty 1
+        if (inputStage === "qty") {
+          const qty = 1;
+          const price = parsedInput;
+          const total = qty * price;
+          const newItem = { id: category.id, name: category.name, qty, price, total };
 
-        const existingItemIndex = selectedItems.findIndex(
-          (item) => item.name === newItem.name && item.price === newItem.price
-        );
+          const existingItemIndex = selectedItems.findIndex(
+            (item) => item.name === newItem.name && item.price === newItem.price
+          );
+          let newItems;
+          if (existingItemIndex !== -1) {
+            newItems = [...selectedItems];
+            newItems[existingItemIndex].qty += qty;
+            newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          } else {
+            newItems = [...selectedItems, newItem];
+          }
+          setSelectedItems(newItems);
+          setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+          resetInput();
+        } 
+        // If in price stage (after "×"), use pendingQty and inputValue as price
+        else if (inputStage === "price" && pendingQty !== null) {
+          const qty = pendingQty;
+          const price = parsedInput;
+          const total = qty * price;
+          const newItem = { id: category.id, name: category.name, qty, price, total };
 
-        let newItems;
-        if (existingItemIndex !== -1) {
-          newItems = [...selectedItems];
-          newItems[existingItemIndex].qty += qty;
-          newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
-        } else {
-          newItems = [...selectedItems, newItem];
+          const existingItemIndex = selectedItems.findIndex(
+            (item) => item.name === newItem.name && item.price === newItem.price
+          );
+          let newItems;
+          if (existingItemIndex !== -1) {
+            newItems = [...selectedItems];
+            newItems[existingItemIndex].qty += qty;
+            newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          } else {
+            newItems = [...selectedItems, newItem];
+          }
+          setSelectedItems(newItems);
+          setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+          resetInput();
         }
-
-        setSelectedItems(newItems);
-        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-        resetInput();
       } else {
-        setCurrentItem({ id: category.id, name: category.name, qty, price: null, total: null });
+        // If no valid input, prompt for price with qty 1
+        setCurrentItem({ id: category.id, name: category.name, qty: 1, price: null, total: null });
         setInputStage("price");
+        setPendingQty(1);
         setInputValue("0");
-        setInputScreenText(`${qty} ×`);
+        setInputScreenText("1 × ");
       }
     }
   };
 
   const handleNumpadClick = (action) => {
     const { type, value } = action;
+
     if (type === "clear") {
       setInputScreenText("");
       setInputValue("0");
@@ -201,36 +227,35 @@ const Pos = () => {
       setSelectedRowIndex(null);
       barcodeInputRef.current?.focus();
     } else if (type === "number") {
-      let newInput = inputValue === "0" && value !== "." ? value.toString() : inputValue + value.toString();
+      // Handle number input
+      let newInput = inputValue === "0" ? value.toString() : inputValue + value.toString();
+      if (value === "." && inputValue.includes(".")) return; // Prevent multiple decimals
       const parts = newInput.split(".");
       const decPart = parts[1] || "";
-      if (decPart.length <= 2 || !decPart) {
-        if (value === "." && inputValue.includes(".")) return;
+      if (decPart.length <= 2) { // Limit to 2 decimal places
+        setInputValue(newInput);
         if (inputStage === "qty") {
           setInputScreenText(newInput);
-          setInputValue(newInput);
         } else if (inputStage === "price") {
-          setInputScreenText(`${pendingQty || 1} × ${newInput}`);
-          setInputValue(newInput);
+          setInputScreenText(`${pendingQty} × ${newInput}`);
         }
       }
     } else if (type === "multiply") {
+      // When "×" is pressed, set pendingQty and switch to price stage
       if (inputValue !== "0" && inputStage === "qty") {
-        const qty = parseFloat(inputValue) || 1;
-        setPendingQty(qty);
+        setPendingQty(parseFloat(inputValue));
         setInputStage("price");
         setInputValue("0");
-        setInputScreenText(`${qty} × `);
+        setInputScreenText(`${parseFloat(inputValue)} × `);
       }
     } else if (type === "enter") {
-      if (currentItem && currentItem.name && currentItem.price !== null) {
+      // Handle enter key if in payment mode or if an item is fully specified
+      if (currentItem && currentItem.price !== null) {
         const total = currentItem.qty * currentItem.price;
         const newItem = { ...currentItem, total };
-
         const existingItemIndex = selectedItems.findIndex(
           (item) => item.name === newItem.name && item.price === newItem.price
         );
-
         let newItems;
         if (existingItemIndex !== -1) {
           newItems = [...selectedItems];
@@ -239,16 +264,11 @@ const Pos = () => {
         } else {
           newItems = [...selectedItems, newItem];
         }
-
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         resetInput();
       }
-      if (isPaymentStarted && selectedItems.length > 0) {
-        if (balance < 0) {
-          showNotification("Balance is less than 0. Please add sufficient payment.");
-          return;
-        }
+      if (isPaymentStarted && selectedItems.length > 0 && balance <= 0) {
         handleSaveTransaction();
       }
     }
@@ -748,7 +768,7 @@ const Pos = () => {
       }));
 
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-      const calculatedBalance = totalPaid - totalAmount;
+      const calculatedBalance = totalAmount - totalPaid;
 
       const branchId = lastTransaction.branchDto.id;
       const userId = lastTransaction.userDto.id;

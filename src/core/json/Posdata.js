@@ -1,5 +1,3 @@
-// src/core/json/Posdata.js
-
 import { fetchProducts } from "../../feature-module/Api/productApi";
 
 export const quickAccess = [
@@ -15,6 +13,7 @@ export const quickAccess = [
   { id: 10, name: "Sales List", icon: "📋" },
   { id: 11, name: "Manual Discount", icon: "🪙" },
   { id: 12, name: "Employee Discount", icon: "🎁" },
+  { id: 13, name: "Request Leave", icon: "🏖️", isRequestLeave: true },
 ];
 
 export const fetchCustomCategories = async () => {
