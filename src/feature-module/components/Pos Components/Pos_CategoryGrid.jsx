@@ -56,30 +56,45 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   }, []);
 
   useEffect(() => {
-    if (typeof items === "function") {
-      items()
-        .then((fetchedCategories) => {
-          setCategories(fetchedCategories || []);
-          setPageIndex(0);
-        })
-        .catch((err) => {
-          console.error("Error fetching categories:", err);
+    const loadCategories = async () => {
+      if (typeof items === "function") {
+        try {
+          // Check if we have cached data
+          const cachedData = localStorage.getItem('customCategories');
+          const cachedTimestamp = localStorage.getItem('customCategoriesTimestamp');
+          const now = new Date().getTime();
+          const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+
+          if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp)) < oneHour) {
+            // Use cached data if it's less than 1 hour old
+            setCategories(JSON.parse(cachedData));
+          } else {
+            // Fetch new data and cache it
+            const fetchedCategories = await items();
+            const categoriesToStore = fetchedCategories || [];
+            setCategories(categoriesToStore);
+            localStorage.setItem('customCategories', JSON.stringify(categoriesToStore));
+            localStorage.setItem('customCategoriesTimestamp', now.toString());
+          }
+        } catch (err) {
+          console.error("Error loading categories:", err);
           setCategories([]);
-        });
-    } else if (items instanceof Promise) {
-      items
-        .then((fetchedCategories) => {
-          setCategories(fetchedCategories || []);
-          setPageIndex(0);
-        })
-        .catch((err) => {
-          console.error("Error fetching categories:", err);
-          setCategories([]);
-        });
-    } else {
-      setCategories(items || []);
-      setPageIndex(0);
-    }
+        }
+      } else if (items instanceof Promise) {
+        items
+          .then((fetchedCategories) => {
+            setCategories(fetchedCategories || []);
+          })
+          .catch((err) => {
+            console.error("Error fetching categories:", err);
+            setCategories([]);
+          });
+      } else {
+        setCategories(items || []);
+      }
+    };
+
+    loadCategories();
   }, [items]);
 
   useEffect(() => {
