@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_CategoryGrid.scss";
 import Pos_BarcodeCreation from "./Pos_BarcodeCreation";
+import Pos_RequestLeave from "./Pos_RequestLeave";
 import { savePurchase, fetchPurchases, deleteAllPurchases } from "../../Api/purchaseListApi";
 import { getProductByBarcode } from "../../Api/productApi";
 import { fetchTransactions } from "../../Api/TransactionApi";
@@ -26,6 +27,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   const [showViewPurchasePopup, setShowViewPurchasePopup] = useState(false);
   const [showXReportPopup, setShowXReportPopup] = useState(false);
   const [showSalesListPopup, setShowSalesListPopup] = useState(false);
+  const [showRequestLeavePopup, setShowRequestLeavePopup] = useState(false);
   const [categories, setCategories] = useState([]);
   const [barcode, setBarcode] = useState("");
   const [productStatus, setProductStatus] = useState("");
@@ -42,10 +44,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   const [zReportData, setZReportData] = useState(null);
   const [showZReportPopup, setShowZReportPopup] = useState(false);
 
-  // Add useEffect to listen for localStorage changes
   useEffect(() => {
     const handleStorageChange = () => {
-      // Force re-render when storage changes
       setPageIndex(prev => prev + 1);
     };
 
@@ -212,7 +212,9 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
                   ? { ...item, isXReport: true }
                   : item.name === "Z - Report"
                     ? { ...item, isZReport: true }
-                    : item
+                    : item.name === "Request Leave"
+                      ? { ...item, isRequestLeave: true }
+                      : item
       );
   }
 
@@ -338,6 +340,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
         }
       } else if (item.isZReport) {
         await handleZReportClick(item);
+      } else if (item.isRequestLeave) {
+        setShowRequestLeavePopup(true);
       } else if (item.name === "Manual Discount") {
         onManualDiscount();
       } else {
@@ -1311,7 +1315,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
           </div>
         </div>
       )}
-
       {showXReportPopup && xReportData && xReportData.responseDto && (
         <div className="purchase-popup-overlay">
           <div
@@ -1442,7 +1445,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
           </div>
         </div>
       )}
-
       {showZReportPopup && zReportData && zReportData.responseDto && (
         <div className="purchase-popup-overlay">
           <div
@@ -1579,7 +1581,9 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
           </div>
         </div>
       )}
-
+      {showRequestLeavePopup && (
+        <Pos_RequestLeave onClose={() => setShowRequestLeavePopup(false)} />
+      )}
       <div style={{ position: "absolute", left: "-9999px" }}>
         <div ref={barcodeRef}>
           <Barcode

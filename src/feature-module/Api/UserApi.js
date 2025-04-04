@@ -12,7 +12,8 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
         const decodedToken = decodeJwt(accessToken);
         const userRole = decodedToken?.roles[0]?.authority;
 
-        if (userRole !== "ROLE_ADMIN" && userRole !== "ROLE_MANAGER") {
+        // If no valid role, return empty result
+        if (!userRole) {
             return { payload: [], totalRecords: 0 };
         }
 
@@ -28,11 +29,23 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
         let userData = response.data.responseDto.payload || [];
         let totalCount = response.data.responseDto.totalRecords || 0;
 
-        if (userRole === "ROLE_MANAGER") {
+        // Filter users based on the logged-in user's role
+        if (userRole === "ROLE_ADMIN") {
+            // Admin can see all users
+        } else if (userRole === "ROLE_MANAGER") {
+            // Manager can see USER and MANAGER roles
             userData = userData.filter(user => 
                 user.userRoleDto?.userRole === "USER" || user.userRoleDto?.userRole === "MANAGER"
             );
             totalCount = userData.length;
+        } else if (userRole === "ROLE_USER") {
+            // User can see only other USER roles
+            userData = userData.filter(user => 
+                user.userRoleDto?.userRole === "USER"
+            );
+            totalCount = userData.length;
+        } else {
+            return { payload: [], totalRecords: 0 };
         }
 
         return {
