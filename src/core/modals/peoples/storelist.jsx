@@ -315,7 +315,7 @@ const StoreList = () => {
         <Breadcrumbs
           maintitle="Branch List"
           subtitle="Manage Your Branch"
-          addButton="Add Branch"
+          addButton="Add New"
           buttonDataToggle="modal"
           buttonDataTarget="#add-branch"
           onDownloadPDF={handleDownloadPDF}

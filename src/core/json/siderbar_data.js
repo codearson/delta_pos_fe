@@ -76,7 +76,7 @@ export const SidebarData = [
         submenu: true,
         showSubRoute: false,
         submenuItems: [
-          { label: "Manage Stock", link: "/manage-stocks", icon:  <Icon.Package />,showSubRoute: false,submenu: false },
+         // { label: "Manage Stock", link: "/manage-stocks", icon:  <Icon.Package />,showSubRoute: false,submenu: false },
           { label: "Discount", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
           // { label: "Stock Transfer", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
         ]

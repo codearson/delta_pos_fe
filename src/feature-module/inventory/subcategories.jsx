@@ -263,7 +263,7 @@ const SubCategories = () => {
                                 data-bs-target="#add-tax"
                             >
                                 <PlusCircle className="me-2" />
-                                Add Tax
+                                Add New
                             </Link>
                         </div>
                     </div>
