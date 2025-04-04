@@ -74,7 +74,7 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
         <div className="modal-dialog modal-dialog-centered custom-modal-two">
           <div className="modal-content">
             <div className="modal-header border-0 custom-modal-header">
-              <h4 className="page-title">Add Purchase</h4>
+              <h4 className="page-title">Add New</h4>
               <button type="button" className="close" data-bs-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">×</span>
               </button>

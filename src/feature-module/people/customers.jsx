@@ -475,7 +475,7 @@ const Customers = () => {
               onClick={handleAddClick}
             >
               <PlusCircle className="me-2 iconsize" />
-              Add New Customer
+              Add New 
             </Link>
           </div>
         </div>

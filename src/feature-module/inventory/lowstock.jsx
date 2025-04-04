@@ -345,6 +345,19 @@ const LowStock = () => {
                 </Link>
               </li>
               <li>
+                <div className="dropdown">
+                  <button className="btn btn-secondary dropdown-toggle" type="button" id="timePeriodDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    Select Period
+                  </button>
+                  <ul className="dropdown-menu" aria-labelledby="timePeriodDropdown">
+                    <li><button className="dropdown-item" type="button">2 days</button></li>
+                    <li><button className="dropdown-item" type="button">4 days</button></li>
+                    <li><button className="dropdown-item" type="button">1 week</button></li>
+                    <li><button className="dropdown-item" type="button">1 month</button></li>
+                  </ul>
+                </div>
+              </li>
+              <li>
                 <OverlayTrigger placement="top" overlay={renderTooltip}>
                   <Link onClick={exportToPDF}>
                     <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />

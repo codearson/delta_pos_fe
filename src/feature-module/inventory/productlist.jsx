@@ -390,7 +390,7 @@ const ProductList = () => {
           </ul>
           <div className="page-btn d-flex gap-2">
             <Link to={route.addproduct} className="btn btn-added">
-              <PlusCircle className="me-2 iconsize" /> Add New Product
+              <PlusCircle className="me-2 iconsize" /> Add New
             </Link>
           </div>
         </div>

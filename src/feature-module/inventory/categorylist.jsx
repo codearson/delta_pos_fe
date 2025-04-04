@@ -315,7 +315,7 @@ const CategoryList = () => {
                                 data-bs-target="#add-category"
                             >
                                 <PlusCircle className="me-2" />
-                                Add New Category
+                                Add New
                             </Link>
                         </div>
                     </div>
