@@ -21,7 +21,7 @@ const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
 const MAX_PAGES = 5;
 
-const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onManualDiscount }) => {
+const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onManualDiscount, showNotification }) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
   const [showAddPurchasePopup, setShowAddPurchasePopup] = useState(false);
@@ -704,12 +704,14 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   };
 
   const handlePrintBill = async (transaction) => {
-    const printWindow = window.open("", "_blank", "height=600,width=800");
+    console.log('Transaction Data:', transaction);
+    
+    const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Failed to open print window. Please allow popups for this site and try again.");
+      showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-  
+
     const formattedDate = transaction.dateTime && !isNaN(new Date(transaction.dateTime).getTime())
       ? new Date(transaction.dateTime).toLocaleString()
       : new Date().toLocaleString();
@@ -721,16 +723,19 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
       qty: detail.quantity,
       name: detail.productDto?.name || "Unknown Item",
       price: detail.unitPrice,
+      discount: detail.discount || 0,
       total: detail.quantity * detail.unitPrice,
     }));
   
     const totalAmount = transaction.totalAmount;
+    const manualDiscount = transaction.manualDiscount || 0;
+    console.log('Manual Discount:', manualDiscount);
     const paymentMethods = transaction.transactionPaymentMethod.map((method) => ({
       type: method.paymentMethodDto?.type || "Unknown",
       amount: method.amount,
     }));
     const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-    const balance = totalPaid - totalAmount;
+    const balance = totalPaid - (totalAmount - manualDiscount);
   
     setCurrentTransactionId(formattedTransactionId);
   
@@ -745,11 +750,11 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
       console.error("Failed to generate barcode image:", error);
       barcodeDataUrl = "";
     }
-  
+
     printWindow.document.write(`
       <html>
         <head>
-          <title>Receipt - Transaction ${formattedTransactionId}</title>
+          <title>Receipt</title>
           <style>
             @media print {
               @page { size: 72mm auto; margin: 0; }
@@ -770,7 +775,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
             .receipt-footer p { margin: 2px 0; }
             .divider { border-top: 1px dashed #000; margin: 5px 0; }
             .barcode-container { text-align: center; margin: 5px 0; }
-            .barcode-container img { width: 100%; max-width: 60mm; height: 30px; }
+            .barcode-container img { width: 100%; height: 30px; }
             .spacing { height: 10px; }
           </style>
         </head>
@@ -800,38 +805,30 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
             </thead>
             <tbody>
               ${items.length > 0
-        ? items
-          .map(
-            (item) => `
+                ? items.map(item => `
                     <tr>
                       <td>${item.qty}</td>
                       <td>${item.name}</td>
                       <td>${item.price.toFixed(2)}</td>
-                      <td class="total-column">${item.total.toFixed(2)}</td>
+                      <td class="total-column">${(item.total - (item.discount || 0)).toFixed(2)}</td>
                     </tr>
-                  `
-          )
-          .join("")
-        : "<tr><td colspan='4'>No items</td></tr>"}
+                  `).join('')
+                : '<tr><td colspan="5">No items</td></tr>'
+              }
             </tbody>
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
             <p>Total: ${totalAmount.toFixed(2)}</p>
-            ${transaction.manualDiscount > 0 ? `<p>Manual Discount: ${transaction.manualDiscount.toFixed(2)}</p>` : ''}
-            <p>Grand Total: ${(totalAmount - (transaction.manualDiscount || 0)).toFixed(2)}</p>
-            ${paymentMethods.length > 0
-        ? paymentMethods.map((method) => `
-                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                  `).join('')
-        : "<p>No payments recorded</p>"}
+            ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
+            ${paymentMethods.map(method => `
+              <p>${method.type}: ${method.amount.toFixed(2)}</p>
+            `).join('')}
             <p>Balance: ${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
           <div class="barcode-container">
-            ${barcodeDataUrl
-        ? `<img src="${barcodeDataUrl}" alt="Barcode for Transaction ${formattedTransactionId}" />`
-        : "<p>Barcode failed to render</p>"}
+            ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode" />` : '<p>Barcode failed to render</p>'}
           </div>
           <div class="divider"></div>
           <div class="receipt-footer">
@@ -842,18 +839,18 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
             <p>(0094762963979)</p>
             <p>================================================</p>
           </div>
+          <script>
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          </script>
         </body>
       </html>
     `);
-  
+
     printWindow.document.close();
     printWindow.focus();
-  
-    // Delay printing to ensure the barcode image loads
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
   };
 
   const handlePrintZReport = () => {
@@ -1651,6 +1648,7 @@ Pos_CategoryGrid.propTypes = {
   ]),
   onCategorySelect: PropTypes.func.isRequired,
   onManualDiscount: PropTypes.func.isRequired,
+  showNotification: PropTypes.func.isRequired,
 };
 
 export default Pos_CategoryGrid;
