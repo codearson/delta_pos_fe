@@ -61,12 +61,10 @@ const Pos = () => {
   const barcodeRef = useRef(null);
   const [manualDiscount, setManualDiscount] = useState(0);
   const [manualDiscounts, setManualDiscounts] = useState([]);
-
   const [showAddProductPrompt, setShowAddProductPrompt] = useState(false);
   const [showAddProductForm, setShowAddProductForm] = useState(false);
   const [scannedBarcode, setScannedBarcode] = useState("");
   const [userRole] = useState(localStorage.getItem("userRole") || "USER");
-
   const [productName, setProductName] = useState("");
   const [barcode, setBarcode] = useState("");
   const [category, setCategory] = useState(null);
@@ -136,8 +134,8 @@ const Pos = () => {
 
   const handleTabChange = (newTab) => setActiveTab(newTab);
 
-  const showNotification = (message) => {
-    setNotification(message);
+  const showNotification = (message, type = "error") => {
+    setNotification({ message, type });
   };
 
   const closeNotification = () => {
@@ -153,7 +151,7 @@ const Pos = () => {
       })
       .catch((error) => {
         console.error("Error playing sound:", error);
-        showNotification("Failed to play error sound. Check console for details.");
+        showNotification("Failed to play error sound. Check console for details.", "error");
       });
   };
 
@@ -161,7 +159,6 @@ const Pos = () => {
     if (activeTab === "category" && category?.name) {
       const parsedInput = parseFloat(inputValue);
       if (parsedInput > 0) {
-        // If in qty stage and no "×" was pressed, treat inputValue as price with qty 1
         if (inputStage === "qty") {
           const qty = 1;
           const price = parsedInput;
@@ -183,7 +180,6 @@ const Pos = () => {
           setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
           resetInput();
         } 
-        // If in price stage (after "×"), use pendingQty and inputValue as price
         else if (inputStage === "price" && pendingQty !== null) {
           const qty = pendingQty;
           const price = parsedInput;
@@ -206,7 +202,6 @@ const Pos = () => {
           resetInput();
         }
       } else {
-        // If no valid input, prompt for price with qty 1
         setCurrentItem({ id: category.id, name: category.name, qty: 1, price: null, total: null });
         setInputStage("price");
         setPendingQty(1);
@@ -229,12 +224,11 @@ const Pos = () => {
       setSelectedRowIndex(null);
       barcodeInputRef.current?.focus();
     } else if (type === "number") {
-      // Handle number input
       let newInput = inputValue === "0" ? value.toString() : inputValue + value.toString();
-      if (value === "." && inputValue.includes(".")) return; // Prevent multiple decimals
+      if (value === "." && inputValue.includes(".")) return;
       const parts = newInput.split(".");
       const decPart = parts[1] || "";
-      if (decPart.length <= 2) { // Limit to 2 decimal places
+      if (decPart.length <= 2) {
         setInputValue(newInput);
         if (inputStage === "qty") {
           setInputScreenText(newInput);
@@ -243,7 +237,6 @@ const Pos = () => {
         }
       }
     } else if (type === "multiply") {
-      // When "×" is pressed, set pendingQty and switch to price stage
       if (inputValue !== "0" && inputStage === "qty") {
         setPendingQty(parseFloat(inputValue));
         setInputStage("price");
@@ -251,7 +244,6 @@ const Pos = () => {
         setInputScreenText(`${parseFloat(inputValue)} × `);
       }
     } else if (type === "enter") {
-      // Handle enter key if in payment mode or if an item is fully specified
       if (currentItem && currentItem.price !== null) {
         const total = currentItem.qty * currentItem.price;
         const newItem = { ...currentItem, total };
@@ -283,7 +275,7 @@ const Pos = () => {
       const product = await getProductByBarcode(barcode);
       if (!product || !product.responseDto || product.responseDto.length === 0) {
         playErrorSound();
-        showNotification("Barcode not found in the database.");
+        showNotification("Barcode not found in the database.", "error");
         if (["ADMIN", "MANAGER"].includes(userRole)) {
           setScannedBarcode(barcode);
           setShowAddProductPrompt(true);
@@ -301,7 +293,7 @@ const Pos = () => {
 
       const qty = inputStage === "price" && pendingQty ? pendingQty : 1;
       if (inputStage === "price" && inputValue !== "0") {
-        showNotification("Invalid Qty: Cannot set custom price for barcoded items");
+        showNotification("Invalid Qty: Cannot set custom price for barcoded items", "error");
         resetInput();
         return;
       }
@@ -326,6 +318,7 @@ const Pos = () => {
       setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
       resetInput();
     } catch (error) {
+      showNotification("Error searching barcode: " + error.message, "error");
       resetInput();
     }
   };
@@ -350,7 +343,7 @@ const Pos = () => {
 
   const handleVoidLine = () => {
     if (selectedRowIndex === null) {
-      showNotification("Please select a row to void.");
+      showNotification("Please select a row to void.", "error");
       return;
     }
 
@@ -412,7 +405,7 @@ const Pos = () => {
     const selectedItem = displayItems[selectedRowIndex];
 
     if (!selectedItem) {
-      showNotification("Invalid selection.");
+      showNotification("Invalid selection.", "error");
       return;
     }
 
@@ -424,14 +417,14 @@ const Pos = () => {
         setManualDiscounts(newManualDiscounts);
         setManualDiscount(prevDiscount => prevDiscount - removedDiscount);
         setSelectedRowIndex(null);
-        showNotification("Manual discount voided.");
+        showNotification("Manual discount voided.", "success");
         return;
       }
     }
 
     if (isPaymentStarted && selectedItem.type) {
       if (selectedItem.type === "Card") {
-        showNotification("Card payments cannot be voided with Void Line.");
+        showNotification("Card payments cannot be voided with Void Line.", "error");
         return;
       }
       if (selectedItem.type === "Cash") {
@@ -441,7 +434,7 @@ const Pos = () => {
         if (newPaymentMethods.length === 0) {
           setIsPaymentStarted(false);
         }
-        showNotification("Cash payment voided.");
+        showNotification("Cash payment voided.", "success");
         return;
       }
     }
@@ -450,7 +443,7 @@ const Pos = () => {
     setSelectedItems(newItems);
     setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
     setSelectedRowIndex(null);
-    showNotification("Item voided.");
+    showNotification("Item voided.", "success");
   };
 
   const handleVoidAll = () => {
@@ -462,18 +455,18 @@ const Pos = () => {
     setSelectedRowIndex(null);
     setManualDiscount(0);
     setManualDiscounts([]);
-    showNotification("All items and payments voided.");
+    showNotification("All items and payments voided.", "success");
   };
 
   const handleCustomerAdded = (name) => setCustomerName(name);
 
   const handleManualDiscount = () => {
     if (inputValue === "0") {
-      showNotification("Please enter a discount amount first");
+      showNotification("Please enter a discount amount first", "error");
       return;
     }
     if (selectedItems.length === 0) {
-      showNotification("Please add items to the transaction before applying a discount");
+      showNotification("Please add items to the transaction before applying a discount", "error");
       return;
     }
     const discount = parseFloat(inputValue);
@@ -481,13 +474,14 @@ const Pos = () => {
     const totalDiscount = manualDiscount + discount;
     
     if (totalDiscount > currentTotal) {
-      showNotification("Manual discount cannot exceed the total value of items");
+      showNotification("Manual discount cannot exceed the total value of items", "error");
       return;
     }
     
     setManualDiscount(prevDiscount => prevDiscount + discount);
     setManualDiscounts(prevDiscounts => [...prevDiscounts, discount]);
     resetInput();
+    showNotification("Manual discount applied.", "success");
   };
 
   const handleSaveTransaction = async () => {
@@ -590,7 +584,7 @@ const Pos = () => {
           transactionId = result.payload.id;
         } else {
           transactionId = 0;
-          showNotification("Warning: Transaction ID not found in API response. Please check the backend response.");
+          showNotification("Warning: Transaction ID not found in API response. Please check the backend response.", "error");
         }
   
         setLastTransaction({
@@ -613,18 +607,19 @@ const Pos = () => {
           transactionDate: new Date(),
         });
         setShowBillPopup(true);
+        showNotification("Transaction saved successfully!", "success");
       } else {
-        showNotification("Failed to save transaction: " + result.error);
+        showNotification("Failed to save transaction: " + result.error, "error");
       }
     } catch (error) {
-      showNotification("Error saving transaction: " + error.message);
+      showNotification("Error saving transaction: " + error.message, "error");
     }
   };
 
   const handlePrintBill = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      showNotification("Failed to open print window. Please allow popups for this site and try again.");
+      showNotification("Failed to open print window. Please allow popups for this site and try again.", "error");
       return;
     }
 
@@ -643,7 +638,7 @@ const Pos = () => {
       }
     } catch (error) {
       console.error("Failed to generate barcode image:", error);
-      showNotification("Failed to generate barcode image.");
+      showNotification("Failed to generate barcode image.", "error");
     }
 
     printWindow.document.write(`
@@ -755,13 +750,13 @@ const Pos = () => {
   const handlePrintLastBill = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      showNotification("Failed to open print window. Please allow popups for this site and try again.");
+      showNotification("Failed to open print window. Please allow popups for this site and try again.", "error");
       return;
     }
 
     if (!lastTransaction) {
       printWindow.document.write("<p>No previous transaction found.</p>");
-      showNotification("No previous transaction found.");
+      showNotification("No previous transaction found.", "error");
       printWindow.document.close();
       printWindow.close();
       return;
@@ -843,7 +838,7 @@ const Pos = () => {
         }
       } catch (error) {
         console.error("Failed to generate barcode image:", error);
-        showNotification("Failed to generate barcode image.");
+        showNotification("Failed to generate barcode image.", "error");
       }
 
       printWindow.document.write(`
@@ -949,7 +944,7 @@ const Pos = () => {
     } catch (error) {
       printWindow.document.write(`<p>Failed to load receipt: ${error.message}</p>`);
       printWindow.document.close();
-      showNotification("Failed to print the last transaction: " + error.message);
+      showNotification("Failed to print the last transaction: " + error.message, "error");
     }
   };
 
@@ -978,7 +973,7 @@ const Pos = () => {
 
   const handleSuspendTransaction = () => {
     if (selectedItems.length === 0 && paymentMethods.length === 0) {
-      showNotification("No transaction to suspend.");
+      showNotification("No transaction to suspend.", "error");
       return;
     }
 
@@ -998,7 +993,7 @@ const Pos = () => {
     const updatedSuspendedTransactions = [...suspendedTransactions, suspendedTransaction];
     setSuspendedTransactions(updatedSuspendedTransactions);
     localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
-    showNotification("Transaction suspended successfully.");
+    showNotification("Transaction suspended successfully.", "success");
 
     setSelectedItems([]);
     setTotalValue(0);
@@ -1013,11 +1008,11 @@ const Pos = () => {
 
   const handleRecallTransaction = () => {
     if (selectedItems.length > 0) {
-      showNotification("Cannot recall a transaction while items are added. Please complete or void the current transaction.");
+      showNotification("Cannot recall a transaction while items are added. Please complete or void the current transaction.", "error");
       return;
     }
     if (suspendedTransactions.length === 0) {
-      showNotification("No suspended transactions available.");
+      showNotification("No suspended transactions available.", "error");
       return;
     }
     setShowSuspendedTransactions(true);
@@ -1044,14 +1039,14 @@ const Pos = () => {
     localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
     setShowSuspendedTransactions(false);
     setExpandedTransactionId(null);
-    showNotification("Transaction recalled successfully.");
+    showNotification("Transaction recalled successfully.", "success");
   };
 
   const handleDeleteSuspendedTransaction = (id) => {
     const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== id);
     setSuspendedTransactions(updatedSuspendedTransactions);
     localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
-    showNotification("Suspended transaction deleted successfully.");
+    showNotification("Suspended transaction deleted successfully.", "success");
     if (updatedSuspendedTransactions.length === 0) {
       setShowSuspendedTransactions(false);
     }
@@ -1099,7 +1094,7 @@ const Pos = () => {
       );
     } catch (error) {
       setCategories([]);
-      showNotification("Failed to load categories.");
+      showNotification("Failed to load categories.", "error");
     }
   };
 
@@ -1113,7 +1108,7 @@ const Pos = () => {
       );
     } catch (error) {
       setTaxes([]);
-      showNotification("Failed to load taxes.");
+      showNotification("Failed to load taxes.", "error");
     }
   };
 
@@ -1136,7 +1131,7 @@ const Pos = () => {
 
   const handleSaveProduct = async () => {
     if (!validateProductForm()) {
-      showNotification("Please fix the errors in the form.");
+      showNotification("Please fix the errors in the form.", "error");
       return;
     }
 
@@ -1157,13 +1152,13 @@ const Pos = () => {
     try {
       const response = await saveProduct(productData);
       if (response) {
-        showNotification("Product added successfully!");
+        showNotification("Product added successfully!", "success");
         handleAddProductFormClose();
       } else {
-        showNotification("Failed to save product.");
+        showNotification("Failed to save product.", "error");
       }
     } catch (error) {
-      showNotification("Error saving product: " + error.message);
+      showNotification("Error saving product: " + error.message, "error");
     }
   };
 
@@ -1576,7 +1571,13 @@ const Pos = () => {
           </div>
         )}
 
-        {notification && <NotificationPopup message={notification} onClose={closeNotification} />}
+        {notification && (
+          <NotificationPopup
+            message={notification.message}
+            type={notification.type}
+            onClose={closeNotification}
+          />
+        )}
 
         <audio preload="auto" style={{ display: "none" }}>
           <source src="/error-sound.wav" type="audio/wav" />
