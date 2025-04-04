@@ -911,6 +911,7 @@ const Pos = () => {
             <div class="divider"></div>
             <div class="receipt-details">
               <p>Total: ${totalAmount.toFixed(2)}</p>
+              ${lastTransaction.manualDiscount > 0 ? `<p>Manual Discount: ${lastTransaction.manualDiscount.toFixed(2)}</p>` : ''}
               ${paymentMethods.map((method) => `
                 <p>${method.type}: ${method.amount.toFixed(2)}</p>
               `).join('')}
@@ -1332,7 +1333,6 @@ const Pos = () => {
                             {transaction.manualDiscount > 0 && (
                               <p>Manual Discount: {transaction.manualDiscount.toFixed(2)}</p>
                             )}
-                            <p>Grand Total: {(transaction.totalValue - (transaction.manualDiscount || 0)).toFixed(2)}</p>
                             <p>
                               Payments:{" "}
                               {transaction.paymentMethods.length > 0
