@@ -58,6 +58,33 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
     }
 };
 
+export const fetchAdmins = async (pageNumber = 1, pageSize = 10) => {
+    try {
+        const accessToken = localStorage.getItem("accessToken");
+
+        if (!accessToken) {
+            return { payload: [], totalRecords: 0 };
+        }
+
+        const response = await axios.get(
+            `${BASE_BACKEND_URL}/user/getAll?pageNumber=${pageNumber}&pageSize=${pageSize}`, 
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        return {
+            payload: response.data.responseDto.payload || [],
+            totalRecords: response.data.responseDto.totalRecords || 0
+        };
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        return { payload: [], totalRecords: 0 };
+    }
+};
+
 export const saveUser = async (userData) => {
     try {
         const accessToken = localStorage.getItem("accessToken");

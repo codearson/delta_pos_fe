@@ -344,6 +344,24 @@ const Users = () => {
             render: (isActive, record) => {
                 const isAdmin = record.userRoleDto?.userRole === "ADMIN";
                 const isManager = record.userRoleDto?.userRole === "MANAGER";
+                
+                // Get current user's role
+                const currentUserRole = decodeJwt(localStorage.getItem("accessToken"))?.roles[0]?.authority;
+                
+                // Determine if toggle should be disabled
+                let shouldDisableToggle = false;
+                
+                if (currentUserRole === "ROLE_ADMIN") {
+                    // Admin can only disable MANAGER and USER roles
+                    shouldDisableToggle = isAdmin;
+                } else if (currentUserRole === "ROLE_MANAGER") {
+                    // Manager can only disable USER roles
+                    shouldDisableToggle = isAdmin || isManager;
+                } else {
+                    // USER cannot disable any roles
+                    shouldDisableToggle = true;
+                }
+
                 return (
                     <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
                         <input
@@ -351,7 +369,7 @@ const Users = () => {
                             type="checkbox"
                             checked={isActive}
                             onChange={() => handleToggleStatus(record.id, isActive)}
-                            disabled={togglingId === record.id || isAdmin || isManager}
+                            disabled={togglingId === record.id || shouldDisableToggle}
                         />
                     </div>
                 );

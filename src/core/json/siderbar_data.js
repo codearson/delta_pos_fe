@@ -221,7 +221,7 @@ export const SidebarData = [
         submenuHdr: "User Management",
         submenuItems: [
           { label: "Users", link: "/users", icon:  <Icon.UserCheck />,showSubRoute: false },
-          // { label: "Roles & Permissions", link: "/roles-permissions", icon:  <Icon.UserCheck />,showSubRoute: false },
+          { label: "Admin Details", link: "/roles-permissions", icon:  <Icon.UserCheck />,showSubRoute: false },
           // { label: "Delete Account Request", link: "/delete-account", icons:  <Icon.Lock />,showSubRoute: false }
         ]
       },
