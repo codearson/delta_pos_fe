@@ -1,156 +1,146 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
-import { Filter, Sliders } from "react-feather";
-import ImageWithBasePath from "../../core/img/imagewithbasebath";
-import Select from "react-select";
 import { Link } from "react-router-dom";
-import { Archive, Calendar, User, Trash2, Edit } from "react-feather";
-import DatePicker from "react-datepicker";
+import { Edit } from "react-feather";
 import "react-datepicker/dist/react-datepicker.css";
 import StockTransferModal from "../../core/modals/stocks/stocktransferModal";
-import { useSelector } from "react-redux";
 import Table from "../../core/pagination/datatable";
+import { fetchEmployeeDiscounts, updateEmployeeDiscount } from "../Api/EmployeeDis";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import EmployeeDiscountModal from "../../core/modals/employee/EmployeeDiscountModal";
 
-const StockTransfer = () => {
-  const data = useSelector((state) => state.stocktransferdata);
+const EmployeeDiscount = () => {
+  const [employeeDiscounts, setEmployeeDiscounts] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDiscount, setSelectedDiscount] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
+  useEffect(() => {
+    loadEmployeeDiscounts();
+  }, []);
 
-  const toggleFilterVisibility = () => {
-    setIsFilterVisible((prevVisibility) => !prevVisibility);
+  const loadEmployeeDiscounts = async () => {
+    try {
+      const data = await fetchEmployeeDiscounts();
+      // Reverse the array to show latest entries first
+      setEmployeeDiscounts([...data].reverse());
+    } catch (error) {
+      console.error("Error loading employee discounts:", error);
+    }
   };
 
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
+  const handleEditClick = (record) => {
+    setSelectedDiscount(record);
+    setIsModalOpen(true);
   };
 
-  const options = [
-    { value: "sortByDate", label: "Sort by Date" },
-    { value: "140923", label: "14 09 23" },
-    { value: "110923", label: "11 09 23" },
-  ];
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedDiscount(null);
+  };
 
-  const warehouseOptions = [
-    { value: "Lobar Handy", label: "Lobar Handy" },
-    { value: "Quaint Warehouse", label: "Quaint Warehouse" },
-    { value: "Traditional Warehouse", label: "Traditional Warehouse" },
-    { value: "Cool Warehouse", label: "Cool Warehouse" },
-  ];
+  const handleUpdateDiscount = async (id, discount) => {
+    try {
+      const updatedData = {
+        ...selectedDiscount,
+        discount: parseFloat(discount)
+      };
+      
+      await updateEmployeeDiscount(updatedData);
+      await loadEmployeeDiscounts();
+      
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Success!",
+        text: "Employee discount updated successfully",
+        icon: "success",
+        confirmButtonText: "OK"
+      });
+      
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error updating employee discount:", error);
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to update employee discount",
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+    }
+  };
 
-  const destinationOptions = [
-    { value: "Selosy", label: "Selosy" },
-    { value: "Logerro", label: "Logerro" },
-    { value: "Vesloo", label: "Vesloo" },
-    { value: "Crompy", label: "Crompy" },
-  ];
+  const handleDownloadPDF = () => {
+    return employeeDiscounts.map(discount => ({
+      "Employee Name": discount.userDto.firstName,
+      "Discount": `${discount.discount}%`
+    }));
+  };
+
+  const handleDownloadExcel = () => {
+    return employeeDiscounts.map(discount => ({
+      "Employee Name": discount.userDto.firstName,
+      "Discount": `${discount.discount}%`
+    }));
+  };
+
+  const handleRefresh = () => {
+    loadEmployeeDiscounts();
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value.toLowerCase());
+  };
+
+  const filteredDiscounts = employeeDiscounts.filter(discount => 
+    discount.userDto.firstName.toLowerCase().includes(searchTerm)
+  );
 
   const columns = [
     {
-      title: "From Warehouse",
-      dataIndex: "fromWarehouse",
-      sorter: (a, b) => a.fromWarehouse.length - b.fromWarehouse.length,
+      title: "Employee Name",
+      dataIndex: "userDto",
+      render: (userDto) => userDto.firstName,
+      sorter: (a, b) => a.userDto.firstName.localeCompare(b.userDto.firstName),
     },
     {
-      title: "To Warehouse",
-      dataIndex: "toWarehouse",
-      sorter: (a, b) => a.toWarehouse.length - b.toWarehouse.length,
+      title: "Discount",
+      dataIndex: "discount",
+      render: (discount) => `${discount}%`,
+      sorter: (a, b) => a.discount - b.discount,
     },
-    {
-      title: "No Of Products",
-      dataIndex: "noOfProducts",
-      sorter: (a, b) => a.noOfProducts.length - b.noOfProducts.length,
-    },
-
-    {
-      title: "Quantity Transferred",
-      dataIndex: "quantityTransferred",
-      sorter: (a, b) =>
-        a.quantityTransferred.length - b.quantityTransferred.length,
-    },
-
-    {
-      title: "Ref Number",
-      dataIndex: "refNumber",
-      sorter: (a, b) => a.refNumber.length - b.refNumber.length,
-    },
-
-    {
-      title: "Date",
-      dataIndex: "date",
-      sorter: (a, b) => a.date.length - b.date.length,
-    },
-
     {
       title: "Action",
       dataIndex: "action",
-      render: () => (
+      render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <div className="input-block add-lists"></div>
-
             <Link
               className="me-2 p-2"
               to="#"
-              data-bs-toggle="modal"
-              data-bs-target="#edit-units"
+              onClick={() => handleEditClick(record)}
             >
               <Edit className="feather-edit" />
-            </Link>
-
-            <Link
-              className="confirm-text p-2"
-              to="#"
-              onClick={showConfirmationAlert}
-            >
-              <Trash2 className="feather-trash-2" />
             </Link>
           </div>
         </td>
       ),
-      sorter: (a, b) => a.createdby.length - b.createdby.length,
     },
   ];
 
-  const MySwal = withReactContent(Swal);
-
-  const showConfirmationAlert = () => {
-    MySwal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      showCancelButton: true,
-      confirmButtonColor: "#00ff00",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonColor: "#ff0000",
-      cancelButtonText: "Cancel",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        MySwal.fire({
-          title: "Deleted!",
-          text: "Your file has been deleted.",
-          className: "btn btn-success",
-          confirmButtonText: "OK",
-          customClass: {
-            confirmButton: "btn btn-success",
-          },
-        });
-      } else {
-        MySwal.close();
-      }
-    });
-  };
   return (
     <div className="page-wrapper">
       <div className="content">
         <Breadcrumbs
-          maintitle="Stock Transfer"
-          subtitle="Manage your stock transfer"
+          maintitle="Employee Discount"
+          subtitle="Manage your employee discount"
           addButton="Add New"
-          importbutton="Import Transfer"
+          showImport={false}
+          onDownloadPDF={handleDownloadPDF}
+          onDownloadExcel={handleDownloadExcel}
+          onRefresh={handleRefresh}
         />
-        {/* /product list */}
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">
@@ -158,117 +148,38 @@ const StockTransfer = () => {
                 <div className="search-input">
                   <input
                     type="text"
-                    placeholder="Search"
                     className="form-control form-control-sm formsearch"
+                    value={searchTerm}
+                    onChange={handleSearch}
                   />
                   <Link to className="btn btn-searchset">
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
               </div>
-              <div className="search-path">
-                <Link
-                  className={`btn btn-filter ${
-                    isFilterVisible ? "setclose" : ""
-                  }`}
-                  id="filter_search"
-                >
-                  <Filter
-                    className="filter-icon"
-                    onClick={toggleFilterVisibility}
-                  />
-                  <span onClick={toggleFilterVisibility}>
-                    <ImageWithBasePath
-                      src="assets/img/icons/closes.svg"
-                      alt="img"
-                    />
-                  </span>
-                </Link>
-              </div>
-              <div className="form-sort stylewidth">
-                <Sliders className="info-img" />
-
-                <Select
-                  className="select "
-                  options={options}
-                  placeholder="Sort by Date"
-                />
-              </div>
             </div>
-            {/* /Filter */}
-            <div
-              className={`card${isFilterVisible ? " visible" : ""}`}
-              id="filter_inputs"
-              style={{ display: isFilterVisible ? "block" : "none" }}
-            >
-              <div className="card-body pb-0">
-                <div className="row">
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Archive className="info-img" />
-                      <Select
-                        className="select"
-                        options={warehouseOptions}
-                        placeholder="Warehouse From"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <User className="info-img" />
-                      <Select
-                        className="select"
-                        options={destinationOptions}
-                        placeholder="Warehouse To"
-                      />
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12">
-                    <div className="input-blocks">
-                      <Calendar className="info-img" />
-                      <div className="input-groupicon">
-                        <DatePicker
-                          selected={selectedDate}
-                          onChange={handleDateChange}
-                          dateFormat="dd/MM/yyyy"
-                          placeholderText="Choose Date"
-                          className="datetimepicker"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-3 col-sm-6 col-12 ms-auto">
-                    <div className="input-blocks">
-                      <a className="btn btn-filters ms-auto">
-                        {" "}
-                        <i
-                          data-feather="search"
-                          className="feather-search"
-                        />{" "}
-                        Search{" "}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* /Filter */}
             <div className="table-responsive">
               <Table
                 className="table datanew"
                 columns={columns}
-                dataSource={data}
-
-                // pagination={true}
+                dataSource={filteredDiscounts}
+                onDownloadPDF={handleDownloadPDF}
+                onDownloadExcel={handleDownloadExcel}
               />
             </div>
           </div>
         </div>
-        {/* /product list */}
       </div>
-      <StockTransferModal />
+
+      <EmployeeDiscountModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        selectedDiscount={selectedDiscount}
+        onUpdate={handleUpdateDiscount}
+      />
+      <StockTransferModal onSave={loadEmployeeDiscounts} />
     </div>
   );
 };
 
-export default StockTransfer;
+export default EmployeeDiscount;

@@ -1,32 +1,171 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Select from "react-select";
-import ImageWithBasePath from "../../img/imagewithbasebath";
-import { Link } from "react-router-dom";
+import { saveEmployeeDiscount, fetchEmployeeDiscounts } from "../../../feature-module/Api/EmployeeDis";
+import { fetchUsers } from "../../../feature-module/Api/UserApi";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import PropTypes from "prop-types";
 
-const StockTransferModal = () => {
-  const optionsChoose = [
-    { value: "choose", label: "Choose" },
-    { value: "lobarHandy", label: "Lobar Handy" },
-    { value: "quaintWarehouse", label: "Quaint Warehouse" },
-  ];
+const StockTransferModal = ({ onSave }) => {
+  const [formData, setFormData] = useState({
+    username: null,
+    usernameLabel: "",
+    discount: ""
+  });
+  const [error, setError] = useState("");
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [existingDiscounts, setExistingDiscounts] = useState([]);
 
-  const optionsSelosyLogerro = [
-    { value: "choose", label: "Choose" },
-    { value: "selosy", label: "Selosy" },
-    { value: "logerro", label: "Logerro" },
-  ];
+  useEffect(() => {
+    loadUsers();
+    loadExistingDiscounts();
+  }, []);
 
-  const optionsStore1Store2 = [
-    { value: "choose", label: "Choose" },
-    { value: "store1", label: "Store 1" },
-    { value: "store2", label: "Store 2" },
-  ];
+  const loadUsers = async () => {
+    try {
+      const response = await fetchUsers();
+      const userOptions = (response.payload || []).map(user => ({
+        value: user.id,
+        label: `${user.firstName} ${user.lastName}`
+      }));
+      setUsers(userOptions);
+    } catch (error) {
+      console.error("Error loading users:", error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const optionsSentPending = [
-    { value: "choose", label: "Choose" },
-    { value: "sent", label: "Sent" },
-    { value: "pending", label: "Pending" },
-  ];
+  const loadExistingDiscounts = async () => {
+    try {
+      const data = await fetchEmployeeDiscounts();
+      setExistingDiscounts(data);
+    } catch (error) {
+      console.error("Error loading existing discounts:", error);
+      setExistingDiscounts([]);
+    }
+  };
+
+  const validateDiscount = (value) => {
+    if (value === "") {
+      return "Discount is required";
+    }
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      return "Please enter a valid number";
+    }
+    if (numValue < 0) {
+      return "Discount cannot be negative";
+    }
+    if (numValue > 100) {
+      return "Discount cannot be more than 100%";
+    }
+    if (value.split(".")[1]?.length > 2) {
+      return "Discount can have maximum 2 decimal places";
+    }
+    return "";
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (name === "discount") {
+      setError(validateDiscount(value));
+    }
+  };
+
+  const handleUserSelect = (selectedOption) => {
+    setFormData(prev => ({
+      ...prev,
+      username: selectedOption?.value || null,
+      usernameLabel: selectedOption?.label || ""
+    }));
+  };
+
+  const handleClose = () => {
+    // Reset form data
+    setFormData({
+      username: null,
+      usernameLabel: "",
+      discount: ""
+    });
+    // Clear error
+    setError("");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationError = validateDiscount(formData.discount);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!formData.username) {
+      setError("Please select a user");
+      return;
+    }
+
+    // Check for duplicate username
+    const isDuplicate = existingDiscounts.some(
+      discount => discount.userDto.id === formData.username
+    );
+
+    if (isDuplicate) {
+      setError("This user already has a discount assigned");
+      return;
+    }
+
+    try {
+      const discountData = {
+        userDto: {
+          id: formData.username,
+          firstName: formData.usernameLabel
+        },
+        discount: parseFloat(formData.discount),
+        isActive: 1
+      };
+
+      await saveEmployeeDiscount(discountData);
+      
+      const MySwal = withReactContent(Swal);
+      await MySwal.fire({
+        title: "Success!",
+        text: "Employee discount added successfully",
+        icon: "success",
+        confirmButtonText: "OK"
+      });
+
+      // Reset form and close modal
+      handleClose();
+      
+      // Close the modal using data-bs-dismiss
+      const closeButton = document.querySelector('[data-bs-dismiss="modal"]');
+      if (closeButton) {
+        closeButton.click();
+      }
+      
+      // Call onSave to refresh the table
+      if (onSave) {
+        onSave();
+      }
+    } catch (error) {
+      console.error("Error adding employee discount:", error);
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to add employee discount",
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+    }
+  };
+
   return (
     <div>
       {/* Add Stock */}
@@ -37,61 +176,52 @@ const StockTransferModal = () => {
               <div className="content">
                 <div className="modal-header border-0 custom-modal-header">
                   <div className="page-title">
-                    <h4>Add Transfer</h4>
+                    <h4>Add User Discount</h4>
                   </div>
                   <button
                     type="button"
                     className="close"
                     data-bs-dismiss="modal"
                     aria-label="Close"
+                    onClick={handleClose}
                   >
                     <span aria-hidden="true">×</span>
                   </button>
                 </div>
                 <div className="modal-body custom-modal-body">
-                  <form>
+                  <form onSubmit={handleSubmit}>
                     <div className="row">
                       <div className="col-lg-6">
                         <div className="input-blocks">
-                          <label>Warehouse From</label>
-                          <Select className="select" options={optionsChoose} />
+                          <label>User Name</label>
+                          <Select
+                            className="select"
+                            options={users}
+                            onChange={handleUserSelect}
+                            isLoading={loading}
+                            placeholder="Select User"
+                            isClearable
+                            required
+                            value={users.find(option => option.value === formData.username) || null}
+                          />
                         </div>
                       </div>
                       <div className="col-lg-6">
                         <div className="input-blocks">
-                          <label>Warehouse To</label>
-                          <Select
-                            className="select"
-                            options={optionsSelosyLogerro}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="input-blocks">
-                          <label>Responsible Person</label>
-                          <input type="text" className="form-control" />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="input-blocks search-form mb-3">
-                          <label>Product</label>
+                          <label>Discount</label>
+                          {error && (
+                            <div className="text-danger mb-2" style={{ fontSize: "0.875rem" }}>
+                              {error}
+                            </div>
+                          )}
                           <input
                             type="text"
-                            className="form-control"
-                            placeholder="Select Product"
-                          />
-                          <i
-                            data-feather="search"
-                            className="feather-search custom-search"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="input-blocks search-form mb-0">
-                          <label>Notes</label>
-                          <textarea
-                            className="form-control"
-                            defaultValue={""}
+                            inputMode="decimal"
+                            className={`form-control ${error ? "is-invalid" : ""}`}
+                            name="discount"
+                            value={formData.discount}
+                            onChange={handleInputChange}
+                            required
                           />
                         </div>
                       </div>
@@ -101,10 +231,15 @@ const StockTransferModal = () => {
                         type="button"
                         className="btn btn-cancel me-2"
                         data-bs-dismiss="modal"
+                        onClick={handleClose}
                       >
                         Cancel
                       </button>
-                      <button type="submit" className="btn btn-submit">
+                      <button 
+                        type="submit" 
+                        className="btn btn-submit"
+                        disabled={!!error || !formData.username}
+                      >
                         Create
                       </button>
                     </div>
@@ -116,307 +251,80 @@ const StockTransferModal = () => {
         </div>
       </div>
       {/* /Add Stock */}
-      {/* Edit Stock */}
-      <div className="modal fade" id="edit-units">
-        <div className="modal-dialog modal-dialog-centered stock-adjust-modal">
-          <div className="modal-content">
-            <div className="page-wrapper-new p-0">
-              <div className="content">
-                <div className="modal-header border-0 custom-modal-header">
-                  <div className="page-title">
-                    <h4>Edit Transfer</h4>
-                  </div>
-                  <button
-                    type="button"
-                    className="close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                </div>
-                <div className="modal-body custom-modal-body">
-                  <form>
-                    <div className="input-blocks search-form">
-                      <label>Product</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        defaultValue="Nike Jordan"
-                      />
-                      <i
-                        data-feather="search"
-                        className="feather-search custom-search"
-                      />
-                    </div>
-                    <div className="row">
-                      <div className="col-lg-6">
-                        <div className="input-blocks">
-                          <label>Warehouse From</label>
-                          <Select className="select" options={optionsChoose} />
-                        </div>
-                      </div>
-                      <div className="col-lg-6">
-                        <div className="input-blocks">
-                          <label>Warehouse To</label>
-                          <Select
-                            className="select"
-                            options={optionsSelosyLogerro}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="input-blocks">
-                          <label>Reference No</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            defaultValue={32434545}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="input-blocks search-form mb-3">
-                          <label>Product</label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Select Product"
-                            defaultValue="Nike Jordan"
-                          />
-                          <i
-                            data-feather="search"
-                            className="feather-search custom-search"
-                          />
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="modal-body-table">
-                          <div className="table-responsive">
-                            <table className="table  datanew">
-                              <thead>
-                                <tr>
-                                  <th>Product</th>
-                                  <th>SKU</th>
-                                  <th>Category</th>
-                                  <th>Qty</th>
-                                  <th className="no-sort">Action</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr>
-                                  <td>
-                                    <div className="productimgname">
-                                      <Link
-                                        to="#"
-                                        className="product-img stock-img"
-                                      >
-                                        <ImageWithBasePath
-                                          src="assets/img/products/stock-img-02.png"
-                                          alt="product"
-                                        />
-                                      </Link>
-                                      <Link to="#">Nike Jordan</Link>
-                                    </div>
-                                  </td>
-                                  <td>PT002</td>
-                                  <td>Nike</td>
-                                  <td>
-                                    <div className="product-quantity">
-                                      <span className="quantity-btn">
-                                        <i
-                                          data-feather="minus-circle"
-                                          className="feather-search"
-                                        />
-                                      </span>
-                                      <input
-                                        type="text"
-                                        className="quntity-input"
-                                        defaultValue={2}
-                                      />
-                                      <span className="quantity-btn">
-                                        +
-                                        <i
-                                          data-feather="plus-circle"
-                                          className="plus-circle"
-                                        />
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td className="action-table-data">
-                                    <div className="edit-delete-action">
-                                      <Link
-                                        className="me-2 p-2"
-                                        to="#"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#edit-units"
-                                      >
-                                        <i
-                                          data-feather="edit"
-                                          className="feather-edit"
-                                        />
-                                      </Link>
-                                      <Link className="confirm-text p-2" to="#">
-                                        <i
-                                          data-feather="trash-2"
-                                          className="feather-trash-2"
-                                        />
-                                      </Link>
-                                    </div>
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-lg-12">
-                        <div className="input-blocks search-form mb-0">
-                          <label>Notes</label>
-                          <textarea
-                            className="form-control"
-                            defaultValue={
-                              "The Jordan brand is owned by Nike (owned by the Knight family), as, at the time, the company was building its strategy to work with athletes to launch shows that could inspire consumers.Although Jordan preferred Converse and Adidas, they simply could not match the offer Nike made. "
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="modal-footer-btn">
-                      <button
-                        type="button"
-                        className="btn btn-cancel me-2"
-                        data-bs-dismiss="modal"
-                      >
-                        Cancel
-                      </button>
-                      <button type="submit" className="btn btn-submit">
-                        Save Changes
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* /Edit Stock */}
-      {/* Import Transfer */}
-      <div className="modal fade" id="view-notes">
+
+      {/* Add Employee Discount */}
+      <div className="modal fade" id="add-employee-discount">
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
-            <div className="page-wrapper-new p-0">
-              <div className="content">
-                <div className="modal-header border-0 custom-modal-header">
-                  <div className="page-title">
-                    <h4>Import Transfer</h4>
-                  </div>
+            <div className="modal-header">
+              <h5 className="modal-title">Add Employee Discount</h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+                id="add-employee-discount-close"
+              ></button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label className="form-label">Employee Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Discount</label>
+                  {error && (
+                    <div className="text-danger mb-2" style={{ fontSize: "0.875rem" }}>
+                      {error}
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className={`form-control ${error ? "is-invalid" : ""}`}
+                    name="discount"
+                    value={formData.discount}
+                    onChange={handleInputChange}
+                    placeholder="Enter discount (0-100)"
+                    required
+                  />
+                </div>
+                <div className="modal-footer">
                   <button
                     type="button"
-                    className="close"
+                    className="btn btn-secondary"
                     data-bs-dismiss="modal"
-                    aria-label="Close"
                   >
-                    <span aria-hidden="true">×</span>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={!!error}
+                  >
+                    Add
                   </button>
                 </div>
-              </div>
-              <div className="modal-body custom-modal-body">
-                <form>
-                  <div className="row">
-                    <div className="col-lg-4 col-sm-6 col-12">
-                      <div className="input-blocks">
-                        <label>From</label>
-                        <Select
-                          className="select"
-                          options={optionsStore1Store2}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-lg-4 col-sm-6 col-12">
-                      <div className="input-blocks">
-                        <label>To</label>
-                        <Select
-                          className="select"
-                          options={optionsStore1Store2}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-lg-4 col-sm-6 col-12">
-                      <div className="input-blocks">
-                        <label>Satus</label>
-                        <Select
-                          className="select"
-                          options={optionsSentPending}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-lg-12 col-sm-6 col-12">
-                      <div className="row">
-                        <div>
-                          <div className="modal-footer-btn download-file">
-                            <Link to="#" className="btn btn-submit">
-                              Download Sample File
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-lg-12">
-                      <div className="input-blocks image-upload-down">
-                        <label> Upload CSV File</label>
-                        <div className="image-upload download">
-                          <input type="file" />
-                          <div className="image-uploads">
-                            <ImageWithBasePath
-                              src="assets/img/download-img.png"
-                              alt="img"
-                            />
-                            <h4>
-                              Drag and drop a <span>file to upload</span>
-                            </h4>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="col-lg-12 col-sm-6 col-12">
-                      <div className="mb-3">
-                        <label className="form-label">Shipping</label>
-                        <input type="text" className="form-control" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-lg-12">
-                    <div className="mb-3 summer-description-box transfer">
-                      <label className="form-label">Description</label>
-                      <div id="summernote3"></div>
-                      <p>Maximum 60 Characters</p>
-                    </div>
-                  </div>
-                  <div className="col-lg-12">
-                    <div className="modal-footer-btn">
-                      <button
-                        type="button"
-                        className="btn btn-cancel me-2"
-                        data-bs-dismiss="modal"
-                      >
-                        Cancel
-                      </button>
-                      <button type="submit" className="btn btn-submit">
-                        Submit
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
+              </form>
             </div>
           </div>
         </div>
       </div>
-      {/* /Import Transfer */}
+      {/* /Add Employee Discount */}
     </div>
   );
+};
+
+StockTransferModal.propTypes = {
+  onSave: PropTypes.func
 };
 
 export default StockTransferModal;

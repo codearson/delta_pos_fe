@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { Link, useLocation } from "react-router-dom";
 import ImageWithBasePath from "./img/imagewithbasebath";
 import { PlusCircle } from "react-feather";
-import { Download, RotateCcw } from "feather-icons-react/build/IconComponents";
+import { RotateCcw } from "feather-icons-react/build/IconComponents";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { ChevronUp } from "react-feather";
@@ -157,7 +157,7 @@ const Breadcrumbs = (props) => {
             {props.addButton}
           </Link>
         </div>
-        <div className="page-btn import">
+        {/* <div className="page-btn import">
           <Link
             to="#"
             className="btn btn-added color"
@@ -167,7 +167,7 @@ const Breadcrumbs = (props) => {
             <Download className="me-2" />
             {props.importbutton}
           </Link>
-        </div>
+        </div> */}
       </div>
     );
   } else if (
