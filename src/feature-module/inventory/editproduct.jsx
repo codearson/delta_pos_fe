@@ -28,7 +28,6 @@ const EditProduct = () => {
   const location = useLocation();
   const MySwal = withReactContent(Swal);
   
-  // Get product ID from URL query params
   const searchParams = new URLSearchParams(location.search);
   const productId = searchParams.get('id');
 
@@ -40,6 +39,7 @@ const EditProduct = () => {
   const [category, setCategory] = useState(null);
   const [categories, setCategories] = useState([]);
   const [quantity, setQuantity] = useState("");
+  const [addQuantity, setAddQuantity] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [pricePerUnit, setPricePerUnit] = useState("");
   const [taxType, setTaxType] = useState(null);
@@ -51,6 +51,7 @@ const EditProduct = () => {
     barcode: "",
     category: "",
     quantity: "",
+    addQuantity: "",
     purchasePrice: "",
     pricePerUnit: "",
     taxType: "",
@@ -81,6 +82,7 @@ const EditProduct = () => {
         setBarcode(product.barcode);
         setCategory({ value: product.productCategoryDto.id, label: product.productCategoryDto.productCategoryName });
         setQuantity(product.quantity.toString());
+        setAddQuantity("");
         setPurchasePrice(product.purchasePrice.toString());
         setPricePerUnit(product.pricePerUnit.toString());
         setTaxType({ value: product.taxDto.id, label: `${product.taxDto.taxPercentage}%` });
@@ -134,6 +136,7 @@ const EditProduct = () => {
       barcode: "",
       category: "",
       quantity: "",
+      addQuantity: "",
       purchasePrice: "",
       pricePerUnit: "",
       taxType: "",
@@ -165,6 +168,11 @@ const EditProduct = () => {
       isValid = false;
     } else if (isNaN(quantity) || parseInt(quantity) < 0) {
       newErrors.quantity = "Please enter a valid quantity";
+      isValid = false;
+    }
+
+    if (addQuantity && (isNaN(addQuantity) || parseInt(addQuantity) < 0)) {
+      newErrors.addQuantity = "Please enter a valid quantity to add";
       isValid = false;
     }
 
@@ -213,7 +221,6 @@ const EditProduct = () => {
     }
 
     try {
-      // Check for duplicate product name
       const products = await fetchProducts();
       const existingProductByName = products.find(p => 
         p.name.toLowerCase() === productName.toLowerCase() && p.id !== parseInt(productId)
@@ -229,7 +236,6 @@ const EditProduct = () => {
         return;
       }
 
-      // Check for duplicate barcode
       const existingProductByBarcode = products.find(p => 
         p.barcode === barcode && p.id !== parseInt(productId)
       );
@@ -244,6 +250,8 @@ const EditProduct = () => {
         return;
       }
 
+      const totalQuantity = parseInt(quantity) + (addQuantity ? parseInt(addQuantity) : 0);
+
       const productData = {
         id: parseInt(productId),
         name: productName,
@@ -256,7 +264,7 @@ const EditProduct = () => {
         createdDate: new Date().toISOString(),
         lowStock: parseInt(lowStock),
         purchasePrice: parseFloat(purchasePrice),
-        quantity: parseInt(quantity),
+        quantity: totalQuantity,
       };
 
       const response = await updateProduct(productData);
@@ -401,7 +409,7 @@ const EditProduct = () => {
                                 <p>Loading categories...</p>
                               ) : (
                                 <div>
-                              <Select
+                                  <Select
                                     options={categories}
                                     placeholder="Choose"
                                     value={category}
@@ -410,7 +418,7 @@ const EditProduct = () => {
                                     required
                                   />
                                   {errors.category && <div className="text-danger mt-1" style={{ fontSize: '0.875em' }}>{errors.category}</div>}
-                            </div>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -428,7 +436,7 @@ const EditProduct = () => {
                         <div className="addproduct-icon list icon">
                           <h5>
                             <LifeBuoy className="add-info" />
-                            <span>Pricing &amp; Stocks</span>
+                            <span>Pricing & Stocks</span>
                           </h5>
                           <Link to="#">
                             <ChevronDown className="chevron-down-add" />
@@ -444,16 +452,29 @@ const EditProduct = () => {
                           <div className="row">
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
-                                <label>Quantity</label>
+                                <label>Current Quantity</label>
                                 <input
                                   type="text"
                                   className={`form-control ${errors.quantity ? 'is-invalid' : ''}`}
                                   placeholder="Enter Quantity"
                                   value={quantity}
-                                  onChange={(e) => setQuantity(e.target.value)}
+                                  readOnly
                                   required
                                 />
                                 {errors.quantity && <div className="invalid-feedback">{errors.quantity}</div>}
+                              </div>
+                            </div>
+                            <div className="col-lg-4 col-sm-6 col-12">
+                              <div className="input-blocks add-product">
+                                <label>Add Quantity</label>
+                                <input
+                                  type="text"
+                                  className={`form-control ${errors.addQuantity ? 'is-invalid' : ''}`}
+                                  placeholder="Enter quantity to add"
+                                  value={addQuantity}
+                                  onChange={(e) => setAddQuantity(e.target.value)}
+                                />
+                                {errors.addQuantity && <div className="invalid-feedback">{errors.addQuantity}</div>}
                               </div>
                             </div>
                             <div className="col-lg-4 col-sm-6 col-12">
@@ -491,7 +512,7 @@ const EditProduct = () => {
                                   <Link to="#" data-bs-toggle="modal" data-bs-target="#add-units-tax">
                                     <PlusCircle className="plus-down-add" />
                                     <span>Add New</span>
-                                    </Link>
+                                  </Link>
                                 </div>
                                 {loadingTaxes ? (
                                   <p>Loading taxes...</p>
@@ -513,8 +534,8 @@ const EditProduct = () => {
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Low Stock</label>
-                                        <input
-                                          type="text"
+                                <input
+                                  type="text"
                                   className={`form-control ${errors.lowStock ? 'is-invalid' : ''}`}
                                   placeholder="Enter Low Stock"
                                   value={lowStock}
