@@ -26,6 +26,7 @@ const LowStock = () => {
   const [allProducts, setAllProducts] = useState([]); // Store all products for filtering
   const [searchQueryLow, setSearchQueryLow] = useState("");
   const [searchQueryOut, setSearchQueryOut] = useState("");
+  const [searchQueryAll, setSearchQueryAll] = useState("");
   const [activeTab, setActiveTab] = useState("low");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,14 +40,19 @@ const LowStock = () => {
       const products = await fetchProducts();
       if (Array.isArray(products)) {
         const reversedProducts = products.reverse();
-        setAllProducts(reversedProducts); // Store all products
-        const lowStock = reversedProducts.filter((product) => 
+        const filteredProducts = reversedProducts.filter(product => 
+          !product.barcode || 
+          isNaN(product.barcode) || 
+          product.barcode.length >= 5
+        );
+        setAllProducts(filteredProducts); // Store all filtered products
+        const lowStock = filteredProducts.filter((product) => 
           product.isActive === true && 
           product.quantity < product.lowStock && 
           product.quantity > 0
         );
         setLowStockProducts(lowStock);
-        const outOfStock = reversedProducts.filter((product) => 
+        const outOfStock = filteredProducts.filter((product) => 
           product.isActive === true && 
           product.quantity === 0
         );
@@ -127,6 +133,25 @@ const LowStock = () => {
         product.quantity === 0
       );
       setOutOfStockProducts(outOfStock);
+    }
+  };
+
+  const handleSearchAll = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchQueryAll(query);
+
+    if (query.trim() !== "") {
+      const filteredProducts = allProducts.filter((product) =>
+        product.isActive === true &&
+        (
+          (product.name && product.name.toLowerCase().includes(query)) ||
+          (product.barcode && product.barcode.toLowerCase().includes(query)) ||
+          (product.productCategoryDto?.productCategoryName && product.productCategoryDto.productCategoryName.toLowerCase().includes(query))
+        )
+      );
+      setAllProducts(filteredProducts);
+    } else {
+      loadProductsData(false); // Reset to all products
     }
   };
 
@@ -320,8 +345,8 @@ const LowStock = () => {
         <div className="content">
           <div className="page-header">
             <div className="page-title me-auto">
-              <h4>{activeTab === "low" ? "Low Stocks" : "Out of Stocks"}</h4>
-              <h6>{activeTab === "low" ? "Manage your low stocks" : "Manage your out of stocks"}</h6>
+              <h4>{activeTab === "low" ? "Low Stocks" : activeTab === "out" ? "Out of Stocks" : "Manage Stock"}</h4>
+              <h6>{activeTab === "low" ? "Manage your low stocks" : activeTab === "out" ? "Manage your out of stocks" : "Manage all products"}</h6>
             </div>
             <ul className="table-top-head">
               <li>
@@ -423,6 +448,21 @@ const LowStock = () => {
                   Out of Stocks
                 </button>
               </li>
+              <li className="nav-item" role="presentation">
+                <button
+                  className="nav-link"
+                  id="pills-all-tab"
+                  data-bs-toggle="pill"
+                  data-bs-target="#pills-all"
+                  type="button"
+                  role="tab"
+                  aria-controls="pills-all"
+                  aria-selected="false"
+                  onClick={() => handleTabChange("all")}
+                >
+                  Manage Stock
+                </button>
+              </li>
             </ul>
             <div className="tab-content" id="pills-tabContent">
               {/* Low Stocks Tab */}
@@ -483,6 +523,37 @@ const LowStock = () => {
                     </div>
                     <div className="table-responsive">
                       <Table columns={columns} dataSource={outOfStockProducts} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Manage Stock Tab */}
+              <div
+                className="tab-pane fade"
+                id="pills-all"
+                role="tabpanel"
+                aria-labelledby="pills-all-tab"
+              >
+                <div className="card table-list-card">
+                  <div className="card-body">
+                    <div className="table-top">
+                      <div className="search-set">
+                        <div className="search-input">
+                          <input
+                            type="text"
+                            placeholder="Search all products"
+                            className="form-control form-control-sm formsearch"
+                            value={searchQueryAll}
+                            onChange={handleSearchAll}
+                          />
+                          <Link to="#" className="btn btn-searchset">
+                            <i data-feather="search" className="feather-search" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="table-responsive">
+                      <Table columns={columns} dataSource={allProducts} />
                     </div>
                   </div>
                 </div>
