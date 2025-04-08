@@ -156,6 +156,17 @@ const Pos = () => {
   };
 
   const handleCategorySelect = (category) => {
+    if (category.name === "clear") {
+      setSelectedItems([]);
+      setTotalValue(0);
+      setInputScreenText("");
+      setInputValue("0");
+      setInputStage("qty");
+      setCurrentItem(null);
+      setPendingQty(null);
+      return;
+    }
+
     if (activeTab === "category" && category?.name) {
       const parsedInput = parseFloat(inputValue);
       if (parsedInput > 0) {
@@ -179,8 +190,7 @@ const Pos = () => {
           setSelectedItems(newItems);
           setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
           resetInput();
-        } 
-        else if (inputStage === "price" && pendingQty !== null) {
+        } else if (inputStage === "price" && pendingQty !== null) {
           const qty = pendingQty;
           const price = parsedInput;
           const total = qty * price;
@@ -230,7 +240,7 @@ const Pos = () => {
       const decPart = parts[1] || "";
       if (decPart.length <= 2) {
         setInputValue(newInput);
-        if (inputStage === "qty") {
+        if (inputStage === "qty" && !currentItem) {
           setInputScreenText(newInput);
         } else if (inputStage === "price") {
           setInputScreenText(`${pendingQty} × ${newInput}`);
@@ -244,9 +254,9 @@ const Pos = () => {
         setInputScreenText(`${parseFloat(inputValue)} × `);
       }
     } else if (type === "enter") {
-      if (currentItem && currentItem.price !== null) {
-        const total = currentItem.qty * currentItem.price;
-        const newItem = { ...currentItem, total };
+      if (currentItem && inputStage === "price" && parseFloat(inputValue) > 0) {
+        const total = currentItem.qty * parseFloat(inputValue);
+        const newItem = { ...currentItem, price: parseFloat(inputValue), total };
         const existingItemIndex = selectedItems.findIndex(
           (item) => item.name === newItem.name && item.price === newItem.price
         );
@@ -415,7 +425,7 @@ const Pos = () => {
         const newManualDiscounts = [...manualDiscounts];
         const removedDiscount = newManualDiscounts.splice(discountIndex, 1)[0];
         setManualDiscounts(newManualDiscounts);
-        setManualDiscount(prevDiscount => prevDiscount - removedDiscount);
+        setManualDiscount((prevDiscount) => prevDiscount - removedDiscount);
         setSelectedRowIndex(null);
         showNotification("Manual discount voided.", "success");
         return;
@@ -438,7 +448,7 @@ const Pos = () => {
         return;
       }
     }
-    
+
     const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
     setSelectedItems(newItems);
     setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
@@ -472,14 +482,14 @@ const Pos = () => {
     const discount = parseFloat(inputValue);
     const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
     const totalDiscount = manualDiscount + discount;
-    
+
     if (totalDiscount > currentTotal) {
       showNotification("Manual discount cannot exceed the total value of items", "error");
       return;
     }
-    
-    setManualDiscount(prevDiscount => prevDiscount + discount);
-    setManualDiscounts(prevDiscounts => [...prevDiscounts, discount]);
+
+    setManualDiscount((prevDiscount) => prevDiscount + discount);
+    setManualDiscounts((prevDiscounts) => [...prevDiscounts, discount]);
     resetInput();
     showNotification("Manual discount applied.", "success");
   };
@@ -502,7 +512,7 @@ const Pos = () => {
           branchCode: branch.branchCode || "N/A",
           address: branch.address || "N/A",
           shopName: branch.shopDetailsDto?.name || "Unknown Shop",
-          contactNumber: branch.contactNumber || "N/A"
+          contactNumber: branch.contactNumber || "N/A",
         });
         shopDetailsId = branch.shopDetailsId || 1;
       } else {
@@ -511,7 +521,7 @@ const Pos = () => {
           branchCode: "N/A",
           address: "N/A",
           shopName: "Unknown Shop",
-          contactNumber: "N/A"
+          contactNumber: "N/A",
         });
       }
 
@@ -528,9 +538,9 @@ const Pos = () => {
           lastName: "",
         });
       }
-  
+
       setTransactionDate(new Date());
-  
+
       let customerId = 1;
       if (customerName) {
         const customers = await fetchCustomers();
@@ -539,18 +549,18 @@ const Pos = () => {
           customerId = customer.id;
         }
       }
-  
+
       const combinedPaymentMethods = [];
       const cashPayments = paymentMethods.filter((m) => m.type === "Cash").reduce((sum, m) => sum + m.amount, 0);
       const cardPayments = paymentMethods.filter((m) => m.type === "Card").reduce((sum, m) => sum + m.amount, 0);
-  
+
       if (cashPayments > 0) {
         combinedPaymentMethods.push({ type: "Cash", amount: cashPayments });
       }
       if (cardPayments > 0) {
         combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
       }
-  
+
       const transactionData = {
         status: "Completed",
         isActive: 1,
@@ -572,7 +582,7 @@ const Pos = () => {
           isActive: 1,
         })),
       };
-  
+
       const result = await saveTransaction(transactionData);
       if (result.success) {
         let transactionId;
@@ -586,7 +596,7 @@ const Pos = () => {
           transactionId = 0;
           showNotification("Warning: Transaction ID not found in API response. Please check the backend response.", "error");
         }
-  
+
         setLastTransaction({
           id: transactionId,
           transactionDetailsList: selectedItems.map((item) => ({
@@ -1199,6 +1209,8 @@ const Pos = () => {
                 items={activeTab === "category" ? fetchCustomCategories : quickAccess}
                 onCategorySelect={handleCategorySelect}
                 onManualDiscount={handleManualDiscount}
+                showNotification={showNotification}
+                inputValue={inputValue}
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
@@ -1337,8 +1349,8 @@ const Pos = () => {
                               Payments:{" "}
                               {transaction.paymentMethods.length > 0
                                 ? transaction.paymentMethods
-                                  .map((p) => `${p.type}: ${p.amount.toFixed(2)}`)
-                                  .join(", ")
+                                    .map((p) => `${p.type}: ${p.amount.toFixed(2)}`)
+                                    .join(", ")
                                 : "None"}
                             </p>
                             <p>Balance: {transaction.balance.toFixed(2)}</p>
@@ -1438,12 +1450,12 @@ const Pos = () => {
                             ? "#666"
                             : "#e0e0e0"
                           : state.isFocused
-                            ? darkMode
-                              ? "#555"
-                              : "#f0f0f0"
-                            : darkMode
-                              ? "#444"
-                              : "#fff",
+                          ? darkMode
+                            ? "#555"
+                            : "#f0f0f0"
+                          : darkMode
+                            ? "#444"
+                            : "#fff",
                         color: darkMode ? "#fff" : "#000",
                       }),
                       input: (base) => ({
@@ -1528,12 +1540,12 @@ const Pos = () => {
                             ? "#666"
                             : "#e0e0e0"
                           : state.isFocused
-                            ? darkMode
-                              ? "#555"
-                              : "#f0f0f0"
-                            : darkMode
-                              ? "#444"
-                              : "#fff",
+                          ? darkMode
+                            ? "#555"
+                            : "#f0f0f0"
+                          : darkMode
+                            ? "#444"
+                            : "#fff",
                         color: darkMode ? "#fff" : "#000",
                       }),
                       input: (base) => ({
