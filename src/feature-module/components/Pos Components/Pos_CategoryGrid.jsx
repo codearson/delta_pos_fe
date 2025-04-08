@@ -30,9 +30,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   const [showXReportPopup, setShowXReportPopup] = useState(false);
   const [showSalesListPopup, setShowSalesListPopup] = useState(false);
   const [showRequestLeavePopup, setShowRequestLeavePopup] = useState(false);
-  const [showEmployeeDiscountPopup, setShowEmployeeDiscountPopup] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState("");
-  const [selectedDiscount, setSelectedDiscount] = useState("");
   const [employeeDiscounts, setEmployeeDiscounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [barcode, setBarcode] = useState("");
@@ -396,7 +393,33 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
         if (item.name === "Manual Discount") {
           onManualDiscount();
         } else if (item.name === "Employee Discount") {
-          setShowEmployeeDiscountPopup(true);
+          if (!selectedItems || selectedItems.length === 0) {
+            showNotification("Please add items before applying employee discount", "error");
+            return;
+          }
+
+          // Get the first (and only) employee from employeeDiscounts
+          const employee = employeeDiscounts[0];
+          if (!employee) {
+            showNotification("No employee discount found", "error");
+            return;
+          }
+
+          const grandTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+          const totalAfterManualDiscount = grandTotal - manualDiscount;
+          const discountPercentage = employee.discount;
+          const discountAmount = (discountPercentage / 100) * totalAfterManualDiscount;
+
+          console.log('Employee Discount Calculation:', {
+            employeeName: employee.userDto.firstName,
+            discountPercentage,
+            grandTotal,
+            totalAfterManualDiscount,
+            calculatedDiscount: discountAmount
+          });
+
+          onEmployeeDiscount(discountAmount, employee.userDto.id, discountPercentage);
+          showNotification(`Employee discount (${discountPercentage}%) applied`, "success");
         }
       } else {
         onCategorySelect(item);
@@ -1055,31 +1078,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
 
   const totalSalesPages = MAX_PAGES;
 
-  const handleEmployeeDiscount = async (employee) => {
-    if (!selectedItems || selectedItems.length === 0) {
-      showNotification("Please add items before applying employee discount", "error");
-      return;
-    }
-
-    const grandTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
-    const totalAfterManualDiscount = grandTotal - manualDiscount;
-    const discountPercentage = employee.discount;
-    const discountAmount = (discountPercentage / 100) * totalAfterManualDiscount;
-
-    console.log('Employee Discount Calculation:', {
-      employeeName: employee.firstName,
-      discountPercentage,
-      grandTotal,
-      totalAfterManualDiscount,
-      calculatedDiscount: discountAmount
-    });
-
-    onEmployeeDiscount(discountAmount, employee.id, discountPercentage);
-    setShowEmployeeDiscountPopup(false);
-    setSelectedEmployee(null);
-    setSelectedDiscount(null);
-  };
-
   return (
     <div className="pos-category-grid-container">
       <div className="grid grid-cols-5 gap-2">
@@ -1660,91 +1658,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
       )}
       {showRequestLeavePopup && (
         <Pos_RequestLeave onClose={() => setShowRequestLeavePopup(false)} />
-      )}
-      {showEmployeeDiscountPopup && (
-        <div className="purchase-popup-overlay">
-          <div className="purchase-popup">
-            <div className="purchase-popup-header">
-              <h2 className="purchase-popup-title">Employee Discount</h2>
-              <button
-                onClick={() => {
-                  setShowEmployeeDiscountPopup(false);
-                  setSelectedEmployee("");
-                  setSelectedDiscount("");
-                }}
-                className="purchase-popup-close"
-              >
-                ×
-              </button>
-            </div>
-            <div className="purchase-popup-input-container">
-              <div className="mb-3">
-                <label className="form-label">Select Employee</label>
-                <select
-                  className="form-control"
-                  value={selectedEmployee}
-                  onChange={(e) => {
-                    setSelectedEmployee(e.target.value);
-                    const employee = employeeDiscounts.find(emp => emp.userDto.id.toString() === e.target.value);
-                    setSelectedDiscount(employee ? employee.discount : "");
-                  }}
-                  style={{
-                    appearance: 'none',
-                    backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem'
-                  }}
-                >
-                  <option value="">Select an employee</option>
-                  {employeeDiscounts.map(emp => (
-                    <option key={emp.userDto.id} value={emp.userDto.id}>
-                      {emp.userDto.firstName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {selectedDiscount && (
-                <div className="mb-3">
-                  <label className="form-label">Discount Percentage</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={`${selectedDiscount}%`}
-                    readOnly
-                  />
-                </div>
-              )}
-            </div>
-            <div className="purchase-popup-actions">
-              <button
-                onClick={() => {
-                  setShowEmployeeDiscountPopup(false);
-                  setSelectedEmployee("");
-                  setSelectedDiscount("");
-                }}
-                className="purchase-popup-button clear"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (!selectedEmployee) {
-                    showNotification("Please select an employee");
-                    return;
-                  }
-
-                  handleEmployeeDiscount(employeeDiscounts.find(emp => emp.userDto.id.toString() === selectedEmployee));
-                }}
-                className="purchase-popup-button add"
-                disabled={!selectedEmployee}
-              >
-                Apply
-              </button>
-            </div>
-          </div>
-        </div>
       )}
       <div style={{ position: "absolute", left: "-9999px" }}>
         <div ref={barcodeRef}>

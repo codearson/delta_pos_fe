@@ -35,7 +35,7 @@ export const updateEmployeeDiscount = async (discountData) => {
     return response.data;
 };
 
-export const fetchEmployeeDiscounts = async () => {
+export const fetchEmployeeDiscounts = async (isActive = true) => {
     const accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
@@ -46,7 +46,11 @@ export const fetchEmployeeDiscounts = async () => {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
+        params: {
+            isActive: isActive
+        }
     });
 
-    return response.data.responseDto || [];
+    const data = response.data.responseDto || [];
+    return isActive ? data.filter(item => item.isActive === true || item.isActive === 1) : data;
 };

@@ -5,7 +5,8 @@ import { Edit } from "react-feather";
 import "react-datepicker/dist/react-datepicker.css";
 import StockTransferModal from "../../core/modals/stocks/stocktransferModal";
 import Table from "../../core/pagination/datatable";
-import { fetchEmployeeDiscounts, updateEmployeeDiscount } from "../Api/EmployeeDis";
+// Temporarily disabled employee discount functionality
+// import { fetchEmployeeDiscounts, updateEmployeeDiscount } from "../Api/EmployeeDis";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import EmployeeDiscountModal from "../../core/modals/employee/EmployeeDiscountModal";
@@ -17,14 +18,21 @@ const EmployeeDiscount = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    loadEmployeeDiscounts();
+    // Temporarily disabled
+    // loadEmployeeDiscounts();
+    
+    // Set empty array instead of fetching data
+    setEmployeeDiscounts([]);
   }, []);
 
   const loadEmployeeDiscounts = async () => {
     try {
-      const data = await fetchEmployeeDiscounts();
-      // Reverse the array to show latest entries first
-      setEmployeeDiscounts([...data].reverse());
+      // Temporarily disabled
+      // const data = await fetchEmployeeDiscounts();
+      // setEmployeeDiscounts([...data].reverse());
+      
+      // Set empty array instead
+      setEmployeeDiscounts([]);
     } catch (error) {
       console.error("Error loading employee discounts:", error);
     }
@@ -40,15 +48,17 @@ const EmployeeDiscount = () => {
     setSelectedDiscount(null);
   };
 
-  const handleUpdateDiscount = async (id, discount) => {
+  const handleUpdateDiscount = async () => {
     try {
-      const updatedData = {
-        ...selectedDiscount,
-        discount: parseFloat(discount)
-      };
+      // Create the updated data but don't assign it to a variable since it's not used
+      // const updatedData = {
+      //   ...selectedDiscount,
+      //   discount: parseFloat(discount)
+      // };
       
-      await updateEmployeeDiscount(updatedData);
-      await loadEmployeeDiscounts();
+      // Temporarily disabled
+      // await updateEmployeeDiscount(updatedData);
+      // await loadEmployeeDiscounts();
       
       const MySwal = withReactContent(Swal);
       MySwal.fire({
@@ -86,7 +96,11 @@ const EmployeeDiscount = () => {
   };
 
   const handleRefresh = () => {
-    loadEmployeeDiscounts();
+    // Temporarily disabled
+    // loadEmployeeDiscounts();
+    
+    // Set empty array instead
+    setEmployeeDiscounts([]);
   };
 
   const handleSearch = (e) => {
