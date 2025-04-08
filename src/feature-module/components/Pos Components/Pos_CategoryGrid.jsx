@@ -17,6 +17,7 @@ import { fetchZReport } from "../../Api/TransactionApi";
 import Swal from 'sweetalert2';
 import { getAllManagerToggles } from "../../Api/ManagerToggle";
 import { saveBanking } from "../../Api/BankingApi";
+import { fetchEmployeeDiscounts } from "../../Api/EmployeeDis";
 
 const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
@@ -26,8 +27,11 @@ const Pos_CategoryGrid = ({
   items = fetchCustomCategories, 
   onCategorySelect, 
   onManualDiscount, 
+  onEmployeeDiscount, 
   showNotification,
-  inputValue
+  inputValue,
+  selectedItems,
+  manualDiscount = 0 
 }) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
@@ -36,6 +40,10 @@ const Pos_CategoryGrid = ({
   const [showXReportPopup, setShowXReportPopup] = useState(false);
   const [showSalesListPopup, setShowSalesListPopup] = useState(false);
   const [showRequestLeavePopup, setShowRequestLeavePopup] = useState(false);
+  const [showEmployeeDiscountPopup, setShowEmployeeDiscountPopup] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [selectedDiscount, setSelectedDiscount] = useState("");
+  const [employeeDiscounts, setEmployeeDiscounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [barcode, setBarcode] = useState("");
   const [productStatus, setProductStatus] = useState("");
@@ -191,6 +199,19 @@ const Pos_CategoryGrid = ({
     };
     
     fetchToggles();
+  }, []);
+
+  useEffect(() => {
+    const loadEmployeeDiscounts = async () => {
+      try {
+        const data = await fetchEmployeeDiscounts();
+        setEmployeeDiscounts(data);
+      } catch (error) {
+        console.error("Error loading employee discounts:", error);
+        showNotification("Failed to load employee discounts", "error");
+      }
+    };
+    loadEmployeeDiscounts();
   }, []);
 
   let filteredCategories = items === fetchCustomCategories ? categories : items;
@@ -536,7 +557,7 @@ const Pos_CategoryGrid = ({
         if (item.name === "Manual Discount") {
           onManualDiscount();
         } else if (item.name === "Employee Discount") {
-          console.log("Employee Discount clicked");
+          setShowEmployeeDiscountPopup(true);
         }
       } else if (item.isRequestLeave) {
         setShowRequestLeavePopup(true);
@@ -870,7 +891,7 @@ const Pos_CategoryGrid = ({
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-
+  
     const formattedDate = transaction.dateTime && !isNaN(new Date(transaction.dateTime).getTime())
       ? new Date(transaction.dateTime).toLocaleString()
       : new Date().toLocaleString();
@@ -886,14 +907,15 @@ const Pos_CategoryGrid = ({
       total: detail.quantity * detail.unitPrice,
     }));
   
-    const totalAmount = transaction.totalAmount;
+    const totalAmount = transaction.totalAmount; // This should be the final amount due (after discounts)
     const manualDiscount = transaction.manualDiscount || 0;
+    const employeeDiscount = transaction.employeeDiscount || 0;
     const paymentMethods = transaction.transactionPaymentMethod.map((method) => ({
       type: method.paymentMethodDto?.type || "Unknown",
       amount: method.amount,
     }));
     const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-    const balance = totalPaid - (totalAmount - manualDiscount);
+    const balance = totalPaid - totalAmount; // Simplified: no need to subtract discounts again
   
     setCurrentTransactionId(formattedTransactionId);
   
@@ -908,7 +930,7 @@ const Pos_CategoryGrid = ({
       console.error("Failed to generate barcode image:", error);
       barcodeDataUrl = "";
     }
-
+  
     printWindow.document.write(`
       <html>
         <head>
@@ -979,6 +1001,7 @@ const Pos_CategoryGrid = ({
           <div class="receipt-details">
             <p>Total: ${totalAmount.toFixed(2)}</p>
             ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
+            ${employeeDiscount > 0 ? `<p>Employee Discount: ${employeeDiscount.toFixed(2)}</p>` : ''}
             ${paymentMethods.map(method => `
               <p>${method.type}: ${method.amount.toFixed(2)}</p>
             `).join('')}
@@ -1006,7 +1029,7 @@ const Pos_CategoryGrid = ({
         </body>
       </html>
     `);
-
+  
     printWindow.document.close();
     printWindow.focus();
   };
@@ -1196,6 +1219,31 @@ const Pos_CategoryGrid = ({
   };
 
   const totalSalesPages = MAX_PAGES;
+
+  const handleEmployeeDiscount = async (employee) => {
+    if (!selectedItems || selectedItems.length === 0) {
+      showNotification("Please add items before applying employee discount", "error");
+      return;
+    }
+
+    const grandTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+    const totalAfterManualDiscount = grandTotal - manualDiscount;
+    const discountPercentage = employee.discount;
+    const discountAmount = (discountPercentage / 100) * totalAfterManualDiscount;
+
+    console.log('Employee Discount Calculation:', {
+      employeeName: employee.firstName,
+      discountPercentage,
+      grandTotal,
+      totalAfterManualDiscount,
+      calculatedDiscount: discountAmount
+    });
+
+    onEmployeeDiscount(discountAmount, employee.id, discountPercentage);
+    setShowEmployeeDiscountPopup(false);
+    setSelectedEmployee(null);
+    setSelectedDiscount(null);
+  };
 
   return (
     <div className="pos-category-grid-container">
@@ -1778,6 +1826,91 @@ const Pos_CategoryGrid = ({
       {showRequestLeavePopup && (
         <Pos_RequestLeave onClose={() => setShowRequestLeavePopup(false)} />
       )}
+      {showEmployeeDiscountPopup && (
+        <div className="purchase-popup-overlay">
+          <div className="purchase-popup">
+            <div className="purchase-popup-header">
+              <h2 className="purchase-popup-title">Employee Discount</h2>
+              <button
+                onClick={() => {
+                  setShowEmployeeDiscountPopup(false);
+                  setSelectedEmployee("");
+                  setSelectedDiscount("");
+                }}
+                className="purchase-popup-close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="purchase-popup-input-container">
+              <div className="mb-3">
+                <label className="form-label">Select Employee</label>
+                <select
+                  className="form-control"
+                  value={selectedEmployee}
+                  onChange={(e) => {
+                    setSelectedEmployee(e.target.value);
+                    const employee = employeeDiscounts.find(emp => emp.userDto.id.toString() === e.target.value);
+                    setSelectedDiscount(employee ? employee.discount : "");
+                  }}
+                  style={{
+                    appearance: 'none',
+                    backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundSize: '1.5em 1.5em',
+                    paddingRight: '2.5rem'
+                  }}
+                >
+                  <option value="">Select an employee</option>
+                  {employeeDiscounts.map(emp => (
+                    <option key={emp.userDto.id} value={emp.userDto.id}>
+                      {emp.userDto.firstName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedDiscount && (
+                <div className="mb-3">
+                  <label className="form-label">Discount Percentage</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={`${selectedDiscount}%`}
+                    readOnly
+                  />
+                </div>
+              )}
+            </div>
+            <div className="purchase-popup-actions">
+              <button
+                onClick={() => {
+                  setShowEmployeeDiscountPopup(false);
+                  setSelectedEmployee("");
+                  setSelectedDiscount("");
+                }}
+                className="purchase-popup-button clear"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!selectedEmployee) {
+                    showNotification("Please select an employee");
+                    return;
+                  }
+
+                  handleEmployeeDiscount(employeeDiscounts.find(emp => emp.userDto.id.toString() === selectedEmployee));
+                }}
+                className="purchase-popup-button add"
+                disabled={!selectedEmployee}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{ position: "absolute", left: "-9999px" }}>
         <div ref={barcodeRef}>
           <Barcode
@@ -1806,8 +1939,19 @@ Pos_CategoryGrid.propTypes = {
   ]),
   onCategorySelect: PropTypes.func.isRequired,
   onManualDiscount: PropTypes.func.isRequired,
+  onEmployeeDiscount: PropTypes.func.isRequired,
   showNotification: PropTypes.func.isRequired,
-  inputValue: PropTypes.string
+  inputValue: PropTypes.string,
+  selectedItems: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+      name: PropTypes.string.isRequired,
+      qty: PropTypes.number.isRequired,
+      price: PropTypes.number.isRequired,
+      total: PropTypes.number.isRequired,
+    })
+  ).isRequired,
+  manualDiscount: PropTypes.number,
 };
 
 export default Pos_CategoryGrid;

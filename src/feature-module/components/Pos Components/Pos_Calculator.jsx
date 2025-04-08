@@ -19,6 +19,8 @@ export const Pos_Calculator = ({
   isPaymentStarted,
   manualDiscount,
   manualDiscounts,
+  employeeDiscount,
+  employeeDiscountPercentage,
 }) => {
   const priceSymbol = localStorage.getItem("priceSymbol") || "$"; // Default to $ if not found
 
@@ -61,10 +63,20 @@ export const Pos_Calculator = ({
               id: `manual-discount-${index}`,
               name: "Manual Discount",
               qty: 1,
-              price: discount,
-              total: discount,
+              price: -discount,
+              total: -discount,
               type: "Discount",
             }))
+          : []),
+        ...(employeeDiscount > 0
+          ? [{
+              id: 'employee-discount',
+              name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
+              qty: 1,
+              price: -employeeDiscount,
+              total: -employeeDiscount,
+              type: "EmployeeDiscount",
+            }]
           : []),
         ...(cashTotal > 0
           ? [
@@ -96,12 +108,31 @@ export const Pos_Calculator = ({
               id: `manual-discount-${index}`,
               name: "Manual Discount",
               qty: 1,
-              price: discount,
-              total: discount,
+              price: -discount,
+              total: -discount,
               type: "Discount",
             }))
           : []),
+        ...(employeeDiscount > 0
+          ? [{
+              id: 'employee-discount',
+              name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
+              qty: 1,
+              price: -employeeDiscount,
+              total: -employeeDiscount,
+              type: "EmployeeDiscount",
+            }]
+          : []),
       ];
+
+  console.log('Calculator State:', {
+    employeeDiscount,
+    employeeDiscountPercentage,
+    totalValue,
+    selectedItems: selectedItems.length,
+    displayItems: displayItems.length,
+    manualDiscounts: manualDiscounts.length
+  });
 
   const reversedDisplayItems = [...displayItems].reverse();
 
@@ -138,12 +169,13 @@ export const Pos_Calculator = ({
             {reversedDisplayItems.length > 0 &&
               reversedDisplayItems.map((item, index) => (
                 <div
-                  key={index}
+                  key={`${item.type}-${item.id || index}-${item.name}`}
                   className={`result-row 
                     ${selectedRowIndex === (reversedDisplayItems.length - 1 - index) ? "selected" : ""}
                     ${item.type === "Cash" ? "cash-row" : ""}
                     ${item.type === "Card" ? "card-row" : ""}
                     ${item.type === "Discount" ? "discount-row" : ""}
+                    ${item.type === "EmployeeDiscount" ? "discount-row" : ""}
                   `}
                   onClick={() => onRowSelect(reversedDisplayItems.length - 1 - index)}
                 >
@@ -182,6 +214,12 @@ export const Pos_Calculator = ({
             <span className="value">{priceSymbol}{manualDiscount.toFixed(2)}</span>
           </div>
         )}
+        {employeeDiscount > 0 && (
+          <div className="summary-item">
+            <span className="label">Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)</span>
+            <span className="value">{priceSymbol}{employeeDiscount.toFixed(2)}</span>
+          </div>
+        )}
         <div className="summary-item">
           <span className="label">Balance</span>
           <span className="value red-text">{priceSymbol}{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
@@ -189,7 +227,7 @@ export const Pos_Calculator = ({
         <div className="divider" />
         <div className="total-summary">
           <span className="label">Grand Total</span>
-          <span className="value">{priceSymbol}{(totalValue - manualDiscount).toFixed(2)}</span>
+          <span className="value">{priceSymbol}{(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</span>
         </div>
         {cashTotal > 0 && (
           <div className="summary-item">
@@ -238,6 +276,8 @@ Pos_Calculator.propTypes = {
   isPaymentStarted: PropTypes.bool.isRequired,
   manualDiscount: PropTypes.number.isRequired,
   manualDiscounts: PropTypes.arrayOf(PropTypes.number).isRequired,
+  employeeDiscount: PropTypes.number.isRequired,
+  employeeDiscountPercentage: PropTypes.number.isRequired,
 };
 
 export default Pos_Calculator;

@@ -11,12 +11,13 @@ const Pos_Payment = ({
   setIsPaymentStarted,
   paymentMethods,
   manualDiscount,
+  employeeDiscount,
 }) => {
   const handlePayment = (type) => {
     let amount;
     // Check if inputValue is "0" or empty (no amount entered)
     if (!inputValue || inputValue === "0") {
-      const currentTotal = totalValue - manualDiscount;
+      const currentTotal = totalValue - manualDiscount - employeeDiscount;
       const totalPaidSoFar = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
       const remainingBalance = currentTotal - totalPaidSoFar;
 
@@ -33,7 +34,7 @@ const Pos_Payment = ({
       setPaymentMethods((prevMethods) => {
         const newMethods = [...prevMethods, paymentData];
         const totalPaid = newMethods.reduce((sum, method) => sum + method.amount, 0);
-        const newBalance = totalPaid - (totalValue - manualDiscount);
+        const newBalance = totalPaid - (totalValue - manualDiscount - employeeDiscount);
         setBalance(newBalance);
         setIsPaymentStarted(true);
         return newMethods;
@@ -74,6 +75,7 @@ Pos_Payment.propTypes = {
     })
   ).isRequired,
   manualDiscount: PropTypes.number.isRequired,
+  employeeDiscount: PropTypes.number.isRequired,
 };
 
 export default Pos_Payment;
