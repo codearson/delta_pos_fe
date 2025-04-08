@@ -76,6 +76,9 @@ const Pos = () => {
   const [taxes, setTaxes] = useState([]);
   const [lowStock, setLowStock] = useState("");
   const [formErrors, setFormErrors] = useState({});
+  const [employeeDiscount, setEmployeeDiscount] = useState(0);
+  const [employeeDiscountPercentage, setEmployeeDiscountPercentage] = useState(0);
+  const [employeeId, setEmployeeId] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -89,13 +92,13 @@ const Pos = () => {
   useEffect(() => {
     if (isPaymentStarted) {
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-      const currentTotal = selectedItems.reduce((sum, item) => sum + item.total, 0) - manualDiscount;
-      const newBalance = currentTotal - totalPaid;
+      const currentTotal = totalValue - manualDiscount - employeeDiscount;
+      const newBalance = Math.abs(currentTotal - totalPaid);
       setBalance(newBalance);
     } else {
       setBalance(0);
     }
-  }, [selectedItems, paymentMethods, isPaymentStarted, manualDiscount]);
+  }, [selectedItems, paymentMethods, isPaymentStarted, manualDiscount, employeeDiscount, totalValue]);
 
   useEffect(() => {
     let timer;
@@ -262,8 +265,27 @@ const Pos = () => {
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         resetInput();
       }
-      if (isPaymentStarted && selectedItems.length > 0 && balance <= 0) {
-        handleSaveTransaction();
+      
+      // Check if we should save the transaction
+      if (isPaymentStarted && selectedItems.length > 0) {
+        const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+        const currentTotal = totalValue - manualDiscount - employeeDiscount;
+        const remainingBalance = currentTotal - totalPaid;
+        
+        console.log('Transaction Save Check:', {
+          isPaymentStarted,
+          selectedItemsCount: selectedItems.length,
+          totalPaid,
+          currentTotal,
+          remainingBalance
+        });
+
+        if (remainingBalance <= 0) {
+          console.log('Attempting to save transaction...');
+          handleSaveTransaction();
+        } else {
+          showNotification(`Please pay the remaining balance: ${remainingBalance.toFixed(2)}`, "warning");
+        }
       }
     }
   };
@@ -365,6 +387,16 @@ const Pos = () => {
                 type: "Discount",
               }))
             : []),
+          ...(employeeDiscount > 0
+            ? [{
+                id: 'employee-discount',
+                name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
+                qty: 1,
+                price: -employeeDiscount,
+                total: -employeeDiscount,
+                type: "EmployeeDiscount",
+              }]
+            : []),
           ...(cashTotal > 0
             ? [
                 {
@@ -400,6 +432,16 @@ const Pos = () => {
                 type: "Discount",
               }))
             : []),
+          ...(employeeDiscount > 0
+            ? [{
+                id: 'employee-discount',
+                name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
+                qty: 1,
+                price: -employeeDiscount,
+                total: -employeeDiscount,
+                type: "EmployeeDiscount",
+              }]
+            : []),
         ];
 
     const selectedItem = displayItems[selectedRowIndex];
@@ -420,6 +462,15 @@ const Pos = () => {
         showNotification("Manual discount voided.", "success");
         return;
       }
+    }
+
+    if (selectedItem.type === "EmployeeDiscount") {
+      setEmployeeDiscount(0);
+      setEmployeeId(null);
+      setEmployeeDiscountPercentage(0);
+      setSelectedRowIndex(null);
+      showNotification("Employee discount voided.", "success");
+      return;
     }
 
     if (isPaymentStarted && selectedItem.type) {
@@ -455,6 +506,9 @@ const Pos = () => {
     setSelectedRowIndex(null);
     setManualDiscount(0);
     setManualDiscounts([]);
+    setEmployeeDiscount(0);
+    setEmployeeId(null);
+    setEmployeeDiscountPercentage(0);
     showNotification("All items and payments voided.", "success");
   };
 
@@ -484,7 +538,29 @@ const Pos = () => {
     showNotification("Manual discount applied.", "success");
   };
 
+  const handleEmployeeDiscount = (discountAmount, empId, discountPercentage) => {
+    console.log('POS Employee Discount Debug:', {
+      discountAmount,
+      empId,
+      discountPercentage,
+      currentTotal: totalValue,
+      selectedItems
+    });
+    setEmployeeDiscount(discountAmount);
+    setEmployeeId(empId);
+    setEmployeeDiscountPercentage(discountPercentage);
+  };
+
   const handleSaveTransaction = async () => {
+    console.log('Starting transaction save process:', {
+      selectedItems,
+      totalValue,
+      manualDiscount,
+      employeeDiscount,
+      employeeId,
+      paymentMethods
+    });
+
     const userIdRaw = localStorage.getItem("userId");
     const branchIdRaw = localStorage.getItem("branchId");
 
@@ -505,14 +581,6 @@ const Pos = () => {
           contactNumber: branch.contactNumber || "N/A"
         });
         shopDetailsId = branch.shopDetailsId || 1;
-      } else {
-        setBranchDetails({
-          branchName: "Unknown Branch",
-          branchCode: "N/A",
-          address: "N/A",
-          shopName: "Unknown Shop",
-          contactNumber: "N/A"
-        });
       }
 
       const usersResponse = await fetchUsers();
@@ -521,11 +589,6 @@ const Pos = () => {
         setUserDetails({
           firstName: user.firstName || "Unknown",
           lastName: user.lastName || "",
-        });
-      } else {
-        setUserDetails({
-          firstName: "Unknown",
-          lastName: "",
         });
       }
   
@@ -550,12 +613,24 @@ const Pos = () => {
       if (cardPayments > 0) {
         combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
       }
+
+      console.log('Preparing transaction data:', {
+        totalAmount: totalValue - manualDiscount - employeeDiscount,
+        manualDiscount,
+        employeeDiscount,
+        employeeId,
+        paymentMethods: combinedPaymentMethods,
+        items: selectedItems
+      });
   
       const transactionData = {
         status: "Completed",
         isActive: 1,
-        totalAmount: totalValue - manualDiscount,
+        totalAmount: totalValue - manualDiscount - employeeDiscount,
         manualDiscount: manualDiscount,
+        employeeDiscount: employeeDiscount,
+        employeeDiscountPercentage: employeeDiscountPercentage,
+        employeeDto: employeeId ? { id: employeeId } : null,
         branchDto: { id: branchId },
         shopDetailsDto: { id: shopDetailsId },
         customerDto: { id: customerId },
@@ -572,8 +647,12 @@ const Pos = () => {
           isActive: 1,
         })),
       };
+
+      console.log('Sending transaction data to API:', transactionData);
   
       const result = await saveTransaction(transactionData);
+      console.log('Transaction API response:', result);
+
       if (result.success) {
         let transactionId;
         if (result.data?.id) {
@@ -595,8 +674,10 @@ const Pos = () => {
             unitPrice: item.price,
             discount: 0.0,
           })),
-          totalAmount: totalValue - manualDiscount,
+          totalAmount: totalValue - manualDiscount - employeeDiscount,
           manualDiscount: manualDiscount,
+          employeeDiscount: employeeDiscount,
+          employeeDiscountPercentage: employeeDiscountPercentage,
           transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
             paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
             amount: method.amount,
@@ -612,6 +693,7 @@ const Pos = () => {
         showNotification("Failed to save transaction: " + result.error, "error");
       }
     } catch (error) {
+      console.error('Error saving transaction:', error);
       showNotification("Error saving transaction: " + error.message, "error");
     }
   };
@@ -714,11 +796,11 @@ const Pos = () => {
           <div class="receipt-details">
             <p>Total: ${totalValue.toFixed(2)}</p>
             ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
-            <p>Grand Total: ${(totalValue - manualDiscount).toFixed(2)}</p>
-            ${paymentMethods.map((method) => `
+            ${employeeDiscount > 0 ? `<p>Employee Discount: ${employeeDiscount.toFixed(2)}</p>` : ''}
+            ${paymentMethods.map(method => `
               <p>${method.type}: ${method.amount.toFixed(2)}</p>
             `).join('')}
-            <p>Balance: ${balance.toFixed(2)}</p>
+            <p>Balance: ${Math.abs(balance).toFixed(2)}</p>
           </div>
           <div class="divider"></div>
           <div class="barcode-container">
@@ -771,16 +853,15 @@ const Pos = () => {
       }));
 
       const totalAmount = lastTransaction.totalAmount;
+      const manualDiscount = lastTransaction.manualDiscount || 0;
       const paymentMethods = lastTransaction.transactionPaymentMethod.map((method) => ({
         type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
         amount: method.amount,
       }));
 
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-      const calculatedBalance = totalAmount - totalPaid;
+      const calculatedBalance = Math.abs(totalAmount - totalPaid);
 
-      const branchId = lastTransaction.branchDto.id;
-      const userId = lastTransaction.userDto.id;
       let branchName = branchDetails.branchName;
       let branchCode = branchDetails.branchCode;
       let shopName = branchDetails.shopName;
@@ -788,47 +869,6 @@ const Pos = () => {
       let contactNumber = branchDetails.contactNumber;
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
-
-      if (!branchName || !branchCode || !shopName || !address || !contactNumber) {
-        const branches = await fetchBranches();
-        const branch = branches.find((b) => b.id === branchId);
-        if (branch) {
-          branchName = branch.branchName || "Unknown Branch";
-          branchCode = branch.branchCode || "N/A";
-          shopName = branch.shopDetailsDto?.name || "Unknown Shop";
-          address = branch.address || "N/A";
-          contactNumber = branch.contactNumber || "N/A";
-        } else {
-          branchName = "Unknown Branch";
-          branchCode = "N/A";
-          shopName = "Unknown Shop";
-          address = "N/A";
-          contactNumber = "N/A";
-        }
-      }
-
-      if (!firstName || !lastName) {
-        const usersResponse = await fetchUsers();
-        const user = usersResponse.payload.find((u) => u.id === userId);
-        if (user) {
-          firstName = user.firstName || "Unknown";
-          lastName = user.lastName || "";
-        } else {
-          firstName = "Unknown";
-          lastName = "";
-        }
-      }
-
-      const customer = lastTransaction.customerDto.name || "";
-      const transactionDate = lastTransaction.transactionDate
-        ? new Date(lastTransaction.transactionDate)
-        : new Date();
-      const formattedDate = isNaN(transactionDate.getTime())
-        ? currentTime.toLocaleString()
-        : transactionDate.toLocaleString();
-
-      const transactionId = lastTransaction.id || 0;
-      const formattedTransactionId = transactionId.toString().padStart(10, "0");
 
       let barcodeDataUrl = "";
       try {
@@ -838,8 +878,15 @@ const Pos = () => {
         }
       } catch (error) {
         console.error("Failed to generate barcode image:", error);
-        showNotification("Failed to generate barcode image.", "error");
+        barcodeDataUrl = "";
       }
+
+      const formattedDate = lastTransaction.dateTime && !isNaN(new Date(lastTransaction.dateTime).getTime())
+        ? new Date(lastTransaction.dateTime).toLocaleString()
+        : new Date().toLocaleString();
+
+      const transactionId = lastTransaction.id || 0;
+      const formattedTransactionId = transactionId.toString().padStart(10, "0");
 
       printWindow.document.write(`
         <html>
@@ -880,7 +927,7 @@ const Pos = () => {
             <div class="receipt-details">
               <p>Date: ${formattedDate}</p>
               <p>Cashier: ${firstName} ${lastName}</p>
-              ${customer ? `<p>Customer: ${customer}</p>` : ""}
+              ${lastTransaction.customerDto?.name ? `<p>Customer: ${lastTransaction.customerDto.name}</p>` : ""}
               <p>Transaction ID: ${formattedTransactionId}</p>
             </div>
             <div class="divider"></div>
@@ -911,11 +958,12 @@ const Pos = () => {
             <div class="divider"></div>
             <div class="receipt-details">
               <p>Total: ${totalAmount.toFixed(2)}</p>
-              ${lastTransaction.manualDiscount > 0 ? `<p>Manual Discount: ${lastTransaction.manualDiscount.toFixed(2)}</p>` : ''}
+              ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
+              ${lastTransaction.employeeDiscount > 0 ? `<p>Employee Discount: ${lastTransaction.employeeDiscount.toFixed(2)}</p>` : ''}
               ${paymentMethods.map((method) => `
                 <p>${method.type}: ${method.amount.toFixed(2)}</p>
               `).join('')}
-              <p>Balance: ${calculatedBalance.toFixed(2)}</p>
+              <p>Balance: ${Math.abs(calculatedBalance).toFixed(2)}</p>
             </div>
             <div class="divider"></div>
             <div class="barcode-container">
@@ -960,6 +1008,9 @@ const Pos = () => {
     setCustomerName("");
     setManualDiscount(0);
     setManualDiscounts([]);
+    setEmployeeDiscount(0);
+    setEmployeeId(null);
+    setEmployeeDiscountPercentage(0);
     resetInput();
   };
 
@@ -988,6 +1039,9 @@ const Pos = () => {
       customerName,
       manualDiscount,
       manualDiscounts,
+      employeeDiscount,
+      employeeId,
+      employeeDiscountPercentage,
       timestamp: new Date().toLocaleString(),
     };
 
@@ -1004,6 +1058,9 @@ const Pos = () => {
     setCustomerName("");
     setManualDiscount(0);
     setManualDiscounts([]);
+    setEmployeeDiscount(0);
+    setEmployeeId(null);
+    setEmployeeDiscountPercentage(0);
     resetInput();
   };
 
@@ -1033,6 +1090,9 @@ const Pos = () => {
     setCustomerName(transaction.customerName);
     setManualDiscount(transaction.manualDiscount || 0);
     setManualDiscounts(transaction.manualDiscounts || []);
+    setEmployeeDiscount(transaction.employeeDiscount || 0);
+    setEmployeeId(transaction.employeeId || null);
+    setEmployeeDiscountPercentage(transaction.employeeDiscountPercentage || 0);
     resetInput();
 
     const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== transaction.id);
@@ -1192,6 +1252,8 @@ const Pos = () => {
               isPaymentStarted={isPaymentStarted}
               manualDiscount={manualDiscount}
               manualDiscounts={manualDiscounts}
+              employeeDiscount={employeeDiscount}
+              employeeDiscountPercentage={employeeDiscountPercentage}
             />
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
@@ -1199,6 +1261,10 @@ const Pos = () => {
                 items={activeTab === "category" ? fetchCustomCategories : quickAccess}
                 onCategorySelect={handleCategorySelect}
                 onManualDiscount={handleManualDiscount}
+                onEmployeeDiscount={handleEmployeeDiscount}
+                showNotification={showNotification}
+                selectedItems={selectedItems}
+                manualDiscount={manualDiscount}
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />
@@ -1212,6 +1278,7 @@ const Pos = () => {
                   paymentMethods={paymentMethods}
                   showNotification={showNotification}
                   manualDiscount={manualDiscount}
+                  employeeDiscount={employeeDiscount}
                 />
                 <FunctionButtons
                   onVoidLine={handleVoidLine}
@@ -1238,7 +1305,8 @@ const Pos = () => {
                 <div className="bill-summary centered">
                   <p>Total: {totalValue.toFixed(2)}</p>
                   {manualDiscount > 0 && <p>Manual Discount: {manualDiscount.toFixed(2)}</p>}
-                  <p>Grand Total: {(totalValue - manualDiscount).toFixed(2)}</p>
+                  {employeeDiscount > 0 && <p>Employee Discount: {employeeDiscount.toFixed(2)}</p>}
+                  <p>Grand Total: {(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
                   {paymentMethods.map((method) => (
                     <p key={method.type}>
                       {method.type}: {method.amount.toFixed(2)}
@@ -1246,7 +1314,7 @@ const Pos = () => {
                   ))}
                   <p>
                     <span className="balance-label">Balance:</span>{" "}
-                    <span className="balance-value">{balance.toFixed(2)}</span>
+                    <span className="balance-value">{Math.abs(balance).toFixed(2)}</span>
                   </p>
                 </div>
               </div>
@@ -1332,6 +1400,9 @@ const Pos = () => {
                             <p>Total: {transaction.totalValue.toFixed(2)}</p>
                             {transaction.manualDiscount > 0 && (
                               <p>Manual Discount: {transaction.manualDiscount.toFixed(2)}</p>
+                            )}
+                            {transaction.employeeDiscount > 0 && (
+                              <p>Employee Discount: {transaction.employeeDiscount.toFixed(2)}</p>
                             )}
                             <p>
                               Payments:{" "}
