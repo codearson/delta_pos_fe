@@ -78,6 +78,11 @@ const Signin = () => {
       localStorage.setItem("userRole", user.userRoleDto?.userRole || "");
       localStorage.setItem("userId", user.id ? String(user.id) : "1");
       localStorage.setItem("branchId", user.branchDto?.id ? String(user.branchDto.id) : "3");
+      localStorage.setItem("branchName", user.branchDto.branchName);
+      localStorage.setItem("branchCode", user.branchDto.branchCode);
+      localStorage.setItem("branchAddress", user.branchDto.address);
+      localStorage.setItem("branchContact", user.branchDto.contactNumber);
+      localStorage.setItem("shopName", user.branchDto.shopDetailsDto.name);
 
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
