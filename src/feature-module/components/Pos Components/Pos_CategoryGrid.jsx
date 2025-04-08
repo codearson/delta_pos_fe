@@ -16,13 +16,23 @@ import { Printer } from "feather-icons-react/build/IconComponents";
 import { fetchZReport } from "../../Api/TransactionApi";
 import Swal from 'sweetalert2';
 import { getAllManagerToggles } from "../../Api/ManagerToggle";
+import { saveBanking } from "../../Api/BankingApi";
 import { fetchEmployeeDiscounts } from "../../Api/EmployeeDis";
 
 const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
 const MAX_PAGES = 5;
 
-const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onManualDiscount, onEmployeeDiscount, showNotification, selectedItems, manualDiscount = 0 }) => {
+const Pos_CategoryGrid = ({ 
+  items = fetchCustomCategories, 
+  onCategorySelect, 
+  onManualDiscount, 
+  onEmployeeDiscount, 
+  showNotification,
+  inputValue,
+  selectedItems,
+  manualDiscount = 0 
+}) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
   const [showAddPurchasePopup, setShowAddPurchasePopup] = useState(false);
@@ -67,13 +77,11 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
           const cachedData = localStorage.getItem('customCategories');
           const cachedTimestamp = localStorage.getItem('customCategoriesTimestamp');
           const now = new Date().getTime();
-          const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+          const oneHour = 60 * 60 * 1000;
 
           if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp)) < oneHour) {
-            // Use cached data if it's less than 1 hour old
             setCategories(JSON.parse(cachedData));
           } else {
-            // Fetch new data and cache it
             const fetchedCategories = await items();
             const categoriesToStore = fetchedCategories || [];
             setCategories(categoriesToStore);
@@ -234,7 +242,6 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
   }
 
   if (items === quickAccess) {
-    // Get active toggles and create button items
     const activeToggleButtons = managerToggles
       .filter(toggle => toggle.isActive)
       .map(toggle => ({
@@ -245,12 +252,11 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
         isToggle: true
       }));
 
-    // Combine with existing quick access items
     paginatedItems = [
       ...paginatedItems.filter(item => 
         !["Manual Discount", "Employee Discount"].includes(item.name)
       ),
-      ...activeToggleButtons
+      ...activeToggleButtons,
     ].map((item) =>
       item.name === "Label Print"
         ? { ...item, isLabelPrint: true }
@@ -265,8 +271,8 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
                 : item.name === "Z - Report"
                   ? { ...item, isZReport: true }
                   : item.name === "Request Leave"
-                      ? { ...item, isRequestLeave: true }
-                      : item
+                    ? { ...item, isRequestLeave: true }
+                    : item
     );
   }
 
@@ -339,6 +345,161 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
     }
   };
 
+  const handleBankingSaveAndPrint = async () => {
+    try {
+      const userId = localStorage.getItem("userId") || "1";
+      const bankingAmount = parseFloat(inputValue) || 0;
+
+      const bankingData = {
+        amount: bankingAmount,
+        userDto: {
+          id: parseInt(userId)
+        }
+      };
+
+      if (bankingAmount <= 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'No Amount',
+          text: 'Please enter an amount before saving to banking',
+          confirmButtonColor: '#3085d6',
+        });
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: 'Save Banking Amount?',
+        text: `Are you sure you want to save ${bankingAmount.toFixed(2)} to banking?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, save it!',
+        cancelButtonText: 'No, cancel!'
+      });
+
+      if (result.isConfirmed) {
+        const response = await saveBanking(bankingData);
+        if (response) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Banking Saved',
+            text: 'Amount has been successfully saved to banking',
+            confirmButtonColor: '#3085d6',
+          });
+
+          await handlePrintBankingBill(bankingAmount);
+
+          onCategorySelect({ name: "clear" });
+        }
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to save banking amount. Please try again.',
+        confirmButtonColor: '#3085d6',
+      });
+      console.error("Error saving banking:", error);
+    }
+  };
+
+  const handlePrintBankingBill = async (bankingAmount) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showNotification("Failed to open print window. Please allow popups for this site and try again.");
+      return;
+    }
+  
+    const formattedDate = new Date().toLocaleString();
+    const cashierName = localStorage.getItem("firstName") || "Unknown";
+    const cashierLastName = localStorage.getItem("lastName") || "";
+    const shopName = localStorage.getItem("shopName") || "";
+    const branchName = localStorage.getItem("branchName") || "";
+    const branchCode = localStorage.getItem("branchCode") || "";
+    const address = localStorage.getItem("branchAddress") || "";
+    const contactNumber = localStorage.getItem("branchContact") || "";
+  
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Banking Receipt</title>
+          <style>
+            @media print {
+              @page { size: 72mm auto; margin: 0; }
+              body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+              header, footer, nav, .print-header, .print-footer { display: none !important; }
+              html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
+            }
+            body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+            .receipt-header { text-align: center; margin-bottom: 5px; }
+            .receipt-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+            .receipt-details { margin-bottom: 5px; text-align: left; }
+            .receipt-details p { margin: 2px 0; }
+            .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-left: auto; margin-right: auto; }
+            .receipt-items th, .receipt-items td { padding: 2px 0; font-weight: bold; text-align: left; font-size: 12px; }
+            .receipt-items th { border-bottom: 1px dashed #000; }
+            .receipt-items .total-column { text-align: right; }
+            .receipt-footer { text-align: center; margin-top: 5px; }
+            .receipt-footer p { margin: 2px 0; }
+            .divider { border-top: 1px dashed #000; margin: 5px 0; }
+            .spacing { height: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <h2>${shopName}</h2>
+            <p>${branchName}</p>
+            <p>Branch Code: ${branchCode}</p>
+            <p>Address: ${address}</p>
+            <p>Contact: ${contactNumber}</p>
+          </div>
+          <div class="receipt-details">
+            <p>Date: ${formattedDate}</p>
+            <p>Cashier: ${cashierName} ${cashierLastName}</p>
+          </div>
+          <div class="divider"></div>
+          <table class="receipt-items">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="total-column">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Banking</td>
+                <td class="total-column">${bankingAmount.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="divider"></div>
+          <div class="receipt-details">
+            <p>Total: ${bankingAmount.toFixed(2)}</p>
+          </div>
+          <div class="divider"></div>
+          <div class="receipt-footer">
+            <p>Thank You!</p>
+            <div class="spacing"></div>
+            <p>Powered by Delta POS</p>
+            <p>(deltapos.codearson@gmail.com)</p>
+            <p>(0094762963979)</p>
+            <p>================================================</p>
+          </div>
+          <script>
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          </script>
+        </body>
+      </html>
+    `);
+  
+    printWindow.document.close();
+    printWindow.focus();
+  };
+
   const renderCategoryButton = (item) => {
     const handleClick = async () => {
       if (item.isPrev) {
@@ -398,6 +559,10 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
         } else if (item.name === "Employee Discount") {
           setShowEmployeeDiscountPopup(true);
         }
+      } else if (item.isRequestLeave) {
+        setShowRequestLeavePopup(true);
+      } else if (item.name === "Banking") {
+        await handleBankingSaveAndPrint();
       } else {
         onCategorySelect(item);
       }
@@ -1569,7 +1734,7 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
 
                 {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
                   <div key={date}>
-                    <h4>Date: {new Date(date).toLocaleDateString()}</h4>
+                    <h4>Date: ${new Date(date).toLocaleDateString()}</h4>
 
                     <div className="row">
                       <div className="col-md-6">
@@ -1582,10 +1747,10 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
                             </tr>
                           </thead>
                           <tbody>
-                            {Object.entries(data.categoryTotals).map(([category, amount]) => (
+                            ${Object.entries(data.categoryTotals).map(([category, amount]) => (
                               <tr key={`${date}-category-${category}`}>
-                                <td>{category}</td>
-                                <td>{amount.toFixed(2)}</td>
+                                <td>${category}</td>
+                                <td>${amount.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1601,10 +1766,10 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
                             </tr>
                           </thead>
                           <tbody>
-                            {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
+                            ${Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
                               <tr key={`${date}-payment-${method}`}>
-                                <td>{method}</td>
-                                <td>{amount.toFixed(2)}</td>
+                                <td>${method}</td>
+                                <td>${amount.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1637,12 +1802,12 @@ const Pos_CategoryGrid = ({ items = fetchCustomCategories, onCategorySelect, onM
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
+                              ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
                                 Object.entries(payments).map(([method, amount]) => (
                                   <tr key={`${date}-user-${userName}-${method}`}>
-                                    <td style={{ padding: '12px 15px' }}>{userName.split(' ')[0]}</td>
-                                    <td style={{ padding: '12px 15px' }}>{method}</td>
-                                    <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
+                                    <td style={{ padding: '12px 15px' }}>${userName.split(' ')[0]}</td>
+                                    <td style={{ padding: '12px 15px' }}>${method}</td>
+                                    <td style={{ padding: '12px 15px' }}>${parseFloat(amount).toFixed(2)}</td>
                                   </tr>
                                 ))
                               )}
@@ -1776,6 +1941,7 @@ Pos_CategoryGrid.propTypes = {
   onManualDiscount: PropTypes.func.isRequired,
   onEmployeeDiscount: PropTypes.func.isRequired,
   showNotification: PropTypes.func.isRequired,
+  inputValue: PropTypes.string,
   selectedItems: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,

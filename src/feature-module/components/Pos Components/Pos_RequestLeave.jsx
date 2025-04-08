@@ -1,9 +1,7 @@
 import { DatePicker } from 'antd';
 import React, { useState, useEffect } from 'react';
-import Select from 'react-select';
 import PropTypes from 'prop-types';
 import { saveHoliday } from '../../Api/HolidayApi';
-import { fetchUsers } from '../../Api/UserApi';
 import Swal from 'sweetalert2';
 import moment from 'moment';
 import "../../../style/scss/components/Pos Components/Pos_RequestLeave.scss";
@@ -17,46 +15,28 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
     userDto: null,
     isActive: 1,
   });
-  const [users, setUsers] = useState([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [userLoadError, setUserLoadError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
-    try {
-      setIsLoadingUsers(true);
-      setUserLoadError(null);
-      const userData = await fetchUsers();
-      const userOptions = userData.payload.map(user => ({
-        value: user.id,
-        label: `${user.firstName} ${user.lastName}`
-      }));
-      setUsers(userOptions);
-      
+    const initializeUser = () => {
       const currentUserId = localStorage.getItem("userId");
       if (currentUserId) {
-        const currentUser = userOptions.find(user => user.value === parseInt(currentUserId));
-        if (currentUser) {
-          setFormData(prev => ({
-            ...prev,
-            userDto: { id: currentUser.value }
-          }));
-        }
+        setFormData(prev => ({
+          ...prev,
+          userDto: { id: parseInt(currentUserId) }
+        }));
+      } else {
+        Swal.fire({
+          title: "Error!",
+          text: "User information not found. Please sign in again.",
+          icon: "error",
+        });
+        onClose();
       }
-    } catch (error) {
-      setUserLoadError('Failed to load users');
-      Swal.fire({
-        title: "Error!",
-        text: "Failed to load users: " + error.message,
-        icon: "error",
-      });
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
+    };
+
+    initializeUser();
+  }, [onClose]);
 
   const handleDateChange = (date, field) => {
     setFormData(prev => ({
@@ -65,31 +45,55 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
     }));
   };
 
-  const handleUserChange = (selectedOption) => {
-    setFormData(prev => ({
-      ...prev,
-      userDto: selectedOption ? { id: selectedOption.value } : null
-    }));
+  const validateDates = () => {
+    if (!formData.startDate || !formData.endDate) {
+      return false;
+    }
+
+    const start = moment(formData.startDate, 'YYYY-MM-DD');
+    const end = moment(formData.endDate, 'YYYY-MM-DD');
+
+    if (!start.isValid() || !end.isValid()) {
+      return false;
+    }
+
+    return start.isBefore(end);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+
     if (!formData.userDto) {
       Swal.fire({
         title: "Error!",
-        text: "Please select a user",
+        text: "User information not available. Please sign in again.",
         icon: "error",
       });
+      setIsLoading(false);
       return;
     }
+
     if (!formData.startDate || !formData.endDate) {
       Swal.fire({
         title: "Error!",
         text: "Please select both start and end dates",
         icon: "error",
       });
+      setIsLoading(false);
       return;
     }
+
+    if (!validateDates()) {
+      Swal.fire({
+        title: "Error!",
+        text: "Start date must be before end date",
+        icon: "error",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await saveHoliday(formData);
       if (response) {
@@ -103,7 +107,7 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
           startDate: null,
           endDate: null,
           status: 'Pending',
-          userDto: users.length > 0 ? { id: users[0].value } : null,
+          userDto: { id: parseInt(localStorage.getItem("userId")) },
           isActive: 1,
         });
         onClose();
@@ -114,44 +118,9 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
         text: "Failed to submit leave request: " + error.message,
         icon: "error",
       });
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const customSelectStyles = {
-    control: (base) => ({
-      ...base,
-      backgroundColor: darkMode ? '#444' : '#fff',
-      borderColor: darkMode ? '#666' : '#ddd',
-      color: darkMode ? '#fff' : '#000',
-      '&:hover': {
-        borderColor: darkMode ? '#888' : '#bbb',
-      },
-    }),
-    menu: (base) => ({
-      ...base,
-      backgroundColor: darkMode ? '#444' : '#fff',
-      color: darkMode ? '#fff' : '#000',
-    }),
-    option: (base, state) => ({
-      ...base,
-      backgroundColor: state.isSelected 
-        ? darkMode ? '#666' : '#007bff' 
-        : state.isFocused 
-          ? darkMode ? '#555' : '#e9ecef' 
-          : darkMode ? '#444' : '#fff',
-      color: darkMode ? '#fff' : '#000',
-      '&:active': {
-        backgroundColor: darkMode ? '#777' : '#0056b3',
-      },
-    }),
-    singleValue: (base) => ({
-      ...base,
-      color: darkMode ? '#fff' : '#000',
-    }),
-    placeholder: (base) => ({
-      ...base,
-      color: darkMode ? '#aaa' : '#888',
-    }),
   };
 
   return (
@@ -170,6 +139,7 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter leave reason"
+                disabled={isLoading}
               />
             </div>
             <div className="form-group">
@@ -180,6 +150,13 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
                 format="DD-MM-YYYY"
                 className="form-control custom-date-picker"
                 placeholder="Select start date"
+                disabled={isLoading}
+                disabledDate={(current) => {
+                  if (formData.endDate) {
+                    return current && current > moment(formData.endDate, 'YYYY-MM-DD');
+                  }
+                  return false;
+                }}
               />
             </div>
             <div className="form-group">
@@ -190,26 +167,29 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
                 format="DD-MM-YYYY"
                 className="form-control custom-date-picker"
                 placeholder="Select end date"
-              />
-            </div>
-            <div className="form-group">
-              <label>User</label>
-              <Select
-                options={users}
-                value={formData.userDto ? users.find(user => user.value === formData.userDto.id) : null}
-                onChange={handleUserChange}
-                styles={customSelectStyles}
-                className="w-100"
-                isLoading={isLoadingUsers}
-                placeholder={userLoadError || "Select a user"}
-                isClearable
+                disabled={isLoading}
+                disabledDate={(current) => {
+                  if (formData.startDate) {
+                    return current && current < moment(formData.startDate, 'YYYY-MM-DD');
+                  }
+                  return false;
+                }}
               />
             </div>
             <div className="form-actions">
-              <button type="submit" className="btn btn-submit" disabled={isLoadingUsers}>
-                Submit Request
+              <button 
+                type="submit" 
+                className="btn btn-submit" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Submitting..." : "Submit Request"}
               </button>
-              <button type="button" className="btn btn-cancel" onClick={onClose}>
+              <button 
+                type="button" 
+                className="btn btn-cancel" 
+                onClick={onClose}
+                disabled={isLoading}
+              >
                 Cancel
               </button>
             </div>
