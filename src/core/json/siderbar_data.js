@@ -61,7 +61,7 @@ export const SidebarData = [
           { label: "Low Stocks", link: "/low-stocks", icon: <Icon.TrendingDown  />,showSubRoute: false,submenu: false },
           { label: "Category", link: "/category-list", icon:  <Icon.Codepen />,showSubRoute: false,submenu: false },
           { label: "Tax", link: "/sub-categories", icon:  <Icon.Speaker  />,showSubRoute: false,submenu: false },
-          // { label: "Brands", link: "/brand-list", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+          { label: "Payout Category", link: "/brand-list", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
           // { label: "Units", link: "/units", icon:  <Icon.Speaker />,showSubRoute: false,submenu: false },
           // { label: "Variant Attributes", link: "/variant-attributes", icon:  <Icon.Layers />,showSubRoute: false,submenu: false },
           // { label: "Warranties", link: "/warranty", icon:  <Icon.Bookmark />,showSubRoute: false,submenu: false },
@@ -101,6 +101,7 @@ export const SidebarData = [
           // { label: "Sales", link: "/sales-list", icon:  <Icon.ShoppingCart />,showSubRoute: false,submenu: false },
           { label: "Transaction", link: "/invoice-report", icon:  <Icon.FileText />,showSubRoute: false,submenu: false },
           { label: "Banking", link: "/banking", icon: <Icon.CreditCard />, showSubRoute: false},
+          { label: "Payout ", link: "/sales-returns", icon:  <Icon.Copy />,showSubRoute: false,submenu: false },
           // { label: "Sales Return", link: "/sales-returns", icon:  <Icon.Copy />,showSubRoute: false,submenu: false },
           // { label: "Quotation", link: "/quotation-list", icon:  <Icon.Save />,showSubRoute: false,submenu: false },
         ]
