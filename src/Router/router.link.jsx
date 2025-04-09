@@ -147,6 +147,7 @@ import Pos from "../feature-module/sales/pos";
 import AttendanceAdmin from "../feature-module/hrm/attendanceadmin";
 import Payslip from "../feature-module/hrm/payslip";
 import Holidays from "../feature-module/hrm/holidays";
+import Banking from "../feature-module/hrm/banking";
 import SalesList from "../feature-module/sales/saleslist";
 import InvoiceReport from "../feature-module/sales/invoicereport";
 import SalesReturn from "../feature-module/sales/salesreturn";
@@ -1245,6 +1246,13 @@ export const publicRoutes = [
     path: routes.holidays,
     name: "holidays",
     element: <Holidays />,
+    route: Route,
+  },
+  {
+    id: 102,
+    path: routes.banking,
+    name: "banking",
+    element: <Banking />,
     route: Route,
   },
   {

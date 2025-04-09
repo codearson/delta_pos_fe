@@ -97,11 +97,12 @@ export const SidebarData = [
         submenu: false,
         showSubRoute: false,
         submenuItems: [
-          { label: "Sales", link: "/sales-list", icon:  <Icon.ShoppingCart />,showSubRoute: false,submenu: false },
+          { label: "POS", link: "/pos", icon:  <Icon.HardDrive />,showSubRoute: false,submenu: false },
+          // { label: "Sales", link: "/sales-list", icon:  <Icon.ShoppingCart />,showSubRoute: false,submenu: false },
           { label: "Transaction", link: "/invoice-report", icon:  <Icon.FileText />,showSubRoute: false,submenu: false },
+          { label: "Banking", link: "/banking", icon: <Icon.CreditCard />, showSubRoute: false},
           // { label: "Sales Return", link: "/sales-returns", icon:  <Icon.Copy />,showSubRoute: false,submenu: false },
           // { label: "Quotation", link: "/quotation-list", icon:  <Icon.Save />,showSubRoute: false,submenu: false },
-          { label: "POS", link: "/pos", icon:  <Icon.HardDrive />,showSubRoute: false,submenu: false }
         ]
       },
       {
@@ -186,6 +187,8 @@ export const SidebarData = [
           //   { label: "Leave Types", link: "/leave-types" },
           // ]},
           { label: "Staff Leave", link: "/holidays", icon:  <Icon.CreditCard />,showSubRoute: false },
+
+          
 
           // { label: "Payroll", link: "#", icon:  <Icon.DollarSign />,showSubRoute: false,  submenu: true,   submenuItems: [
           //   // { label: "Employee Salary", link: "payroll-list" },

@@ -62,7 +62,13 @@ const Pos_Sidebar = ({ darkMode }) => {
       <nav className="nav-section">
         {(userDetails.userRole === "ADMIN" || userDetails.userRole === "MANAGER") && (
           <button onClick={handleHomeClick} className="nav-item active">
-            <div className="nav-icon home-icon">📊</div>
+            <div className="nav-icon home-icon">
+              <ImageWithBasePath
+                src="assets/img/dashboard.png"
+                alt="dashboard"
+                className="dashboard-img"
+              />
+            </div>
           </button>
         )}
       </nav>
