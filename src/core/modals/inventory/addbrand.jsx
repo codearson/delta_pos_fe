@@ -13,7 +13,7 @@ const AddBrand = () => {
                             <div className="content">
                                 <div className="modal-header border-0 custom-modal-header">
                                     <div className="page-title">
-                                        <h4>Create Brand</h4>
+                                        <h4>Create New Payout Category</h4>
                                     </div>
                                     <button
                                         type="button"
