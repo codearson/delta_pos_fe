@@ -9,7 +9,7 @@ $dark-bg: #1f2937;
 $light-text: #333333;
 $dark-text: #ffffff;
 $brand-blue: #0066cc;
-$active-orange: #ffa500;
+$active-orange: #9D00FF;
 $logout-red: #dc3545;
 $logout-red-hover: #c82333;
 $circle-color: #4ECDC4;
@@ -75,6 +75,13 @@ $circle-color: #4ECDC4;
     height: auto;
     transition: filter 0.3s ease;
   }
+}
+
+.dashboard-img {
+  height: 80%;
+  width: 80%;
+  align-items: center;
+  padding-top: 18%;
 }
 
 .nav-section {

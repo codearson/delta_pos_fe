@@ -56,13 +56,13 @@ export const SidebarData = [
         submenuItems: [
           { label: "Products", link: "/product-list", icon:<Icon.Box />,showSubRoute: false,submenu: false },
           { label: "Custom Categories", link: "/custom-products", icon:<Icon.Tool />,showSubRoute: false,submenu: false },
+          { label: "Non Scan Products", link: "/units", icon:  <Icon.BarChart2 />,showSubRoute: false,submenu: false },
           // { label: "Create Product", link: "/add-product", icon:  <Icon.PlusSquare />,showSubRoute: false, submenu: false },
-          //{ label: "Expired Products", link: "/expired-products", icon:  <Icon.Codesandbox  />,showSubRoute: false,submenu: false },
+          // { label: "Expired Products", link: "/expired-products", icon:  <Icon.Codesandbox  />,showSubRoute: false,submenu: false },
           { label: "Low Stocks", link: "/low-stocks", icon: <Icon.TrendingDown  />,showSubRoute: false,submenu: false },
           { label: "Category", link: "/category-list", icon:  <Icon.Codepen />,showSubRoute: false,submenu: false },
           { label: "Tax", link: "/sub-categories", icon:  <Icon.Speaker  />,showSubRoute: false,submenu: false },
           { label: "Payout Category", link: "/brand-list", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
-          // { label: "Units", link: "/units", icon:  <Icon.Speaker />,showSubRoute: false,submenu: false },
           // { label: "Variant Attributes", link: "/variant-attributes", icon:  <Icon.Layers />,showSubRoute: false,submenu: false },
           // { label: "Warranties", link: "/warranty", icon:  <Icon.Bookmark />,showSubRoute: false,submenu: false },
           // { label: "Print Barcode", link: "/barcode", icon: <Icon.AlignJustify />, showSubRoute: false,submenu: false },
@@ -97,11 +97,13 @@ export const SidebarData = [
         submenu: false,
         showSubRoute: false,
         submenuItems: [
-          { label: "Sales", link: "/sales-list", icon:  <Icon.ShoppingCart />,showSubRoute: false,submenu: false },
+          { label: "POS", link: "/pos", icon:  <Icon.HardDrive />,showSubRoute: false,submenu: false },
+          // { label: "Sales", link: "/sales-list", icon:  <Icon.ShoppingCart />,showSubRoute: false,submenu: false },
           { label: "Transaction", link: "/invoice-report", icon:  <Icon.FileText />,showSubRoute: false,submenu: false },
+          { label: "Banking", link: "/banking", icon: <Icon.CreditCard />, showSubRoute: false},
           { label: "Payout ", link: "/sales-returns", icon:  <Icon.Copy />,showSubRoute: false,submenu: false },
-          //{ label: "Payout Category", link: "/quotation-list", icon:  <Icon.Save />,showSubRoute: false,submenu: false },
-          { label: "POS", link: "/pos", icon:  <Icon.HardDrive />,showSubRoute: false,submenu: false }
+          // { label: "Sales Return", link: "/sales-returns", icon:  <Icon.Copy />,showSubRoute: false,submenu: false },
+          // { label: "Quotation", link: "/quotation-list", icon:  <Icon.Save />,showSubRoute: false,submenu: false },
         ]
       },
       {
@@ -186,6 +188,8 @@ export const SidebarData = [
           //   { label: "Leave Types", link: "/leave-types" },
           // ]},
           { label: "Staff Leave", link: "/holidays", icon:  <Icon.CreditCard />,showSubRoute: false },
+
+          
 
           // { label: "Payroll", link: "#", icon:  <Icon.DollarSign />,showSubRoute: false,  submenu: true,   submenuItems: [
           //   // { label: "Employee Salary", link: "payroll-list" },
