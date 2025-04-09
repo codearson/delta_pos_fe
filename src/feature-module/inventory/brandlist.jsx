@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom/dist';
 import AddBrand from '../../core/modals/inventory/addbrand';
@@ -6,23 +6,105 @@ import EditBrand from '../../core/modals/inventory/editbrand';
 import Swal from 'sweetalert2';
 import Table from '../../core/pagination/datatable'
 import Select from 'react-select';
-import Sliders from 'feather-icons-react/build/IconComponents/Sliders';
-import { ChevronUp, Filter, PlusCircle, RotateCcw, StopCircle, Zap } from 'feather-icons-react/build/IconComponents';
+import { ChevronUp, PlusCircle, RotateCcw, StopCircle, Zap } from 'feather-icons-react/build/IconComponents';
 import { DatePicker } from 'antd';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import ImageWithBasePath from '../../core/img/imagewithbasebath';
 import { setToogleHeader } from '../../core/redux/action';
 import withReactContent from 'sweetalert2-react-content';
+import { fetchPayoutCategories, updatePayoutCategoryStatus } from '../Api/PayoutCategoryApi';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+
 const BrandList = () => {
-    const dataSource = useSelector((state) => state.brand_list);
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
+    const [payoutCategories, setPayoutCategories] = useState([]);
+    const [togglingId, setTogglingId] = useState(null);
+    const [showActive, setShowActive] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const oldandlatestvalue = [
-        { value: 'date', label: 'Sort by Date' },
-        { value: 'newest', label: 'Newest' },
-        { value: 'oldest', label: 'Oldest' },
-    ];
+    useEffect(() => {
+        loadInitialData();
+    }, []);
+
+    useEffect(() => {
+        if (!isLoading) {
+            loadPayoutCategories();
+        }
+    }, [showActive]);
+
+    const loadInitialData = async () => {
+        setIsLoading(true);
+        await loadPayoutCategories();
+        setIsLoading(false);
+    };
+
+    const loadPayoutCategories = async () => {
+        try {
+            const categories = await fetchPayoutCategories();
+            const filteredCategories = Array.isArray(categories)
+                ? categories.filter(cat => cat.isActive === showActive).reverse()
+                : [];
+            setPayoutCategories(filteredCategories);
+        } catch (error) {
+            setPayoutCategories([]);
+            Swal.fire("Error!", "Failed to fetch categories", "error");
+        }
+    };
+
+    const handleToggleStatus = async (categoryId, currentStatus) => {
+        setTogglingId(categoryId);
+        const newStatusText = currentStatus ? 'Inactive' : 'Active';
+
+        MySwal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to change this category to ${newStatusText}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, change it!',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const newStatus = currentStatus ? 0 : 1;
+                    await updatePayoutCategoryStatus(categoryId, newStatus);
+                    loadPayoutCategories();
+                } catch (error) {
+                    Swal.fire('Error', 'Status update failed', 'error');
+                }
+            }
+            setTogglingId(null);
+        });
+    };
+
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        doc.text(`Payout Categories (${showActive ? 'Active' : 'Inactive'})`, 20, 10);
+        const tableData = payoutCategories.map(cat => [cat.name, cat.createdDate, cat.status]);
+        autoTable(doc, {
+            head: [['Name', 'Created Date', 'Status']],
+            body: tableData,
+            startY: 20,
+        });
+        doc.save(`payout_categories_${showActive ? 'active' : 'inactive'}.pdf`);
+    };
+
+    const exportToExcel = () => {
+        const worksheetData = payoutCategories.map(cat => ({
+            Name: cat.name,
+            'Created Date': cat.createdDate,
+            Status: cat.status
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Categories');
+        XLSX.writeFile(workbook, `payout_categories_${showActive ? 'active' : 'inactive'}.xlsx`);
+    };
+
+    
     const brandOptions = [
         { value: 'choose', label: 'Choose Brand' },
         { value: 'lenevo', label: 'Lenevo' },
@@ -34,10 +116,8 @@ const BrandList = () => {
         { value: 'Active', label: 'Active' },
         { value: 'InActive', label: 'InActive' },
     ];
-    const [isFilterVisible, setIsFilterVisible] = useState(false);
-    const toggleFilterVisibility = () => {
-        setIsFilterVisible((prevVisibility) => !prevVisibility);
-    };
+    
+    
     const [selectedDate, setSelectedDate] = useState(new Date());
     const handleDateChange = (date) => {
         setSelectedDate(date);
@@ -69,110 +149,88 @@ const BrandList = () => {
         </Tooltip>
     )
     const columns = [
-
         {
-            title: "Brand",
-            dataIndex: "brand",
-            sorter: (a, b) => a.brand.length - b.brand.length,
-        },
-
-        {
-            title: "Logo",
-            dataIndex: "logo",
-            render: (text, record) => (
-                <span className="productimgname">
-                    <Link to="#" className="product-img stock-img">
-                        <ImageWithBasePath alt="" src={record.logo} />
-                    </Link>
-                </span>
-            ),
-            sorter: (a, b) => a.logo.length - b.logo.length,
-            width: "5%"
-        },
-        {
-            title: "Createdon",
-            dataIndex: "createdon",
-            sorter: (a, b) => a.createdon.length - b.createdon.length,
+            title: "Name",
+            dataIndex: "name",
+            sorter: (a, b) => a.name.localeCompare(b.name),
         },
         {
             title: "Status",
-            dataIndex: "status",
-            render: (text) => (
-                <span className="badge badge-linesuccess">
-                    <Link to="#"> {text}</Link>
-                </span>
+            dataIndex: "isActive",
+            render: (isActive, record) => (
+                <div className={`form-check form-switch ${togglingId === record.id ? 'toggling' : ''}`}>
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={() => handleToggleStatus(record.id, isActive)}
+                        disabled={togglingId === record.id}
+                    />
+                </div>
             ),
-            sorter: (a, b) => a.status.length - b.status.length,
         },
         {
             title: 'Actions',
             dataIndex: 'actions',
-            key: 'actions',
             render: () => (
                 <td className="action-table-data">
                     <div className="edit-delete-action">
                         <Link className="me-2 p-2" to="#" data-bs-toggle="modal" data-bs-target="#edit-brand">
                             <i data-feather="edit" className="feather-edit"></i>
                         </Link>
-                        <Link className="confirm-text p-2" to="#"  >
-                            <i data-feather="trash-2" className="feather-trash-2" onClick={showConfirmationAlert}></i>
-                        </Link>
+                        {/* <Link className="confirm-text p-2" to="#" onClick={() => handleDelete(record.id)}>
+                            <i data-feather="trash-2" className="feather-trash-2"></i>
+                        </Link> */}
                     </div>
                 </td>
-            )
+            ),
         },
-    ]
+    ];
+
     const MySwal = withReactContent(Swal);
 
-    const showConfirmationAlert = () => {
-        MySwal.fire({
-            title: 'Are you sure?',
-            text: 'You won\'t be able to revert this!',
-            showCancelButton: true,
-            confirmButtonColor: '#00ff00',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonColor: '#ff0000',
-            cancelButtonText: 'Cancel',
-        }).then((result) => {
-            if (result.isConfirmed) {
-
-                MySwal.fire({
-                    title: 'Deleted!',
-                    text: 'Your file has been deleted.',
-                    className: "btn btn-success",
-                    confirmButtonText: 'OK',
-                    customClass: {
-                        confirmButton: 'btn btn-success',
-                    },
-                });
-            } else {
-                MySwal.close();
-            }
-
-        });
+    const handleCategoryAdded = (newCategory) => {
+        setPayoutCategories(prev => [newCategory, ...prev]);
     };
+
     return (
         <div>
             <div className="page-wrapper">
                 <div className="content">
                     <div className="page-header">
-                        <div className="add-item d-flex">
+                        <div className="add-item d-flex flex-column">
                             <div className="page-title">
-                                <h4>Brand</h4>
-                                <h6>Manage your brands</h6>
+                                <h4>Payout Categories</h4>
+                                <h6>Manage your payout categories</h6>
+                            </div>
+                            <div className="status-toggle-btns mt-2">
+                                <div className="btn-group" role="group">
+                                    <button
+                                        type="button"
+                                        className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                                        onClick={() => setShowActive(true)}>
+                                        Active
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                                        onClick={() => setShowActive(false)}>
+                                        Inactive
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         <ul className="table-top-head">
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderTooltip}>
-                                    <Link>
+                                    <Link onClick={exportToPDF}>
                                         <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
                                     </Link>
                                 </OverlayTrigger>
                             </li>
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-                                    <Link data-bs-toggle="tooltip" data-bs-placement="top">
+                                    <Link onClick={exportToExcel}>
                                         <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
                                     </Link>
                                 </OverlayTrigger>
@@ -216,7 +274,7 @@ const BrandList = () => {
                                 data-bs-target="#add-brand"
                             >
                                 <PlusCircle className="me-2" />
-                                Add New Brand
+                                Add New 
                             </Link>
                         </div>
                     </div>
@@ -236,32 +294,13 @@ const BrandList = () => {
                                         </Link>
                                     </div>
                                 </div>
-                                <div className="search-path">
-                                    <Link className={`btn btn-filter ${isFilterVisible ? "setclose" : ""}`} id="filter_search">
-                                        <Filter
-                                            className="filter-icon"
-                                            onClick={toggleFilterVisibility}
-                                        />
-                                        <span onClick={toggleFilterVisibility}>
-                                            <ImageWithBasePath src="assets/img/icons/closes.svg" alt="img" />
-                                        </span>
-                                    </Link>
-                                </div>
-                                <div className="form-sort">
-                                    <Sliders className="info-img" />
-                                    <Select
-                                        className="select"
-                                        options={oldandlatestvalue}
-                                        placeholder="Newest"
-                                    />
-                                </div>
+                                
                             </div>
                             {/* /Filter */}
 
                             <div
-                                className={`card${isFilterVisible ? ' visible' : ''}`}
+                                className="card"
                                 id="filter_inputs"
-                                style={{ display: isFilterVisible ? 'block' : 'none' }}
                             >
                                 <div className="card-body pb-0">
                                     <div className="row">
@@ -316,15 +355,21 @@ const BrandList = () => {
 
                             {/* /Filter */}
                             <div className="table-responsive">
-                            <Table columns={columns} dataSource={dataSource} />
-
+                                <Table
+                                    columns={columns}
+                                    dataSource={payoutCategories}
+                                    rowKey={(record) => record.id}
+                                />
                             </div>
                         </div>
                         {/* /product list */}
                     </div>
                 </div>
             </div>
-            <AddBrand />
+            <AddBrand 
+                refreshCategories={loadPayoutCategories}
+                onCategoryAdded={handleCategoryAdded}
+            />
             <EditBrand />
         </div>
     )
