@@ -1,24 +1,18 @@
 import React, { useState } from "react";
 import Scrollbars from "react-custom-scrollbars-2";
-// import { useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import { SidebarData } from "../../core/json/siderbar_data";
 import HorizontalSidebar from "./horizontalSidebar";
 import CollapsedSidebar from "./collapsedSidebar";
 
 const Sidebar = () => {
-  // const SidebarData = useSelector((state) => state.sidebar_data);
-  // console.log(sidebarData, "sidebar");
-
   const Location = useLocation();
-
-  console.log("Location.pathname", Location.pathname);
 
   const [subOpen, setSubopen] = useState("");
   const [subsidebar, setSubsidebar] = useState("");
 
   const toggleSidebar = (title) => {
-    if (title == subOpen) {
+    if (title === subOpen) {
       setSubopen("");
     } else {
       setSubopen(title);
@@ -26,7 +20,7 @@ const Sidebar = () => {
   };
 
   const toggleSubsidebar = (subitem) => {
-    if (subitem == subsidebar) {
+    if (subitem === subsidebar) {
       setSubsidebar("");
     } else {
       setSubsidebar(subitem);
@@ -57,104 +51,100 @@ const Sidebar = () => {
                           return link_array;
                         });
                         title.links = link_array;
+                        const isPOS = title?.label === "POS"; // Check if the item is "POS"
                         return (
-                          <>
-                            <li className="submenu" key={i}>
-                              <Link
-                                to={title?.link}
-                                onClick={() => toggleSidebar(title?.label)}
-                                className={`${
-                                  subOpen == title?.label ? "subdrop" : ""
-                                } ${
-                                  title?.links?.includes(Location.pathname)
-                                    ? "active"
-                                    : ""
-                                }
-                            `}
-                              >
-                                {/* <Grid /> */}
+                          <li className="submenu" key={i}>
+                            <Link
+                              to={title?.link}
+                              onClick={() => toggleSidebar(title?.label)}
+                              className={`${
+                                subOpen === title?.label ? "subdrop" : ""
+                              } ${
+                                title?.links?.includes(Location.pathname)
+                                  ? "active"
+                                  : ""
+                              }`}
+                            >
+                              <span style={{ color: isPOS ? "blue" : "inherit" }}>
                                 {title?.icon}
-                                <span>{title?.label}</span>
-                                <span
-                                  className={title?.submenu ? "menu-arrow" : ""}
-                                />
-                              </Link>
-                              <ul
-                                style={{
-                                  display:
-                                    subOpen == title?.label ? "block" : "none",
-                                }}
+                              </span>
+                              <span
+                                style={{ color: isPOS ? "blue" : "inherit" }}
                               >
-                                {title?.submenuItems?.map(
-                                  (item, titleIndex) => (
-                                    <li
-                                      className="submenu submenu-two"
-                                      key={titleIndex}
-                                    >
-                                      {/* {item.lebel} */}
-                                      <Link
-                                        to={item?.link}
-                                        className={
-                                          item?.submenuItems
-                                            ?.map((link) => link?.link)
-                                            .includes(Location.pathname) ||
-                                          item?.link == Location.pathname
-                                            ? "active"
-                                            : ""
-                                        }
-                                        onClick={() => {
-                                          toggleSubsidebar(item?.label);
-                                        }}
-                                      >
-                                        {item?.label}
-                                        <span
-                                          className={
-                                            item?.submenu ? "menu-arrow" : ""
-                                          }
-                                        />
-                                      </Link>
-                                      <ul
-                                        style={{
-                                          display:
-                                            subsidebar == item?.label
-                                              ? "block"
-                                              : "none",
-                                        }}
-                                      >
-                                        {item?.submenuItems?.map(
-                                          (items, titleIndex) => (
-                                            <li key={titleIndex}>
-                                              {/* {item.lebel} */}
-                                              <Link
-                                                to={items?.link}
-                                                className={`${
-                                                  subsidebar == items?.label
-                                                    ? "submenu-two subdrop"
-                                                    : "submenu-two"
-                                                } ${
-                                                  items?.submenuItems
-                                                    ?.map((link) => link.link)
-                                                    .includes(
-                                                      Location.pathname
-                                                    ) ||
-                                                  items?.link ==
-                                                    Location.pathname
-                                                    ? "active"
-                                                    : ""
-                                                }`}
-                                              >
-                                                {items?.label}
-                                              </Link>
-                                            </li>
-                                          )
-                                        )}
-                                      </ul>
-                                    </li>
-                                  )
-                                )}
-                              </ul>
-                            </li>
-                          </>
+                                {title?.label}
+                              </span>
+                              <span
+                                className={title?.submenu ? "menu-arrow" : ""}
+                              />
+                            </Link>
+                            <ul
+                              style={{
+                                display:
+                                  subOpen === title?.label ? "block" : "none",
+                              }}
+                            >
+                              {title?.submenuItems?.map((item, titleIndex) => (
+                                <li
+                                  className="submenu submenu-two"
+                                  key={titleIndex}
+                                >
+                                  <Link
+                                    to={item?.link}
+                                    className={
+                                      item?.submenuItems
+                                        ?.map((link) => link?.link)
+                                        .includes(Location.pathname) ||
+                                      item?.link === Location.pathname
+                                        ? "active"
+                                        : ""
+                                    }
+                                    onClick={() => {
+                                      toggleSubsidebar(item?.label);
+                                    }}
+                                  >
+                                    {item?.label}
+                                    <span
+                                      className={
+                                        item?.submenu ? "menu-arrow" : ""
+                                      }
+                                    />
+                                  </Link>
+                                  <ul
+                                    style={{
+                                      display:
+                                        subsidebar === item?.label
+                                          ? "block"
+                                          : "none",
+                                    }}
+                                  >
+                                    {item?.submenuItems?.map(
+                                      (items, titleIndex) => (
+                                        <li key={titleIndex}>
+                                          <Link
+                                            to={items?.link}
+                                            className={`${
+                                              subsidebar === items?.label
+                                                ? "submenu-two subdrop"
+                                                : "submenu-two"
+                                            } ${
+                                              items?.submenuItems
+                                                ?.map((link) => link.link)
+                                                .includes(Location.pathname) ||
+                                              items?.link === Location.pathname
+                                                ? "active"
+                                                : ""
+                                            }`}
+                                          >
+                                            {items?.label}
+                                          </Link>
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
                         );
                       })}
                     </ul>
