@@ -126,15 +126,6 @@ export const Pos_Calculator = ({
           : []),
       ];
 
-  console.log('Calculator State:', {
-    employeeDiscount,
-    employeeDiscountPercentage,
-    totalValue,
-    selectedItems: selectedItems.length,
-    displayItems: displayItems.length,
-    manualDiscounts: manualDiscounts.length
-  });
-
   const reversedDisplayItems = [...displayItems].reverse();
 
   return (
@@ -170,7 +161,7 @@ export const Pos_Calculator = ({
             {reversedDisplayItems.length > 0 &&
               reversedDisplayItems.map((item, index) => (
                 <div
-                  key={`${item.type}-${item.id || index}-${item.name}`}
+                  key={`${item.type || 'item'}-${item.id || index}-${item.name}-${index}`}
                   className={`result-row 
                     ${selectedRowIndex === (reversedDisplayItems.length - 1 - index) ? "selected" : ""}
                     ${item.type === "Cash" ? "cash-row" : ""}

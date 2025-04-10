@@ -6,7 +6,7 @@ import Pos_RequestLeave from "./Pos_RequestLeave";
 import { savePurchase, fetchPurchases, deleteAllPurchases } from "../../Api/purchaseListApi";
 import { getProductByBarcode } from "../../Api/productApi";
 import { fetchTransactions } from "../../Api/TransactionApi";
-import { quickAccess, fetchCustomCategories } from "../../../core/json/Posdata";
+import { quickAccess, fetchCustomCategories, fetchNonScanProducts } from "../../../core/json/Posdata";
 import Barcode from "react-barcode";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -43,6 +43,7 @@ const Pos_CategoryGrid = ({
   const [showRequestLeavePopup, setShowRequestLeavePopup] = useState(false);
   const [employeeDiscounts, setEmployeeDiscounts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [nonScanItems, setNonScanItems] = useState([]);
   const [barcode, setBarcode] = useState("");
   const [productStatus, setProductStatus] = useState("");
   const [error, setError] = useState("");
@@ -71,37 +72,34 @@ const Pos_CategoryGrid = ({
 
   useEffect(() => {
     const loadCategories = async () => {
-      if (typeof items === "function") {
-        try {
-          const cachedData = localStorage.getItem('customCategories');
-          const cachedTimestamp = localStorage.getItem('customCategoriesTimestamp');
-          const now = new Date().getTime();
-          const oneHour = 60 * 60 * 1000;
-
-          if (cachedData && cachedTimestamp && (now - parseInt(cachedTimestamp)) < oneHour) {
-            setCategories(JSON.parse(cachedData));
+      try {
+        if (typeof items === "function") {
+          if (items === fetchNonScanProducts) {
+            const cachedData = localStorage.getItem('nonScanProductsCache');
+            const cacheTimestamp = localStorage.getItem('nonScanProductsCacheTimestamp');
+            
+            const now = new Date().getTime();
+            const oneHourInMs = 60 * 60 * 1000;
+            
+            if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < oneHourInMs) {
+              setNonScanItems(JSON.parse(cachedData));
+            } else {
+              const data = await items();
+              setNonScanItems(data);
+              
+              localStorage.setItem('nonScanProductsCache', JSON.stringify(data));
+              localStorage.setItem('nonScanProductsCacheTimestamp', now.toString());
+            }
           } else {
-            const fetchedCategories = await items();
-            const categoriesToStore = fetchedCategories || [];
-            setCategories(categoriesToStore);
-            localStorage.setItem('customCategories', JSON.stringify(categoriesToStore));
-            localStorage.setItem('customCategoriesTimestamp', now.toString());
+            const data = await items();
+            setCategories(data);
           }
-        } catch (err) {
-          console.error("Error loading categories:", err);
-          setCategories([]);
+        } else {
+          setCategories(items);
         }
-      } else if (items instanceof Promise) {
-        items
-          .then((fetchedCategories) => {
-            setCategories(fetchedCategories || []);
-          })
-          .catch((err) => {
-            console.error("Error fetching categories:", err);
-            setCategories([]);
-          });
-      } else {
-        setCategories(items || []);
+      } catch (error) {
+        setCategories([]);
+        setNonScanItems([]);
       }
     };
 
@@ -213,18 +211,24 @@ const Pos_CategoryGrid = ({
     loadEmployeeDiscounts();
   }, []);
 
-  let filteredCategories = items === fetchCustomCategories ? categories : items;
-  if (filteredCategories instanceof Promise) {
-    filteredCategories = categories;
-  } else if (!Array.isArray(filteredCategories)) {
-    filteredCategories = [];
+  let filteredItems = [];
+  if (items === fetchCustomCategories) {
+    filteredItems = categories;
+  } else if (items === fetchNonScanProducts) {
+    filteredItems = nonScanItems;
+  } else {
+    filteredItems = items || [];
   }
 
-  const totalItems = filteredCategories.length;
+  if (!Array.isArray(filteredItems)) {
+    filteredItems = [];
+  }
+
+  const totalItems = filteredItems.length;
 
   let paginatedItems = [];
   if (pageIndex === 0) {
-    paginatedItems = filteredCategories.slice(0, PAGE_SIZE);
+    paginatedItems = filteredItems.slice(0, PAGE_SIZE);
     if (totalItems > PAGE_SIZE) {
       paginatedItems.push({ id: "more", name: "More", icon: "➡️", isMore: true });
     }
@@ -233,7 +237,7 @@ const Pos_CategoryGrid = ({
     const end = Math.min(start + PAGE_SIZE, totalItems);
     paginatedItems = [
       { id: "prev", name: "Prev", icon: "⬅️", isPrev: true },
-      ...filteredCategories.slice(start, end),
+      ...filteredItems.slice(start, end),
     ];
     if (end < totalItems) {
       paginatedItems.push({ id: "more", name: "More", icon: "➡️", isMore: true });
@@ -244,7 +248,7 @@ const Pos_CategoryGrid = ({
     const activeToggleButtons = managerToggles
       .filter(toggle => toggle.isActive)
       .map(toggle => ({
-        id: toggle.id,
+        id: `toggle-${toggle.id}`,
         name: toggle.action,
         icon: toggle.action === "Manual Discount" ? "🪙" : 
               toggle.action === "Employee Discount" ? "🎁" : "⚙️",
@@ -577,7 +581,9 @@ const Pos_CategoryGrid = ({
       }
     };
 
-    const buttonClass = items === quickAccess ? "quick-access-btn" : "category-btn";
+    const buttonClass = items === quickAccess ? "quick-access-btn" : 
+                       items === fetchNonScanProducts ? "category-btn non-scan-btn" : 
+                       "category-btn";
 
     return (
       <button key={item.id} className={`group ${buttonClass}`} onClick={handleClick}>
@@ -893,8 +899,6 @@ const Pos_CategoryGrid = ({
   };
 
   const handlePrintBill = async (transaction) => {
-    console.log('Transaction Data:', transaction);
-    
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
@@ -1818,14 +1822,6 @@ const Pos_CategoryGrid = ({
               const grandTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
               const totalAfterManualDiscount = grandTotal - manualDiscount;
               const discountAmount = (discountPercentage / 100) * totalAfterManualDiscount;
-
-              console.log('Employee Discount Calculation:', {
-                employeeName: empName,
-                discountPercentage,
-                grandTotal,
-                totalAfterManualDiscount,
-                calculatedDiscount: discountAmount
-              });
 
               onEmployeeDiscount(discountAmount, empId, discountPercentage);
               showNotification(`Employee discount (${discountPercentage}%) applied for ${empName}`, "success");

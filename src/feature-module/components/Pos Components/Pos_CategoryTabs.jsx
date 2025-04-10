@@ -14,14 +14,30 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode }) => {
         )}
         onClick={() => onTabChange("category")}
         style={{
-          backgroundColor: activeTab === "category" ? "#4CAF50" : "", // Green background
+          backgroundColor: activeTab === "category" ? "#4CAF50" : "",
           color: "white",
           borderRadius: "8px 0 0 0",
           flex: 1,
-          height: '100%' // Full height of container
+          height: '100%'
         }}
       >
         Category
+      </button>
+      <button
+        className={clsx(
+          "category-tab",
+          activeTab === "nonscan" ? "active-tab" : "inactive-tab",
+          darkMode ? "dark-mode" : "light-mode"
+        )}
+        style={{
+          backgroundColor: activeTab === "nonscan" ? "#2196F3" : "",
+          color: "white",
+          flex: 1,
+          height: '100%'
+        }}
+        onClick={() => onTabChange("nonscan")}
+      >
+        NonScan
       </button>
       <button
         className={clsx(
@@ -30,11 +46,11 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode }) => {
           darkMode ? "dark-mode" : "light-mode"
         )}
         style={{
-          backgroundColor: activeTab === "quick" ? "#9C27B0" : "", // Purple background
+          backgroundColor: activeTab === "quick" ? "#9C27B0" : "",
           color: "white",
           borderRadius: "0 8px 0 0",
           flex: 1,
-          height: '100%' // Full height of container
+          height: '100%'
         }}
         onClick={() => onTabChange("quick")}
       >
@@ -45,7 +61,7 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode }) => {
 };
 
 Pos_CategoryTabs.propTypes = {
-  activeTab: PropTypes.oneOf(["category", "quick"]).isRequired,
+  activeTab: PropTypes.oneOf(["category", "quick", "nonscan"]).isRequired,
   onTabChange: PropTypes.func.isRequired,
   darkMode: PropTypes.bool.isRequired,
 };
