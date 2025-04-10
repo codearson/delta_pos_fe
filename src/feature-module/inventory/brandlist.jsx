@@ -24,6 +24,7 @@ const BrandList = () => {
     const [togglingId, setTogglingId] = useState(null);
     const [showActive, setShowActive] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
     useEffect(() => {
         loadInitialData();
@@ -47,7 +48,10 @@ const BrandList = () => {
             const filteredCategories = Array.isArray(categories)
                 ? categories.filter(cat => cat.isActive === showActive).reverse()
                 : [];
-            setPayoutCategories(filteredCategories);
+            setPayoutCategories(filteredCategories.map(cat => ({
+                ...cat,
+                payoutCategory: cat.payoutCategory
+            })));
         } catch (error) {
             setPayoutCategories([]);
             Swal.fire("Error!", "Failed to fetch categories", "error");
@@ -83,9 +87,9 @@ const BrandList = () => {
     const exportToPDF = () => {
         const doc = new jsPDF();
         doc.text(`Payout Categories (${showActive ? 'Active' : 'Inactive'})`, 20, 10);
-        const tableData = payoutCategories.map(cat => [cat.name, cat.createdDate, cat.status]);
+        const tableData = payoutCategories.map(cat => [cat.payoutCategory, cat.createdDate, cat.status]);
         autoTable(doc, {
-            head: [['Name', 'Created Date', 'Status']],
+            head: [['Payout Category', 'Created Date', 'Status']],
             body: tableData,
             startY: 20,
         });
@@ -94,7 +98,7 @@ const BrandList = () => {
 
     const exportToExcel = () => {
         const worksheetData = payoutCategories.map(cat => ({
-            Name: cat.name,
+            'Payout Category': cat.payoutCategory,
             'Created Date': cat.createdDate,
             Status: cat.status
         }));
@@ -150,9 +154,9 @@ const BrandList = () => {
     )
     const columns = [
         {
-            title: "Name",
-            dataIndex: "name",
-            sorter: (a, b) => a.name.localeCompare(b.name),
+            title: "Payout Category",
+            dataIndex: "payoutCategory",
+            sorter: (a, b) => a.payoutCategory.localeCompare(b.payoutCategory),
         },
         {
             title: "Status",
@@ -172,15 +176,18 @@ const BrandList = () => {
         {
             title: 'Actions',
             dataIndex: 'actions',
-            render: () => (
+            render: (_, record) => (
                 <td className="action-table-data">
                     <div className="edit-delete-action">
-                        <Link className="me-2 p-2" to="#" data-bs-toggle="modal" data-bs-target="#edit-brand">
+                        <Link
+                            className="me-2 p-2"
+                            to="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#edit-brand"
+                            onClick={() => setSelectedCategory(record)}
+                        >
                             <i data-feather="edit" className="feather-edit"></i>
                         </Link>
-                        {/* <Link className="confirm-text p-2" to="#" onClick={() => handleDelete(record.id)}>
-                            <i data-feather="trash-2" className="feather-trash-2"></i>
-                        </Link> */}
                     </div>
                 </td>
             ),
@@ -370,7 +377,10 @@ const BrandList = () => {
                 refreshCategories={loadPayoutCategories}
                 onCategoryAdded={handleCategoryAdded}
             />
-            <EditBrand />
+            <EditBrand 
+                selectedCategory={selectedCategory}
+                refreshCategories={loadPayoutCategories}
+            />
         </div>
     )
 }
