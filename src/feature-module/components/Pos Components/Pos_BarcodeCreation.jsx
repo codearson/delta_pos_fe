@@ -1,102 +1,92 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import PropTypes from "prop-types";
 import Barcode from "react-barcode";
-import { jsPDF } from "jspdf";
-import html2canvas from 'html2canvas';
-import { fetchCustomCategories } from "../../../core/json/Posdata"; // Updated import
+import { getProductByBarcode } from "../../Api/productApi";
 import "../../../style/scss/components/Pos Components/Pos_BarcodeCreation.scss";
 
 const Pos_BarcodeCreation = ({ onClose }) => {
   const [input, setInput] = useState("");
   const [barcodeValue, setBarcodeValue] = useState("");
   const [productStatus, setProductStatus] = useState("");
-  const [isValidProduct, setIsValidProduct] = useState(false);
-  const [categories, setCategories] = useState([]);
   const barcodeRef = useRef(null);
 
-  useEffect(() => {
-    fetchCustomCategories().then((fetchedCategories) => {
-      setCategories(fetchedCategories);
-    }).catch(() => {
-      setCategories([]);
-    });
-  }, []);
-
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const value = e.target.value.trim();
     setInput(value);
+    
     if (value === "") {
       setProductStatus("");
-      setIsValidProduct(false);
+      setBarcodeValue("");
       return;
     }
 
-    const parsedValue = parseInt(value, 10);
-    if (!isNaN(parsedValue)) {
-      const foundProduct = categories.find((item) => item.id === parsedValue);
-      if (foundProduct) {
-        setProductStatus(`Product: ${foundProduct.name}`);
-        setIsValidProduct(true);
+    try {
+      const productData = await getProductByBarcode(value);
+      if (productData && productData.responseDto && productData.responseDto.length > 0) {
+        const productItem = productData.responseDto[0];
+        setProductStatus(`Product: ${productItem.name}`);
+        setBarcodeValue(value);
       } else {
-        setProductStatus("Product not in list");
-        setIsValidProduct(false);
+        setProductStatus("Product not found with this barcode");
+        setBarcodeValue("");
       }
-    } else {
-      setProductStatus("Product not in list");
-      setIsValidProduct(false);
+    } catch (error) {
+      setProductStatus("Error checking barcode");
+      setBarcodeValue("");
     }
   };
 
-  const handleGenerateBarcode = () => {
-    if (input.trim() !== "" && isValidProduct) {
-      setBarcodeValue(input);
-    }
-  };
-
-  const handleBack = () => {
-    setBarcodeValue("");
-    setInput("");
-    setProductStatus("");
-    setIsValidProduct(false);
-  };
-
-  const handlePrint = async () => {
+  const handlePrint = () => {
     if (!barcodeValue) {
       return;
     }
 
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Barcode</title>
+          <style>
+            body {
+              margin: 0;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+            }
+            .barcode-container {
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="barcode-container">
+            <img id="barcodeImage" />
+          </div>
+          <script>
+            // Wait for the image to load before printing
+            const img = document.getElementById('barcodeImage');
+            img.onload = function() {
+              window.print();
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+
+    // Get the barcode SVG from the component
     const barcodeElement = barcodeRef.current;
-    if (!barcodeElement) {
-      return;
+    const svg = barcodeElement.querySelector('svg');
+    
+    if (svg) {
+      // Convert SVG to data URL
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const img = printWindow.document.getElementById('barcodeImage');
+      img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
     }
 
-    const canvas = await html2canvas(barcodeElement);
-
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    const imgWidth = 150;
-    const imgHeight = 70;
-
-    const imgX = (pageWidth - imgWidth) / 2;
-    const imgY = 50;
-
-    doc.setFontSize(18);
-    const text = `Barcode: ${barcodeValue}`;
-    const textWidth = doc.getStringUnitWidth(text) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-    const textX = (pageWidth - textWidth) / 2;
-    doc.text(text, textX, 30);
-
-    const imgData = canvas.toDataURL("image/png");
-    doc.addImage(imgData, "PNG", imgX, imgY, imgWidth, imgHeight);
-
-    doc.save(`barcode_${barcodeValue}.pdf`);
-
+    printWindow.document.close();
   };
 
   return (
@@ -109,20 +99,13 @@ const Pos_BarcodeCreation = ({ onClose }) => {
               type="text"
               value={input}
               onChange={handleInputChange}
-              placeholder="Enter product ID"
+              placeholder="Enter barcode"
               className="barcode-popup-input"
             />
             <p className="barcode-popup-status">
-              {productStatus || "Enter a product ID to check"}
+              {productStatus || "Enter a barcode to check"}
             </p>
           </div>
-          <button
-            onClick={handleGenerateBarcode}
-            className="barcode-popup-button generate"
-            disabled={!isValidProduct}
-          >
-            Generate Barcode
-          </button>
           {barcodeValue && (
             <div className="barcode-popup-barcode" ref={barcodeRef}>
               <Barcode
@@ -136,12 +119,6 @@ const Pos_BarcodeCreation = ({ onClose }) => {
           )}
         </div>
         <div className="barcode-popup-actions">
-          <button
-            onClick={handleBack}
-            className="barcode-popup-button back"
-          >
-            Back
-          </button>
           <button
             onClick={handlePrint}
             disabled={!barcodeValue}
