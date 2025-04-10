@@ -7,7 +7,6 @@ export const saveNonScanProduct = async (productData) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -20,7 +19,6 @@ export const saveNonScanProduct = async (productData) => {
 
         return response.data;
     } catch (error) {
-        //console.error("Error saving non-scan product:", error.response?.status, error.response?.data);
         return null;
     }
 };
@@ -31,7 +29,6 @@ export const updateNonScanProduct = async (productId, updatedData) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -47,7 +44,6 @@ export const updateNonScanProduct = async (productId, updatedData) => {
 
         return response.data;
     } catch (error) {
-        //console.error("Error updating non-scan product:", error.response?.status, error.response?.data);
         return null;
     }
 };
@@ -58,7 +54,6 @@ export const updateNonScanProductStatus = async (productId, status = 0) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -74,7 +69,6 @@ export const updateNonScanProductStatus = async (productId, status = 0) => {
 
         return response.data;
     } catch (error) {
-        //console.error("Error updating non-scan product status:", error.response?.status, error.response?.data);
         return null;
     }
 };
@@ -85,7 +79,6 @@ export const getNonScanProductByName = async (productName) => {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -100,7 +93,6 @@ export const getNonScanProductByName = async (productName) => {
 
         return response.data;
     } catch (error) {
-        //console.error("Error fetching non-scan product by name:", error.response?.status, error.response?.data);
         return null;
     }
 };
@@ -111,7 +103,6 @@ export const getAllNonScanProductsPage = async (pageNumber = 0, pageSize = 10) =
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -126,7 +117,6 @@ export const getAllNonScanProductsPage = async (pageNumber = 0, pageSize = 10) =
 
         return response.data;
     } catch (error) {
-        //console.error("Error fetching non-scan products with pagination:", error.response?.status, error.response?.data);
         return null;
     }
 }; 

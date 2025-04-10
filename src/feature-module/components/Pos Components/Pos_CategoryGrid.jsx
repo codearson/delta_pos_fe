@@ -18,6 +18,7 @@ import Swal from 'sweetalert2';
 import { getAllManagerToggles } from "../../Api/ManagerToggle";
 import { saveBanking } from "../../Api/BankingApi";
 import { fetchEmployeeDiscounts } from "../../Api/EmployeeDis";
+import Pos_EmployeeDiscountPopup from "./Pos_EmployeeDiscountPopup";
 
 const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
@@ -57,6 +58,7 @@ const Pos_CategoryGrid = ({
   const [zReportData, setZReportData] = useState(null);
   const [showZReportPopup, setShowZReportPopup] = useState(false);
   const [managerToggles, setManagerToggles] = useState([]);
+  const [showEmployeeDiscountPopup, setShowEmployeeDiscountPopup] = useState(false);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -559,28 +561,12 @@ const Pos_CategoryGrid = ({
             return;
           }
 
-          // Get the first (and only) employee from employeeDiscounts
           const employee = employeeDiscounts[0];
           if (!employee) {
             showNotification("No employee discount found", "error");
             return;
           }
-
-          const grandTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
-          const totalAfterManualDiscount = grandTotal - manualDiscount;
-          const discountPercentage = employee.discount;
-          const discountAmount = (discountPercentage / 100) * totalAfterManualDiscount;
-
-          console.log('Employee Discount Calculation:', {
-            employeeName: employee.userDto.firstName,
-            discountPercentage,
-            grandTotal,
-            totalAfterManualDiscount,
-            calculatedDiscount: discountAmount
-          });
-
-          onEmployeeDiscount(discountAmount, employee.userDto.id, discountPercentage);
-          showNotification(`Employee discount (${discountPercentage}%) applied`, "success");
+          setShowEmployeeDiscountPopup(true);
         }
       } else if (item.isRequestLeave) {
         setShowRequestLeavePopup(true);
@@ -930,7 +916,7 @@ const Pos_CategoryGrid = ({
       total: detail.quantity * detail.unitPrice,
     }));
   
-    const totalAmount = transaction.totalAmount; // This should be the final amount due (after discounts)
+    const totalAmount = transaction.totalAmount;
     const manualDiscount = transaction.manualDiscount || 0;
     const employeeDiscount = transaction.employeeDiscount || 0;
     const paymentMethods = transaction.transactionPaymentMethod.map((method) => ({
@@ -938,7 +924,7 @@ const Pos_CategoryGrid = ({
       amount: method.amount,
     }));
     const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-    const balance = totalPaid - totalAmount; // Simplified: no need to subtract discounts again
+    const balance = totalPaid - totalAmount;
   
     setCurrentTransactionId(formattedTransactionId);
   
@@ -1823,6 +1809,31 @@ const Pos_CategoryGrid = ({
       )}
       {showRequestLeavePopup && (
         <Pos_RequestLeave onClose={() => setShowRequestLeavePopup(false)} />
+      )}
+      {showEmployeeDiscountPopup && (
+        <div className="popup-overlay">
+          <Pos_EmployeeDiscountPopup
+            onClose={() => setShowEmployeeDiscountPopup(false)}
+            onApplyDiscount={(empId, empName, discountPercentage) => {
+              const grandTotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
+              const totalAfterManualDiscount = grandTotal - manualDiscount;
+              const discountAmount = (discountPercentage / 100) * totalAfterManualDiscount;
+
+              console.log('Employee Discount Calculation:', {
+                employeeName: empName,
+                discountPercentage,
+                grandTotal,
+                totalAfterManualDiscount,
+                calculatedDiscount: discountAmount
+              });
+
+              onEmployeeDiscount(discountAmount, empId, discountPercentage);
+              showNotification(`Employee discount (${discountPercentage}%) applied for ${empName}`, "success");
+            }}
+            darkMode={false}
+            discountPercentage={employeeDiscounts[0]?.discount || 0}
+          />
+        </div>
       )}
       <div style={{ position: "absolute", left: "-9999px" }}>
         <div ref={barcodeRef}>

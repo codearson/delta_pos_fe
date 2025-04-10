@@ -21,6 +21,7 @@ export const Pos_Calculator = ({
   manualDiscounts,
   employeeDiscount,
   employeeDiscountPercentage,
+  employeeName,
 }) => {
   const priceSymbol = localStorage.getItem("priceSymbol") || "$"; // Default to $ if not found
 
@@ -217,6 +218,7 @@ export const Pos_Calculator = ({
         {employeeDiscount > 0 && (
           <div className="summary-item">
             <span className="label">Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)</span>
+            <span className="value">{employeeName ? `(${employeeName})` : ""}</span>
             <span className="value">{priceSymbol}{employeeDiscount.toFixed(2)}</span>
           </div>
         )}
@@ -278,6 +280,7 @@ Pos_Calculator.propTypes = {
   manualDiscounts: PropTypes.arrayOf(PropTypes.number).isRequired,
   employeeDiscount: PropTypes.number.isRequired,
   employeeDiscountPercentage: PropTypes.number.isRequired,
+  employeeName: PropTypes.string,
 };
 
 export default Pos_Calculator;
