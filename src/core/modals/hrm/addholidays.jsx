@@ -1,11 +1,12 @@
-import { DatePicker } from 'antd';
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import PropTypes from 'prop-types';
 import { saveHoliday } from '../../../feature-module/Api/HolidayApi';
 import { fetchUsers } from '../../../feature-module/Api/UserApi';
 import Swal from 'sweetalert2';
-import moment from 'moment';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import "../../../style/scss/components/Pos Components/Pos_RequestLeave.scss";
 
 const AddHolidays = ({ onSave }) => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,7 @@ const AddHolidays = ({ onSave }) => {
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [userLoadError, setUserLoadError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const statusOptions = [
     { value: 'Pending', label: 'Pending' },
@@ -40,7 +42,7 @@ const AddHolidays = ({ onSave }) => {
         label: `${user.firstName} ${user.lastName}`
       }));
       setUsers(userOptions);
-      
+
       if (!formData.userDto && userOptions.length > 0) {
         setFormData(prev => ({
           ...prev,
@@ -62,7 +64,7 @@ const AddHolidays = ({ onSave }) => {
   const handleDateChange = (date, field) => {
     setFormData(prev => ({
       ...prev,
-      [field]: date ? date.format('YYYY-MM-DD') : null
+      [field]: date ? date.toISOString().split('T')[0] : null
     }));
   };
 
@@ -73,16 +75,49 @@ const AddHolidays = ({ onSave }) => {
     }));
   };
 
+  const validateDates = () => {
+    if (!formData.startDate || !formData.endDate) {
+      return false;
+    }
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    return start < end;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     if (!formData.userDto) {
       Swal.fire({
         title: "Error!",
         text: "Please select a user",
         icon: "error",
       });
+      setIsSubmitting(false);
       return;
     }
+
+    if (!formData.startDate || !formData.endDate) {
+      Swal.fire({
+        title: "Error!",
+        text: "Please select both start and end dates",
+        icon: "error",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!validateDates()) {
+      Swal.fire({
+        title: "Error!",
+        text: "Start date must be before end date",
+        icon: "error",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await saveHoliday(formData);
       if (response) {
@@ -108,6 +143,8 @@ const AddHolidays = ({ onSave }) => {
         text: "Failed to add holiday: " + error.message,
         icon: "error",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -129,42 +166,52 @@ const AddHolidays = ({ onSave }) => {
                 <form onSubmit={handleSubmit}>
                   <div className="row">
                     <div className="col-lg-12">
-                      <div className="mb-3">
+                      <div className="input-blocks mb-3">
                         <label>Description</label>
                         <input
                           type="text"
                           className="form-control"
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          disabled={isSubmitting || isLoadingUsers}
                         />
                       </div>
                     </div>
                     <div className="col-lg-6">
-                      <div className="input-blocks">
+                      <div className="input-blocks mb-3">
                         <label>Start Date</label>
                         <DatePicker
-                          value={formData.startDate ? moment(formData.startDate, 'YYYY-MM-DD') : null}
+                          selected={formData.startDate ? new Date(formData.startDate) : null}
                           onChange={(date) => handleDateChange(date, 'startDate')}
-                          format="DD-MM-YYYY"
+                          dateFormat="dd-MM-yyyy"
                           className="form-control custom-date-picker"
-                          placeholder="Select start date"
+                          placeholderText="Select start date"
+                          disabled={isSubmitting || isLoadingUsers}
+                          minDate={new Date()}
+                          maxDate={formData.endDate ? new Date(formData.endDate) : null}
+                          popperPlacement="bottom-start"
+                          weekStartsOn={1}
                         />
                       </div>
                     </div>
                     <div className="col-lg-6">
-                      <div className="input-blocks">
+                      <div className="input-blocks mb-3">
                         <label>End Date</label>
                         <DatePicker
-                          value={formData.endDate ? moment(formData.endDate, 'YYYY-MM-DD') : null}
+                          selected={formData.endDate ? new Date(formData.endDate) : null}
                           onChange={(date) => handleDateChange(date, 'endDate')}
-                          format="DD-MM-YYYY"
+                          dateFormat="dd-MM-yyyy"
                           className="form-control custom-date-picker"
-                          placeholder="Select end date"
+                          placeholderText="Select end date"
+                          disabled={isSubmitting || isLoadingUsers}
+                          minDate={formData.startDate ? new Date(formData.startDate) : new Date()}
+                          popperPlacement="bottom-start"
+                          weekStartsOn={1}
                         />
                       </div>
                     </div>
                     <div className="col-lg-12">
-                      <div className="input-blocks">
+                      <div className="input-blocks mb-3">
                         <label>User</label>
                         <Select
                           options={users}
@@ -174,27 +221,29 @@ const AddHolidays = ({ onSave }) => {
                           isLoading={isLoadingUsers}
                           placeholder={userLoadError || "Select a user"}
                           isClearable
+                          isDisabled={isSubmitting}
                         />
                       </div>
                     </div>
                     <div className="col-lg-12">
-                      <div className="input-blocks">
+                      <div className="input-blocks mb-3">
                         <label>Status</label>
                         <Select
                           options={statusOptions}
                           value={statusOptions.find(opt => opt.value === formData.status)}
                           onChange={(selected) => setFormData({ ...formData, status: selected.value })}
                           className="w-100"
+                          isDisabled={isSubmitting || isLoadingUsers}
                         />
                       </div>
                     </div>
                   </div>
                   <div className="modal-footer-btn">
-                    <button type="button" className="btn btn-cancel me-2" data-bs-dismiss="modal">
+                    <button type="button" className="btn btn-cancel me-2" data-bs-dismiss="modal" disabled={isSubmitting}>
                       Cancel
                     </button>
-                    <button type="submit" className="btn btn-submit" disabled={isLoadingUsers}>
-                      Submit
+                    <button type="submit" className="btn btn-submit" disabled={isSubmitting || isLoadingUsers}>
+                      {isSubmitting ? "Submitting..." : "Submit"}
                     </button>
                   </div>
                 </form>
