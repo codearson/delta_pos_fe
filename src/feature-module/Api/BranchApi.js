@@ -2,28 +2,22 @@ import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
 export const fetchBranches = async () => {
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-  
-      if (!accessToken) {
-        throw new Error("No access token found. Please log in.");
-      }
-  
-      const response = await axios.get(`${BASE_BACKEND_URL}/branch/getAll`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-  
-      console.log('Branches response:', response.data);
-      return response.data.responseDto || [];
-    } catch (error) {
-      console.error("Error fetching branches:", error.response?.data || error.message);
-      throw error;
-    }
-  };
- 
+  const accessToken = localStorage.getItem("accessToken");
+
+  if (!accessToken) {
+    throw new Error("No access token found. Please log in.");
+  }
+
+  const response = await axios.get(`${BASE_BACKEND_URL}/branch/getAll`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  return response.data.responseDto || [];
+};
+
 // Save Branch API
 export const saveBranch = async (branchData) => {
     const accessToken = localStorage.getItem("accessToken");

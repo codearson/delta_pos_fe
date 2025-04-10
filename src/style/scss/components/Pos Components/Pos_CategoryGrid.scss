@@ -66,6 +66,14 @@
     &:focus {
       outline: none;
     }
+
+    &.non-scan-btn {
+      background-color: #FFB74D;
+      
+      &:hover {
+        background-color: #FFA726;
+      }
+    }
   }
 
   .quick-access-btn {
