@@ -50,7 +50,6 @@ export const getUserByEmail = async (email) => {
 
   if (response.data.responseDto?.length > 0) {
     const user = response.data.responseDto[0];
-    // Assuming the branchDto contains countryDto with priceSymbol
     if (user.branchDto?.countryDto?.priceSymbol) {
       localStorage.setItem("priceSymbol", user.branchDto.countryDto.priceSymbol);
     }

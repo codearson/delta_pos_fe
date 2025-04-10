@@ -79,6 +79,7 @@ const Pos = () => {
   const [employeeDiscount, setEmployeeDiscount] = useState(0);
   const [employeeDiscountPercentage, setEmployeeDiscountPercentage] = useState(0);
   const [employeeId, setEmployeeId] = useState(null);
+  const [employeeName, setEmployeeName] = useState("");
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -559,6 +560,20 @@ const Pos = () => {
     setEmployeeDiscount(discountAmount);
     setEmployeeId(empId);
     setEmployeeDiscountPercentage(discountPercentage);
+    
+    const fetchEmployeeName = async () => {
+      try {
+        const usersResponse = await fetchUsers();
+        const employee = usersResponse.payload.find(u => u.id === empId);
+        if (employee) {
+          setEmployeeName(employee.firstName);
+        }
+      } catch (error) {
+        console.error("Error fetching employee name:", error);
+      }
+    };
+    
+    fetchEmployeeName();
   };
 
   const handleSaveTransaction = async () => {
@@ -664,6 +679,7 @@ const Pos = () => {
           amount: method.amount,
           isActive: 1,
         })),
+        transactionEmployee: employeeId ? [{ userDto: { id: employeeId } }] : [],
       };
 
       console.log('Sending transaction data to API:', transactionData);
@@ -696,6 +712,7 @@ const Pos = () => {
           manualDiscount: manualDiscount,
           employeeDiscount: employeeDiscount,
           employeeDiscountPercentage: employeeDiscountPercentage,
+          employeeName: employeeName,
           transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
             paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
             amount: method.amount,
@@ -814,7 +831,7 @@ const Pos = () => {
           <div class="receipt-details">
             <p>Total: ${totalValue.toFixed(2)}</p>
             ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
-            ${employeeDiscount > 0 ? `<p>Employee Discount: ${employeeDiscount.toFixed(2)}</p>` : ''}
+            ${employeeDiscount > 0 ? `<p>Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)${employeeName ? ` (${employeeName})` : ""}: ${employeeDiscount.toFixed(2)}</p>` : ''}
             ${paymentMethods.map(method => `
               <p>${method.type}: ${method.amount.toFixed(2)}</p>
             `).join('')}
@@ -977,7 +994,7 @@ const Pos = () => {
             <div class="receipt-details">
               <p>Total: ${totalAmount.toFixed(2)}</p>
               ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
-              ${lastTransaction.employeeDiscount > 0 ? `<p>Employee Discount: ${lastTransaction.employeeDiscount.toFixed(2)}</p>` : ''}
+              ${lastTransaction.employeeDiscount > 0 ? `<p>Employee Discount (${lastTransaction.employeeDiscountPercentage.toFixed(1)}%)${lastTransaction.employeeName ? ` (${lastTransaction.employeeName})` : ""}: ${lastTransaction.employeeDiscount.toFixed(2)}</p>` : ''}
               ${paymentMethods.map((method) => `
                 <p>${method.type}: ${method.amount.toFixed(2)}</p>
               `).join('')}
@@ -1029,6 +1046,7 @@ const Pos = () => {
     setEmployeeDiscount(0);
     setEmployeeId(null);
     setEmployeeDiscountPercentage(0);
+    setEmployeeName("");
     resetInput();
   };
 
@@ -1272,6 +1290,7 @@ const Pos = () => {
               manualDiscounts={manualDiscounts}
               employeeDiscount={employeeDiscount}
               employeeDiscountPercentage={employeeDiscountPercentage}
+              employeeName={employeeName}
             />
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
@@ -1324,7 +1343,12 @@ const Pos = () => {
                 <div className="bill-summary centered">
                   <p>Total: {totalValue.toFixed(2)}</p>
                   {manualDiscount > 0 && <p>Manual Discount: {manualDiscount.toFixed(2)}</p>}
-                  {employeeDiscount > 0 && <p>Employee Discount: {employeeDiscount.toFixed(2)}</p>}
+                  {employeeDiscount > 0 && (
+                    <p>
+                      Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)
+                      {employeeName ? ` (${employeeName})` : ""}: {employeeDiscount.toFixed(2)}
+                    </p>
+                  )}
                   <p>Grand Total: {(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
                   {paymentMethods.map((method) => (
                     <p key={method.type}>
