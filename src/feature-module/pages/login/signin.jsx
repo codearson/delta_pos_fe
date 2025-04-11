@@ -75,6 +75,7 @@ const Signin = () => {
 
       localStorage.setItem("firstName", user.firstName || "");
       localStorage.setItem("lastName", user.lastName || "");
+      localStorage.setItem("email", user.emailAddress || "");
       localStorage.setItem("userRole", user.userRoleDto?.userRole || "");
       localStorage.setItem("userId", user.id ? String(user.id) : "1");
       localStorage.setItem("branchId", user.branchDto?.id ? String(user.branchDto.id) : "3");

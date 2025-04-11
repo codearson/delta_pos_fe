@@ -106,15 +106,15 @@ export const SidebarData = [
           // { label: "Quotation", link: "/quotation-list", icon:  <Icon.Save />,showSubRoute: false,submenu: false },
         ]
       },
-      {
-        label: "Promo",
-        submenuOpen: true,
-        submenuHdr: "Promo",
-        showSubRoute: false,
-        submenuItems: [
-          { label: "Coupons", link: "/coupons", icon:  <Icon.ShoppingCart />,showSubRoute: false, submenu: false }
-        ]
-      },
+      // {
+      //   label: "Promo",
+      //   submenuOpen: true,
+      //   submenuHdr: "Promo",
+      //   showSubRoute: false,
+      //   submenuItems: [
+      //     { label: "Coupons", link: "/coupons", icon:  <Icon.ShoppingCart />,showSubRoute: false, submenu: false }
+      //   ]
+      // },
       {
         label: "Purchases",
         submenuOpen: true,
@@ -122,8 +122,8 @@ export const SidebarData = [
         showSubRoute: false,
         submenuItems: [
           { label: "Purchase List", link: "/purchase-list", icon:  <Icon.ShoppingBag />,showSubRoute: false,submenu: false },
-          { label: "Purchase Order", link: "/purchase-order-report", icon:  <Icon.FileMinus />,showSubRoute: false ,submenu: false},
-          { label: "Purchase Return", link: "/purchase-returns", icon:  <Icon.RefreshCw />,showSubRoute: false,submenu: false }
+          // { label: "Purchase Order", link: "/purchase-order-report", icon:  <Icon.FileMinus />,showSubRoute: false ,submenu: false},
+          // { label: "Purchase Return", link: "/purchase-returns", icon:  <Icon.RefreshCw />,showSubRoute: false,submenu: false }
         ]
       },
     
