@@ -9,8 +9,6 @@ import { fetchTransactions } from "../../Api/TransactionApi";
 import { quickAccess, fetchCustomCategories } from "../../../core/json/Posdata";
 import Barcode from "react-barcode";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { fetchXReport } from "../../Api/TransactionApi";
 import { Printer } from "feather-icons-react/build/IconComponents";
 import { fetchZReport } from "../../Api/TransactionApi";
@@ -49,7 +47,6 @@ const Pos_CategoryGrid = ({
   const [purchases, setPurchases] = useState([]);
   const [xReportData, setXReportData] = useState(null);
   const popupRef = useRef(null);
-  const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [salesPageIndex, setSalesPageIndex] = useState(0);
@@ -59,6 +56,7 @@ const Pos_CategoryGrid = ({
   const [showZReportPopup, setShowZReportPopup] = useState(false);
   const [managerToggles, setManagerToggles] = useState([]);
   const [showEmployeeDiscountPopup, setShowEmployeeDiscountPopup] = useState(false);
+  const [productName, setProductName] = useState(""); // New state for product name
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -593,18 +591,25 @@ const Pos_CategoryGrid = ({
     const value = e.target.value.trim();
     setBarcode(value);
     setError("");
+    setProductName(""); // Reset product name
+
     if (value === "") {
       setProductStatus("");
       return;
     }
-    const parsedValue = parseInt(value, 10);
-    if (!isNaN(parsedValue)) {
-      const foundProduct = categories.find((item) => item.id === parsedValue);
-      setProductStatus(
-        foundProduct ? `Product: ${foundProduct.name}` : "No product found"
-      );
-    } else {
-      setProductStatus("No product found");
+
+    try {
+      const productData = await getProductByBarcode(value);
+      if (productData && productData.responseDto && productData.responseDto.length > 0) {
+        const product = productData.responseDto[0];
+        setProductName(product.name);
+        setProductStatus(`Product: ${product.name}`);
+      } else {
+        setProductStatus("No product found");
+      }
+    } catch (err) {
+      setProductStatus("Error fetching product");
+      console.error("Error fetching product by barcode:", err);
     }
   };
 
@@ -614,28 +619,31 @@ const Pos_CategoryGrid = ({
       return;
     }
 
+    if (!productName) {
+      setError("Product not found. Cannot add to purchase list.");
+      return;
+    }
+
     try {
       await savePurchase({ barcode });
       setShowAddPurchasePopup(false);
       setBarcode("");
       setProductStatus("");
+      setProductName("");
       setError("");
+      showNotification("Purchase added successfully", "success");
     } catch (err) {
       console.error("Failed to add purchase:", err.message);
       setError(err.message || "Failed to add purchase");
     }
   };
 
-  const handleRowClick = (purchase) => {
-    setSelectedPurchase(purchase);
-  };
-
   const handleClearTable = async () => {
     try {
       await deleteAllPurchases();
       setPurchases([]);
-      setSelectedPurchase(null);
       setError("");
+      showNotification("Purchase list cleared", "success");
     } catch (err) {
       console.error("Failed to clear purchases:", err.message);
       setError(err.message || "Failed to clear purchases");
@@ -643,70 +651,106 @@ const Pos_CategoryGrid = ({
   };
 
   const handlePrintPurchase = () => {
-    if (!selectedPurchase) return;
-
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
-
-    doc.setProperties({
-      title: `Purchase Details - ${selectedPurchase.barcode}`,
-      author: "POS System",
-      creator: "POS System",
-    });
-
-    doc.setFontSize(20);
-    doc.setTextColor(40, 40, 40);
-    doc.text("Purchase Details", 105, 20, { align: "center" });
-
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 30, { align: "center" });
-
-    doc.setDrawColor(0, 102, 204);
-    doc.setLineWidth(0.5);
-    doc.line(20, 35, 190, 35);
-
-    const tableData = [
-      ["Barcode", selectedPurchase.barcode],
-      ["Product Name", selectedPurchase.productName || "Unknown Product"],
-    ];
-
-    autoTable(doc, {
-      startY: 40,
-      head: [["Field", "Value"]],
-      body: tableData,
-      theme: "striped",
-      styles: {
-        fontSize: 12,
-        cellPadding: 3,
-        textColor: [40, 40, 40],
-        lineColor: [200, 200, 200],
-        lineWidth: 0.1,
-      },
-      headStyles: {
-        fillColor: [0, 102, 204],
-        textColor: [255, 255, 255],
-        fontSize: 14,
-        fontStyle: "bold",
-      },
-      alternateRowStyles: {
-        fillColor: [240, 240, 240],
-      },
-      margin: { left: 20, right: 20 },
-    });
-
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Page ${i} of ${pageCount}`, 190, 287, { align: "right" });
+    if (purchases.length === 0) {
+      showNotification("No purchases to print", "error");
+      return;
     }
 
-    doc.save(`purchase_${selectedPurchase.barcode}.pdf`);
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      showNotification("Failed to open print window. Please allow popups.", "error");
+      return;
+    }
+
+    const formattedDate = new Date().toLocaleString();
+    const cashierName = localStorage.getItem("firstName") || "Unknown";
+    const cashierLastName = localStorage.getItem("lastName") || "";
+    const shopName = localStorage.getItem("shopName") || "";
+    const branchName = localStorage.getItem("branchName") || "";
+    const branchCode = localStorage.getItem("branchCode") || "";
+    const address = localStorage.getItem("branchAddress") || "";
+    const contactNumber = localStorage.getItem("branchContact") || "";
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Purchase List Receipt</title>
+          <style>
+            @media print {
+              @page { size: 72mm auto; margin: 0; }
+              body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+              header, footer, nav, .print-header, .print-footer { display: none !important; }
+              html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
+            }
+            body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+            .receipt-header { text-align: center; margin-bottom: 5px; }
+            .receipt-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+            .receipt-details { margin-bottom: 5px; text-align: left; }
+            .receipt-details p { margin: 2px 0; }
+            .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-left: auto; margin-right: auto; }
+            .receipt-items th, .receipt-items td { padding: 2px 0; font-weight: bold; text-align: left; font-size: 12px; }
+            .receipt-items th { border-bottom: 1px dashed #000; }
+            .receipt-footer { text-align: center; margin-top: 5px; }
+            .receipt-footer p { margin: 2px 0; }
+            .divider { border-top: 1px dashed #000; margin: 5px 0; }
+            .spacing { height: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <h2>${shopName}</h2>
+            <p>${branchName}</p>
+            <p>Branch Code: ${branchCode}</p>
+            <p>Address: ${address}</p>
+            <p>Contact: ${contactNumber}</p>
+          </div>
+          <div class="receipt-details">
+            <p>Date: ${formattedDate}</p>
+            <p>Cashier: ${cashierName} ${cashierLastName}</p>
+          </div>
+          <p> Purchase List </p>
+          <div class="divider"></div>
+          <table class="receipt-items">
+            <thead>
+              <tr>
+                <th>Barcode</th>
+                <th>Product Name</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${purchases.map(purchase => `
+                <tr>
+                  <td>${purchase.barcode}</td>
+                  <td>${purchase.productName || "Unknown Product"}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="divider"></div>
+          <div class="receipt-details">
+            <p>Total Items: ${purchases.length}</p>
+          </div>
+          <div class="divider"></div>
+          <div class="receipt-footer">
+            <p>Thank You!</p>
+            <div class="spacing"></div>
+            <p>Powered by Delta POS</p>
+            <p>(deltapos.codearson@gmail.com)</p>
+            <p>(0094762963979)</p>
+            <p>================================================</p>
+          </div>
+          <script>
+            setTimeout(() => {
+              window.print();
+              window.close();
+            }, 500);
+          </script>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
   };
 
   const handlePrintXReport = () => {
@@ -883,7 +927,6 @@ const Pos_CategoryGrid = ({
 
   const handleCloseViewPurchasePopup = () => {
     setShowViewPurchasePopup(false);
-    setSelectedPurchase(null);
     setPurchases([]);
     setError("");
   };
@@ -1247,6 +1290,7 @@ const Pos_CategoryGrid = ({
                   setShowAddPurchasePopup(false);
                   setBarcode("");
                   setProductStatus("");
+                  setProductName("");
                   setError("");
                 }}
                 className="purchase-popup-close"
@@ -1275,6 +1319,7 @@ const Pos_CategoryGrid = ({
               <button
                 onClick={handleAddPurchase}
                 className="purchase-popup-button add"
+                disabled={!productName} // Disable if no product found
               >
                 Add
               </button>
@@ -1305,11 +1350,7 @@ const Pos_CategoryGrid = ({
                 <tbody>
                   {purchases.length > 0 ? (
                     purchases.map((purchase) => (
-                      <tr
-                        key={purchase.barcode}
-                        className={selectedPurchase === purchase ? "selected" : ""}
-                        onClick={() => handleRowClick(purchase)}
-                      >
+                      <tr key={purchase.barcode}>
                         <td>{purchase.barcode}</td>
                         <td>{purchase.productName || "Unknown Product"}</td>
                       </tr>
@@ -1324,12 +1365,6 @@ const Pos_CategoryGrid = ({
                 </tbody>
               </table>
             </div>
-            {selectedPurchase && (
-              <div className="purchase-popup-details">
-                <p><strong>Barcode:</strong> {selectedPurchase.barcode}</p>
-                <p><strong>Product Name:</strong> {selectedPurchase.productName || "Unknown Product"}</p>
-              </div>
-            )}
             <div className="purchase-popup-actions">
               <button
                 onClick={handleClearTable}
@@ -1340,7 +1375,7 @@ const Pos_CategoryGrid = ({
               </button>
               <button
                 onClick={handlePrintPurchase}
-                disabled={!selectedPurchase}
+                disabled={purchases.length === 0}
                 className="purchase-popup-button print"
               >
                 Print
@@ -1716,8 +1751,8 @@ const Pos_CategoryGrid = ({
                   </div>
                 </div>
 
-                {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
-                  <div key={date}>
+                ${Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => `
+                  <div key="${date}">
                     <h4>Date: ${new Date(date).toLocaleDateString()}</h4>
 
                     <div className="row">
@@ -1731,12 +1766,12 @@ const Pos_CategoryGrid = ({
                             </tr>
                           </thead>
                           <tbody>
-                            ${Object.entries(data.categoryTotals).map(([category, amount]) => (
-                              <tr key={`${date}-category-${category}`}>
+                            ${Object.entries(data.categoryTotals).map(([category, amount]) => `
+                              <tr key="${date}-category-${category}">
                                 <td>${category}</td>
                                 <td>${amount.toFixed(2)}</td>
                               </tr>
-                            ))}
+                            `).join('')}
                           </tbody>
                         </table>
                       </div>
@@ -1750,12 +1785,12 @@ const Pos_CategoryGrid = ({
                             </tr>
                           </thead>
                           <tbody>
-                            ${Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
-                              <tr key={`${date}-payment-${method}`}>
+                            ${Object.entries(data.overallPaymentTotals).map(([method, amount]) => `
+                              <tr key="${date}-payment-${method}">
                                 <td>${method}</td>
                                 <td>${amount.toFixed(2)}</td>
                               </tr>
-                            ))}
+                            `).join('')}
                           </tbody>
                         </table>
                       </div>
@@ -1787,21 +1822,21 @@ const Pos_CategoryGrid = ({
                             </thead>
                             <tbody>
                               ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
-                                Object.entries(payments).map(([method, amount]) => (
-                                  <tr key={`${date}-user-${userName}-${method}`}>
+                                Object.entries(payments).map(([method, amount]) => `
+                                  <tr key="${date}-user-${userName}-${method}">
                                     <td style={{ padding: '12px 15px' }}>${userName.split(' ')[0]}</td>
                                     <td style={{ padding: '12px 15px' }}>${method}</td>
                                     <td style={{ padding: '12px 15px' }}>${parseFloat(amount).toFixed(2)}</td>
                                   </tr>
-                                ))
-                              )}
+                                `).join('')
+                              ).join('')}
                             </tbody>
                           </table>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                `).join('')}
               </div>
             </div>
           </div>
