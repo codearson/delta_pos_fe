@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import PropTypes from 'prop-types';
-import { updateHoliday } from '../../../feature-module/Api/HolidayApi';
+import { updateHoliday, sendEmail } from '../../../feature-module/Api/HolidayApi';
 import { fetchUsers } from '../../../feature-module/Api/UserApi';
 import Swal from 'sweetalert2';
 import DatePicker from 'react-datepicker';
@@ -13,8 +13,8 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
     id: '',
     createdOn: '',
     description: '',
-    startDate: null,
-    endDate: null,
+    startDate: '',
+    endDate: '',
     status: 'Pending',
     userDto: null,
     isActive: 1,
@@ -40,8 +40,8 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
         id: selectedHoliday.id || '',
         createdOn: selectedHoliday.createdOn || '',
         description: selectedHoliday.description || '',
-        startDate: selectedHoliday.startDate || null,
-        endDate: selectedHoliday.endDate || null,
+        startDate: selectedHoliday.startDate || '',
+        endDate: selectedHoliday.endDate || '',
         status: selectedHoliday.status || 'Pending',
         userDto: selectedHoliday.userDto || null,
         isActive: selectedHoliday.isActive ? 1 : 0,
@@ -56,7 +56,8 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
       const userData = await fetchUsers();
       const userOptions = userData.payload.map(user => ({
         value: user.id,
-        label: `${user.firstName} ${user.lastName}`
+        label: `${user.firstName} ${user.lastName}`,
+        email: user.emailAddress
       }));
       setUsers(userOptions);
     } catch (error) {
@@ -71,10 +72,25 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
     }
   };
 
+  const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0];
+  };
+
+  const formatReadableDate = (date) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   const handleDateChange = (date, field) => {
     setFormData(prev => ({
       ...prev,
-      [field]: date ? date.toISOString().split('T')[0] : null
+      [field]: date ? formatDate(date) : ''
     }));
   };
 
@@ -91,14 +107,14 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
     }
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
-    return start < end;
+    return start <= end;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    if (!formData.userDto) {
+    if (!formData.userDto?.id) {
       Swal.fire({
         title: "Error!",
         text: "Please select a user",
@@ -121,7 +137,7 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
     if (!validateDates()) {
       Swal.fire({
         title: "Error!",
-        text: "Start date must be before end date",
+        text: "Start date must be before or equal to end date",
         icon: "error",
       });
       setIsSubmitting(false);
@@ -129,8 +145,65 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
     }
 
     try {
-      const response = await updateHoliday(formData.id, formData);
+      const holidayData = {
+        id: formData.id,
+        createdOn: selectedHoliday.createdOn,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        description: formData.description,
+        isActive: formData.isActive,
+        status: formData.status,
+        userDto: {
+          id: formData.userDto.id
+        }
+      };
+
+      console.log("Sending payload to updateHoliday:", JSON.stringify(holidayData, null, 2));
+
+      const response = await updateHoliday(holidayData);
       if (response) {
+        if (formData.status === 'Approved' || formData.status === 'Declined') {
+          try {
+            const approverFirstName = localStorage.getItem("firstName") || "Unknown";
+            const approverLastName = localStorage.getItem("lastName") || "";
+            const approverEmail = localStorage.getItem("email");
+            const shopName = localStorage.getItem("shopName") || "KFC";
+            const user = users.find(u => u.value === formData.userDto.id);
+            console.log("user:", user);
+            const userName = user ? user.label : "Staff Member";
+            const userEmail = user ? user.email : null;
+            console.log("userEmail:", userEmail);
+            const subject = `Leave Request ${formData.status}`;
+            const actionDate = formatReadableDate(new Date());
+            const leavePeriod = `${formatReadableDate(formData.startDate)} – ${formatReadableDate(formData.endDate)}`;
+            const dateLabel = formData.status === 'Approved' ? 'Approval Date' : 'Declined Date';
+
+            const userBody = `Dear ${userName},\n\nYour leave request has been "${formData.status.toLowerCase()}" by Mr. ${approverFirstName} ${approverLastName}.\n\nLeave Type: ${formData.description}\nLeave Period: ${leavePeriod}\n${dateLabel}: ${actionDate}\n\nIf you require any further assistance or would like to discuss any details regarding your leave, please feel free to contact Mr. ${approverFirstName} ${approverLastName} directly.\n\nWarm regards,\n${shopName}`;
+
+            if (!userEmail) {
+              throw new Error("User email not found");
+            }
+            await sendEmail(userEmail, subject, userBody);
+            console.log("Email sent successfully to user:", userEmail);
+
+            if (!approverEmail) {
+              console.warn("Approver email not found in localStorage");
+            } else {
+              const approverSubject = formData.status === 'Approved' ? "Leave Approval Notification" : "Leave Decline Notification";
+              const approverBody = `Dear ${approverFirstName} ${approverLastName},\n\nThis is a confirmation email that you have "${formData.status.toLowerCase()}" a leave request for ${userName}.\n\nReason for leave: ${formData.description}\nPeriod: ${leavePeriod.replace('–', 'to')}\n${dateLabel}: ${actionDate}\n\nKind regards,\n${shopName}`;
+              await sendEmail(approverEmail, approverSubject, approverBody);
+              console.log("Email sent successfully to approver:", approverEmail);
+            }
+          } catch (emailError) {
+            console.error("Failed to send email:", emailError);
+            Swal.fire({
+              title: "Warning!",
+              text: "Leave updated successfully, but failed to send email notification.",
+              icon: "warning",
+            });
+          }
+        }
+
         onUpdate();
         Swal.fire({
           title: "Success!",
@@ -140,9 +213,10 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
         document.querySelector("#edit-department .close").click();
       }
     } catch (error) {
+      console.error("Update error:", error.response?.data || error.message);
       Swal.fire({
         title: "Error!",
-        text: "Failed to update Staff Leave: " + error.message,
+        text: `Failed to update Staff Leave: ${error.response?.data?.message || error.message}`,
         icon: "error",
       });
     } finally {
