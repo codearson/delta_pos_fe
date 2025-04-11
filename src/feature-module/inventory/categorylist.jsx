@@ -58,7 +58,9 @@ const CategoryList = () => {
             }
             if (Array.isArray(categoryArray)) {
                 const filteredCategories = categoryArray.filter(category => 
-                    category.productCategoryName?.toLowerCase() !== 'custom'
+                    category.productCategoryName?.toLowerCase() !== 'custom' &&
+                    category.productCategoryName?.toLowerCase() !== 'non scan' &&
+                    !category.productCategoryName?.toLowerCase().includes('nonscan')
                 );
                 setAllCategories(filteredCategories);
                 const activeFilteredCategories = filteredCategories
