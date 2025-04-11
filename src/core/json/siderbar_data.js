@@ -86,7 +86,7 @@ export const SidebarData = [
         submenu: true,
         showSubRoute: false,
         submenuItems: [
-          { label: "Discount Toggle", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+          { label: "Manager Toggle", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
         //  { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
         ]
       },

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { fetchCustomCategories, quickAccess } from "../../core/json/Posdata";
+import { fetchCustomCategories, quickAccess, fetchNonScanProducts } from "../../core/json/Posdata";
 import Header from "../components/Pos Components/Pos_Header";
 import Sidebar from "../components/Pos Components/Pos_Sidebar";
 import Pos_Calculator from "../components/Pos Components/Pos_Calculator";
@@ -10,7 +10,7 @@ import PaymentButtons from "../components/Pos Components/Pos_Payment";
 import FunctionButtons from "../components/Pos Components/Pos_Function";
 import PriceCheckPopup from "../components/Pos Components/PriceCheckPopup";
 import NotificationPopup from "../components/Pos Components/NotificationPopup";
-import { getProductByBarcode, saveProduct } from "../Api/productApi";
+import { getProductByBarcode, getProductByName, saveProduct } from "../Api/productApi";
 import { saveTransaction } from "../Api/TransactionApi";
 import { fetchCustomers } from "../Api/customerApi";
 import { fetchBranches } from "../Api/BranchApi";
@@ -136,7 +136,15 @@ const Pos = () => {
     localStorage.setItem("theme", newMode ? "dark" : "light");
   };
 
-  const handleTabChange = (newTab) => setActiveTab(newTab);
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    
+    // Refresh non-scan data from localStorage when non-scan tab is clicked
+    if (newTab === "nonscan") {
+      // Clear the cache timestamp to force a refresh
+      localStorage.removeItem('nonScanProductsCacheTimestamp');
+    }
+  };
 
   const showNotification = (message, type = "error") => {
     setNotification({ message, type });
@@ -150,9 +158,6 @@ const Pos = () => {
     const audio = new Audio("/error-sound.wav");
     audio
       .play()
-      .then(() => {
-        console.log("Error sound played successfully");
-      })
       .catch((error) => {
         console.error("Error playing sound:", error);
         showNotification("Failed to play error sound. Check console for details.", "error");
@@ -160,6 +165,7 @@ const Pos = () => {
   };
 
   const handleCategorySelect = (category) => {
+    
     if (category.name === "clear") {
       setSelectedItems([]);
       setTotalValue(0);
@@ -172,6 +178,88 @@ const Pos = () => {
     }
 
     if (activeTab === "category" && category?.name) {
+      
+      if (category.name === "Shopping Bags") {
+        // Try both formats to determine which one exists
+        Promise.all([
+          getProductByName("Shopping Bags-👜"),
+          getProductByName("Shopping Bags-?")
+        ]).then(([response1, response2]) => {
+          
+          // Determine which product exists
+          let shoppingBagsProduct = null;
+          
+          if (response1?.responseDto?.length > 0) {
+            shoppingBagsProduct = response1.responseDto[0];
+          } else if (response2?.responseDto?.length > 0) {
+            shoppingBagsProduct = response2.responseDto[0];
+          }
+          
+          const inputQty = parseFloat(inputValue);
+          const qty = inputQty > 0 ? inputQty : 1;
+          const price = category.price || 0;
+          const total = qty * price;
+          const newItem = { 
+            id: shoppingBagsProduct ? shoppingBagsProduct.id : category.id, 
+            name: category.name, 
+            qty, 
+            price, 
+            total 
+          };
+          
+          const existingItemIndex = selectedItems.findIndex(
+            (item) => item.name === newItem.name && item.price === newItem.price
+          );
+          
+          let newItems;
+          if (existingItemIndex !== -1) {
+            newItems = [...selectedItems];
+            newItems[existingItemIndex].qty += qty;
+            newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          } else {
+            newItems = [...selectedItems, newItem];
+          }
+          
+          setSelectedItems(newItems);
+          setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+          setInputScreenText("");
+          resetInput();
+        }).catch(error => {
+          console.error("Error fetching Shopping Bags product:", error);
+          // Fallback to the original behavior if there's an error
+          const inputQty = parseFloat(inputValue);
+          const qty = inputQty > 0 ? inputQty : 1;
+          const price = category.price || 0;
+          const total = qty * price;
+          const newItem = { 
+            id: category.id, 
+            name: category.name, 
+            qty, 
+            price, 
+            total 
+          };
+          
+          const existingItemIndex = selectedItems.findIndex(
+            (item) => item.name === newItem.name && item.price === newItem.price
+          );
+          
+          let newItems;
+          if (existingItemIndex !== -1) {
+            newItems = [...selectedItems];
+            newItems[existingItemIndex].qty += qty;
+            newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          } else {
+            newItems = [...selectedItems, newItem];
+          }
+          
+          setSelectedItems(newItems);
+          setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+          setInputScreenText("");
+          resetInput();
+        });
+        return;
+      }
+      
       const parsedInput = parseFloat(inputValue);
       if (parsedInput > 0) {
         if (inputStage === "qty") {
@@ -221,6 +309,54 @@ const Pos = () => {
         setPendingQty(1);
         setInputValue("0");
         setInputScreenText("1 × ");
+      }
+    } else if (activeTab === "nonscan" && category?.name) {
+      const price = category.price || 0;
+      
+      if (inputStage === "qty" && parseFloat(inputValue) > 0) {
+        const qty = parseFloat(inputValue);
+        const total = qty * price;
+        const newItem = { id: category.id, name: category.nonScanProduct || category.name, qty, price, total };
+        
+        const existingItemIndex = selectedItems.findIndex(
+          (item) => item.name === newItem.name && item.price === newItem.price
+        );
+        
+        let newItems;
+        if (existingItemIndex !== -1) {
+          newItems = [...selectedItems];
+          newItems[existingItemIndex].qty += qty;
+          newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+        } else {
+          newItems = [...selectedItems, newItem];
+        }
+        
+        setSelectedItems(newItems);
+        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+        setInputScreenText("");
+        resetInput();
+      } else {
+        const qty = 1;
+        const total = qty * price;
+        const newItem = { id: category.id, name: category.nonScanProduct || category.name, qty, price, total };
+        
+        const existingItemIndex = selectedItems.findIndex(
+          (item) => item.name === newItem.name && item.price === newItem.price
+        );
+        
+        let newItems;
+        if (existingItemIndex !== -1) {
+          newItems = [...selectedItems];
+          newItems[existingItemIndex].qty += qty;
+          newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+        } else {
+          newItems = [...selectedItems, newItem];
+        }
+        
+        setSelectedItems(newItems);
+        setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+        setInputScreenText("");
+        resetInput();
       }
     }
   };
@@ -283,16 +419,7 @@ const Pos = () => {
         const currentTotal = totalValue - manualDiscount - employeeDiscount;
         const remainingBalance = currentTotal - totalPaid;
         
-        console.log('Transaction Save Check:', {
-          isPaymentStarted,
-          selectedItemsCount: selectedItems.length,
-          totalPaid,
-          currentTotal,
-          remainingBalance
-        });
-
         if (remainingBalance <= 0) {
-          console.log('Attempting to save transaction...');
           handleSaveTransaction();
         } else {
           showNotification(`Please pay the remaining balance: ${remainingBalance.toFixed(2)}`, "warning");
@@ -550,13 +677,6 @@ const Pos = () => {
   };
 
   const handleEmployeeDiscount = (discountAmount, empId, discountPercentage) => {
-    console.log('POS Employee Discount Debug:', {
-      discountAmount,
-      empId,
-      discountPercentage,
-      currentTotal: totalValue,
-      selectedItems
-    });
     setEmployeeDiscount(discountAmount);
     setEmployeeId(empId);
     setEmployeeDiscountPercentage(discountPercentage);
@@ -577,15 +697,6 @@ const Pos = () => {
   };
 
   const handleSaveTransaction = async () => {
-    console.log('Starting transaction save process:', {
-      selectedItems,
-      totalValue,
-      manualDiscount,
-      employeeDiscount,
-      employeeId,
-      paymentMethods
-    });
-
     const userIdRaw = localStorage.getItem("userId");
     const branchIdRaw = localStorage.getItem("branchId");
 
@@ -646,15 +757,6 @@ const Pos = () => {
       if (cardPayments > 0) {
         combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
       }
-
-      console.log('Preparing transaction data:', {
-        totalAmount: totalValue - manualDiscount - employeeDiscount,
-        manualDiscount,
-        employeeDiscount,
-        employeeId,
-        paymentMethods: combinedPaymentMethods,
-        items: selectedItems
-      });
   
       const transactionData = {
         status: "Completed",
@@ -681,11 +783,8 @@ const Pos = () => {
         })),
         transactionEmployee: employeeId ? [{ userDto: { id: employeeId } }] : [],
       };
-
-      console.log('Sending transaction data to API:', transactionData);
   
       const result = await saveTransaction(transactionData);
-      console.log('Transaction API response:', result);
 
       if (result.success) {
         let transactionId;
@@ -1295,7 +1394,13 @@ const Pos = () => {
             <div className="category-section">
               <CategoryTabs activeTab={activeTab} onTabChange={handleTabChange} darkMode={darkMode} />
               <CategoryGrid
-                items={activeTab === "category" ? fetchCustomCategories : quickAccess}
+                items={
+                  activeTab === "category"
+                    ? fetchCustomCategories
+                    : activeTab === "nonscan"
+                    ? fetchNonScanProducts
+                    : quickAccess
+                }
                 onCategorySelect={handleCategorySelect}
                 onManualDiscount={handleManualDiscount}
                 showNotification={showNotification}
