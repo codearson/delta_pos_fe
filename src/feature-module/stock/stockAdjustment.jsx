@@ -321,10 +321,14 @@ const StockAdjustment = () => {
     const fetchToggles = async () => {
       try {
         const toggles = await getAllManagerToggles();
-        setToggles(toggles.responseDto);
+        // Filter to only get discount-related toggles
+        const discountToggles = toggles.responseDto.filter(
+          toggle => toggle.action.includes("Discount")
+        );
+        setToggles(discountToggles);
         
         // Find the employeeDiscount toggle and set its state
-        const employeeDiscountToggle = toggles.responseDto.find(
+        const employeeDiscountToggle = discountToggles.find(
           toggle => toggle.action === "Employee Discount"
         );
         if (employeeDiscountToggle) {
@@ -517,27 +521,37 @@ const StockAdjustment = () => {
       <style>{styles}</style>
       <div className="content">
         <div className="row">
-          {toggles.map((toggle) => (
-            <div key={toggle.id} className="col-12 mb-4">
-              <div className="card">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <h5 className="card-title mb-0">{toggle.action}</h5>
-                    <div className="toggle-wrapper">
-                      <label className="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          checked={toggle.isActive} 
-                          onChange={() => handleToggleChange(toggle.id, toggle.isActive)}
-                        />
-                        <span className="toggle-slider"></span>
-                      </label>
+          {toggles.length > 0 ? (
+            toggles.map((toggle) => (
+              <div key={toggle.id} className="col-12 mb-4">
+                <div className="card">
+                  <div className="card-body">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <h5 className="card-title mb-0">{toggle.action}</h5>
+                      <div className="toggle-wrapper">
+                        <label className="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            checked={toggle.isActive} 
+                            onChange={() => handleToggleChange(toggle.id, toggle.isActive)}
+                          />
+                          <span className="toggle-slider"></span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="col-12 mb-4">
+              <div className="card">
+                <div className="card-body">
+                  <p className="text-center mb-0">No discount settings available.</p>
+                </div>
+              </div>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Employee Discounts Section - Only show if toggle is enabled */}

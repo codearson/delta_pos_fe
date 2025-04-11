@@ -3,7 +3,7 @@ import clsx from "clsx";
 import "../../../style/scss/components/Pos Components/Pos_CategoryTabs.scss";
 import PropTypes from "prop-types";
 
-const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode }) => {
+const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode, showInPos }) => {
   return (
     <div className="category-tabs-container" style={{ height: '50px' }}>
       <button
@@ -23,22 +23,24 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode }) => {
       >
         Category
       </button>
-      <button
-        className={clsx(
-          "category-tab",
-          activeTab === "nonscan" ? "active-tab" : "inactive-tab",
-          darkMode ? "dark-mode" : "light-mode"
-        )}
-        style={{
-          backgroundColor: activeTab === "nonscan" ? "#2196F3" : "",
-          color: "white",
-          flex: 1,
-          height: '100%'
-        }}
-        onClick={() => onTabChange("nonscan")}
-      >
-        NonScan
-      </button>
+      {showInPos && (
+        <button
+          className={clsx(
+            "category-tab",
+            activeTab === "nonscan" ? "active-tab" : "inactive-tab",
+            darkMode ? "dark-mode" : "light-mode"
+          )}
+          style={{
+            backgroundColor: activeTab === "nonscan" ? "#2196F3" : "",
+            color: "white",
+            flex: 1,
+            height: '100%'
+          }}
+          onClick={() => onTabChange("nonscan")}
+        >
+          NonScan
+        </button>
+      )}
       <button
         className={clsx(
           "category-tab",
@@ -48,7 +50,7 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode }) => {
         style={{
           backgroundColor: activeTab === "quick" ? "#9C27B0" : "",
           color: "white",
-          borderRadius: "0 8px 0 0",
+          borderRadius: showInPos ? "0" : "0 8px 0 0",
           flex: 1,
           height: '100%'
         }}
@@ -64,6 +66,7 @@ Pos_CategoryTabs.propTypes = {
   activeTab: PropTypes.oneOf(["category", "quick", "nonscan"]).isRequired,
   onTabChange: PropTypes.func.isRequired,
   darkMode: PropTypes.bool.isRequired,
+  showInPos: PropTypes.bool.isRequired,
 };
 
 export default Pos_CategoryTabs;

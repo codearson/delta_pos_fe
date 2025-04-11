@@ -56,7 +56,7 @@ export const SidebarData = [
         submenuItems: [
           { label: "Products", link: "/product-list", icon:<Icon.Box />,showSubRoute: false,submenu: false },
           { label: "Custom Categories", link: "/custom-products", icon:<Icon.Tool />,showSubRoute: false,submenu: false },
-          { label: "Non Scan Products", link: "/units", icon:  <Icon.BarChart2 />,showSubRoute: false,submenu: false },
+          { label: "Non Scan Products", link: "/nonsaleproduct", icon:  <Icon.BarChart2 />,showSubRoute: false,submenu: false },
           // { label: "Create Product", link: "/add-product", icon:  <Icon.PlusSquare />,showSubRoute: false, submenu: false },
           // { label: "Expired Products", link: "/expired-products", icon:  <Icon.Codesandbox  />,showSubRoute: false,submenu: false },
           { label: "Low Stocks", link: "/low-stocks", icon: <Icon.TrendingDown  />,showSubRoute: false,submenu: false },

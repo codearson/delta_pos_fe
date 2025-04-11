@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const BASE_BACKEND_URL = "https://deltaposbe-production.up.railway.app";
+ export const BASE_BACKEND_URL = "https://deltaposbe-production.up.railway.app";
 // export const BASE_BACKEND_URL = "http://localhost:8080";
  
 

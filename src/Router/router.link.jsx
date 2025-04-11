@@ -196,6 +196,8 @@ import CurrencySettings from "../feature-module/settings/financialsettings/curre
 import WareHouses from "../core/modals/peoples/warehouses";
 import Coupons from "../feature-module/coupons/coupons";
 import { all_routes } from "./all_routes";
+import NonSaleProductList from "../feature-module/inventory/nonsaleproductlist";
+
 export const publicRoutes = [
   {
     id: 1,
@@ -1408,7 +1410,14 @@ export const publicRoutes = [
     name: "customproducts",
     element: <CustomProductList />,
     route: Route,
-  }
+  },
+  {
+    id: 121,
+    path: "/nonsaleproduct",
+    name: "nonsaleproduct",
+    element: <NonSaleProductList />,
+    route: Route,
+  },
 ];
 export const posRoutes = [
   {

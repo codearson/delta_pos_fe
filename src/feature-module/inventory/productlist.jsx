@@ -80,7 +80,10 @@ const ProductList = () => {
     ]);
 
     const formattedCategories = categoriesData
-      .filter(category => category.productCategoryName?.toLowerCase() !== 'custom')
+      .filter(category => 
+        category.productCategoryName?.toLowerCase() !== 'custom' &&
+        category.productCategoryName?.toLowerCase() !== 'non scan'
+      )
       .map(category => ({
         value: category.id,
         label: category.productCategoryName
@@ -88,13 +91,13 @@ const ProductList = () => {
     setCategories(formattedCategories);
 
     const formattedTaxes = taxesData
-    .filter(tax => tax.isActive === true)
-    .map(tax => ({
-      value: tax.id,
-      label: `${tax.taxPercentage}%`
-    }));
-  setTaxes(formattedTaxes);
-};
+      .filter(tax => tax.isActive === true)
+      .map(tax => ({
+        value: tax.id,
+        label: `${tax.taxPercentage}%`
+      }));
+    setTaxes(formattedTaxes);
+  };
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -168,32 +171,33 @@ const ProductList = () => {
   const filterData = (query, categoryFilter, taxFilter) => {
     let filteredData = [...allProducts];
     filteredData = filteredData.filter(product => 
-      product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'custom'
+        product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'custom' &&
+        product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'non scan'
     );
 
     if (query.trim() !== '') {
-      filteredData = filteredData.filter(product =>
-        product.name.toLowerCase().includes(query.toLowerCase()) ||
-        product.barcode?.toLowerCase().includes(query.toLowerCase()) ||
-        product.price?.toString().includes(query) ||
-        product.quantity?.toString().includes(query) ||
-        product.taxDto?.taxPercentage?.toString().includes(query) ||
-        product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
-      );
+        filteredData = filteredData.filter(product =>
+            product.name.toLowerCase().includes(query.toLowerCase()) ||
+            product.barcode?.toLowerCase().includes(query.toLowerCase()) ||
+            product.price?.toString().includes(query) ||
+            product.quantity?.toString().includes(query) ||
+            product.taxDto?.taxPercentage?.toString().includes(query) ||
+            product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
+        );
     } else {
-      filteredData = filteredData.filter(product => product.isActive === showActive);
+        filteredData = filteredData.filter(product => product.isActive === showActive);
     }
 
     if (categoryFilter) {
-      filteredData = filteredData.filter(product =>
-        product.productCategoryDto?.id === categoryFilter.value
-      );
+        filteredData = filteredData.filter(product =>
+            product.productCategoryDto?.id === categoryFilter.value
+        );
     }
 
     if (taxFilter) {
-      filteredData = filteredData.filter(product =>
-        product.taxDto?.id === taxFilter.value
-      );
+        filteredData = filteredData.filter(product =>
+            product.taxDto?.id === taxFilter.value
+        );
     }
 
     setProducts(filteredData.reverse());

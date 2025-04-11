@@ -104,7 +104,11 @@ const EditProduct = () => {
       const data = await fetchProductCategories();
       const reversedData = [...data].reverse();
       setCategories(reversedData
-        .filter(cat => cat.isActive === true && cat.productCategoryName.toLowerCase() !== 'custom')
+        .filter(cat => 
+          cat.isActive === true && 
+          cat.productCategoryName.toLowerCase() !== 'custom' &&
+          cat.productCategoryName.toLowerCase() !== 'non scan'
+        )
         .map((cat) => ({ value: cat.id, label: cat.productCategoryName }))
       );
     } catch (error) {
