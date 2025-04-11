@@ -1,6 +1,4 @@
 import { fetchProducts } from "../../feature-module/Api/productApi";
-import { getAllNonScanProductsPage } from "../../feature-module/Api/NonScanProductApi";
-import { getNonScanProductByName } from "../../feature-module/Api/NonScanProductApi";
 
 export const quickAccess = [
   // { id: 1, name: "Opening Amount", icon: "💰" },
@@ -18,27 +16,30 @@ export const quickAccess = [
 
 export const fetchCustomCategories = async () => {
   try {
-    const shoppingBagsResponse = await getNonScanProductByName("Shopping Bags");
-    
-    let shoppingBagsItem = null;
-    if (shoppingBagsResponse?.responseDto?.length > 0) {
-      const shoppingBags = shoppingBagsResponse.responseDto[0];
-      
-      shoppingBagsItem = {
-        id: shoppingBags.id,
-        name: shoppingBags.nonScanProduct,
-        icon: shoppingBags.icon || "🛍️",
-        price: shoppingBags.price
-      };
-    }
-
     const products = await fetchProducts();
+    
+    // First, get the Shopping Bags from non-scan products
+    const nonScanProducts = products
+      .filter((product) => product.isActive === true && product.productCategoryDto?.productCategoryName?.toLowerCase() === "non scan")
+      .map((product) => {
+        const [name, icon] = product.name.split("-");
+        return {
+          id: product.id,
+          name: name.trim(),
+          icon: icon?.trim() || "📦",
+          price: product.pricePerUnit || 0,
+          isNonScanProduct: true
+        };
+      });
+    
+    // Find only exact "Shopping Bags" in non-scan products
+    const shoppingBags = nonScanProducts.filter(product => 
+      product.name.toLowerCase() === "shopping bags"
+    );
+    
+    // Get custom products
     const customProducts = products
-      .filter((product) => 
-        product.isActive === true && 
-        product.productCategoryDto?.productCategoryName?.toLowerCase() === "custom" &&
-        !product.name.startsWith("Shopping Bags")
-      )
+      .filter((product) => product.isActive === true && product.productCategoryDto?.productCategoryName?.toLowerCase() === "custom")
       .map((product) => {
         const [name, icon] = product.name.split("-");
         return {
@@ -47,29 +48,30 @@ export const fetchCustomCategories = async () => {
           icon: icon?.trim() || "📦",
         };
       });
-    return shoppingBagsItem ? [shoppingBagsItem, ...customProducts] : customProducts;
+    
+    // Combine Shopping Bags with custom products, with Shopping Bags at the beginning
+    return [...shoppingBags, ...customProducts];
   } catch (error) {
     return [];
   }
 };
 
-
 export const fetchNonScanProducts = async () => {
   try {
-    const response = await getAllNonScanProductsPage(1, 100);
-    
-    if (response?.status && response?.responseDto) {
-      const activeNonScanProducts = response.responseDto
-        .filter(product => product.isActive === true)
-        .map(product => ({
+    const products = await fetchProducts();
+    const nonSaleProducts = products
+      .filter((product) => product.isActive === true && product.productCategoryDto?.productCategoryName?.toLowerCase() === "non scan")
+      .map((product) => {
+        const [name, icon] = product.name.split("-");
+        return {
           id: product.id,
-          name: product.nonScanProduct,
-          icon: product.icon,
-          price: product.price
-        }));
-      return activeNonScanProducts;
-    }
-    return [];
+          name: name.trim(),
+          icon: icon?.trim() || "📦",
+          price: product.pricePerUnit || 0
+        };
+      })
+      .reverse();
+    return nonSaleProducts;
   } catch (error) {
     return [];
   }

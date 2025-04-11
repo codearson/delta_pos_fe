@@ -1,40 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import Table from "../../core/pagination/datatable";
 import { fetchAdmins } from "../Api/UserApi";
-import Swal from "sweetalert2";
-import { decodeJwt } from "../Api/UserApi";
 
 const RolesPermissions = () => {
   const [usersData, setUsersData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showMailPopup, setShowMailPopup] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [mailContent, setMailContent] = useState({
-    subject: '',
-    message: '',
-    from: ''
-  });
-  const [errors, setErrors] = useState({
-    subject: '',
-    message: ''
-  });
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: 12,
     total: 0
   });
-
-  useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      const decodedToken = decodeJwt(accessToken);
-      setMailContent(prev => ({
-        ...prev,
-        from: decodedToken?.sub || ''
-      }));
-    }
-  }, []);
 
   const loadUsers = async () => {
     try {
@@ -53,12 +27,8 @@ const RolesPermissions = () => {
         userRoleDto: {
           userRole: user.userRoleDto?.userRole || ''
         },
-        branch: user.branchDto?.branchName || '',
         mobileNumber: user.mobileNumber,
-        createdDate: user.createdDate
       }));
-
-      console.log('Transformed Data:', transformedData);
 
       setUsersData(transformedData);
       setPagination(prev => ({
@@ -76,112 +46,6 @@ const RolesPermissions = () => {
     loadUsers();
   }, [pagination.current, pagination.pageSize]);
 
-  const handleMailClick = (user) => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (accessToken) {
-      const decodedToken = decodeJwt(accessToken);
-      setMailContent({
-        subject: '',
-        message: '',
-        from: decodedToken?.sub || ''
-      });
-    }
-    setSelectedUser(user);
-    setShowMailPopup(true);
-  };
-
-  const validateForm = () => {
-    let isValid = true;
-    const newErrors = {
-      subject: '',
-      message: ''
-    };
-
-    if (!mailContent.subject.trim()) {
-      newErrors.subject = 'Subject is required';
-      isValid = false;
-    }
-
-    if (!mailContent.message.trim()) {
-      newErrors.message = 'Message is required';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleSendMail = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      // First close the email popup
-      handleClosePopup();
-      
-      // Then show success popup
-      Swal.fire({
-        title: 'Success!',
-        text: 'Email has been sent successfully',
-        icon: 'success',
-        confirmButtonText: 'OK',
-        customClass: {
-          confirmButton: 'btn btn-success'
-        }
-      });
-    } catch (error) {
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to send email. Please try again.',
-        icon: 'error',
-        confirmButtonText: 'OK',
-        customClass: {
-          confirmButton: 'btn btn-danger'
-        }
-      });
-    }
-  };
-
-  const handleClosePopup = () => {
-    setShowMailPopup(false);
-    setSelectedUser(null);
-    setMailContent({ subject: '', message: '', from: '' });
-    setErrors({ subject: '', message: '' });
-  };
-
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: "username",
-      sorter: (a, b) => a.username.localeCompare(b.username),
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      sorter: (a, b) => a.email.localeCompare(b.email),
-    },
-    {
-      title: "Mobile",
-      dataIndex: "mobileNumber",
-      sorter: (a, b) => a.mobileNumber.localeCompare(b.mobileNumber),
-    },
-    {
-      title: "Actions",
-      dataIndex: "actions",
-      key: "actions",
-      render: (_, record) => (
-        <td className="action-table-data">
-          <div className="edit-delete-action">
-            <Link className="me-2 p-2" to="#" onClick={() => handleMailClick(record)}>
-              <i data-feather="mail" className="feather-mail"></i>
-            </Link>
-          </div>
-        </td>
-      ),
-    },
-  ];
-
   return (
     <div>
       <div className="page-wrapper">
@@ -194,200 +58,301 @@ const RolesPermissions = () => {
               </div>
             </div>
           </div>
-          {/* /product list */}
-          <div className="card table-list-card">
-            <div className="card-body">
-              <div className="table-responsive">
-                <Table
-                  className="table datanew dataTable no-footer"
-                  columns={columns}
-                  dataSource={usersData}
-                  loading={loading}
-                  pagination={{
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                    total: pagination.total,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    onChange: (page, pageSize) => {
-                      setPagination({
-                        current: page,
-                        pageSize: pageSize,
-                        total: pagination.total
-                      });
-                    }
-                  }}
-                  rowKey={(record) => record.id}
-                />
+          
+          <div className="admin-cards-container">
+            {loading ? (
+              <div className="loading-spinner">Loading...</div>
+            ) : (
+              <div className="admin-cards-grid">
+                {usersData.map((admin) => (
+                  <div key={admin.id} className="id-card">
+                    <div className="card-header">
+                      <div className="company-logo">
+                        <img src="/assets/img/logo.png" alt="Liceria Company" />
+                      </div>
+                    </div>
+                    <div className="profile-section">
+                      <div className="profile-image">
+                        <div className="avatar-circle">
+                          {admin.username.charAt(0)}
+                        </div>
+                      </div>
+                      <h2 className="admin-name">{admin.username}</h2>
+                      <div className="role-badge">
+                        {admin.userRoleDto?.userRole || "MANAGER"}
+                      </div>
+                    </div>
+                    <div className="contact-info">
+                      <div className="info-item">{admin.mobileNumber}</div>
+                      <div className="info-item">{admin.email}</div>
+                    </div>
+                    <div className="diagonal-shapes">
+                      <div className="diagonal-top"></div>
+                      <div className="diagonal-bottom"></div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            )}
+            
+            <div className="admin-pagination">
+              <button 
+                disabled={pagination.current === 1}
+                onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
+              >
+                Previous
+              </button>
+              <span>Page {pagination.current}</span>
+              <button 
+                disabled={pagination.current * pagination.pageSize >= pagination.total}
+                onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
+              >
+                Next
+              </button>
             </div>
           </div>
-          {/* /product list */}
+
+          <style>
+            {`
+              .admin-cards-container {
+                padding: clamp(10px, 2vw, 20px);
+                background: #f8f9fa;
+                max-width: 1400px;
+                margin: 0 auto;
+                width: 100%;
+              }
+
+              .admin-cards-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+                gap: clamp(10px, 2vw, 20px);
+                margin-bottom: clamp(15px, 3vw, 30px);
+                width: 100%;
+              }
+
+              .id-card {
+                position: relative;
+                width: 100%;
+                aspect-ratio: 9/16;
+                max-height: 380px;
+                background: white;
+                border-radius: clamp(8px, 1.5vw, 12px);
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+              }
+
+              .card-header {
+                position: relative;
+                z-index: 2;
+                padding: clamp(8px, 1.5vw, 12px);
+                text-align: center;
+              }
+
+              .company-logo {
+                width: clamp(40px, 8vw, 50px);
+                height: clamp(40px, 8vw, 50px);
+                margin: 0 auto;
+                background: white;
+                border-radius: 50%;
+                padding: clamp(6px, 1vw, 8px);
+              }
+
+              .company-logo img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+              }
+
+              .profile-section {
+                position: relative;
+                z-index: 2;
+                text-align: center;
+                padding: clamp(8px, 1.5vw, 12px);
+              }
+
+              .profile-image {
+                width: clamp(70px, 15vw, 90px);
+                height: clamp(70px, 15vw, 90px);
+                margin: 0 auto clamp(10px, 2vw, 15px);
+                border-radius: 50%;
+                border: 2px solid #8F4DAE;
+                overflow: hidden;
+              }
+
+              .avatar-circle {
+                width: 100%;
+                height: 100%;
+                background: #f0f0f0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: clamp(24px, 5vw, 32px);
+                font-weight: bold;
+                color: #333;
+              }
+
+              .admin-name {
+                font-size: clamp(14px, 2.5vw, 18px);
+                font-weight: bold;
+                color: #333;
+                margin: clamp(6px, 1vw, 8px) 0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                padding: 0 10px;
+              }
+
+              .role-badge {
+                background: white;
+                color: #333;
+                padding: clamp(3px, 0.8vw, 4px) clamp(10px, 2vw, 15px);
+                border-radius: 4px;
+                display: inline-block;
+                font-weight: 600;
+                font-size: clamp(10px, 1.8vw, 12px);
+                margin: clamp(6px, 1vw, 8px) 0;
+                position: relative;
+                z-index: 2;
+              }
+
+              .contact-info {
+                position: relative;
+                z-index: 2;
+                padding: clamp(8px, 1.5vw, 12px);
+                text-align: center;
+                color: white;
+                margin-top: clamp(10px, 2vw, 15px);
+              }
+
+              .info-item {
+                margin: clamp(8px, 1.5vw, 10px) 0;
+                font-size: clamp(10px, 1.8vw, 12px);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                padding: 0 10px;
+              }
+
+              .diagonal-shapes {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1;
+              }
+
+              .diagonal-top {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 60%;
+                background: #8F4DAE;
+                clip-path: polygon(0 0, 100% 0, 100% 70%, 0 100%);
+              }
+
+              .diagonal-bottom {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 45%;
+                background: #1a1a1a;
+                clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 100%);
+              }
+
+              .admin-pagination {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: clamp(10px, 2vw, 15px);
+                margin-top: clamp(20px, 4vw, 30px);
+                flex-wrap: wrap;
+              }
+
+              .admin-pagination button {
+                padding: clamp(6px, 1.2vw, 8px) clamp(12px, 2.4vw, 16px);
+                border: none;
+                background: #FFA500;
+                color: white;
+                border-radius: clamp(15px, 3vw, 20px);
+                cursor: pointer;
+                font-weight: 500;
+                font-size: clamp(12px, 2vw, 14px);
+                transition: transform 0.2s ease;
+                white-space: nowrap;
+              }
+
+              .admin-pagination button:hover:not(:disabled) {
+                transform: scale(1.05);
+              }
+
+              .admin-pagination button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+              }
+
+              .loading-spinner {
+                text-align: center;
+                padding: clamp(20px, 4vw, 40px);
+                font-size: clamp(14px, 2.5vw, 18px);
+                color: #666;
+              }
+
+              /* Extra Small Devices (phones) */
+              @media screen and (max-width: 576px) {
+                .admin-cards-grid {
+                  grid-template-columns: 1fr;
+                }
+                
+                .id-card {
+                  max-width: 320px;
+                  margin: 0 auto;
+                }
+              }
+
+              /* Small Devices (tablets) */
+              @media screen and (min-width: 577px) and (max-width: 768px) {
+                .admin-cards-grid {
+                  grid-template-columns: repeat(2, 1fr);
+                }
+              }
+
+              /* Medium Devices (laptops) */
+              @media screen and (min-width: 769px) and (max-width: 992px) {
+                .admin-cards-grid {
+                  grid-template-columns: repeat(2, 1fr);
+                }
+              }
+
+              /* Large Devices (desktops) */
+              @media screen and (min-width: 993px) {
+                .admin-cards-grid {
+                  grid-template-columns: repeat(3, 1fr);
+                }
+              }
+
+              /* Extra Large Devices */
+              @media screen and (min-width: 1400px) {
+                .admin-cards-grid {
+                  grid-template-columns: repeat(4, 1fr);
+                }
+              }
+
+              /* Handle text overflow for different screen sizes */
+              @media screen and (max-width: 360px) {
+                .admin-name, .info-item {
+                  font-size: 90%;
+                  padding: 0 5px;
+                }
+              }
+            `}
+          </style>
         </div>
       </div>
-
-      {/* Mail Popup */}
-      {showMailPopup && (
-        <div className="admin-mail-popup-overlay">
-          <div className="admin-mail-popup">
-            <div className="admin-mail-popup-header">
-              <h3>Send Email</h3>
-              <button className="admin-close-button" onClick={handleClosePopup}>&times;</button>
-            </div>
-            <div className="admin-mail-popup-content">
-              <div className="admin-mail-field">
-                <label>From:</label>
-                <input type="text" value={mailContent.from} readOnly />
-              </div>
-              <div className="admin-mail-field">
-                <label>To:</label>
-                <input type="text" value={selectedUser?.email} readOnly />
-              </div>
-              <div className="admin-mail-field">
-                <label>Subject: <span className="text-danger">*</span></label>
-                <input
-                  type="text"
-                  value={mailContent.subject}
-                  onChange={(e) => setMailContent({ ...mailContent, subject: e.target.value })}
-                  placeholder="Enter subject"
-                  className={errors.subject ? 'is-invalid' : ''}
-                />
-                {errors.subject && <div className="invalid-feedback">{errors.subject}</div>}
-              </div>
-              <div className="admin-mail-field">
-                <label>Message: <span className="text-danger">*</span></label>
-                <textarea
-                  value={mailContent.message}
-                  onChange={(e) => setMailContent({ ...mailContent, message: e.target.value })}
-                  placeholder="Enter your message"
-                  rows={6}
-                  className={errors.message ? 'is-invalid' : ''}
-                />
-                {errors.message && <div className="invalid-feedback">{errors.message}</div>}
-              </div>
-            </div>
-            <div className="admin-mail-popup-footer">
-              <button className="admin-cancel-button" onClick={handleClosePopup}>Cancel</button>
-              <button className="admin-send-button" onClick={handleSendMail}>Send</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style>
-        {`
-          .admin-mail-popup-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-          }
-
-          .admin-mail-popup {
-            background: white;
-            border-radius: 8px;
-            width: 500px;
-            max-width: 90%;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            position: relative;
-          }
-
-          .admin-mail-popup-header {
-            padding: 15px 20px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-
-          .admin-mail-popup-header h3 {
-            margin: 0;
-            font-size: 18px;
-            color: #333;
-          }
-
-          .admin-close-button {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #666;
-            padding: 0;
-            line-height: 1;
-          }
-
-          .admin-mail-popup-content {
-            padding: 20px;
-          }
-
-          .admin-mail-field {
-            margin-bottom: 15px;
-          }
-
-          .admin-mail-field label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #333;
-          }
-
-          .admin-mail-field input,
-          .admin-mail-field textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            background-color: #fff;
-          }
-
-          .admin-mail-field textarea {
-            resize: vertical;
-          }
-
-          .admin-mail-popup-footer {
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-          }
-
-          .admin-cancel-button,
-          .admin-send-button {
-            padding: 8px 16px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s ease;
-          }
-
-          .admin-cancel-button {
-            background-color: #f0f0f0;
-            color: #333;
-          }
-
-          .admin-cancel-button:hover {
-            background-color: #e0e0e0;
-          }
-
-          .admin-send-button {
-            background-color: #007bff;
-            color: white;
-          }
-
-          .admin-send-button:hover {
-            background-color: #0056b3;
-          }
-        `}
-      </style>
     </div>
   );
 };

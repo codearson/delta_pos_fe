@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_CategoryGrid.scss";
 import Pos_BarcodeCreation from "./Pos_BarcodeCreation";
@@ -22,7 +22,7 @@ const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
 const MAX_PAGES = 5;
 
-const Pos_CategoryGrid = ({ 
+const Pos_CategoryGrid = forwardRef(({ 
   items = fetchCustomCategories, 
   onCategorySelect, 
   onManualDiscount, 
@@ -31,7 +31,7 @@ const Pos_CategoryGrid = ({
   inputValue,
   selectedItems,
   manualDiscount = 0 
-}) => {
+}, ref) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
   const [showAddPurchasePopup, setShowAddPurchasePopup] = useState(false);
@@ -59,6 +59,31 @@ const Pos_CategoryGrid = ({
   const [showEmployeeDiscountPopup, setShowEmployeeDiscountPopup] = useState(false);
   const [productName, setProductName] = useState(""); // New state for product name
 
+  // Function to manually refresh NonScan data
+  const refreshNonScanData = async () => {
+    try {
+      if (typeof items === "function" && items === fetchNonScanProducts) {
+        const data = await items();
+        setNonScanItems(data);
+        
+        // Update cache with fresh data
+        const now = new Date().getTime();
+        localStorage.setItem('nonScanProductsCache', JSON.stringify(data));
+        localStorage.setItem('nonScanProductsCacheTimestamp', now.toString());
+      }
+    } catch (error) {
+      console.error("Error refreshing NonScan data:", error);
+      if (showNotification) {
+        showNotification("Failed to refresh NonScan data", "error");
+      }
+    }
+  };
+
+  // Expose the refresh function through a ref
+  useImperativeHandle(ref, () => ({
+    refreshNonScanData
+  }));
+
   useEffect(() => {
     const handleStorageChange = () => {
       setPageIndex(prev => prev + 1);
@@ -73,20 +98,31 @@ const Pos_CategoryGrid = ({
       try {
         if (typeof items === "function") {
           if (items === fetchNonScanProducts) {
-            const cachedData = localStorage.getItem('nonScanProductsCache');
-            const cacheTimestamp = localStorage.getItem('nonScanProductsCacheTimestamp');
+            // Force refresh of NonScan data when the tab is active
+            const data = await items();
+            setNonScanItems(data);
             
+            // Update cache with fresh data
             const now = new Date().getTime();
-            const oneHourInMs = 60 * 60 * 1000;
-            
-            if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < oneHourInMs) {
-              setNonScanItems(JSON.parse(cachedData));
+            localStorage.setItem('nonScanProductsCache', JSON.stringify(data));
+            localStorage.setItem('nonScanProductsCacheTimestamp', now.toString());
+          } else if (items === fetchCustomCategories) {
+            // Check if we have cached data and it's not too old (less than 5 minutes)
+            const cachedData = localStorage.getItem('customCategoriesCache');
+            const cacheTimestamp = localStorage.getItem('customCategoriesCacheTimestamp');
+            const now = new Date().getTime();
+            const fiveMinutes = 5 * 60 * 1000;
+
+            if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < fiveMinutes) {
+              setCategories(JSON.parse(cachedData));
             } else {
+              // Fetch fresh data if cache is missing or too old
               const data = await items();
-              setNonScanItems(data);
+              setCategories(data);
               
-              localStorage.setItem('nonScanProductsCache', JSON.stringify(data));
-              localStorage.setItem('nonScanProductsCacheTimestamp', now.toString());
+              // Update cache with fresh data
+              localStorage.setItem('customCategoriesCache', JSON.stringify(data));
+              localStorage.setItem('customCategoriesCacheTimestamp', now.toString());
             }
           } else {
             const data = await items();
@@ -243,19 +279,23 @@ const Pos_CategoryGrid = ({
   }
 
   if (items === quickAccess) {
-    const activeToggleButtons = managerToggles
+    // Filter to only get discount-related toggles
+    const discountToggles = managerToggles.filter(toggle => 
+      toggle.action === "Manual Discount" || toggle.action === "Employee Discount"
+    );
+
+    const activeToggleButtons = discountToggles
       .filter(toggle => toggle.isActive)
       .map(toggle => ({
         id: `toggle-${toggle.id}`,
         name: toggle.action,
-        icon: toggle.action === "Manual Discount" ? "🪙" : 
-              toggle.action === "Employee Discount" ? "🎁" : "⚙️",
+        icon: toggle.action === "Manual Discount" ? "🪙" : "🎁",
         isToggle: true
       }));
 
     paginatedItems = [
       ...paginatedItems.filter(item => 
-        !["Manual Discount", "Employee Discount"].includes(item.name)
+        !["Manual Discount", "Employee Discount", "Non Scan Product"].includes(item.name)
       ),
       ...activeToggleButtons,
     ].map((item) =>
@@ -1208,53 +1248,92 @@ const Pos_CategoryGrid = ({
             </div>
           </div>
 
-          ${Object.entries(zReportData.responseDto.dateWiseTotals)
-            .map(([date, data]) => `
-              <div class="date-header">
-                ${new Date(date).toLocaleDateString()}
+          {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
+            <div key={date} className="mb-4">
+              <h4 className="date-header">Date: {new Date(date).toLocaleDateString()}</h4>
+
+              <div className="row">
+                <div className="col-md-6">
+                  <h4>Categories Breakdown</h4>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Category</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(data.categoryTotals).map(([category, amount]) => (
+                        <tr key={category}>
+                          <td>{category}</td>
+                          <td>{amount.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="col-md-6">
+                  <h4>Payment Methods</h4>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Method</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
+                        <tr key={method}>
+                          <td>{method}</td>
+                          <td>{amount.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div class="section">
-                <div class="section-title">Categories</div>
-                <table>
-                  ${Object.entries(data.categoryTotals)
-                    .map(([category, amount]) => `
-                      <tr>
-                        <td>${category}</td>
-                        <td class="amount">${amount.toFixed(2)}</td>
-                      </tr>
-                    `).join('')}
-                </table>
+              <div className="row mt-4">
+                <div className="col-12">
+                  <h4>User Payment Details</h4>
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-striped">
+                      <thead>
+                        <tr>
+                          <th style={{
+                            backgroundColor: '#f8f9fa',
+                            fontWeight: '600',
+                            borderBottom: '2px solid #dee2e6'
+                          }}>User Name</th>
+                          <th style={{
+                            backgroundColor: '#f8f9fa',
+                            fontWeight: '600',
+                            borderBottom: '2px solid #dee2e6'
+                          }}>Payment Method</th>
+                          <th style={{
+                            backgroundColor: '#f8f9fa',
+                            fontWeight: '600',
+                            borderBottom: '2px solid #dee2e6'
+                          }}>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(data.userPaymentDetails).flatMap(([userName, payments]) => 
+                          Object.entries(payments).map(([method, amount], index) => (
+                            <tr key={index}>
+                              <td style={{ padding: '12px 15px' }}>{userName.split(' ')[0]}</td>
+                              <td style={{ padding: '12px 15px' }}>{method}</td>
+                              <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
-
-              <div class="section">
-                <div class="section-title">Payment Methods</div>
-                <table>
-                  ${Object.entries(data.overallPaymentTotals)
-                    .map(([method, amount]) => `
-                      <tr>
-                        <td>${method}</td>
-                        <td class="amount">${amount.toFixed(2)}</td>
-                      </tr>
-                    `).join('')}
-                </table>
-              </div>
-
-              <div class="section">
-                <div class="section-title">User Payment Details</div>
-                <table>
-                  ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
-                    Object.entries(payments).map(([method, amount]) => `
-                      <tr>
-                        <td>${userName.split(' ')[0]}</td>
-                        <td>${method}</td>
-                        <td class="amount">${parseFloat(amount).toFixed(2)}</td>
-                      </tr>
-                    `).join('')
-                  ).join('')}
-                </table>
-              </div>
-            `).join('')}
+            </div>
+          ))}
 
           <div class="footer">
             <div>*** End of Z Report ***</div>
@@ -1755,9 +1834,9 @@ const Pos_CategoryGrid = ({
                   </div>
                 </div>
 
-                ${Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => `
-                  <div key="${date}">
-                    <h4>Date: ${new Date(date).toLocaleDateString()}</h4>
+                {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
+                  <div key={date} className="mb-4">
+                    <h4 className="date-header">Date: {new Date(date).toLocaleDateString()}</h4>
 
                     <div className="row">
                       <div className="col-md-6">
@@ -1770,12 +1849,12 @@ const Pos_CategoryGrid = ({
                             </tr>
                           </thead>
                           <tbody>
-                            ${Object.entries(data.categoryTotals).map(([category, amount]) => `
-                              <tr key="${date}-category-${category}">
-                                <td>${category}</td>
-                                <td>${amount.toFixed(2)}</td>
+                            {Object.entries(data.categoryTotals).map(([category, amount]) => (
+                              <tr key={category}>
+                                <td>{category}</td>
+                                <td>{amount.toFixed(2)}</td>
                               </tr>
-                            `).join('')}
+                            ))}
                           </tbody>
                         </table>
                       </div>
@@ -1789,12 +1868,12 @@ const Pos_CategoryGrid = ({
                             </tr>
                           </thead>
                           <tbody>
-                            ${Object.entries(data.overallPaymentTotals).map(([method, amount]) => `
-                              <tr key="${date}-payment-${method}">
-                                <td>${method}</td>
-                                <td>${amount.toFixed(2)}</td>
+                            {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
+                              <tr key={method}>
+                                <td>{method}</td>
+                                <td>{amount.toFixed(2)}</td>
                               </tr>
-                            `).join('')}
+                            ))}
                           </tbody>
                         </table>
                       </div>
@@ -1825,22 +1904,22 @@ const Pos_CategoryGrid = ({
                               </tr>
                             </thead>
                             <tbody>
-                              ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
-                                Object.entries(payments).map(([method, amount]) => `
-                                  <tr key="${date}-user-${userName}-${method}">
-                                    <td style={{ padding: '12px 15px' }}>${userName.split(' ')[0]}</td>
-                                    <td style={{ padding: '12px 15px' }}>${method}</td>
-                                    <td style={{ padding: '12px 15px' }}>${parseFloat(amount).toFixed(2)}</td>
+                              {Object.entries(data.userPaymentDetails).flatMap(([userName, payments]) => 
+                                Object.entries(payments).map(([method, amount], index) => (
+                                  <tr key={index}>
+                                    <td style={{ padding: '12px 15px' }}>{userName.split(' ')[0]}</td>
+                                    <td style={{ padding: '12px 15px' }}>{method}</td>
+                                    <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
                                   </tr>
-                                `).join('')
-                              ).join('')}
+                                ))
+                              )}
                             </tbody>
                           </table>
                         </div>
                       </div>
                     </div>
                   </div>
-                `).join('')}
+                ))}
               </div>
             </div>
           </div>
@@ -1879,7 +1958,7 @@ const Pos_CategoryGrid = ({
       </div>
     </div>
   );
-};
+});
 
 Pos_CategoryGrid.propTypes = {
   items: PropTypes.oneOfType([
@@ -1908,5 +1987,7 @@ Pos_CategoryGrid.propTypes = {
   ).isRequired,
   manualDiscount: PropTypes.number,
 };
+
+Pos_CategoryGrid.displayName = "Pos_CategoryGrid";
 
 export default Pos_CategoryGrid;
