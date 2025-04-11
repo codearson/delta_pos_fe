@@ -8,15 +8,22 @@ const Pos_BarcodeCreation = ({ onClose }) => {
   const [input, setInput] = useState("");
   const [barcodeValue, setBarcodeValue] = useState("");
   const [productStatus, setProductStatus] = useState("");
+  const [productDetails, setProductDetails] = useState(null); // Store name and price
   const barcodeRef = useRef(null);
 
-  const handleInputChange = async (e) => {
-    const value = e.target.value.trim();
-    setInput(value);
+  // Handle input change without triggering barcode check
+  const handleInputChange = (e) => {
+    setInput(e.target.value.trim());
+  };
+
+  // Handle barcode submission (Enter key or button click)
+  const handleBarcodeSubmit = async () => {
+    const value = input.trim();
     
     if (value === "") {
-      setProductStatus("");
+      setProductStatus("Please enter a barcode");
       setBarcodeValue("");
+      setProductDetails(null);
       return;
     }
 
@@ -24,20 +31,33 @@ const Pos_BarcodeCreation = ({ onClose }) => {
       const productData = await getProductByBarcode(value);
       if (productData && productData.responseDto && productData.responseDto.length > 0) {
         const productItem = productData.responseDto[0];
-        setProductStatus(`Product: ${productItem.name}`);
+        setProductStatus(`Product: ${productItem.name} - $${parseFloat(productItem.pricePerUnit).toFixed(2)}`);
         setBarcodeValue(value);
+        setProductDetails({
+          name: productItem.name,
+          price: parseFloat(productItem.pricePerUnit).toFixed(2),
+        });
       } else {
         setProductStatus("Product not found with this barcode");
         setBarcodeValue("");
+        setProductDetails(null);
       }
     } catch (error) {
       setProductStatus("Error checking barcode");
       setBarcodeValue("");
+      setProductDetails(null);
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleBarcodeSubmit();
     }
   };
 
   const handlePrint = () => {
-    if (!barcodeValue) {
+    if (!barcodeValue || !productDetails) {
       return;
     }
 
@@ -49,22 +69,30 @@ const Pos_BarcodeCreation = ({ onClose }) => {
           <style>
             body {
               margin: 0;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
+              padding: 20px;
+              display: block;
+              text-align: center;
             }
             .barcode-container {
+              display: inline-block;
               text-align: center;
+            }
+            .product-info {
+              font-size: 16px;
+              font-weight: bold;
+              margin-bottom: 10px;
+              font-family: Arial, sans-serif;
             }
           </style>
         </head>
         <body>
           <div class="barcode-container">
+            <div class="product-info">
+              ${productDetails.name}<br>$${productDetails.price}
+            </div>
             <img id="barcodeImage" />
           </div>
           <script>
-            // Wait for the image to load before printing
             const img = document.getElementById('barcodeImage');
             img.onload = function() {
               window.print();
@@ -75,13 +103,14 @@ const Pos_BarcodeCreation = ({ onClose }) => {
       </html>
     `);
 
-    // Get the barcode SVG from the component
     const barcodeElement = barcodeRef.current;
     const svg = barcodeElement.querySelector('svg');
     
     if (svg) {
-      // Convert SVG to data URL
-      const svgData = new XMLSerializer().serializeToString(svg);
+      // Clone SVG to modify height for printing
+      const clonedSvg = svg.cloneNode(true);
+      clonedSvg.setAttribute('height', '50'); // Reduce height to half
+      const svgData = new XMLSerializer().serializeToString(clonedSvg);
       const img = printWindow.document.getElementById('barcodeImage');
       img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
     }
@@ -99,11 +128,18 @@ const Pos_BarcodeCreation = ({ onClose }) => {
               type="text"
               value={input}
               onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
               placeholder="Enter barcode"
               className="barcode-popup-input"
             />
+            <button
+              onClick={handleBarcodeSubmit}
+              className="barcode-popup-button submit"
+            >
+              Generate Barcode
+            </button>
             <p className="barcode-popup-status">
-              {productStatus || "Enter a barcode to check"}
+              {productStatus || "Enter a barcode and press Enter or click Generate"}
             </p>
           </div>
           {barcodeValue && (
@@ -111,7 +147,7 @@ const Pos_BarcodeCreation = ({ onClose }) => {
               <Barcode
                 value={barcodeValue}
                 width={2}
-                height={100}
+                height={100} // Keep full height in popup
                 displayValue={true}
                 margin={10}
               />
