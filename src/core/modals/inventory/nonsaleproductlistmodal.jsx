@@ -23,7 +23,11 @@ const AddNonSaleProductModal = ({ onSave, onUpdate, selectedProduct }) => {
                 (category) => category.productCategoryName?.toLowerCase() === "non scan"
             );
 
-            setNonScanCategoryId(nonScanCategory.id);
+            if (nonScanCategory) {
+                setNonScanCategoryId(nonScanCategory.id);
+            } else {
+                setNonScanCategoryId(null);
+            }
         };
 
         loadNonScanCategoryId();
