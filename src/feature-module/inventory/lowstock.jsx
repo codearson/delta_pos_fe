@@ -3,11 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
-import {
-  ChevronUp,
-  Mail,
-  RotateCcw,
-} from "feather-icons-react/build/IconComponents";
+import { ChevronUp, RotateCcw } from "feather-icons-react/build/IconComponents";
 import Table from "../../core/pagination/datatable";
 import { setToogleHeader } from "../../core/redux/action";
 import EditLowStock from "../../core/modals/inventory/editlowstock";
@@ -26,7 +22,6 @@ const LowStock = () => {
   const [allProducts, setAllProducts] = useState([]); // Store all products for filtering
   const [searchQueryLow, setSearchQueryLow] = useState("");
   const [searchQueryOut, setSearchQueryOut] = useState("");
-  const [searchQueryAll, setSearchQueryAll] = useState("");
   const [activeTab, setActiveTab] = useState("low");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -40,21 +35,22 @@ const LowStock = () => {
       const products = await fetchProducts();
       if (Array.isArray(products)) {
         const reversedProducts = products.reverse();
-        const filteredProducts = reversedProducts.filter(product => 
-          !product.barcode || 
-          isNaN(product.barcode) || 
-          product.barcode.length >= 5
+        const filteredProducts = reversedProducts.filter(
+          (product) =>
+            !product.barcode ||
+            isNaN(product.barcode) ||
+            product.barcode.length >= 5
         );
         setAllProducts(filteredProducts); // Store all filtered products
-        const lowStock = filteredProducts.filter((product) => 
-          product.isActive === true && 
-          product.quantity < product.lowStock && 
-          product.quantity > 0
+        const lowStock = filteredProducts.filter(
+          (product) =>
+            product.isActive === true &&
+            product.quantity < product.lowStock &&
+            product.quantity > 0
         );
         setLowStockProducts(lowStock);
-        const outOfStock = filteredProducts.filter((product) => 
-          product.isActive === true && 
-          product.quantity === 0
+        const outOfStock = filteredProducts.filter(
+          (product) => product.isActive === true && product.quantity === 0
         );
         setOutOfStockProducts(outOfStock);
       } else {
@@ -91,22 +87,26 @@ const LowStock = () => {
     setSearchQueryLow(query);
 
     if (query.trim() !== "") {
-      const filteredLowStock = allProducts.filter((product) =>
-        product.isActive === true &&
-        product.quantity < product.lowStock && 
-        product.quantity > 0 &&
-        (
-          (product.name && product.name.toLowerCase().includes(query)) ||
-          (product.barcode && product.barcode.toLowerCase().includes(query)) ||
-          (product.productCategoryDto?.productCategoryName && product.productCategoryDto.productCategoryName.toLowerCase().includes(query))
-        )
+      const filteredLowStock = allProducts.filter(
+        (product) =>
+          product.isActive === true &&
+          product.quantity < product.lowStock &&
+          product.quantity > 0 &&
+          ((product.name && product.name.toLowerCase().includes(query)) ||
+            (product.barcode &&
+              product.barcode.toLowerCase().includes(query)) ||
+            (product.productCategoryDto?.productCategoryName &&
+              product.productCategoryDto.productCategoryName
+                .toLowerCase()
+                .includes(query)))
       );
       setLowStockProducts(filteredLowStock);
     } else {
-      const lowStock = allProducts.filter((product) => 
-        product.isActive === true &&
-        product.quantity < product.lowStock && 
-        product.quantity > 0
+      const lowStock = allProducts.filter(
+        (product) =>
+          product.isActive === true &&
+          product.quantity < product.lowStock &&
+          product.quantity > 0
       );
       setLowStockProducts(lowStock);
     }
@@ -117,41 +117,24 @@ const LowStock = () => {
     setSearchQueryOut(query);
 
     if (query.trim() !== "") {
-      const filteredOutOfStock = allProducts.filter((product) =>
-        product.isActive === true &&
-        product.quantity === 0 &&
-        (
-          (product.name && product.name.toLowerCase().includes(query)) ||
-          (product.barcode && product.barcode.toLowerCase().includes(query)) ||
-          (product.productCategoryDto?.productCategoryName && product.productCategoryDto.productCategoryName.toLowerCase().includes(query))
-        )
+      const filteredOutOfStock = allProducts.filter(
+        (product) =>
+          product.isActive === true &&
+          product.quantity === 0 &&
+          ((product.name && product.name.toLowerCase().includes(query)) ||
+            (product.barcode &&
+              product.barcode.toLowerCase().includes(query)) ||
+            (product.productCategoryDto?.productCategoryName &&
+              product.productCategoryDto.productCategoryName
+                .toLowerCase()
+                .includes(query)))
       );
       setOutOfStockProducts(filteredOutOfStock);
     } else {
-      const outOfStock = allProducts.filter((product) => 
-        product.isActive === true &&
-        product.quantity === 0
+      const outOfStock = allProducts.filter(
+        (product) => product.isActive === true && product.quantity === 0
       );
       setOutOfStockProducts(outOfStock);
-    }
-  };
-
-  const handleSearchAll = (e) => {
-    const query = e.target.value.toLowerCase();
-    setSearchQueryAll(query);
-
-    if (query.trim() !== "") {
-      const filteredProducts = allProducts.filter((product) =>
-        product.isActive === true &&
-        (
-          (product.name && product.name.toLowerCase().includes(query)) ||
-          (product.barcode && product.barcode.toLowerCase().includes(query)) ||
-          (product.productCategoryDto?.productCategoryName && product.productCategoryDto.productCategoryName.toLowerCase().includes(query))
-        )
-      );
-      setAllProducts(filteredProducts);
-    } else {
-      loadProductsData(false); // Reset to all products
     }
   };
 
@@ -197,16 +180,27 @@ const LowStock = () => {
       const doc = new jsPDF();
       doc.text(title, 14, 15);
 
-      const tableColumn = ["Product Name", "Bar Code", "Category", "Tax %", "Purchase Price", "Price/Unit", "Qty", "Low Stock"];
-      const tableRows = data.map(product => [
+      const tableColumn = [
+        "Product Name",
+        "Bar Code",
+        "Category",
+        "Tax %",
+        "Purchase Price",
+        "Price/Unit",
+        "Qty",
+        "Low Stock",
+      ];
+      const tableRows = data.map((product) => [
         product.name || "",
         product.barcode || "",
         product.productCategoryDto?.productCategoryName || "N/A",
-        product.taxDto?.taxPercentage ? `${product.taxDto.taxPercentage}%` : "N/A",
+        product.taxDto?.taxPercentage
+          ? `${product.taxDto.taxPercentage}%`
+          : "N/A",
         `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
         `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
         product.quantity?.toString() || "0",
-        product.lowStock?.toString() || "0"
+        product.lowStock?.toString() || "0",
       ]);
 
       autoTable(doc, {
@@ -243,15 +237,17 @@ const LowStock = () => {
         return;
       }
 
-      const worksheetData = data.map(product => ({
+      const worksheetData = data.map((product) => ({
         "Product Name": product.name || "",
         "Bar Code": product.barcode || "",
-        "Category": product.productCategoryDto?.productCategoryName || "N/A",
-        "Tax Percentage": product.taxDto?.taxPercentage ? `${product.taxDto.taxPercentage}%` : "N/A",
+        Category: product.productCategoryDto?.productCategoryName || "N/A",
+        "Tax Percentage": product.taxDto?.taxPercentage
+          ? `${product.taxDto.taxPercentage}%`
+          : "N/A",
         "Purchase Price": `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
         "Price Per Unit": `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
-        "Quantity": product.quantity || 0,
-        "Low Stock": product.lowStock || 0
+        Quantity: product.quantity || 0,
+        "Low Stock": product.lowStock || 0,
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -266,7 +262,7 @@ const LowStock = () => {
         { wch: 12 },
         { wch: 12 },
         { wch: 10 },
-        { wch: 10 }
+        { wch: 10 },
       ];
 
       XLSX.writeFile(workbook, `${title.toLowerCase().replace(" ", "_")}.xlsx`);
@@ -305,7 +301,8 @@ const LowStock = () => {
       title: "Tax Percentage",
       dataIndex: "taxDto",
       render: (taxDto) => (taxDto ? `${taxDto.taxPercentage}%` : "N/A"),
-      sorter: (a, b) => (a.taxDto?.taxPercentage || 0) - (b.taxDto?.taxPercentage || 0),
+      sorter: (a, b) =>
+        (a.taxDto?.taxPercentage || 0) - (b.taxDto?.taxPercentage || 0),
     },
     {
       title: "Purchase Price",
@@ -345,54 +342,33 @@ const LowStock = () => {
         <div className="content">
           <div className="page-header">
             <div className="page-title me-auto">
-              <h4>{activeTab === "low" ? "Low Stocks" : activeTab === "out" ? "Out of Stocks" : "Manage Stock"}</h4>
-              <h6>{activeTab === "low" ? "Manage your low stocks" : activeTab === "out" ? "Manage your out of stocks" : "Manage all products"}</h6>
+              <h4>
+                {activeTab === "low" ? "Low Stocks" : "Out of Stocks"}
+              </h4>
+              <h6>
+                {activeTab === "low"
+                  ? "Manage your low stocks"
+                  : "Manage your out of stocks"}
+              </h6>
             </div>
             <ul className="table-top-head">
               <li>
-                <div className="status-toggle d-flex justify-content-between align-items-center">
-                  <input type="checkbox" id="user2" className="check" defaultChecked="true" />
-                  {/* <label htmlFor="user2" className="checktoggle">
-                    checkbox
-                  </label>
-                  Notify */}
-                </div>
-              </li>
-              <li>
-                <Link
-                  to=""
-                  className="btn btn-secondary"
-                  data-bs-toggle="modal"
-                  data-bs-target="#send-email"
-                >
-                  <Mail className="feather-mail" />
-                  Send Email
-                </Link>
-              </li>
-              <li>
-                <div className="dropdown">
-                  <button className="btn btn-secondary dropdown-toggle" type="button" id="timePeriodDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    Select Period
-                  </button>
-                  <ul className="dropdown-menu" aria-labelledby="timePeriodDropdown">
-                    <li><button className="dropdown-item" type="button">2 days</button></li>
-                    <li><button className="dropdown-item" type="button">4 days</button></li>
-                    <li><button className="dropdown-item" type="button">1 week</button></li>
-                    <li><button className="dropdown-item" type="button">1 month</button></li>
-                  </ul>
-                </div>
-              </li>
-              <li>
                 <OverlayTrigger placement="top" overlay={renderTooltip}>
                   <Link onClick={exportToPDF}>
-                    <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                    <ImageWithBasePath
+                      src="assets/img/icons/pdf.svg"
+                      alt="img"
+                    />
                   </Link>
                 </OverlayTrigger>
               </li>
               <li>
                 <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
                   <Link onClick={exportToExcel}>
-                    <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                    <ImageWithBasePath
+                      src="assets/img/icons/excel.svg"
+                      alt="img"
+                    />
                   </Link>
                 </OverlayTrigger>
               </li>
@@ -448,21 +424,6 @@ const LowStock = () => {
                   Out of Stocks
                 </button>
               </li>
-              <li className="nav-item" role="presentation">
-                <button
-                  className="nav-link"
-                  id="pills-all-tab"
-                  data-bs-toggle="pill"
-                  data-bs-target="#pills-all"
-                  type="button"
-                  role="tab"
-                  aria-controls="pills-all"
-                  aria-selected="false"
-                  onClick={() => handleTabChange("all")}
-                >
-                  Manage Stock
-                </button>
-              </li>
             </ul>
             <div className="tab-content" id="pills-tabContent">
               {/* Low Stocks Tab */}
@@ -485,7 +446,10 @@ const LowStock = () => {
                             onChange={handleSearchChangeLow}
                           />
                           <Link to="#" className="btn btn-searchset">
-                            <i data-feather="search" className="feather-search" />
+                            <i
+                              data-feather="search"
+                              className="feather-search"
+                            />
                           </Link>
                         </div>
                       </div>
@@ -516,44 +480,19 @@ const LowStock = () => {
                             onChange={handleSearchChangeOut}
                           />
                           <Link to="#" className="btn btn-searchset">
-                            <i data-feather="search" className="feather-search" />
+                            <i
+                              data-feather="search"
+                              className="feather-search"
+                            />
                           </Link>
                         </div>
                       </div>
                     </div>
                     <div className="table-responsive">
-                      <Table columns={columns} dataSource={outOfStockProducts} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Manage Stock Tab */}
-              <div
-                className="tab-pane fade"
-                id="pills-all"
-                role="tabpanel"
-                aria-labelledby="pills-all-tab"
-              >
-                <div className="card table-list-card">
-                  <div className="card-body">
-                    <div className="table-top">
-                      <div className="search-set">
-                        <div className="search-input">
-                          <input
-                            type="text"
-                            placeholder="Search all products"
-                            className="form-control form-control-sm formsearch"
-                            value={searchQueryAll}
-                            onChange={handleSearchAll}
-                          />
-                          <Link to="#" className="btn btn-searchset">
-                            <i data-feather="search" className="feather-search" />
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="table-responsive">
-                      <Table columns={columns} dataSource={allProducts} />
+                      <Table
+                        columns={columns}
+                        dataSource={outOfStockProducts}
+                      />
                     </div>
                   </div>
                 </div>
