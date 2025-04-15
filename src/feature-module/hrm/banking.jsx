@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import Table from "../../core/pagination/datatable";
 import Swal from "sweetalert2";
 import { fetchBanking } from "../Api/BankingApi";
-import { fetchTransactions } from "../Api/TransactionApi";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
@@ -54,7 +53,6 @@ const Banking = () => {
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
-      await fetchLatestZReportTime();
       await fetchBankingData();
     } catch (error) {
       Swal.fire({
@@ -68,50 +66,38 @@ const Banking = () => {
     }
   };
 
-  const fetchLatestZReportTime = async () => {
-    try {
-      const transactionData = await fetchTransactions(1, 1000);
-      const transactionsWithZReport = transactionData.content.filter(
-        (transaction) => transaction.generateDateTime !== null
-      );
-
-      if (transactionsWithZReport.length > 0) {
-        const sortedZReports = transactionsWithZReport.sort(
-          (a, b) => new Date(b.generateDateTime) - new Date(a.generateDateTime)
-        );
-        const latestZReport = sortedZReports[0];
-        console.log("Latest Z-Report Time:", latestZReport.generateDateTime);
-        setLatestZReportTime(latestZReport.generateDateTime);
-        const uniqueZReportDates = sortedZReports.map((t) => t.generateDateTime);
-        console.log("All Z-Report Dates:", uniqueZReportDates);
-        setZReportDates(uniqueZReportDates);
-      } else {
-        console.log("No Z-Report found, showing all banking records.");
-        setLatestZReportTime(null);
-        setZReportDates([]);
-      }
-    } catch (error) {
-      Swal.fire({
-        title: "Error!",
-        text: "Failed to fetch Z-report data: " + error.message,
-        icon: "error",
-        confirmButtonText: "OK",
-      });
-      setLatestZReportTime(null);
-      setZReportDates([]);
-    }
-  };
-
   const fetchBankingData = async () => {
     try {
       const response = await fetchBanking(1, 1000);
       if (response.content && Array.isArray(response.content)) {
         console.log("All Banking Records:", response.content);
         setAllBankingRecords(response.content);
+
+        const transactionsWithZReport = response.content.filter(
+          (banking) => banking.generatedDateTime !== null
+        );
+
+        if (transactionsWithZReport.length > 0) {
+          const sortedZReports = transactionsWithZReport
+            .map((t) => t.generatedDateTime)
+            .filter((value, index, self) => self.indexOf(value) === index)
+            .sort((a, b) => new Date(b) - new Date(a));
+          const latestZReport = sortedZReports[0];
+          console.log("Latest Z-Report Time:", latestZReport);
+          setLatestZReportTime(latestZReport);
+          console.log("All Z-Report Dates:", sortedZReports);
+          setZReportDates(sortedZReports);
+        } else {
+          console.log("No Z-Report found, showing all banking records.");
+          setLatestZReportTime(null);
+          setZReportDates([]);
+        }
       } else {
         setAllBankingRecords([]);
         setFilteredBankingRecords([]);
         setBankingRecords([]);
+        setLatestZReportTime(null);
+        setZReportDates([]);
         Swal.fire({
           title: "Warning!",
           text: "No banking data received from the server.",
@@ -129,6 +115,8 @@ const Banking = () => {
       setAllBankingRecords([]);
       setFilteredBankingRecords([]);
       setBankingRecords([]);
+      setLatestZReportTime(null);
+      setZReportDates([]);
     }
   };
 
@@ -138,31 +126,71 @@ const Banking = () => {
     const zReportTimeToUse = selectedZReportTime === "All" ? latestZReportTime : selectedZReportTime;
 
     if (zReportTimeToUse) {
-      const zReportIndex = zReportDates.indexOf(zReportTimeToUse);
-      const nextZReportTime =
-        zReportIndex > 0 ? zReportDates[zReportIndex - 1] : null;
-      const startDate = new Date(zReportTimeToUse);
-      const endDate = nextZReportTime ? new Date(nextZReportTime) : new Date();
+      if (selectedZReportTime === "All") {
+        const startDate = new Date(zReportTimeToUse);
+        const endDate = new Date();
 
-      filteredData = filteredData.filter((banking) => {
-        const bankingDateTime = new Date(banking.dateTime);
-        if (isNaN(bankingDateTime) || isNaN(startDate) || isNaN(endDate)) {
-          console.warn("Invalid date format:", banking.dateTime, zReportTimeToUse, nextZReportTime);
-          return false;
-        }
-        const shouldInclude = bankingDateTime >= startDate && bankingDateTime < endDate;
-        console.log(
-          "Filtering banking:",
-          banking.dateTime,
-          "Period:",
-          zReportTimeToUse,
-          "to",
-          nextZReportTime || "Now",
-          "Include:",
-          shouldInclude
-        );
-        return shouldInclude;
-      });
+        filteredData = filteredData.filter((banking) => {
+          const bankingDateTime = new Date(banking.dateTime);
+          if (isNaN(bankingDateTime) || isNaN(startDate) || isNaN(endDate)) {
+            console.warn("Invalid date format:", banking.dateTime, zReportTimeToUse);
+            return false;
+          }
+          const shouldInclude = bankingDateTime >= startDate && bankingDateTime <= endDate;
+          console.log(
+            "Filtering banking (All):",
+            banking.dateTime,
+            "Period:",
+            zReportTimeToUse,
+            "to",
+            "Now",
+            "Include:",
+            shouldInclude
+          );
+          return shouldInclude;
+        });
+      } else {
+        const zReportIndex = zReportDates.indexOf(zReportTimeToUse);
+        const previousZReportTime =
+          zReportIndex < zReportDates.length - 1 ? zReportDates[zReportIndex + 1] : null;
+        const endDate = new Date(zReportTimeToUse);
+        const startDate = previousZReportTime ? new Date(previousZReportTime) : null;
+
+        filteredData = filteredData.filter((banking) => {
+          const bankingDateTime = new Date(banking.dateTime);
+          if (isNaN(bankingDateTime) || isNaN(endDate)) {
+            console.warn("Invalid date format:", banking.dateTime, zReportTimeToUse, previousZReportTime);
+            return false;
+          }
+          if (startDate && !isNaN(startDate)) {
+            const shouldInclude = bankingDateTime <= endDate && bankingDateTime > startDate;
+            console.log(
+              "Filtering banking:",
+              banking.dateTime,
+              "Period:",
+              previousZReportTime || "Start",
+              "to",
+              zReportTimeToUse,
+              "Include:",
+              shouldInclude
+            );
+            return shouldInclude;
+          } else {
+            const shouldInclude = bankingDateTime <= endDate;
+            console.log(
+              "Filtering banking:",
+              banking.dateTime,
+              "Period:",
+              "Start",
+              "to",
+              zReportTimeToUse,
+              "Include:",
+              shouldInclude
+            );
+            return shouldInclude;
+          }
+        });
+      }
     }
 
     if (searchTerm.trim() !== "") {
@@ -202,7 +230,7 @@ const Banking = () => {
   const exportToPDF = () => {
     try {
       const doc = new jsPDF();
-      doc.text("Banking List (After Z-Report)", 14, 15);
+      doc.text("Banking List", 14, 15);
       doc.text(
         `Last Z-Report: ${latestZReportTime ? formatDateTime(latestZReportTime) : "N/A"}`,
         14,
@@ -225,7 +253,7 @@ const Banking = () => {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       });
 
-      doc.save("banking_list_after_zreport.pdf");
+      doc.save("banking_list_zreport.pdf");
     } catch (error) {
       Swal.fire({
         title: "Error!",
@@ -258,9 +286,9 @@ const Banking = () => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Banking");
 
-      worksheet["!cols"] = [{ wch: 20 }, { wch: 25 }, { wch: 15 }]; // Adjusted width for DateTime
+      worksheet["!cols"] = [{ wch: 20 }, { wch: 25 }, { wch: 15 }];
 
-      XLSX.writeFile(workbook, "banking_list_after_zreport.xlsx");
+      XLSX.writeFile(workbook, "banking_list_zreport.xlsx");
     } catch (error) {
       Swal.fire({
         title: "Error!",
@@ -327,8 +355,9 @@ const Banking = () => {
 
   const zReportTimeToUse = selectedZReportTime === "All" ? latestZReportTime : selectedZReportTime;
   const zReportIndex = zReportDates.indexOf(zReportTimeToUse);
-  const nextZReportTime = zReportIndex > 0 ? zReportDates[zReportIndex - 1] : null;
-  const endDateDisplay = nextZReportTime ? formatDateTime(nextZReportTime) : "Now";
+  const previousZReportTime = zReportIndex < zReportDates.length - 1 ? zReportDates[zReportIndex + 1] : null;
+  const periodStartDisplay = selectedZReportTime === "All" ? formatDateTime(latestZReportTime) : (previousZReportTime ? formatDateTime(previousZReportTime) : "Start");
+  const periodEndDisplay = selectedZReportTime === "All" ? "Now" : formatDateTime(zReportTimeToUse);
 
   return (
     <div className="page-wrapper">
@@ -337,7 +366,7 @@ const Banking = () => {
           <div className="add-item d-flex flex-column">
             <div className="page-title">
               <h4>Banking List</h4>
-              <h6>Banking Records After Z-Report</h6>
+              <h6>Banking Records Around Z-Report</h6>
             </div>
             <div className="mt-2">
               <p>
@@ -412,7 +441,7 @@ const Banking = () => {
                     value={selectedZReportTime}
                     onChange={handleZReportFilterChange}
                   >
-                    <option value="All">All (Latest Z-Report)</option>
+                    <option value="All">All (After Latest Z-Report)</option>
                     {zReportDates.map((date, index) => (
                       <option key={index} value={date}>
                         {formatDateTime(date)}
@@ -426,11 +455,7 @@ const Banking = () => {
               {bankingRecords.length === 0 ? (
                 <div className="text-center">
                   <p>
-                    No banking records found between{" "}
-                    {selectedZReportTime === "All"
-                      ? formatDateTime(latestZReportTime)
-                      : formatDateTime(selectedZReportTime) || "N/A"}{" "}
-                    and {endDateDisplay}.
+                    No banking records found between {periodStartDisplay} and {periodEndDisplay}.
                   </p>
                 </div>
               ) : (

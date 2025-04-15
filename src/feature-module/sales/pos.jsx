@@ -21,6 +21,8 @@ import { fetchProductCategories } from "../Api/ProductCategoryApi";
 import { fetchTaxes } from "../Api/TaxApi";
 import Select from "react-select";
 import { getAllManagerToggles } from "../Api/ManagerToggle";
+import { fetchPayoutCategories } from "../Api/PayoutCategoryApi";
+import { savePayout } from "../Api/Payout.Api";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -83,6 +85,9 @@ const Pos = () => {
   const [employeeId, setEmployeeId] = useState(null);
   const [employeeName, setEmployeeName] = useState("");
   const [showInPos, setShowInPos] = useState(false);
+  const [showPayoutPopup, setShowPayoutPopup] = useState(false);
+  const [payoutCategories, setPayoutCategories] = useState([]);
+  const [selectedPayoutCategory, setSelectedPayoutCategory] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -148,6 +153,21 @@ const Pos = () => {
     fetchToggles();
   }, []);
 
+  useEffect(() => {
+    if (showPayoutPopup) {
+      const loadPayoutCategories = async () => {
+        try {
+          const categories = await fetchPayoutCategories();
+          setPayoutCategories(categories);
+        } catch (error) {
+          console.error("Error loading payout categories:", error);
+          showNotification("Failed to load payout categories", "error");
+        }
+      };
+      loadPayoutCategories();
+    }
+  }, [showPayoutPopup]);
+
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
@@ -185,6 +205,14 @@ const Pos = () => {
   };
 
   const handleCategorySelect = (category) => {
+    if (category.name === "Pay Out") {
+      if (parseFloat(inputValue) <= 0) {
+        showNotification("Please enter amount first", "error");
+      return;
+    }
+      setShowPayoutPopup(true);
+      return;
+    }
     
     if (category.name === "clear") {
       setSelectedItems([]);
@@ -336,6 +364,19 @@ const Pos = () => {
 
   const handleNumpadClick = (action) => {
     const { type, value } = action;
+
+    if (showPayoutPopup) {
+      if (type === "number") {
+        let newInput = inputValue === "0" ? value.toString() : inputValue + value.toString();
+        if (value === "." && inputValue.includes(".")) return;
+        setInputValue(newInput);
+      } else if (type === "enter") {
+        handleSavePayout();
+      } else if (type === "clear") {
+        setInputValue("0");
+      }
+      return;
+    }
 
     if (type === "clear") {
       setInputScreenText("");
@@ -1343,6 +1384,38 @@ const Pos = () => {
     }
   };
 
+  const handleSavePayout = async () => {
+    if (!selectedPayoutCategory) {
+      showNotification("Please select a category", "error");
+      return;
+    }
+
+    const amount = parseFloat(inputValue);
+    if (isNaN(amount) || amount <= 0) {
+      showNotification("Invalid amount entered", "error");
+      return;
+    }
+
+    const payoutData = {
+      amount: amount,
+      payoutCategory: { id: selectedPayoutCategory.id },
+      user: { id: parseInt(localStorage.getItem("userId")) },
+      dateTime: new Date().toISOString()
+    };
+
+    try {
+      const result = await savePayout(payoutData);
+      if (result) {
+        showNotification("Payout saved successfully!", "success");
+        setShowPayoutPopup(false);
+        setSelectedPayoutCategory(null);
+        resetInput();
+      }
+    } catch (error) {
+      showNotification("Error saving payout: " + error.message, "error");
+    }
+  };
+
   return (
     <div className={`pos-container ${darkMode ? "dark-mode" : "light-mode"}`}>
       <Sidebar darkMode={darkMode} />
@@ -1774,6 +1847,47 @@ const Pos = () => {
                   Save Product
                 </button>
                 <button onClick={handleAddProductFormClose} className="btn btn-secondary">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPayoutPopup && (
+          <div className="payout-popup-overlay">
+            <div className={`payout-popup ${darkMode ? "dark-mode" : ""}`}>
+              <h2>Select Payout Category</h2>
+              <div className="category-list">
+                {payoutCategories.length > 0 ? (
+                  payoutCategories.map((category) => (
+                    <button
+                      key={category.id}
+                      className={`category-item ${selectedPayoutCategory?.id === category.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedPayoutCategory(category)}
+                    >
+                      {category.payoutCategory}
+                    </button>
+                  ))
+                ) : (
+                  <p>No payout categories found</p>
+                )}
+              </div>
+              <div className="payout-actions">
+                <button
+                  className="submit-btn"
+                  onClick={handleSavePayout}
+                  disabled={!selectedPayoutCategory}
+                >
+                  Submit
+                </button>
+                <button
+                  className="cancel-btn"
+                  onClick={() => {
+                    setShowPayoutPopup(false);
+                    setSelectedPayoutCategory(null);
+                  }}
+                >
                   Cancel
                 </button>
               </div>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import Breadcrumbs from "../../core/breadcrumbs";
 import { Link } from "react-router-dom";
 import { Eye } from "react-feather";
 import { fetchTransactions } from "../Api/TransactionApi";
@@ -7,9 +6,21 @@ import { fetchBranches } from "../Api/BranchApi";
 import { fetchUsers } from "../Api/UserApi";
 import { Modal, Button } from "react-bootstrap";
 import Select from "react-select";
+import Table from "../../core/pagination/datatable";
+import { OverlayTrigger, Tooltip } from "react-bootstrap";
+import { useDispatch, useSelector } from "react-redux";
+import { setToogleHeader } from "../../core/redux/action";
+import { ChevronUp, RotateCcw } from "feather-icons-react/build/IconComponents";
+import ImageWithBasePath from "../../core/img/imagewithbasebath";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import Swal from "sweetalert2";
 import "../../style/scss/pages/_invoicereport.scss";
 
 const Invoicereport = () => {
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.toggle_header);
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +30,7 @@ const Invoicereport = () => {
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalElements, setTotalElements] = useState(0);
   const [branchOptions, setBranchOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
@@ -26,22 +38,19 @@ const Invoicereport = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Load branches
         const branchesResponse = await fetchBranches();
-        const branches = branchesResponse.map(branch => ({
+        const branches = branchesResponse.map((branch) => ({
           value: branch.branchName,
-          label: branch.branchName
+          label: branch.branchName,
         }));
         setBranchOptions(branches);
 
-        // Load users
-        const usersResponse = await fetchUsers(1, 100); // Assuming we want to load all users
-        const users = usersResponse.payload.map(user => ({
+        const usersResponse = await fetchUsers(1, 100);
+        const users = usersResponse.payload.map((user) => ({
           value: user.firstName,
-          label: `${user.firstName} ${user.lastName || ''}`
+          label: `${user.firstName} ${user.lastName || ""}`,
         }));
         setUserOptions(users);
-
       } catch (error) {
         console.error("Error loading dropdown data:", error);
       }
@@ -54,39 +63,49 @@ const Invoicereport = () => {
     const loadTransactions = async () => {
       try {
         setIsLoading(true);
-        const response = await fetchTransactions(currentPage, 10);
+        const response = await fetchTransactions(currentPage, pageSize, {
+          sortBy: "id",
+          sortOrder: "desc",
+        });
         setTransactions(response.content);
         setFilteredTransactions(response.content);
         setTotalElements(response.totalElements);
       } catch (error) {
         console.error("Error in loadTransactions:", error);
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to fetch transactions: " + error.message,
+          icon: "error",
+          confirmButtonText: "OK",
+        });
         setTransactions([]);
         setFilteredTransactions([]);
+        setTotalElements(0);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadTransactions();
-  }, [currentPage]);
+  }, [currentPage, pageSize]);
 
   useEffect(() => {
     handleFilter();
-  }, [selectedBranch, selectedUser, searchTerm]);
+  }, [selectedBranch, selectedUser, searchTerm, transactions]);
 
   const formatTransactionId = (id) => {
-    return id ? String(id).padStart(10, '0') : "N/A";
+    return id ? String(id).padStart(10, "0") : "N/A";
   };
 
   const handleFilter = () => {
     let filtered = [...transactions];
 
     if (selectedBranch) {
-      filtered = filtered.filter(t => t.branchDto?.branchName === selectedBranch);
+      filtered = filtered.filter((t) => t.branchDto?.branchName === selectedBranch);
     }
 
     if (selectedUser) {
-      filtered = filtered.filter(t => t.userDto?.firstName === selectedUser);
+      filtered = filtered.filter((t) => t.userDto?.firstName === selectedUser);
     }
 
     if (searchTerm) {
@@ -108,7 +127,7 @@ const Invoicereport = () => {
       });
     }
 
-    setFilteredTransactions([...filtered].reverse());
+    setFilteredTransactions(filtered);
   };
 
   const handleSearch = (event) => {
@@ -125,34 +144,97 @@ const Invoicereport = () => {
     setSelectedTransaction(null);
   };
 
-  const exportToPDFData = () => {
-    if (isLoading) return [];
-    return filteredTransactions.map((transaction) => ({
-      "Transaction ID": formatTransactionId(transaction.id),
-      "Branch Name": transaction.branchDto?.branchName || "N/A",
-      "Shop Name": transaction.shopDetailsDto?.name || "N/A",
-      "User Name": transaction.userDto?.firstName || "N/A",
-      "Customer Name": transaction.customerDto?.name || "N/A",
-      "Total Amount": `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
-      "Date Time": transaction.dateTime
-        ? new Date(transaction.dateTime).toLocaleString()
-        : "N/A",
-    }));
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      doc.text("Transaction Report", 14, 15);
+
+      const tableColumn = [
+        "Transaction ID",
+        "Branch Name",
+        "Shop Name",
+        "User Name",
+        "Customer Name",
+        "Total Amount",
+        "Date Time",
+      ];
+      const tableRows = filteredTransactions.map((transaction) => [
+        formatTransactionId(transaction.id),
+        transaction.branchDto?.branchName || "N/A",
+        transaction.shopDetailsDto?.name || "N/A",
+        transaction.userDto?.firstName || "N/A",
+        transaction.customerDto?.name || "N/A",
+        `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
+        transaction.dateTime ? new Date(transaction.dateTime).toLocaleString() : "N/A",
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        theme: "grid",
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      });
+
+      doc.save("transaction_report.pdf");
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to generate PDF: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
-  const exportToExcelData = () => {
-    if (isLoading) return [];
-    return filteredTransactions.map((transaction) => ({
-      "Transaction ID": formatTransactionId(transaction.id),
-      "Branch Name": transaction.branchDto?.branchName || "N/A",
-      "Shop Name": transaction.shopDetailsDto?.name || "N/A",
-      "User Name": transaction.userDto?.firstName || "N/A",
-      "Customer Name": transaction.customerDto?.name || "N/A",
-      "Total Amount": `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
-      "Date Time": transaction.dateTime
-        ? new Date(transaction.dateTime).toLocaleString()
-        : "N/A",
-    }));
+  const exportToExcel = () => {
+    try {
+      if (!filteredTransactions || filteredTransactions.length === 0) {
+        Swal.fire({
+          title: "No Data",
+          text: "There are no transactions to export",
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+
+      const worksheetData = filteredTransactions.map((transaction) => ({
+        "Transaction ID": formatTransactionId(transaction.id),
+        "Branch Name": transaction.branchDto?.branchName || "N/A",
+        "Shop Name": transaction.shopDetailsDto?.name || "N/A",
+        "User Name": transaction.userDto?.firstName || "N/A",
+        "Customer Name": transaction.customerDto?.name || "N/A",
+        "Total Amount": `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
+        "Date Time": transaction.dateTime
+          ? new Date(transaction.dateTime).toLocaleString()
+          : "N/A",
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+
+      worksheet["!cols"] = [
+        { wch: 15 },
+        { wch: 20 },
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 20 },
+        { wch: 15 },
+        { wch: 25 },
+      ];
+
+      XLSX.writeFile(workbook, "transaction_report.xlsx");
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to export to Excel: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
   };
 
   const handleRefresh = async () => {
@@ -162,64 +244,76 @@ const Invoicereport = () => {
       setSelectedBranch("");
       setSelectedUser("");
       setCurrentPage(1);
-      const response = await fetchTransactions(1, 10);
+      const response = await fetchTransactions(1, pageSize, {
+        sortBy: "id",
+        sortOrder: "desc",
+      });
       setTransactions(response.content);
       setFilteredTransactions(response.content);
       setTotalElements(response.totalElements);
     } catch (error) {
       console.error("Error in handleRefresh:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to refresh transactions: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     }
   };
 
-  const handleNextPage = () => {
-    if (currentPage < Math.ceil(totalElements / 10)) {
-      setCurrentPage(currentPage + 1);
-    }
+  const onShowSizeChange = (current, size) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const totalPages = Math.ceil(totalElements / 10);
 
   const columns = [
     {
       title: "Transaction ID",
       dataIndex: "id",
       render: (id) => formatTransactionId(id),
+      sorter: (a, b) => a.id - b.id,
     },
     {
       title: "Branch Name",
       dataIndex: "branchDto",
       render: (branchDto) => branchDto?.branchName || "N/A",
+      sorter: (a, b) =>
+        (a.branchDto?.branchName || "").localeCompare(b.branchDto?.branchName || ""),
     },
     {
       title: "Shop Name",
       dataIndex: "shopDetailsDto",
       render: (shopDetailsDto) => shopDetailsDto?.name || "N/A",
+      sorter: (a, b) =>
+        (a.shopDetailsDto?.name || "").localeCompare(b.shopDetailsDto?.name || ""),
     },
     {
       title: "User Name",
       dataIndex: "userDto",
       render: (userDto) => userDto?.firstName || "N/A",
+      sorter: (a, b) =>
+        (a.userDto?.firstName || "").localeCompare(b.userDto?.firstName || ""),
     },
     {
       title: "Customer Name",
       dataIndex: "customerDto",
       render: (customerDto) => customerDto?.name || "N/A",
+      sorter: (a, b) =>
+        (a.customerDto?.name || "").localeCompare(b.customerDto?.name || ""),
     },
     {
       title: "Total Amount",
       dataIndex: "totalAmount",
       render: (totalAmount) => `LKR ${parseFloat(totalAmount || 0).toFixed(2)}`,
+      sorter: (a, b) => (a.totalAmount || 0) - (b.totalAmount || 0),
     },
     {
       title: "Date Time",
       dataIndex: "dateTime",
-      render: (dateTime) => dateTime ? new Date(dateTime).toLocaleString() : "N/A",
+      render: (dateTime) => (dateTime ? new Date(dateTime).toLocaleString() : "N/A"),
+      sorter: (a, b) =>
+        new Date(a.dateTime || 0).getTime() - new Date(b.dateTime || 0).getTime(),
     },
     {
       title: "Action",
@@ -231,7 +325,7 @@ const Invoicereport = () => {
               className="p-2"
               to="#"
               onClick={() => handleViewDetails(record)}
-              style={{ textDecoration: 'none' }} // Inline style to remove underline
+              style={{ textDecoration: 'none' }}
             >
               <Eye className="action-eye" />
             </Link>
@@ -241,86 +335,26 @@ const Invoicereport = () => {
     },
   ];
 
-  // Add this custom style for the table
-  const tableStyle = {
-    table: {
-      borderCollapse: 'collapse',
-      width: '100%',
-      background: '#fff',
-      borderRadius: '8px',
-      overflow: 'hidden',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-    },
-    thead: {
-      background: '#f8f9fa',
-    },
-    th: {
-      padding: '8px 10px',
-      textAlign: 'left',
-      fontWeight: '600',
-      fontSize: '14px',
-      color: '#333',
-      borderBottom: '2px solid #dee2e6'
-    },
-    td: {
-      padding: '0px 10px',
-      borderBottom: '1px solid #dee2e6'
-    },
-    tr: {
-      '&:hover': {
-        backgroundColor: '#f5f5f5'
-      }
-    }
-  };
-
-  // Add this new function to handle pagination display
-  const renderPaginationButtons = () => {
-    if (totalPages <= 1) return null;
-
-    return (
-      <div className="d-flex justify-content-center align-items-center mt-3">
-        <button
-          className="btn btn-sm btn-secondary mx-1"
-          onClick={handlePreviousPage}
-          disabled={currentPage === 1}
-        >
-          &lt;
-        </button>
-
-        <button
-          className={`btn btn-sm mx-1 ${currentPage === 1 ? 'btn-primary' : 'btn-outline-secondary'}`}
-          onClick={() => setCurrentPage(1)}
-        >
-          1
-        </button>
-
-        {currentPage !== 1 && currentPage !== totalPages && (
-          <button
-            className="btn btn-sm mx-1 btn-primary"
-          >
-            {currentPage}
-          </button>
-        )}
-
-        {totalPages > 1 && (
-          <button
-            className={`btn btn-sm mx-1 ${currentPage === totalPages ? 'btn-primary' : 'btn-outline-secondary'}`}
-            onClick={() => setCurrentPage(totalPages)}
-          >
-            {totalPages}
-          </button>
-        )}
-
-        <button
-          className="btn btn-sm btn-secondary mx-1"
-          onClick={handleNextPage}
-          disabled={currentPage >= totalPages}
-        >
-          &gt;
-        </button>
-      </div>
-    );
-  };
+  const renderTooltip = (props) => (
+    <Tooltip id="pdf-tooltip" {...props}>
+      Pdf
+    </Tooltip>
+  );
+  const renderExcelTooltip = (props) => (
+    <Tooltip id="excel-tooltip" {...props}>
+      Excel
+    </Tooltip>
+  );
+  const renderRefreshTooltip = (props) => (
+    <Tooltip id="refresh-tooltip" {...props}>
+      Refresh
+    </Tooltip>
+  );
+  const renderCollapseTooltip = (props) => (
+    <Tooltip id="collapse-tooltip" {...props}>
+      Collapse
+    </Tooltip>
+  );
 
   if (isLoading) {
     return (
@@ -332,19 +366,57 @@ const Invoicereport = () => {
 
   return (
     <div className="page-wrapper">
-      <div className="content invoice-report">
-        <Breadcrumbs
-          maintitle="Transaction Report"
-          subtitle="Manage Your Transaction Report"
-          onDownloadPDF={exportToPDFData}
-          onDownloadExcel={exportToExcelData}
-          onRefresh={handleRefresh}
-        />
+      <div className="content">
+        <div className="page-header">
+          <div className="add-item d-flex flex-column">
+            <div className="page-title">
+              <h4>Transaction Report</h4>
+              <h6>Manage Your Transaction Report</h6>
+            </div>
+          </div>
+          <ul className="table-top-head">
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip}>
+                <Link onClick={exportToPDF}>
+                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
+                <Link onClick={exportToExcel}>
+                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
+                <Link onClick={handleRefresh}>
+                  <RotateCcw />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+                <Link
+                  id="collapse-header"
+                  className={data ? "active" : ""}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    dispatch(setToogleHeader(!data));
+                  }}
+                >
+                  <ChevronUp />
+                </Link>
+              </OverlayTrigger>
+            </li>
+          </ul>
+        </div>
         <div className="card table-list-card">
           <div className="card-body">
             <div className="table-top">
               <div className="search-set">
-                <div className="search-path d-flex align-items-center gap-2" style={{ width: '100%' }}>
+                <div className="search-path d-flex align-items-center gap-2">
                   <div className="search-input">
                     <input
                       type="text"
@@ -357,23 +429,35 @@ const Invoicereport = () => {
                       <i data-feather="search" className="feather-search" />
                     </Link>
                   </div>
-                  <div style={{ width: '200px' }}>
+                  <div style={{ width: "200px" }}>
                     <Select
                       className="select"
                       options={branchOptions}
                       placeholder="Select Branch"
-                      value={selectedBranch ? { value: selectedBranch, label: selectedBranch } : null}
-                      onChange={(selected) => setSelectedBranch(selected ? selected.value : "")}
+                      value={
+                        selectedBranch
+                          ? { value: selectedBranch, label: selectedBranch }
+                          : null
+                      }
+                      onChange={(selected) =>
+                        setSelectedBranch(selected ? selected.value : "")
+                      }
                       isClearable
                     />
                   </div>
-                  <div style={{ width: '200px' }}>
+                  <div style={{ width: "200px" }}>
                     <Select
                       className="select"
                       options={userOptions}
                       placeholder="Select User"
-                      value={selectedUser ? { value: selectedUser, label: selectedUser } : null}
-                      onChange={(selected) => setSelectedUser(selected ? selected.value : "")}
+                      value={
+                        selectedUser
+                          ? { value: selectedUser, label: selectedUser }
+                          : null
+                      }
+                      onChange={(selected) =>
+                        setSelectedUser(selected ? selected.value : "")
+                      }
                       isClearable
                     />
                   </div>
@@ -381,31 +465,23 @@ const Invoicereport = () => {
               </div>
             </div>
             <div className="table-responsive">
-              <table className="table custom-table" style={tableStyle.table}>
-                <thead style={tableStyle.thead}>
-                  <tr>
-                    {columns.map((column) => (
-                      <th key={column.dataIndex || column.key} style={tableStyle.th}>
-                        {column.title}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((record) => (
-                    <tr key={record.id} style={tableStyle.tr}>
-                      {columns.map((column) => (
-                        <td key={column.dataIndex || column.key} style={tableStyle.td}>
-                          {column.render
-                            ? column.render(record[column.dataIndex], record)
-                            : record[column.dataIndex]}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {renderPaginationButtons()}
+              <Table
+                columns={columns}
+                dataSource={filteredTransactions}
+                rowKey={(record) => record.id}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: totalElements,
+                  onChange: (page, pageSize) => {
+                    setCurrentPage(page);
+                    setPageSize(pageSize);
+                  },
+                  showSizeChanger: true,
+                  onShowSizeChange: onShowSizeChange,
+                  pageSizeOptions: ["10", "20", "50", "100"],
+                }}
+              />
             </div>
           </div>
         </div>
@@ -432,7 +508,6 @@ const Invoicereport = () => {
                         ? new Date(selectedTransaction.dateTime).toLocaleString()
                         : "N/A"}
                     </p>
-                    
                     {selectedTransaction.manualDiscount > 0 && (
                       <p>
                         <strong>Manual Discount:</strong> LKR{" "}
@@ -452,10 +527,11 @@ const Invoicereport = () => {
                     <p>
                       <strong>Status:</strong>{" "}
                       <span
-                        className={`badge ${selectedTransaction.status?.toLowerCase() === "completed"
-                          ? "badge-linesuccess"
-                          : "badge-linedanger"
-                          }`}
+                        className={`badge ${
+                          selectedTransaction.status?.toLowerCase() === "completed"
+                            ? "badge-linesuccess"
+                            : "badge-linedanger"
+                        }`}
                       >
                         {selectedTransaction.status || "N/A"}
                       </span>
@@ -521,29 +597,22 @@ const Invoicereport = () => {
                     </thead>
                     <tbody>
                       {selectedTransaction.transactionDetailsList &&
-                        selectedTransaction.transactionDetailsList.length > 0 ? (
-                        selectedTransaction.transactionDetailsList.map(
-                          (item, index) => (
-                            <tr key={index}>
-                              <td>{item.productDto?.name || "N/A"}</td>
-                              <td>{item.productDto?.barcode || "N/A"}</td>
-                              <td>
-                                LKR {parseFloat(item.unitPrice || 0).toFixed(2)}
-                              </td>
-                              <td>{item.quantity || 0}</td>
-                              <td>
-                                LKR {parseFloat(item.discount || 0).toFixed(2)}
-                              </td>
-                              <td>
-                                LKR{" "}
-                                {parseFloat(
-                                  (item.unitPrice * item.quantity) -
-                                  item.discount || 0
-                                ).toFixed(2)}
-                              </td>
-                            </tr>
-                          )
-                        )
+                      selectedTransaction.transactionDetailsList.length > 0 ? (
+                        selectedTransaction.transactionDetailsList.map((item, index) => (
+                          <tr key={index}>
+                            <td>{item.productDto?.name || "N/A"}</td>
+                            <td>{item.productDto?.barcode || "N/A"}</td>
+                            <td>LKR {parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+                            <td>{item.quantity || 0}</td>
+                            <td>LKR {parseFloat(item.discount || 0).toFixed(2)}</td>
+                            <td>
+                              LKR{" "}
+                              {parseFloat(
+                                (item.unitPrice * item.quantity - item.discount) || 0
+                              ).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))
                       ) : (
                         <tr>
                           <td colSpan="6" className="text-center">
@@ -568,14 +637,12 @@ const Invoicereport = () => {
                     </thead>
                     <tbody>
                       {selectedTransaction.transactionPaymentMethod &&
-                        selectedTransaction.transactionPaymentMethod.length > 0 ? (
+                      selectedTransaction.transactionPaymentMethod.length > 0 ? (
                         selectedTransaction.transactionPaymentMethod.map(
                           (payment, index) => (
                             <tr key={index}>
                               <td>{payment.paymentMethodDto?.type || "N/A"}</td>
-                              <td>
-                                LKR {parseFloat(payment.amount || 0).toFixed(2)}
-                              </td>
+                              <td>LKR {parseFloat(payment.amount || 0).toFixed(2)}</td>
                             </tr>
                           )
                         )
