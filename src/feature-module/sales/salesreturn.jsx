@@ -359,10 +359,10 @@ const SalesReturn = () => {
           <div className="card table-list-card">
             <div className="card-body">
               <p>Loading...</p>
-            </div>
-          </div>
         </div>
-      </div>
+        </div>
+        </div>
+          </div>
     );
   }
 
@@ -373,11 +373,11 @@ const SalesReturn = () => {
   const periodEndDisplay = selectedZReportTime === "All" ? "Now" : formatDateTime(zReportTimeToUse);
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
-        <div className="page-header">
+      <div className="page-wrapper">
+        <div className="content">
+          <div className="page-header">
           <div className="add-item d-flex flex-column">
-            <div className="page-title">
+              <div className="page-title">
               <h4>Payout List</h4>
               <h6>Payout Records Around Z-Report</h6>
             </div>
@@ -392,60 +392,60 @@ const SalesReturn = () => {
               <p>
                 <strong>Total Payout Amount:</strong> {totalAmount}
               </p>
+              </div>
             </div>
-          </div>
-          <ul className="table-top-head">
-            <li>
-              <OverlayTrigger placement="top" overlay={renderTooltip}>
+            <ul className="table-top-head">
+              <li>
+                <OverlayTrigger placement="top" overlay={renderTooltip}>
                 <Link onClick={exportToPDF}>
-                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
+                    <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                  </Link>
+                </OverlayTrigger>
+              </li>
+              <li>
+                <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
                 <Link onClick={exportToExcel}>
-                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
+                    <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                  </Link>
+                </OverlayTrigger>
+              </li>
+              <li>
+                <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
                 <Link onClick={() => fetchPayoutData()}>
-                  <RotateCcw />
-                </Link>
-              </OverlayTrigger>
-            </li>
-            <li>
-              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
-                <Link
-                  id="collapse-header"
-                  className={data ? "active" : ""}
+                    <RotateCcw />
+                  </Link>
+                </OverlayTrigger>
+              </li>
+              <li>
+                <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+                  <Link
+                    id="collapse-header"
+                    className={data ? "active" : ""}
                   onClick={(e) => {
                     e.preventDefault();
                     dispatch(setToogleHeader(!data));
                   }}
-                >
-                  <ChevronUp />
-                </Link>
-              </OverlayTrigger>
-            </li>
-          </ul>
-        </div>
-        <div className="card table-list-card">
-          <div className="card-body">
-            <div className="table-top">
+                  >
+                    <ChevronUp />
+                  </Link>
+                </OverlayTrigger>
+              </li>
+            </ul>
+          </div>
+          <div className="card table-list-card">
+            <div className="card-body">
+              <div className="table-top">
               <div className="search-set d-flex align-items-center">
                 <div className="search-input me-3">
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="form-control form-control-sm formsearch"
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      className="form-control form-control-sm formsearch"
                     value={searchTerm}
                     onChange={handleSearch}
-                  />
+                    />
                   <Link to="#" className="btn btn-searchset">
-                    <i data-feather="search" className="feather-search" />
+                      <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
                 <div className="filter-set">
@@ -463,7 +463,7 @@ const SalesReturn = () => {
                   </select>
                 </div>
               </div>
-            </div>
+                      </div>
             <div className="table-responsive">
               {payoutRecords.length === 0 ? (
                 <div className="text-center">
