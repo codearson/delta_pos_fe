@@ -1,24 +1,36 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-export const fetchPayouts = async () => {
+export const fetchPayouts = async (pageNumber = 1, pageSize = 10) => {
   try {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
-      return [];
+      return { content: [], totalElements: 0 };
     }
 
-    const response = await axios.get(`${BASE_BACKEND_URL}/payout/getAll`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    return response.data.responseDto || [];
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/payout/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.data.status || !response.data.responseDto) {
+      return { content: [], totalElements: 0 };
+    }
+
+    return {
+      content: response.data.responseDto.payload || [],
+      totalElements: response.data.responseDto.totalRecords || 0,
+      pageNumber: response.data.responseDto.pageNumber,
+      pageSize: response.data.responseDto.pageSize,
+    };
   } catch (error) {
     console.error("Error fetching payouts:", error.response?.status, error.response?.data);
-    return [];
-  }
+    return { content: [], totalElements:0};}
 };
 
 export const savePayout = async (payoutData) => {
