@@ -1,0 +1,66 @@
+.dashboard-stats .dashboard-card {
+  width: 20%;
+}
+
+.dashboard-card .dash-count,
+.dashboard-card .dash-widget {
+  padding: 8px;
+  min-height: 70px;
+}
+
+/* Chart and Alert card styles */
+.dashboard-charts .chart-card {
+  margin-bottom: 0;
+}
+
+.alert-card {
+  width: 100%;
+}
+
+/* Responsive styles */
+@media (max-width: 1199px) {
+  .dashboard-stats .dashboard-card {
+    width: 33.333%;
+    margin-bottom: 15px;
+  }
+  
+  .dashboard-charts .chart-card {
+    margin-bottom: 15px;
+  }
+}
+
+@media (max-width: 767px) {
+  .dashboard-stats .dashboard-card {
+    width: 50%;
+    margin-bottom: 15px;
+  }
+}
+
+@media (max-width: 575px) {
+  .dashboard-stats .dashboard-card {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .dashboard-card .dash-count,
+  .dashboard-card .dash-widget {
+    min-height: 60px;
+  }
+}
+
+/* Additional styles for better spacing */
+.dashboard-stats {
+  margin-bottom: 20px;
+}
+
+.dashboard-charts {
+  margin-bottom: 20px;
+}
+
+/* Ensure cards take full width of their container */
+.dash-count,
+.dash-widget,
+.card {
+  width: 100%;
+} 
+
