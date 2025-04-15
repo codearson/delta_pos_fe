@@ -25,6 +25,35 @@ export const saveTransaction = async (transactionData) => {
   }
 };
 
+export const getAllTransactions = async () => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      return { success: false, error: "No access token" };
+    }
+
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/transaction/getAll`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.data.status) {
+      return { success: false, error: "Failed to fetch transactions" };
+    }
+
+    return { 
+      success: true, 
+      data: response.data.responseDto || [] 
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
 export const fetchTransactions = async (pageNumber = 1, pageSize = 10) => {
   try {
     const accessToken = localStorage.getItem("accessToken");

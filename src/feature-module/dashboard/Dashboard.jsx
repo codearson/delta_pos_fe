@@ -1,20 +1,104 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CountUp from "react-countup";
 import {
-  File,
-  User,
-  UserCheck,
+  DollarSign,
+  TrendingUp,
+  Send,
+  CreditCard,
+  ShoppingBag,
 } from "feather-icons-react/build/IconComponents";
 import Chart from "react-apexcharts";
 import { Link } from "react-router-dom";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import { ArrowRight } from "react-feather";
 import { all_routes } from "../../Router/all_routes";
-import withReactContent from "sweetalert2-react-content";
-import Swal from "sweetalert2";
+import { fetchXReport } from "../Api/TransactionApi";
+import { getAllByZReports } from "../Api/SalesReport";
+import { fetchProducts } from "../Api/productApi";
+import './dashboard.css';  // We'll create this CSS file next
 
 const Dashboard = () => {
   const route = all_routes;
+  const [xReportData, setXReportData] = useState({
+    totalSales: 0,
+    totalTransactions: 0
+  });
+  const [zReportData, setZReportData] = useState({
+    totalTransactions: 0,
+    fullyTotalSales: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [outOfStockProducts, setOutOfStockProducts] = useState([]);
+  const [stockLoading, setStockLoading] = useState(true);
+  const [activeStockTab, setActiveStockTab] = useState("low"); // State for active stock tab
+
+  useEffect(() => {
+    const loadReportData = async () => {
+      try {
+        setLoading(true);
+        // Fetch X Report data
+        const xReportResponse = await fetchXReport();
+        if (xReportResponse.success && xReportResponse.data && xReportResponse.data.responseDto) {
+          setXReportData({
+            totalSales: xReportResponse.data.responseDto.totalSales || 0,
+            totalTransactions: xReportResponse.data.responseDto.totalTransactions || 0
+          });
+        }
+
+        // Fetch Z Report data
+        const zReportResponse = await getAllByZReports();
+        if (zReportResponse && zReportResponse.length > 0) {
+          // Get the last record (most recent)
+          const lastRecord = zReportResponse[zReportResponse.length - 1];
+          setZReportData({
+            totalTransactions: lastRecord.salesDateDetails?.[0]?.totalTransactions || 0,
+            fullyTotalSales: lastRecord.fullyTotalSales || 0
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching report data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadReportData();
+  }, []);
+
+  useEffect(() => {
+    const loadStockData = async () => {
+      try {
+        setStockLoading(true);
+        const products = await fetchProducts();
+        if (Array.isArray(products)) {
+          const lowStock = products.filter(
+            (product) =>
+              product.isActive === true &&
+              product.quantity < product.lowStock &&
+              product.quantity > 0
+          );
+          setLowStockProducts(lowStock);
+          
+          const outOfStock = products.filter(
+            (product) => product.isActive === true && product.quantity === 0
+          );
+          setOutOfStockProducts(outOfStock);
+        }
+      } catch (error) {
+        console.error("Error fetching stock data:", error);
+      } finally {
+        setStockLoading(false);
+      }
+    };
+
+    loadStockData();
+  }, []);
+
+  const handleStockTabChange = (tab) => {
+    setActiveStockTab(tab);
+  };
+
   const [chartOptions] = useState({
     series: [
       {
@@ -81,178 +165,227 @@ const Dashboard = () => {
       opacity: 1,
     },
   });
-  const MySwal = withReactContent(Swal);
-  const showConfirmationAlert = () => {
-    MySwal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      showCancelButton: true,
-      confirmButtonColor: "#00ff00",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonColor: "#ff0000",
-      cancelButtonText: "Cancel",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        MySwal.fire({
-          title: "Deleted!",
-          text: "Your file has been deleted.",
-          className: "btn btn-success",
-          confirmButtonText: "OK",
-          customClass: {
-            confirmButton: "btn btn-success",
-          },
-        });
-      } else {
-        MySwal.close();
-      }
-    });
-  };
   return (
     <div>
       <div className="page-wrapper">
         <div className="content">
-          <div className="row">
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
-              <div className="dash-widget w-100">
-                <div className="dash-widgetimg">
+          <div className="row dashboard-stats">
+            <h5 className="mb-3">View from Z Report</h5>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-count w-100">
+                <div className="dash-counts">
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <CountUp
+                        start={0}
+                        end={zReportData.totalTransactions}
+                        duration={3}
+                        separator=","
+                      />
+                    )}
+                  </h4>
+                  <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Total Transactions</h5>
+                </div>
+                <div className="dash-imgs">
+                  <ShoppingBag size={14} />
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-count das1 w-100">
+                <div className="dash-counts">
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <CountUp
+                        start={0}
+                        end={zReportData.fullyTotalSales}
+                        duration={3}
+                        prefix="$"
+                        separator=","
+                        decimal="."
+                      />
+                    )}
+                  </h4>
+                  <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Total Sales</h5>
+                </div>
+                <div className="dash-imgs">
+                  <TrendingUp size={14} />
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-count das2 w-100">
+                <div className="dash-counts">
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>150</h4>
+                  <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Banking</h5>
+                </div>
+                <div className="dash-imgs">
+                  <CreditCard size={14} />
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-count das3 w-100">
+                <div className="dash-counts">
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>170</h4>
+                  <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Payouts</h5>
+                </div>
+                <div className="dash-imgs">
+                  <Send size={14} />
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-count w-100">
+                <div className="dash-counts">
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>100</h4>
+                  <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Difference</h5>
+                </div>
+                <div className="dash-imgs">
+                  <DollarSign size={14} />
+                </div>
+              </div>
+            </div>
+            <h5 className="mb-3">View from X Report</h5>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-widget dash1 w-100">
+                <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
                   <span>
                     <ImageWithBasePath
                       src="assets/img/icons/dash1.svg"
                       alt="img"
+                      style={{ width: '24px', height: '24px' }}
                     />
                   </span>
                 </div>
                 <div className="dash-widgetcontent">
-                  <h5>
-                    <CountUp start={0} end={307144} duration={3} prefix="$" />
+                  <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <CountUp
+                        start={0}
+                        end={xReportData.totalTransactions}
+                        duration={3}
+                        separator=","
+                      />
+                    )}
                   </h5>
-                  <h6>Total Purchase Due</h6>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Total Transactions</h6>
                 </div>
               </div>
             </div>
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
-              <div className="dash-widget dash1 w-100">
-                <div className="dash-widgetimg">
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-widget w-100">
+                <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
                   <span>
                     <ImageWithBasePath
                       src="assets/img/icons/dash2.svg"
                       alt="img"
+                      style={{ width: '24px', height: '24px' }}
                     />
                   </span>
                 </div>
                 <div className="dash-widgetcontent">
-                  <h5>
-                    $
-                    <CountUp
-                      start={0}
-                      end={4385}
-                      duration={3} // Duration in seconds
-                    />
+                  <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <CountUp 
+                        start={0} 
+                        end={xReportData.totalSales} 
+                        duration={3} 
+                        prefix="$" 
+                        separator=","
+                        decimal="."
+                      />
+                    )}
                   </h5>
-                  <h6>Total Sales Due</h6>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Total Sales</h6>
                 </div>
               </div>
             </div>
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
               <div className="dash-widget dash2 w-100">
-                <div className="dash-widgetimg">
+                <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
                   <span>
                     <ImageWithBasePath
                       src="assets/img/icons/dash3.svg"
                       alt="img"
+                      style={{ width: '24px', height: '24px' }}
                     />
                   </span>
                 </div>
                 <div className="dash-widgetcontent">
-                  <h5>
+                  <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
                     $
                     <CountUp
                       start={0}
                       end={385656.5}
-                      duration={3} // Duration in seconds
+                      duration={3}
                       decimals={1}
                     />
                   </h5>
-                  <h6>Total Sale Amount</h6>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Banking</h6>
                 </div>
               </div>
             </div>
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
               <div className="dash-widget dash3 w-100">
-                <div className="dash-widgetimg">
+                <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
                   <span>
                     <ImageWithBasePath
                       src="assets/img/icons/dash4.svg"
                       alt="img"
+                      style={{ width: '24px', height: '24px' }}
                     />
                   </span>
                 </div>
                 <div className="dash-widgetcontent">
-                  <h5>
+                  <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
                     $
                     <CountUp
                       start={0}
                       end={40000}
-                      duration={3} // Duration in seconds
+                      duration={3}
                     />
                   </h5>
-                  <h6>Total Expense Amount</h6>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Payouts</h6>
                 </div>
               </div>
             </div>
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
-              <div className="dash-count">
-                <div className="dash-counts">
-                  <h4>100</h4>
-                  <h5>Customers</h5>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-widget dash2 w-100">
+                <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
+                  <span>
+                    <ImageWithBasePath
+                      src="assets/img/icons/compare.png"
+                      alt="img"
+                      style={{ width: '24px', height: '24px' }}
+                    />
+                  </span>
                 </div>
-                <div className="dash-imgs">
-                  <User />
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
-              <div className="dash-count das1">
-                <div className="dash-counts">
-                  <h4>110</h4>
-                  <h5>Suppliers</h5>
-                </div>
-                <div className="dash-imgs">
-                  <UserCheck />
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
-              <div className="dash-count das2">
-                <div className="dash-counts">
-                  <h4>150</h4>
-                  <h5>Purchase Invoice</h5>
-                </div>
-                <div className="dash-imgs">
-                  <ImageWithBasePath
-                    src="assets/img/icons/file-text-icon-01.svg"
-                    className="img-fluid"
-                    alt="icon"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="col-xl-3 col-sm-6 col-12 d-flex">
-              <div className="dash-count das3">
-                <div className="dash-counts">
-                  <h4>170</h4>
-                  <h5>Sales Invoice</h5>
-                </div>
-                <div className="dash-imgs">
-                  <File />
+                <div className="dash-widgetcontent">
+                  <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    $
+                    <CountUp
+                      start={0}
+                      end={385656.5}
+                      duration={3}
+                      decimals={1}
+                    />
+                  </h5>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Difference</h6>
                 </div>
               </div>
             </div>
           </div>
-          {/* Button trigger modal */}
-
-          <div className="row">
-            <div className="col-xl-7 col-sm-12 col-12 d-flex">
+          <div className="row dashboard-charts">
+            <div className="col-xl-7 col-sm-12 col-12 d-flex chart-card">
               <div className="card flex-fill">
                 <div className="card-header d-flex justify-content-between align-items-center">
                   <h5 className="card-title mb-0">Purchase &amp; Sales</h5>
@@ -310,11 +443,13 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="col-xl-5 col-sm-12 col-12 d-flex">
-              <div className="card flex-fill default-cover mb-4">
-                <div className="card-header d-flex justify-content-between align-items-center">
-                  <h4 className="card-title mb-0">Recent Products</h4>
+              <div className="card flex-fill default-cover mb-4 alert-card">
+                <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: '#dc3545', padding: '12px 15px' }}>
+                  <h4 className="card-title mb-0" style={{ color: '#fff' }}>
+                    Alert
+                  </h4>
                   <div className="view-all-link">
-                    <Link to="#" className="view-all d-flex align-items-center">
+                    <Link to={route.lowstock} className="view-all d-flex align-items-center" style={{ color: '#fff' }}>
                       View All
                       <span className="ps-2 d-flex align-items-center">
                         <ArrowRight className="feather-16" />
@@ -323,326 +458,151 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div className="card-body">
-                  <div className="table-responsive dataview">
-                    <table className="table dashboard-recent-products">
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Products</th>
-                          <th>Price</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>1</td>
-                          <td className="productimgname">
-                            <Link
-                              to={route.productlist}
-                              className="product-img"
+                  {stockLoading ? (
+                    <div className="text-center py-3">Loading...</div>
+                  ) : (
+                    <>
+                      <div className="table-tab mb-3">
+                        <ul className="nav nav-pills" id="stock-tab" role="tablist">
+                          <li className="nav-item" role="presentation">
+                            <button
+                              className={`nav-link ${activeStockTab === "low" ? "active" : ""}`}
+                              id="low-stock-tab"
+                              data-bs-toggle="pill"
+                              data-bs-target="#low-stock-content"
+                              type="button"
+                              role="tab"
+                              aria-controls="low-stock-content"
+                              aria-selected={activeStockTab === "low"}
+                              onClick={() => handleStockTabChange("low")}
                             >
-                              <ImageWithBasePath
-                                src="assets/img/products/stock-img-01.png"
-                                alt="product"
-                              />
-                            </Link>
-                            <Link to={route.productlist}>
-                              Lenevo 3rd Generation
-                            </Link>
-                          </td>
-                          <td>$12500</td>
-                        </tr>
-                        <tr>
-                          <td>2</td>
-                          <td className="productimgname">
-                            <Link
-                              to={route.productlist}
-                              className="product-img"
+                              Low Stock
+                            </button>
+                          </li>
+                          <li className="nav-item" role="presentation">
+                            <button
+                              className={`nav-link ${activeStockTab === "out" ? "active" : ""}`}
+                              id="out-stock-tab"
+                              data-bs-toggle="pill"
+                              data-bs-target="#out-stock-content"
+                              type="button"
+                              role="tab"
+                              aria-controls="out-stock-content"
+                              aria-selected={activeStockTab === "out"}
+                              onClick={() => handleStockTabChange("out")}
                             >
-                              <ImageWithBasePath
-                                src="assets/img/products/stock-img-06.png"
-                                alt="product"
-                              />
-                            </Link>
-                            <Link to={route.productlist}>Bold V3.2</Link>
-                          </td>
-                          <td>$1600</td>
-                        </tr>
-                        <tr>
-                          <td>3</td>
-                          <td className="productimgname">
-                            <Link
-                              to={route.productlist}
-                              className="product-img"
-                            >
-                              <ImageWithBasePath
-                                src="assets/img/products/stock-img-02.png"
-                                alt="product"
-                              />
-                            </Link>
-                            <Link to={route.productlist}>Nike Jordan</Link>
-                          </td>
-                          <td>$2000</td>
-                        </tr>
-                        <tr>
-                          <td>4</td>
-                          <td className="productimgname">
-                            <Link
-                              to={route.productlist}
-                              className="product-img"
-                            >
-                              <ImageWithBasePath
-                                src="assets/img/products/stock-img-03.png"
-                                alt="product"
-                              />
-                            </Link>
-                            <Link to={route.productlist}>
-                              Apple Series 5 Watch
-                            </Link>
-                          </td>
-                          <td>$800</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                              Out of Stock
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="tab-content" id="stock-tabContent">
+                        {/* Low Stock Tab */}
+                        <div
+                          className={`tab-pane fade ${activeStockTab === "low" ? "show active" : ""}`}
+                          id="low-stock-content"
+                          role="tabpanel"
+                          aria-labelledby="low-stock-tab"
+                        >
+                          <div className="table-responsive dataview">
+                            <table className="table" style={{ borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>#</th>
+                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Product</th>
+                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Stock</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {lowStockProducts.length > 0 ? (
+                                  lowStockProducts.slice(0, 5).map((product, index) => (
+                                    <tr key={`low-${product.id || index}`}>
+                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{index + 1}</td>
+                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                                        <Link to={route.productlist} style={{ textDecoration: 'none', color: '#333' }}>
+                                          {product.name}
+                                        </Link>
+                                      </td>
+                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                                        <span style={{ 
+                                          backgroundColor: '#D3B0B0', 
+                                          color: '#000', 
+                                          padding: '4px 12px',
+                                          borderRadius: '4px',
+                                          display: 'inline-block',
+                                          minWidth: '30px',
+                                          textAlign: 'center'
+                                        }}>
+                                          {product.quantity}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan="3" style={{ padding: '8px', textAlign: 'center' }}>
+                                      No low stock products found
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                        {/* Out of Stock Tab */}
+                        <div
+                          className={`tab-pane fade ${activeStockTab === "out" ? "show active" : ""}`}
+                          id="out-stock-content"
+                          role="tabpanel"
+                          aria-labelledby="out-stock-tab"
+                        >
+                          <div className="table-responsive dataview">
+                            <table className="table" style={{ borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>#</th>
+                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Product</th>
+                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {outOfStockProducts.length > 0 ? (
+                                  outOfStockProducts.slice(0, 5).map((product, index) => (
+                                    <tr key={`out-${product.id || index}`}>
+                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{index + 1}</td>
+                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                                        <Link to={route.productlist} style={{ textDecoration: 'none', color: '#333' }}>
+                                          {product.name}
+                                        </Link>
+                                      </td>
+                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                                        <span style={{ 
+                                          backgroundColor: '#dc3545', 
+                                          color: '#fff', 
+                                          padding: '4px 12px',
+                                          borderRadius: '4px',
+                                          display: 'inline-block'
+                                        }}>
+                                          Out of Stock
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan="3" style={{ padding: '8px', textAlign: 'center' }}>
+                                      No out of stock products found
+                                    </td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-              </div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="card-header">
-              <h4 className="card-title">Expired Products</h4>
-            </div>
-            <div className="card-body">
-              <div className="table-responsive dataview">
-                <table className="table dashboard-expired-products">
-                  <thead>
-                    <tr>
-                      <th className="no-sort">
-                        <label className="checkboxs">
-                          <input type="checkbox" id="select-all" />
-                          <span className="checkmarks" />
-                        </label>
-                      </th>
-                      <th>Product</th>
-                      <th>SKU</th>
-                      <th>Manufactured Date</th>
-                      <th>Expired Date</th>
-                      <th className="no-sort">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <label className="checkboxs">
-                          <input type="checkbox" />
-                          <span className="checkmarks" />
-                        </label>
-                      </td>
-                      <td>
-                        <div className="productimgname">
-                          <Link to="#" className="product-img stock-img">
-                            <ImageWithBasePath
-                              src="assets/img/products/expire-product-01.png"
-                              alt="product"
-                            />
-                          </Link>
-                          <Link to="#">Red Premium Handy </Link>
-                        </div>
-                      </td>
-                      <td>
-                        <Link to="#">PT006</Link>
-                      </td>
-                      <td>17 Jan 2023</td>
-                      <td>29 Mar 2023</td>
-                      <td className="action-table-data">
-                        <div className="edit-delete-action">
-                          <Link className="me-2 p-2" to="#">
-                            <i data-feather="edit" className="feather-edit" />
-                          </Link>
-                          <Link
-                            className=" confirm-text p-2"
-                            to="#"
-                            onClick={showConfirmationAlert}
-                          >
-                            <i
-                              data-feather="trash-2"
-                              className="feather-trash-2"
-                            />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <label className="checkboxs">
-                          <input type="checkbox" />
-                          <span className="checkmarks" />
-                        </label>
-                      </td>
-                      <td>
-                        <div className="productimgname">
-                          <Link to="#" className="product-img stock-img">
-                            <ImageWithBasePath
-                              src="assets/img/products/expire-product-02.png"
-                              alt="product"
-                            />
-                          </Link>
-                          <Link to="#">Iphone 14 Pro</Link>
-                        </div>
-                      </td>
-                      <td>
-                        <Link to="#">PT007</Link>
-                      </td>
-                      <td>22 Feb 2023</td>
-                      <td>04 Apr 2023</td>
-                      <td className="action-table-data">
-                        <div className="edit-delete-action">
-                          <Link className="me-2 p-2" to="#">
-                            <i data-feather="edit" className="feather-edit" />
-                          </Link>
-                          <Link
-                            className="confirm-text p-2"
-                            to="#"
-                            onClick={showConfirmationAlert}
-                          >
-                            <i
-                              data-feather="trash-2"
-                              className="feather-trash-2"
-                            />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <label className="checkboxs">
-                          <input type="checkbox" />
-                          <span className="checkmarks" />
-                        </label>
-                      </td>
-                      <td>
-                        <div className="productimgname">
-                          <Link to="#" className="product-img stock-img">
-                            <ImageWithBasePath
-                              src="assets/img/products/expire-product-03.png"
-                              alt="product"
-                            />
-                          </Link>
-                          <Link to="#">Black Slim 200 </Link>
-                        </div>
-                      </td>
-                      <td>
-                        <Link to="#">PT008</Link>
-                      </td>
-                      <td>18 Mar 2023</td>
-                      <td>13 May 2023</td>
-                      <td className="action-table-data">
-                        <div className="edit-delete-action">
-                          <Link className="me-2 p-2" to="#">
-                            <i data-feather="edit" className="feather-edit" />
-                          </Link>
-                          <Link
-                            className=" confirm-text p-2"
-                            to="#"
-                            onClick={showConfirmationAlert}
-                          >
-                            <i
-                              data-feather="trash-2"
-                              className="feather-trash-2"
-                            />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <label className="checkboxs">
-                          <input type="checkbox" />
-                          <span className="checkmarks" />
-                        </label>
-                      </td>
-                      <td>
-                        <div className="productimgname">
-                          <Link to="#" className="product-img stock-img">
-                            <ImageWithBasePath
-                              src="assets/img/products/expire-product-04.png"
-                              alt="product"
-                            />
-                          </Link>
-                          <Link to="#">Woodcraft Sandal</Link>
-                        </div>
-                      </td>
-                      <td>
-                        <Link to="#">PT009</Link>
-                      </td>
-                      <td>29 Mar 2023</td>
-                      <td>27 May 2023</td>
-                      <td className="action-table-data">
-                        <div className="edit-delete-action">
-                          <Link className="me-2 p-2" to="#">
-                            <i data-feather="edit" className="feather-edit" />
-                          </Link>
-                          <Link
-                            className=" confirm-text p-2"
-                            to="#"
-                            onClick={showConfirmationAlert}
-                          >
-                            <i
-                              data-feather="trash-2"
-                              className="feather-trash-2"
-                            />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <label className="checkboxs">
-                          <input type="checkbox" />
-                          <span className="checkmarks" />
-                        </label>
-                      </td>
-                      <td>
-                        <div className="productimgname">
-                          <Link to="#" className="product-img stock-img">
-                            <ImageWithBasePath
-                              src="assets/img/products/stock-img-03.png"
-                              alt="product"
-                            />
-                          </Link>
-                          <Link to="#">Apple Series 5 Watch </Link>
-                        </div>
-                      </td>
-                      <td>
-                        <Link to="#">PT010</Link>
-                      </td>
-                      <td>24 Mar 2023</td>
-                      <td>26 May 2023</td>
-                      <td className="action-table-data">
-                        <div className="edit-delete-action">
-                          <Link
-                            className="me-2 p-2"
-                            to="#"
-                            data-bs-toggle="modal"
-                            data-bs-target="#edit-units"
-                          >
-                            <i data-feather="edit" className="feather-edit" />
-                          </Link>
-                          <Link
-                            className=" confirm-text p-2"
-                            to="#"
-                            onClick={showConfirmationAlert}
-                          >
-                            <i
-                              data-feather="trash-2"
-                              className="feather-trash-2"
-                            />
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
               </div>
             </div>
           </div>
