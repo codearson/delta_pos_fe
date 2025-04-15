@@ -23,6 +23,7 @@ import Select from "react-select";
 import { getAllManagerToggles } from "../Api/ManagerToggle";
 import { fetchPayoutCategories } from "../Api/PayoutCategoryApi";
 import { savePayout } from "../Api/Payout.Api";
+import Swal from "sweetalert2";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -207,9 +208,9 @@ const Pos = () => {
   const handleCategorySelect = (category) => {
     if (category.name === "Pay Out") {
       if (parseFloat(inputValue) <= 0) {
-        showNotification("Please enter amount first", "error");
-      return;
-    }
+        Swal.fire("Warning!", "Please enter amount first", "warning");
+        return;
+      }
       setShowPayoutPopup(true);
       return;
     }
@@ -1386,34 +1387,174 @@ const Pos = () => {
 
   const handleSavePayout = async () => {
     if (!selectedPayoutCategory) {
-      showNotification("Please select a category", "error");
+      Swal.fire("Error!", "Please select a payout category", "error");
       return;
     }
 
     const amount = parseFloat(inputValue);
     if (isNaN(amount) || amount <= 0) {
-      showNotification("Invalid amount entered", "error");
+      Swal.fire("Error!", "Invalid amount entered", "error");
+      return;
+    }
+
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      Swal.fire("Error!", "User not authenticated", "error");
       return;
     }
 
     const payoutData = {
       amount: amount,
-      payoutCategory: { id: selectedPayoutCategory.id },
-      user: { id: parseInt(localStorage.getItem("userId")) },
-      dateTime: new Date().toISOString()
+      payoutCategoryDto: {
+        id: selectedPayoutCategory.id
+      },
+      userDto: {
+        id: parseInt(userId)
+      },
+      isActive: true
     };
+
+    console.log("Saving payout with payload:", payoutData);
 
     try {
       const result = await savePayout(payoutData);
+      console.log("Payout save response:", result);
+      
       if (result) {
-        showNotification("Payout saved successfully!", "success");
         setShowPayoutPopup(false);
         setSelectedPayoutCategory(null);
-        resetInput();
+        setInputValue("0");
+
+        // Show SweetAlert for print
+        Swal.fire({
+          title: "Payout Saved!",
+          text: "Do you want to print a payout receipt?",
+          icon: "success",
+          showCancelButton: true,
+          confirmButtonText: "Print",
+          cancelButtonText: "No, Thanks"
+        }).then((swalResult) => {
+          if (swalResult.isConfirmed) {
+            // Call your print function here
+            printPayoutReceipt(amount, selectedPayoutCategory);
+          }
+        });
+      } else {
+        Swal.fire("Error!", "Failed to save payout", "error");
       }
     } catch (error) {
-      showNotification("Error saving payout: " + error.message, "error");
+      console.error("Payout save error:", error);
+      Swal.fire("Error!", `Failed to save payout: ${error.message}`, "error");
     }
+  };
+
+  // Example print function (implement as needed)
+  const printPayoutReceipt = (amount, category) => {
+    const shopName = localStorage.getItem("shopName") || "Shop Name";
+    const branchName = localStorage.getItem("branchName") || "Branch Name";
+    const branchCode = localStorage.getItem("branchCode") || "N/A";
+    const address = localStorage.getItem("branchAddress") || "N/A";
+    const contactNumber = localStorage.getItem("branchContact") || "N/A";
+    const cashierName = `${localStorage.getItem("firstName") || "Cashier"} ${localStorage.getItem("lastName") || ""}`;
+    const payoutCategory = category ? category.payoutCategory : "N/A";
+    const payoutDate = new Date().toLocaleString();
+
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payout Receipt</title>
+          <style>
+            @media print {
+              @page { size: 72mm auto; margin: 0; }
+              body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+              header, footer, nav, .print-header, .print-footer { display: none !important; }
+              html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
+            }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              width: 72mm;
+              margin: 0 auto;
+              padding: 0 5px;
+              font-size: 12px;
+              line-height: 1.2;
+              box-sizing: border-box;
+              text-align: center;
+              color: #000;
+            }
+            .receipt-header { text-align: center; margin-bottom: 5px; }
+            .receipt-header h2 { margin: 0; font-size: 15px; font-weight: bold; }
+            .receipt-details { margin-bottom: 5px; text-align: left; }
+            .receipt-details p { margin: 2px 0; }
+            .divider { border-top: 1px dashed #000; margin: 5px 0; }
+            .receipt-footer { text-align: center; margin-top: 5px; }
+            .receipt-footer p { margin: 2px 0; }
+            .spacing { height: 10px; }
+            .payout-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 10px 0;
+              font-family: 'Courier New', Courier, monospace;
+            }
+            .payout-table th, .payout-table td {
+              font-size: 13px;
+              font-weight: bold;
+              padding: 2px 0;
+              border: none;
+            }
+            .payout-table th {
+              text-align: left;
+              border-bottom: 1px dashed #000;
+            }
+            .payout-table th.amount-col, .payout-table td.amount-col {
+              text-align: right;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <h2>${shopName}</h2>
+            <p>${branchName}</p>
+            <p>Branch Code: ${branchCode}</p>
+            <p>Address: ${address}</p>
+            <p>Contact: ${contactNumber}</p>
+          </div>
+          <div class="receipt-details">
+            <p>Date: ${payoutDate}</p>
+            <p>Cashier: ${cashierName}</p>
+          </div>
+          <div class="divider"></div>
+          <table class="payout-table">
+            <thead>
+              <tr>
+                <th>Payout Category</th>
+                <th class="amount-col">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${payoutCategory}</td>
+                <td class="amount-col">${parseFloat(amount).toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="divider"></div>
+          <div class="receipt-footer">
+            <p>Thank You!</p>
+            <div class="spacing"></div>
+            <p>Powered by Delta POS</p>
+            <p>(deltapos.codearson@gmail.com)</p>
+            <p>(0094762963979)</p>
+            <p>=====================================</p>
+          </div>
+          <script>
+            setTimeout(() => { window.print(); window.close(); }, 500);
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
   };
 
   return (
@@ -1857,35 +1998,89 @@ const Pos = () => {
         {showPayoutPopup && (
           <div className="payout-popup-overlay">
             <div className={`payout-popup ${darkMode ? "dark-mode" : ""}`}>
-              <h2>Select Payout Category</h2>
-              <div className="category-list">
-                {payoutCategories.length > 0 ? (
-                  payoutCategories.map((category) => (
-                    <button
-                      key={category.id}
-                      className={`category-item ${selectedPayoutCategory?.id === category.id ? 'selected' : ''}`}
-                      onClick={() => setSelectedPayoutCategory(category)}
-                    >
-                      {category.payoutCategory}
-                    </button>
-                  ))
-                ) : (
-                  <p>No payout categories found</p>
-                )}
+              <h2>Payout Details</h2>
+              <div className="payout-content">
+                <div className="amount-display">
+                  <h3>Amount: {inputValue}</h3>
+                </div>
+                <div className="category-selection">
+                  <h4>Select Category:</h4>
+                  <Select
+                    options={payoutCategories
+                      .filter(cat => cat.isActive)
+                      .map(cat => ({
+                        value: cat.id,
+                        label: cat.payoutCategory,
+                        full: cat, // keep the full object for later use
+                      }))}
+                    value={
+                      selectedPayoutCategory
+                        ? {
+                            value: selectedPayoutCategory.id,
+                            label: selectedPayoutCategory.payoutCategory,
+                          }
+                        : null
+                    }
+                    onChange={(selectedOption) => {
+                      setSelectedPayoutCategory(selectedOption ? selectedOption.full : null);
+                      console.log("Selected payout category:", selectedOption ? selectedOption.full : null);
+                    }}
+                    placeholder="Select Category"
+                    isSearchable={false}
+                    className="payout-select"
+                    styles={{
+                      control: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#333" : "#fff",
+                        borderColor: darkMode ? "#666" : "#ddd",
+                        minHeight: "45px",
+                        borderRadius: "8px",
+                        color: "#000", // always black
+                      }),
+                      singleValue: (base) => ({
+                        ...base,
+                        color: "#000", // always black
+                      }),
+                      input: (base) => ({
+                        ...base,
+                        color: "#000", // always black
+                      }),
+                      menu: (base) => ({
+                        ...base,
+                        backgroundColor: darkMode ? "#444" : "#fff",
+                        border: `1px solid ${darkMode ? "#666" : "#ddd"}`,
+                        borderRadius: "8px"
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? darkMode ? "#2EB6E8" : "#e3f2fd"
+                          : state.isFocused
+                          ? darkMode ? "#555" : "#f8f9fa"
+                          : "transparent",
+                        color: "#000", // always black
+                        "&:active": {
+                          backgroundColor: darkMode ? "#2EB6E8" : "#e3f2fd"
+                        }
+                      })
+                    }}
+                  />
+                </div>
               </div>
               <div className="payout-actions">
-                <button
-                  className="submit-btn"
+                <button 
+                  className="confirm-btn" 
                   onClick={handleSavePayout}
                   disabled={!selectedPayoutCategory}
                 >
-                  Submit
+                  Confirm Payout
                 </button>
                 <button
                   className="cancel-btn"
                   onClick={() => {
                     setShowPayoutPopup(false);
                     setSelectedPayoutCategory(null);
+                    setInputValue("0");
                   }}
                 >
                   Cancel
