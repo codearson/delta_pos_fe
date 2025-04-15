@@ -4,16 +4,14 @@ import React,{useState} from "react";
 import { Table } from "antd";
 import { onShowSizeChange } from "./pagination";
 
-const Datatable = ({ props, columns, dataSource }) => {
-  
+const Datatable = ({ columns, dataSource, pagination, rowKey }) => {
   return (
     <Table
-      key={props}
       className="table datanew dataTable no-footer"
       columns={columns}
       dataSource={dataSource}
-
-      rowKey={(record) => record.id}
+      rowKey={rowKey || ((record) => record.id)}
+      pagination={pagination}
     />
   );
 };
