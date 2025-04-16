@@ -14,7 +14,6 @@ import jsPDF from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from "xlsx";
 import withReactContent from "sweetalert2-react-content";
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 const ProductDiscount = () => {
   const dispatch = useDispatch();
