@@ -11,7 +11,6 @@ import { DatePicker } from 'antd';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import ImageWithBasePath from '../../core/img/imagewithbasebath';
 import { setToogleHeader } from '../../core/redux/action';
-import withReactContent from 'sweetalert2-react-content';
 import { fetchPayoutCategories, updatePayoutCategoryStatus } from '../Api/PayoutCategoryApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -28,6 +27,11 @@ const BrandList = () => {
 
     useEffect(() => {
         loadInitialData();
+        // Set up auto-refresh every second
+        const interval = setInterval(() => {
+            loadPayoutCategories();
+        }, 1000);
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -44,17 +48,41 @@ const BrandList = () => {
 
     const loadPayoutCategories = async () => {
         try {
+            setIsLoading(true);
             const categories = await fetchPayoutCategories();
-            const filteredCategories = Array.isArray(categories)
-                ? categories.filter(cat => cat.isActive === showActive).reverse()
-                : [];
-            setPayoutCategories(filteredCategories.map(cat => ({
-                ...cat,
-                payoutCategory: cat.payoutCategory
-            })));
+            if (Array.isArray(categories)) {
+                const filteredCategories = categories
+                    .filter(cat => cat.isActive === showActive)
+                    .map(cat => ({
+                        id: cat.id,
+                        payoutCategory: cat.payoutCategory,
+                        isActive: cat.isActive,
+                        createdDate: cat.createdDate ? new Date(cat.createdDate).toLocaleDateString() : 'N/A'
+                    }))
+                    .reverse();
+                setPayoutCategories(filteredCategories);
+            } else {
+                console.error("Categories is not an array:", categories);
+                setPayoutCategories([]);
+            }
         } catch (error) {
+            console.error("Error loading categories:", error);
             setPayoutCategories([]);
             Swal.fire("Error!", "Failed to fetch categories", "error");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Add a function to handle refresh after any activity
+    const handleActivityComplete = async () => {
+        try {
+            await loadPayoutCategories();
+            // Add a small delay to ensure the state is updated
+            await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+            console.error("Error refreshing categories:", error);
+            Swal.fire("Error!", "Failed to refresh categories", "error");
         }
     };
 
@@ -62,7 +90,7 @@ const BrandList = () => {
         setTogglingId(categoryId);
         const newStatusText = currentStatus ? 'Inactive' : 'Active';
 
-        MySwal.fire({
+        Swal.fire({
             title: 'Are you sure?',
             text: `Do you want to change this category to ${newStatusText}?`,
             icon: 'warning',
@@ -70,17 +98,39 @@ const BrandList = () => {
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
             confirmButtonText: 'Yes, change it!',
+            cancelButtonText: 'No, cancel'
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     const newStatus = currentStatus ? 0 : 1;
-                    await updatePayoutCategoryStatus(categoryId, newStatus);
-                    loadPayoutCategories();
+                    const response = await updatePayoutCategoryStatus(categoryId, newStatus);
+                    
+                    if (response?.responseDto) {
+                        await handleActivityComplete(); // Use the new refresh handler
+                        Swal.fire({
+                            title: 'Success!',
+                            text: `Category status changed to ${newStatusText}`,
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        throw new Error('Failed to update category status: Invalid response from server');
+                    }
                 } catch (error) {
-                    Swal.fire('Error', 'Status update failed', 'error');
+                    console.error('Error updating category status:', error);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'Failed to update category status',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                } finally {
+                    setTogglingId(null);
                 }
+            } else {
+                setTogglingId(null);
             }
-            setTogglingId(null);
         });
     };
 
@@ -177,24 +227,20 @@ const BrandList = () => {
             title: 'Actions',
             dataIndex: 'actions',
             render: (_, record) => (
-                <td className="action-table-data">
-                    <div className="edit-delete-action">
-                        <Link
-                            className="me-2 p-2"
-                            to="#"
-                            data-bs-toggle="modal"
-                            data-bs-target="#edit-brand"
-                            onClick={() => setSelectedCategory(record)}
-                        >
-                            <i data-feather="edit" className="feather-edit"></i>
-                        </Link>
-                    </div>
-                </td>
+                <div className="edit-delete-action">
+                    <Link
+                        className="me-2 p-2"
+                        to="#"
+                        data-bs-toggle="modal"
+                        data-bs-target="#edit-brand"
+                        onClick={() => setSelectedCategory(record)}
+                    >
+                        <i data-feather="edit" className="feather-edit"></i>
+                    </Link>
+                </div>
             ),
         },
     ];
-
-    const MySwal = withReactContent(Swal);
 
     const handleCategoryAdded = (newCategory) => {
         setPayoutCategories(prev => [newCategory, ...prev]);
@@ -374,12 +420,12 @@ const BrandList = () => {
                 </div>
             </div>
             <AddBrand 
-                refreshCategories={loadPayoutCategories}
+                refreshCategories={handleActivityComplete}
                 onCategoryAdded={handleCategoryAdded}
             />
             <EditBrand 
                 selectedCategory={selectedCategory}
-                refreshCategories={loadPayoutCategories}
+                refreshCategories={handleActivityComplete}
             />
         </div>
     )

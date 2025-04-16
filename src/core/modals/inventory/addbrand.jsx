@@ -32,24 +32,25 @@ const AddBrand = ({ refreshCategories, onCategoryAdded }) => {
         if (!validateInput()) return
 
         try {
-            const existingCategory = await getPayoutCategoryByName(payoutCategory.trim())
-            if (existingCategory?.responseDto) {
+            // Check for duplicate name
+            const existingCategory = await getPayoutCategoryByName(payoutCategory.trim());
+            if (existingCategory && existingCategory.responseDto) {
                 MySwal.fire({
                     title: "Error!",
-                    text: "A payout category with this name already exists",
+                    text: "A payout category with this name already exists.",
                     icon: "error",
                     confirmButtonText: "OK",
                     customClass: {
                         confirmButton: "btn btn-primary",
                     },
-                })
-                return
+                });
+                return;
             }
 
             const response = await savePayoutCategory({ 
                 payoutCategory: payoutCategory.trim(),
                 isActive: true
-            })
+            });
 
             if (response?.responseDto) {
                 console.log('Saving category with data:', {
@@ -65,24 +66,26 @@ const AddBrand = ({ refreshCategories, onCategoryAdded }) => {
                     customClass: {
                         confirmButton: "btn btn-primary",
                     },
-                })
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        if (onCategoryAdded) {
+                            onCategoryAdded(response.responseDto);
+                        }
 
-                if (onCategoryAdded) {
-                    onCategoryAdded(response.responseDto)
-                }
+                        resetForm();
+                        const modal = document.getElementById('add-brand');
+                        if (modal) modal.classList.remove('show');
+                        document.body.classList.remove('modal-open');
+                        const backdrops = document.getElementsByClassName('modal-backdrop');
+                        while(backdrops.length > 0) backdrops[0].remove();
 
-                resetForm()
-                const modal = document.getElementById('add-brand');
-                if (modal) modal.classList.remove('show');
-                document.body.classList.remove('modal-open');
-                const backdrops = document.getElementsByClassName('modal-backdrop');
-                while(backdrops.length > 0) backdrops[0].remove();
-
-                if (refreshCategories) {
-                    refreshCategories()
-                }
+                        if (refreshCategories) {
+                            await refreshCategories();
+                        }
+                    }
+                });
             } else {
-                throw new Error("Failed to save payout category")
+                throw new Error("Failed to save payout category");
             }
         } catch (error) {
             MySwal.fire({
@@ -93,9 +96,9 @@ const AddBrand = ({ refreshCategories, onCategoryAdded }) => {
                 customClass: {
                     confirmButton: "btn btn-primary",
                 },
-            })
+            });
         }
-    }
+    };
 
     return (
         <div className="modal fade" id="add-brand">
