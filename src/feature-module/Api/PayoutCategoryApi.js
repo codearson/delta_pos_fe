@@ -75,11 +75,12 @@ export const updatePayoutCategoryStatus = async (categoryId, status = 0) => {
   try {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
+      console.error("No access token found. Please log in.");
       return null;
     }
 
     const response = await axios.put(
-      `${BASE_BACKEND_URL}/payoutCategory/updateStatus?categoryId=${categoryId}&status=${status}`,
+      `${BASE_BACKEND_URL}/payoutCategory/updateStatus?id=${categoryId}&status=${status}`,
       {},
       {
         headers: {
@@ -87,10 +88,15 @@ export const updatePayoutCategoryStatus = async (categoryId, status = 0) => {
         },
       }
     );
+    
+    if (!response.data) {
+      throw new Error("No response data received from server");
+    }
+    
     return response.data;
   } catch (error) {
     console.error("Error updating payout category status:", error.response?.status, error.response?.data);
-    return null;
+    throw new Error(error.response?.data?.message || "Failed to update payout category status");
   }
 };
 

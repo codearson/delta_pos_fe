@@ -1438,6 +1438,19 @@ const Pos = () => {
             // Call your print function here
             printPayoutReceipt(amount, selectedPayoutCategory);
           }
+          // Clear POS display after printing or if user chooses not to print
+          setSelectedItems([]);
+          setTotalValue(0);
+          setInputValue("0");
+          setCustomerName("");
+          setPaymentMethods([]);
+          setBalance(0);
+          setIsPaymentStarted(false);
+          setManualDiscount(0);
+          setEmployeeDiscount(0);
+          setEmployeeDiscountPercentage(0);
+          setEmployeeName("");
+          resetInput();
         });
       } else {
         Swal.fire("Error!", "Failed to save payout", "error");
