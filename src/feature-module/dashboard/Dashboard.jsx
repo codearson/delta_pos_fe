@@ -15,7 +15,310 @@ import { all_routes } from "../../Router/all_routes";
 import { fetchXReport } from "../Api/TransactionApi";
 import { getAllByZReports } from "../Api/SalesReport";
 import { fetchProducts } from "../Api/productApi";
+import { fetchTransactionDetails } from "../Api/TransactionDetailListApi";
+import PropTypes from 'prop-types';
 import './dashboard.css';  // We'll create this CSS file next
+
+// New TopProductsChart component
+const TopProductsChart = ({ className }) => {
+  const [topProducts, setTopProducts] = useState([]);
+  const [chartLoading, setChartLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedDate, setSelectedDate] = useState(new Date().getDate());
+  const [dateFilterType, setDateFilterType] = useState('year');
+
+  // Get unique years from transaction data
+  const getAvailableYears = (transactions) => {
+    if (!transactions || transactions.length === 0) return [];
+    const years = [...new Set(transactions.map(detail => 
+      new Date(detail.transactionDto.dateTime).getFullYear()
+    ))];
+    return years.sort((a, b) => b - a);
+  };
+
+  // Get months for selected year
+  const getAvailableMonths = (transactions, year) => {
+    if (!transactions || transactions.length === 0) return [];
+    const months = [...new Set(transactions
+      .filter(detail => new Date(detail.transactionDto.dateTime).getFullYear() === year)
+      .map(detail => new Date(detail.transactionDto.dateTime).getMonth() + 1)
+    )];
+    return months.sort((a, b) => a - b);
+  };
+
+  // Get dates for selected year and month
+  const getAvailableDates = (transactions, year, month) => {
+    if (!transactions || transactions.length === 0) return [];
+    const dates = [...new Set(transactions
+      .filter(detail => {
+        const date = new Date(detail.transactionDto.dateTime);
+        return date.getFullYear() === year && date.getMonth() + 1 === month;
+      })
+      .map(detail => new Date(detail.transactionDto.dateTime).getDate())
+    )];
+    return dates.sort((a, b) => a - b);
+  };
+
+  // Function to get month name
+  const getMonthName = (month) => {
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return monthNames[month - 1];
+  };
+
+  const [chartOptions, setChartOptions] = useState({
+    series: [{ name: "Quantity", data: [] }],
+    colors: ["#28C76F"],
+    chart: {
+      type: "bar",
+      height: 380,
+      stacked: false,
+      zoom: { enabled: true },
+      toolbar: {
+        show: true
+      },
+      parentHeightOffset: 0
+    },
+    responsive: [{
+      breakpoint: 280,
+      options: {
+        legend: {
+          position: "bottom",
+          offsetY: 0,
+        },
+      },
+    }],
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        borderRadius: 4,
+        borderRadiusApplication: "end",
+        borderRadiusWhenStacked: "all",
+        columnWidth: "20%",
+        barHeight: "40%",
+        distributed: false,
+        rangeBarOverlap: true,
+        rangeBarGroupRows: false,
+      },
+    },
+    dataLabels: { 
+      enabled: false
+    },
+    yaxis: {
+      labels: {
+        style: {
+          fontSize: '12px'
+        },
+        maxWidth: 200,
+        trim: false,
+        tooltip: {
+          enabled: true
+        }
+      }
+    },
+    xaxis: {
+      title: {
+        text: "Quantity",
+        style: {
+          fontSize: '14px'
+        }
+      },
+      labels: {
+        style: {
+          fontSize: '12px'
+        }
+      }
+    },
+    grid: {
+      xaxis: {
+        lines: {
+          show: true
+        }
+      },
+      yaxis: {
+        lines: {
+          show: false
+        }
+      }
+    },
+    legend: { show: false },
+    fill: { opacity: 1 },
+  });
+
+  useEffect(() => {
+    const loadChartData = async () => {
+      try {
+        setChartLoading(true);
+        const transactionDetails = await fetchTransactionDetails();
+        
+        if (transactionDetails && transactionDetails.length > 0) {
+          const filteredTransactions = transactionDetails.filter(detail => {
+            const transactionDate = new Date(detail.transactionDto.dateTime);
+            const transactionYear = transactionDate.getFullYear();
+            const transactionMonth = transactionDate.getMonth() + 1;
+            const transactionDay = transactionDate.getDate();
+
+            switch (dateFilterType) {
+              case 'year':
+                return transactionYear === selectedYear;
+              case 'month':
+                return transactionYear === selectedYear && transactionMonth === selectedMonth;
+              case 'date':
+                return transactionYear === selectedYear && 
+                       transactionMonth === selectedMonth && 
+                       transactionDay === selectedDate;
+              default:
+                return true;
+            }
+          });
+
+          const productQuantityMap = {};
+          filteredTransactions.forEach(detail => {
+            if (detail.productDto && detail.productDto.name) {
+              const productName = detail.productDto.name;
+              const quantity = detail.quantity || 0;
+              productQuantityMap[productName] = (productQuantityMap[productName] || 0) + quantity;
+            }
+          });
+          
+          const sortedProducts = Object.entries(productQuantityMap)
+            .map(([name, quantity]) => ({ name, quantity }))
+            .sort((a, b) => b.quantity - a.quantity)
+            .slice(0, 10);
+          
+          setTopProducts(sortedProducts);
+          
+          const years = getAvailableYears(transactionDetails);
+          if (years.length > 0 && !years.includes(selectedYear)) {
+            setSelectedYear(years[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading chart data:", error);
+      } finally {
+        setChartLoading(false);
+      }
+    };
+    
+    loadChartData();
+  }, [selectedYear, selectedMonth, selectedDate, dateFilterType]);
+
+  useEffect(() => {
+    if (topProducts.length > 0) {
+      setChartOptions(prevOptions => ({
+        ...prevOptions,
+        series: [{
+          name: "Quantity",
+          data: topProducts.map(product => product.quantity),
+        }],
+        xaxis: {
+          ...prevOptions.xaxis,
+          categories: topProducts.map(product => product.name),
+        }
+      }));
+    }
+  }, [topProducts]);
+
+  return (
+    <div className={className}>
+      <div className="card flex-fill">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <h5 className="card-title mb-0">Top 10 Products</h5>
+          <div className="graph-sets">
+            <ul className="mb-0">
+              <li>
+                <span>Quantity</span>
+              </li>
+            </ul>
+            <div className="d-flex align-items-center gap-2">
+              <select 
+                className="form-select form-select-sm"
+                value={dateFilterType}
+                onChange={(e) => setDateFilterType(e.target.value)}
+              >
+                <option value="year">Yearly</option>
+                <option value="month">Monthly</option>
+                <option value="date">Daily</option>
+              </select>
+
+              <select
+                className="form-select form-select-sm"
+                value={selectedYear}
+                onChange={(e) => {
+                  setSelectedYear(parseInt(e.target.value));
+                  setSelectedMonth(1);
+                  setSelectedDate(1);
+                }}
+              >
+                {getAvailableYears(JSON.parse(localStorage.getItem('transactionDetails') || '[]')).map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </select>
+
+              {(dateFilterType === 'month' || dateFilterType === 'date') && (
+                <select
+                  className="form-select form-select-sm"
+                  value={selectedMonth}
+                  onChange={(e) => {
+                    setSelectedMonth(parseInt(e.target.value));
+                    setSelectedDate(1);
+                  }}
+                >
+                  {getAvailableMonths(
+                    JSON.parse(localStorage.getItem('transactionDetails') || '[]'),
+                    selectedYear
+                  ).map(month => (
+                    <option key={month} value={month}>
+                      {getMonthName(month)}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {dateFilterType === 'date' && (
+                <select
+                  className="form-select form-select-sm"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(parseInt(e.target.value))}
+                >
+                  {getAvailableDates(
+                    JSON.parse(localStorage.getItem('transactionDetails') || '[]'),
+                    selectedYear,
+                    selectedMonth
+                  ).map(date => (
+                    <option key={date} value={date}>{date}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="card-body">
+          {chartLoading ? (
+            <div className="text-center py-5">Loading chart data...</div>
+          ) : (
+            <>
+              <div id="sales_charts" />
+              <Chart
+                options={chartOptions}
+                series={chartOptions.series}
+                type="bar"
+                height={380}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+TopProductsChart.propTypes = {
+  className: PropTypes.string.isRequired
+};
 
 const Dashboard = () => {
   const route = all_routes;
@@ -31,7 +334,6 @@ const Dashboard = () => {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [outOfStockProducts, setOutOfStockProducts] = useState([]);
   const [stockLoading, setStockLoading] = useState(true);
-  const [activeStockTab, setActiveStockTab] = useState("low"); // State for active stock tab
 
   useEffect(() => {
     const loadReportData = async () => {
@@ -95,76 +397,6 @@ const Dashboard = () => {
     loadStockData();
   }, []);
 
-  const handleStockTabChange = (tab) => {
-    setActiveStockTab(tab);
-  };
-
-  const [chartOptions] = useState({
-    series: [
-      {
-        name: "Sales",
-        data: [130, 210, 300, 290, 150, 50, 210, 280, 105],
-      },
-      {
-        name: "Purchase",
-        data: [-150, -90, -50, -180, -50, -70, -100, -90, -105],
-      },
-    ],
-    colors: ["#28C76F", "#EA5455"],
-    chart: {
-      type: "bar",
-      height: 320,
-      stacked: true,
-      zoom: {
-        enabled: true,
-      },
-    },
-    responsive: [
-      {
-        breakpoint: 280,
-        options: {
-          legend: {
-            position: "bottom",
-            offsetY: 0,
-          },
-        },
-      },
-    ],
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        borderRadius: 4,
-        borderRadiusApplication: "end", // "around" / "end"
-        borderRadiusWhenStacked: "all", // "all"/"last"
-        columnWidth: "20%",
-      },
-    },
-    dataLabels: {
-      enabled: false,
-    },
-    yaxis: {
-      min: -200,
-      max: 300,
-      tickAmount: 5,
-    },
-    xaxis: {
-      categories: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-      ],
-    },
-    legend: { show: false },
-    fill: {
-      opacity: 1,
-    },
-  });
   return (
     <div>
       <div className="page-wrapper">
@@ -385,69 +617,21 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="row dashboard-charts">
-            <div className="col-xl-7 col-sm-12 col-12 d-flex chart-card">
-              <div className="card flex-fill">
-                <div className="card-header d-flex justify-content-between align-items-center">
-                  <h5 className="card-title mb-0">Purchase &amp; Sales</h5>
-                  <div className="graph-sets">
-                    <ul className="mb-0">
-                      <li>
-                        <span>Sales</span>
-                      </li>
-                      <li>
-                        <span>Purchase</span>
-                      </li>
-                    </ul>
-                    <div className="dropdown dropdown-wraper">
-                      <button
-                        className="btn btn-light btn-sm dropdown-toggle"
-                        type="button"
-                        id="dropdownMenuButton"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        2023
-                      </button>
-                      <ul
-                        className="dropdown-menu"
-                        aria-labelledby="dropdownMenuButton"
-                      >
-                        <li>
-                          <Link to="#" className="dropdown-item">
-                            2023
-                          </Link>
-                        </li>
-                        <li>
-                          <Link to="#" className="dropdown-item">
-                            2022
-                          </Link>
-                        </li>
-                        <li>
-                          <Link to="#" className="dropdown-item">
-                            2021
-                          </Link>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                <div className="card-body">
-                  <div id="sales_charts" />
-                  <Chart
-                    options={chartOptions}
-                    series={chartOptions.series}
-                    type="bar"
-                    height={320}
-                  />
-                </div>
-              </div>
-            </div>
+            <TopProductsChart className="col-xl-7 col-sm-12 col-12 d-flex chart-card" />
             <div className="col-xl-5 col-sm-12 col-12 d-flex">
               <div className="card flex-fill default-cover mb-4 alert-card">
                 <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: '#dc3545', padding: '12px 15px' }}>
-                  <h4 className="card-title mb-0" style={{ color: '#fff' }}>
-                    Alert
-                  </h4>
+                  <div className="d-flex align-items-center">
+                    <div className="notification-bell me-2">
+                      <i className="fas fa-bell"></i>
+                      <span className="notification-badge">
+                        {lowStockProducts.length + outOfStockProducts.length}
+                      </span>
+                    </div>
+                    <h4 className="card-title mb-0" style={{ color: '#fff' }}>
+                      Stock Alerts
+                    </h4>
+                  </div>
                   <div className="view-all-link">
                     <Link to={route.lowstock} className="view-all d-flex align-items-center" style={{ color: '#fff' }}>
                       View All
@@ -461,146 +645,91 @@ const Dashboard = () => {
                   {stockLoading ? (
                     <div className="text-center py-3">Loading...</div>
                   ) : (
-                    <>
-                      <div className="table-tab mb-3">
-                        <ul className="nav nav-pills" id="stock-tab" role="tablist">
-                          <li className="nav-item" role="presentation">
-                            <button
-                              className={`nav-link ${activeStockTab === "low" ? "active" : ""}`}
-                              id="low-stock-tab"
-                              data-bs-toggle="pill"
-                              data-bs-target="#low-stock-content"
-                              type="button"
-                              role="tab"
-                              aria-controls="low-stock-content"
-                              aria-selected={activeStockTab === "low"}
-                              onClick={() => handleStockTabChange("low")}
-                            >
-                              Low Stock
-                            </button>
-                          </li>
-                          <li className="nav-item" role="presentation">
-                            <button
-                              className={`nav-link ${activeStockTab === "out" ? "active" : ""}`}
-                              id="out-stock-tab"
-                              data-bs-toggle="pill"
-                              data-bs-target="#out-stock-content"
-                              type="button"
-                              role="tab"
-                              aria-controls="out-stock-content"
-                              aria-selected={activeStockTab === "out"}
-                              onClick={() => handleStockTabChange("out")}
-                            >
-                              Out of Stock
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                      <div className="tab-content" id="stock-tabContent">
-                        {/* Low Stock Tab */}
-                        <div
-                          className={`tab-pane fade ${activeStockTab === "low" ? "show active" : ""}`}
-                          id="low-stock-content"
-                          role="tabpanel"
-                          aria-labelledby="low-stock-tab"
-                        >
-                          <div className="table-responsive dataview">
-                            <table className="table" style={{ borderCollapse: 'collapse' }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>#</th>
-                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Product</th>
-                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Stock</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {lowStockProducts.length > 0 ? (
-                                  lowStockProducts.slice(0, 5).map((product, index) => (
-                                    <tr key={`low-${product.id || index}`}>
-                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{index + 1}</td>
-                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                                        <Link to={route.productlist} style={{ textDecoration: 'none', color: '#333' }}>
-                                          {product.name}
-                                        </Link>
-                                      </td>
-                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                                        <span style={{ 
-                                          backgroundColor: '#D3B0B0', 
-                                          color: '#000', 
-                                          padding: '4px 12px',
-                                          borderRadius: '4px',
-                                          display: 'inline-block',
-                                          minWidth: '30px',
-                                          textAlign: 'center'
-                                        }}>
-                                          {product.quantity}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))
-                                ) : (
-                                  <tr>
-                                    <td colSpan="3" style={{ padding: '8px', textAlign: 'center' }}>
-                                      No low stock products found
-                                    </td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
+                    <div className="stock-alerts-container">
+                      {/* Low Stock Alerts */}
+                      {lowStockProducts.length > 0 && (
+                        <div className="alert-section mb-4">
+                          <h5 className="alert-section-title">
+                            <span className="alert-icon low-stock-icon">
+                              <i className="fas fa-exclamation-triangle"></i>
+                            </span>
+                            Low Stock Products
+                            <span className="alert-count">{lowStockProducts.length}</span>
+                          </h5>
+                          <div className="alert-items">
+                            {lowStockProducts.slice(0, 5).map((product, index) => (
+                              <div key={`low-${product.id || index}`} className="alert-item">
+                                <div className="alert-item-content">
+                                  <div className="alert-item-title">
+                                    <Link to={route.productlist} style={{ textDecoration: 'none', color: '#333' }}>
+                                      {product.name}
+                                    </Link>
+                                  </div>
+                                  <div className="alert-item-badge">
+                                    <span className="badge low-stock-badge">
+                                      {product.quantity} units
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {lowStockProducts.length > 5 && (
+                              <div className="alert-more">
+                                <Link to={route.lowstock} className="alert-more-link">
+                                  +{lowStockProducts.length - 5} more items
+                                </Link>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        {/* Out of Stock Tab */}
-                        <div
-                          className={`tab-pane fade ${activeStockTab === "out" ? "show active" : ""}`}
-                          id="out-stock-content"
-                          role="tabpanel"
-                          aria-labelledby="out-stock-tab"
-                        >
-                          <div className="table-responsive dataview">
-                            <table className="table" style={{ borderCollapse: 'collapse' }}>
-                              <thead>
-                                <tr>
-                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>#</th>
-                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Product</th>
-                                  <th style={{ padding: '8px', borderBottom: '1px solid #dee2e6' }}>Status</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {outOfStockProducts.length > 0 ? (
-                                  outOfStockProducts.slice(0, 5).map((product, index) => (
-                                    <tr key={`out-${product.id || index}`}>
-                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>{index + 1}</td>
-                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                                        <Link to={route.productlist} style={{ textDecoration: 'none', color: '#333' }}>
-                                          {product.name}
-                                        </Link>
-                                      </td>
-                                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                                        <span style={{ 
-                                          backgroundColor: '#dc3545', 
-                                          color: '#fff', 
-                                          padding: '4px 12px',
-                                          borderRadius: '4px',
-                                          display: 'inline-block'
-                                        }}>
-                                          Out of Stock
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))
-                                ) : (
-                                  <tr>
-                                    <td colSpan="3" style={{ padding: '8px', textAlign: 'center' }}>
-                                      No out of stock products found
-                                    </td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
+                      )}
+
+                      {/* Out of Stock Alerts */}
+                      {outOfStockProducts.length > 0 && (
+                        <div className="alert-section">
+                          <h5 className="alert-section-title">
+                            <span className="alert-icon out-of-stock-icon">
+                              <i className="fas fa-times-circle"></i>
+                            </span>
+                            Out of Stock Products
+                            <span className="alert-count">{outOfStockProducts.length}</span>
+                          </h5>
+                          <div className="alert-items">
+                            {outOfStockProducts.slice(0, 5).map((product, index) => (
+                              <div key={`out-${product.id || index}`} className="alert-item">
+                                <div className="alert-item-content">
+                                  <div className="alert-item-title">
+                                    <Link to={route.productlist} style={{ textDecoration: 'none', color: '#333' }}>
+                                      {product.name}
+                                    </Link>
+                                  </div>
+                                  <div className="alert-item-badge">
+                                    <span className="badge out-of-stock-badge">
+                                      Out of Stock
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {outOfStockProducts.length > 5 && (
+                              <div className="alert-more">
+                                <Link to={route.lowstock} className="alert-more-link">
+                                  +{outOfStockProducts.length - 5} more items
+                                </Link>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    </>
+                      )}
+
+                      {/* No Alerts Message */}
+                      {lowStockProducts.length === 0 && outOfStockProducts.length === 0 && (
+                        <div className="no-alerts-message">
+                          <i className="fas fa-check-circle mb-3" style={{ fontSize: '2rem', color: '#28a745' }}></i>
+                          <p>No stock alerts at this time.</p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
