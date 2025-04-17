@@ -96,19 +96,20 @@ const RolesPermissions = () => {
             )}
             
             <div className="admin-pagination">
-              <button 
-                disabled={pagination.current === 1}
-                onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
-              >
-                Previous
-              </button>
-              <span>Page {pagination.current}</span>
-              <button 
-                disabled={pagination.current * pagination.pageSize >= pagination.total}
-                onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
-              >
-                Next
-              </button>
+              {pagination.current > 1 && (
+                <button 
+                  onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
+                >
+                  Previous
+                </button>
+              )}
+              {(pagination.current * pagination.pageSize) < pagination.total && (
+                <button 
+                  onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
+                >
+                  Next
+                </button>
+              )}
             </div>
           </div>
 
@@ -123,16 +124,17 @@ const RolesPermissions = () => {
               }
 
               .admin-cards-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+                display: flex;
+                flex-wrap: wrap;
                 gap: clamp(10px, 2vw, 20px);
                 margin-bottom: clamp(15px, 3vw, 30px);
                 width: 100%;
+                justify-content: center;
               }
 
               .id-card {
                 position: relative;
-                width: 100%;
+                width: 300px;
                 aspect-ratio: 9/16;
                 max-height: 380px;
                 background: white;
@@ -305,26 +307,21 @@ const RolesPermissions = () => {
               /* Extra Small Devices (phones) */
               @media screen and (max-width: 576px) {
                 .admin-cards-grid {
-                  grid-template-columns: 1fr;
-                }
-                
-                .id-card {
-                  max-width: 320px;
-                  margin: 0 auto;
+                  grid-template-columns: 300px;
                 }
               }
 
               /* Small Devices (tablets) */
               @media screen and (min-width: 577px) and (max-width: 768px) {
                 .admin-cards-grid {
-                  grid-template-columns: repeat(2, 1fr);
+                  grid-template-columns: repeat(auto-fit, 300px);
                 }
               }
 
               /* Medium Devices (laptops) */
-              @media screen and (min-width: 769px) and (max-width: 992px) {
+              @media screen and (min-width: 769px) {
                 .admin-cards-grid {
-                  grid-template-columns: repeat(2, 1fr);
+                  grid-template-columns: repeat(auto-fit, 300px);
                 }
               }
 
