@@ -22,15 +22,15 @@ const PAGE_SIZE = 14;
 const SALES_PAGE_SIZE = 10;
 const MAX_PAGES = 5;
 
-const Pos_CategoryGrid = forwardRef(({ 
-  items = fetchCustomCategories, 
-  onCategorySelect, 
-  onManualDiscount, 
-  onEmployeeDiscount, 
+const Pos_CategoryGrid = forwardRef(({
+  items = fetchCustomCategories,
+  onCategorySelect,
+  onManualDiscount,
+  onEmployeeDiscount,
   showNotification,
   inputValue,
   selectedItems,
-  manualDiscount = 0 
+  manualDiscount = 0
 }, ref) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
@@ -65,7 +65,7 @@ const Pos_CategoryGrid = forwardRef(({
       if (typeof items === "function" && items === fetchNonScanProducts) {
         const data = await items();
         setNonScanItems(data);
-        
+
         // Update cache with fresh data
         const now = new Date().getTime();
         localStorage.setItem('nonScanProductsCache', JSON.stringify(data));
@@ -101,7 +101,7 @@ const Pos_CategoryGrid = forwardRef(({
             // Force refresh of NonScan data when the tab is active
             const data = await items();
             setNonScanItems(data);
-            
+
             // Update cache with fresh data
             const now = new Date().getTime();
             localStorage.setItem('nonScanProductsCache', JSON.stringify(data));
@@ -119,7 +119,7 @@ const Pos_CategoryGrid = forwardRef(({
               // Fetch fresh data if cache is missing or too old
               const data = await items();
               setCategories(data);
-              
+
               // Update cache with fresh data
               localStorage.setItem('customCategoriesCache', JSON.stringify(data));
               localStorage.setItem('customCategoriesCacheTimestamp', now.toString());
@@ -228,7 +228,7 @@ const Pos_CategoryGrid = forwardRef(({
         console.error('Error fetching manager toggles:', error);
       }
     };
-    
+
     fetchToggles();
   }, []);
 
@@ -280,7 +280,7 @@ const Pos_CategoryGrid = forwardRef(({
 
   if (items === quickAccess) {
     // Filter to only get discount-related toggles
-    const discountToggles = managerToggles.filter(toggle => 
+    const discountToggles = managerToggles.filter(toggle =>
       toggle.action === "Manual Discount" || toggle.action === "Employee Discount"
     );
 
@@ -294,7 +294,7 @@ const Pos_CategoryGrid = forwardRef(({
       }));
 
     paginatedItems = [
-      ...paginatedItems.filter(item => 
+      ...paginatedItems.filter(item =>
         !["Manual Discount", "Employee Discount", "Non Scan Product"].includes(item.name)
       ),
       ...activeToggleButtons,
@@ -326,7 +326,7 @@ const Pos_CategoryGrid = forwardRef(({
     if (item.isZReport) {
       try {
         const userRole = getUserRole();
-        
+
         const result = await Swal.fire({
           title: 'Generate Z-Report?',
           text: 'Are you sure you want to generate a Z-Report?',
@@ -353,7 +353,7 @@ const Pos_CategoryGrid = forwardRef(({
           const response = await fetchZReport();
           if (response.success && response.data && response.data.responseDto) {
             setZReportData(response.data);
-            
+
             if (userRole === "USER") {
               await Swal.fire({
                 icon: 'success',
@@ -451,7 +451,7 @@ const Pos_CategoryGrid = forwardRef(({
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-  
+
     const formattedDate = new Date().toLocaleString();
     const cashierName = localStorage.getItem("firstName") || "Unknown";
     const cashierLastName = localStorage.getItem("lastName") || "";
@@ -460,7 +460,7 @@ const Pos_CategoryGrid = forwardRef(({
     const branchCode = localStorage.getItem("branchCode") || "";
     const address = localStorage.getItem("branchAddress") || "";
     const contactNumber = localStorage.getItem("branchContact") || "";
-  
+
     printWindow.document.write(`
       <html>
         <head>
@@ -536,7 +536,7 @@ const Pos_CategoryGrid = forwardRef(({
         </body>
       </html>
     `);
-  
+
     printWindow.document.close();
     printWindow.focus();
   };
@@ -619,9 +619,9 @@ const Pos_CategoryGrid = forwardRef(({
       }
     };
 
-    const buttonClass = items === quickAccess ? "quick-access-btn" : 
-                       items === fetchNonScanProducts ? "category-btn non-scan-btn" : 
-                       "category-btn";
+    const buttonClass = items === quickAccess ? "quick-access-btn" :
+      items === fetchNonScanProducts ? "category-btn non-scan-btn" :
+        "category-btn";
 
     return (
       <button key={item.id} className={`group ${buttonClass}`} onClick={handleClick}>
@@ -805,7 +805,7 @@ const Pos_CategoryGrid = forwardRef(({
     const printFrame = document.createElement('iframe');
     printFrame.style.display = 'none';
     document.body.appendChild(printFrame);
-    
+
     printFrame.contentWindow.document.write(`
       <html>
         <head>
@@ -858,10 +858,14 @@ const Pos_CategoryGrid = forwardRef(({
               margin: 8px 0;
               text-transform: uppercase;
               letter-spacing: 1px;
+              border-top: 1px dashed #000;
+              border-bottom: 1px dashed #000;
+              padding: 5px 0;
             }
             table {
               width: 100%;
               border-collapse: collapse;
+              margin-bottom: 10px;
             }
             th {
               font-family: sans-serif;
@@ -884,6 +888,16 @@ const Pos_CategoryGrid = forwardRef(({
               margin-top: 10px;
               font-size: 10px;
               font-weight: 900;
+              border-top: 1px dashed #000;
+              padding-top: 10px;
+            }
+            .date-header {
+              font-weight: bold;
+              text-align: center;
+              margin: 10px 0;
+              padding: 5px;
+              border-top: 1px dashed #000;
+              border-bottom: 1px dashed #000;
             }
           </style>
         </head>
@@ -914,7 +928,7 @@ const Pos_CategoryGrid = forwardRef(({
             <div class="section-title">Categories</div>
             <table>
               ${Object.entries(xReportData.responseDto.categoryTotals)
-                .map(([category, amount]) => `
+        .map(([category, amount]) => `
                   <tr>
                     <td>${category}</td>
                     <td class="amount">${amount.toFixed(2)}</td>
@@ -927,7 +941,7 @@ const Pos_CategoryGrid = forwardRef(({
             <div class="section-title">Payment Methods</div>
             <table>
               ${Object.entries(xReportData.responseDto.overallPaymentTotals)
-                .map(([method, amount]) => `
+        .map(([method, amount]) => `
                   <tr>
                     <td>${method}</td>
                     <td class="amount">${amount.toFixed(2)}</td>
@@ -940,16 +954,45 @@ const Pos_CategoryGrid = forwardRef(({
             <div class="section-title">User Payment Details</div>
             <table>
               ${xReportData.responseDto.userPaymentDetails
-                .map(user =>
-                  Object.entries(user.payments)
-                    .map(([method, amount]) => `
+        .map(user =>
+          Object.entries(user.payments)
+            .map(([method, amount]) => `
                       <tr>
                         <td>${user.userName.split(' ')[0]}</td>
                         <td>${method}</td>
                         <td class="amount">${amount.toFixed(2)}</td>
                       </tr>
                     `).join('')
-                ).join('')}
+        ).join('')}
+            </table>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Banking & Payout Details</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Count</th>
+                  <th class="amount">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Banking</td>
+                  <td>${xReportData.responseDto.bankingCount || 0}</td>
+                  <td>${xReportData.responseDto.bankingTotal.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Payout</td>
+                  <td>${xReportData.responseDto.payoutCount || 0}</td>
+                  <td>${xReportData.responseDto.payoutTotal.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td colSpan="2"><strong>Difference</strong></td>
+                  <td><strong>${xReportData.responseDto.difference.toFixed(2)}</strong></td>
+                </tr>
+              </tbody>
             </table>
           </div>
 
@@ -962,7 +1005,7 @@ const Pos_CategoryGrid = forwardRef(({
     `);
 
     printFrame.contentWindow.document.close();
-    
+
     printFrame.onload = () => {
       printFrame.contentWindow.print();
       setTimeout(() => {
@@ -987,14 +1030,14 @@ const Pos_CategoryGrid = forwardRef(({
       showNotification("Failed to open print window. Please allow popups for this site and try again.");
       return;
     }
-  
+
     const formattedDate = transaction.dateTime && !isNaN(new Date(transaction.dateTime).getTime())
       ? new Date(transaction.dateTime).toLocaleString()
       : new Date().toLocaleString();
-  
+
     const transactionId = transaction.id || 0;
     const formattedTransactionId = transactionId.toString().padStart(10, "0");
-  
+
     const items = transaction.transactionDetailsList.map((detail) => ({
       qty: detail.quantity,
       name: detail.productDto?.name || "Unknown Item",
@@ -1021,7 +1064,7 @@ const Pos_CategoryGrid = forwardRef(({
     const balance = totalPaid - totalAfterDiscounts;
   
     setCurrentTransactionId(formattedTransactionId);
-  
+
     let barcodeDataUrl = "";
     try {
       if (barcodeRef.current) {
@@ -1033,7 +1076,7 @@ const Pos_CategoryGrid = forwardRef(({
       console.error("Failed to generate barcode image:", error);
       barcodeDataUrl = "";
     }
-  
+
     printWindow.document.write(`
       <html>
         <head>
@@ -1088,7 +1131,7 @@ const Pos_CategoryGrid = forwardRef(({
             </thead>
             <tbody>
               ${items.length > 0
-                ? items.map(item => `
+        ? items.map(item => `
                     <tr>
                       <td>${item.qty}</td>
                       <td>${item.name}</td>
@@ -1096,8 +1139,8 @@ const Pos_CategoryGrid = forwardRef(({
                       <td class="total-column">${item.total.toFixed(2)}</td>
                     </tr>
                   `).join('')
-                : '<tr><td colspan="5">No items</td></tr>'
-              }
+        : '<tr><td colspan="5">No items</td></tr>'
+      }
             </tbody>
           </table>
           <div class="divider"></div>
@@ -1134,7 +1177,7 @@ const Pos_CategoryGrid = forwardRef(({
         </body>
       </html>
     `);
-  
+
     printWindow.document.close();
     printWindow.focus();
   };
@@ -1145,7 +1188,7 @@ const Pos_CategoryGrid = forwardRef(({
     const printFrame = document.createElement('iframe');
     printFrame.style.display = 'none';
     document.body.appendChild(printFrame);
-    
+
     printFrame.contentWindow.document.write(`
       <html>
         <head>
@@ -1198,21 +1241,14 @@ const Pos_CategoryGrid = forwardRef(({
               margin: 8px 0;
               text-transform: uppercase;
               letter-spacing: 1px;
-            }
-            .date-header {
-              font-family: sans-serif;
-              font-weight: 900;
-              font-size: 16px;
-              text-align: center;
-              margin: 10px 0;
-              padding: 5px;
+              border-top: 1px dashed #000;
               border-bottom: 1px dashed #000;
-              text-transform: uppercase;
-              letter-spacing: 1px;
+              padding: 5px 0;
             }
             table {
               width: 100%;
               border-collapse: collapse;
+              margin-bottom: 10px;
             }
             th {
               font-family: sans-serif;
@@ -1235,6 +1271,16 @@ const Pos_CategoryGrid = forwardRef(({
               margin-top: 10px;
               font-size: 10px;
               font-weight: 900;
+              border-top: 1px dashed #000;
+              padding-top: 10px;
+            }
+            .date-header {
+              font-weight: bold;
+              text-align: center;
+              margin: 10px 0;
+              padding: 5px;
+              border-top: 1px dashed #000;
+              border-bottom: 1px dashed #000;
             }
           </style>
         </head>
@@ -1257,92 +1303,98 @@ const Pos_CategoryGrid = forwardRef(({
             </div>
           </div>
 
-          {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
-            <div key={date} className="mb-4">
-              <h4 className="date-header">Date: {new Date(date).toLocaleDateString()}</h4>
+          <div class="section">
+  <div class="section-title">Banking & Payout Details</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Count</th>
+        <th class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Banking</td>
+        <td>${zReportData.responseDto.bankingCount || 0}</td>
+        <td class="amount">${(zReportData.responseDto.bankingTotal || 0).toFixed(2)}</td>
+      </tr>
+      <tr>
+        <td>Payout</td>
+        <td>${zReportData.responseDto.payoutCount || 0}</td>
+        <td class="amount">${(zReportData.responseDto.payoutTotal || 0).toFixed(2)}</td>
+      </tr>
+      <tr class="total-row">
+        <td colspan="2">Difference</td>
+        <td class="amount">${(zReportData.responseDto.difference || 0).toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-              <div className="row">
-                <div className="col-md-6">
-                  <h4>Categories Breakdown</h4>
-                  <table className="table table-bordered">
+          ${Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => `
+            <div class="section">
+              <div class="date-header">Date: ${new Date(date).toLocaleDateString()}</div>
+
+              <div class="section-title">Categories Breakdown</div>
+              <table>
                     <thead>
                       <tr>
                         <th>Category</th>
-                        <th>Amount</th>
+                    <th class="amount">Amount</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(data.categoryTotals).map(([category, amount]) => (
-                        <tr key={category}>
-                          <td>{category}</td>
-                          <td>{amount.toFixed(2)}</td>
+                  ${Object.entries(data.categoryTotals).map(([category, amount]) => `
+                    <tr>
+                      <td>${category}</td>
+                      <td class="amount">${amount.toFixed(2)}</td>
                         </tr>
-                      ))}
+                  `).join('')}
                     </tbody>
                   </table>
-                </div>
-                <div className="col-md-6">
-                  <h4>Payment Methods</h4>
-                  <table className="table table-bordered">
+
+              <div class="section-title">Payment Methods</div>
+              <table>
                     <thead>
                       <tr>
                         <th>Method</th>
-                        <th>Amount</th>
+                    <th class="amount">Amount</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
-                        <tr key={method}>
-                          <td>{method}</td>
-                          <td>{amount.toFixed(2)}</td>
+                  ${Object.entries(data.overallPaymentTotals).map(([method, amount]) => `
+                    <tr>
+                      <td>${method}</td>
+                      <td class="amount">${amount.toFixed(2)}</td>
                         </tr>
-                      ))}
+                  `).join('')}
                     </tbody>
                   </table>
-                </div>
-              </div>
 
-              <div className="row mt-4">
-                <div className="col-12">
-                  <h4>User Payment Details</h4>
-                  <div className="table-responsive">
-                    <table className="table table-bordered table-striped">
+              <div class="section-title">User Payment Details</div>
+              <table>
                       <thead>
                         <tr>
-                          <th style={{
-                            backgroundColor: '#f8f9fa',
-                            fontWeight: '600',
-                            borderBottom: '2px solid #dee2e6'
-                          }}>User Name</th>
-                          <th style={{
-                            backgroundColor: '#f8f9fa',
-                            fontWeight: '600',
-                            borderBottom: '2px solid #dee2e6'
-                          }}>Payment Method</th>
-                          <th style={{
-                            backgroundColor: '#f8f9fa',
-                            fontWeight: '600',
-                            borderBottom: '2px solid #dee2e6'
-                          }}>Amount</th>
+                    <th>User Name</th>
+                    <th>Payment Method</th>
+                    <th class="amount">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {Object.entries(data.userPaymentDetails).flatMap(([userName, payments]) => 
-                          Object.entries(payments).map(([method, amount], index) => (
-                            <tr key={index}>
-                              <td style={{ padding: '12px 15px' }}>{userName.split(' ')[0]}</td>
-                              <td style={{ padding: '12px 15px' }}>{method}</td>
-                              <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
+                  ${Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
+      Object.entries(payments).map(([method, amount]) => `
+                      <tr>
+                        <td>${userName}</td>
+                        <td>${method}</td>
+                        <td class="amount">${parseFloat(amount).toFixed(2)}</td>
                             </tr>
-                          ))
-                        )}
+                    `).join('')
+    ).join('')}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              </div>
-            </div>
-          ))}
+          `).join('')}
 
           <div class="footer">
             <div>*** End of Z Report ***</div>
@@ -1353,7 +1405,7 @@ const Pos_CategoryGrid = forwardRef(({
     `);
 
     printFrame.contentWindow.document.close();
-    
+
     printFrame.onload = () => {
       printFrame.contentWindow.print();
       setTimeout(() => {
@@ -1715,6 +1767,34 @@ const Pos_CategoryGrid = forwardRef(({
 
                 <div className="row">
                   <div className="col-md-6">
+                    <h4>Banking & Payout Details</h4>
+                    <table className="table table-bordered">
+                      <thead>
+                        <tr>
+                          <th>Type</th>
+                          <th>Count</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Banking</td>
+                          <td>{xReportData.responseDto.bankingCount || 0}</td>
+                          <td>{xReportData.responseDto.bankingTotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td>Payout</td>
+                          <td>{xReportData.responseDto.payoutCount || 0}</td>
+                          <td>{xReportData.responseDto.payoutTotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td colSpan="2"><strong>Difference</strong></td>
+                          <td><strong>{xReportData.responseDto.difference.toFixed(2)}</strong></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="col-md-6">
                     <h4>Categories Breakdown</h4>
                     <table className="table table-bordered">
                       <thead>
@@ -1843,6 +1923,35 @@ const Pos_CategoryGrid = forwardRef(({
                   </div>
                 </div>
 
+                <div className="section">
+                  <div className="section-title">Banking & Payout Details</div>
+                  <table className="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th>Count</th>
+                        <th className="amount">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Banking</td>
+                        <td>{zReportData.responseDto.bankingCount || 0}</td>
+                        <td className="amount">{zReportData.responseDto.bankingTotal.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td>Payout</td>
+                        <td>{zReportData.responseDto.payoutCount || 0}</td>
+                        <td className="amount">{zReportData.responseDto.payoutTotal.toFixed(2)}</td>
+                      </tr>
+                      <tr className="total-row">
+                        <td colSpan="2">Difference</td>
+                        <td className="amount">{zReportData.responseDto.difference.toFixed(2)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
                 {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
                   <div key={date} className="mb-4">
                     <h4 className="date-header">Date: {new Date(date).toLocaleDateString()}</h4>
@@ -1895,33 +2004,21 @@ const Pos_CategoryGrid = forwardRef(({
                           <table className="table table-bordered table-striped">
                             <thead>
                               <tr>
-                                <th style={{
-                                  backgroundColor: '#f8f9fa',
-                                  fontWeight: '600',
-                                  borderBottom: '2px solid #dee2e6'
-                                }}>User Name</th>
-                                <th style={{
-                                  backgroundColor: '#f8f9fa',
-                                  fontWeight: '600',
-                                  borderBottom: '2px solid #dee2e6'
-                                }}>Payment Method</th>
-                                <th style={{
-                                  backgroundColor: '#f8f9fa',
-                                  fontWeight: '600',
-                                  borderBottom: '2px solid #dee2e6'
-                                }}>Amount</th>
+                                <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>User Name</th>
+                                <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Payment Method</th>
+                                <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Amount</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(data.userPaymentDetails).flatMap(([userName, payments]) => 
-                                Object.entries(payments).map(([method, amount], index) => (
-                                  <tr key={index}>
-                                    <td style={{ padding: '12px 15px' }}>{userName.split(' ')[0]}</td>
+                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) => (
+                                Object.entries(payments).map(([method, amount]) => (
+                                  <tr key={`${userName}-${method}`}>
+                                    <td style={{ padding: '12px 15px' }}>{userName}</td>
                                     <td style={{ padding: '12px 15px' }}>{method}</td>
                                     <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
                                   </tr>
                                 ))
-                              )}
+                              ))}
                             </tbody>
                           </table>
                         </div>
