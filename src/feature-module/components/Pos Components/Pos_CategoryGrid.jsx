@@ -1003,15 +1003,22 @@ const Pos_CategoryGrid = forwardRef(({
       total: detail.quantity * detail.unitPrice,
     }));
   
-    const totalAmount = transaction.totalAmount;
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    
+    const totalDiscount = items.reduce((sum, item) => sum + (item.discount || 0), 0);
+    
     const manualDiscount = transaction.manualDiscount || 0;
     const employeeDiscount = transaction.employeeDiscount || 0;
+    
+    const totalAfterDiscounts = subtotal - manualDiscount - employeeDiscount;
+    
     const paymentMethods = transaction.transactionPaymentMethod.map((method) => ({
       type: method.paymentMethodDto?.type || "Unknown",
       amount: method.amount,
     }));
+    
     const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-    const balance = totalPaid - totalAmount;
+    const balance = totalPaid - totalAfterDiscounts;
   
     setCurrentTransactionId(formattedTransactionId);
   
@@ -1086,7 +1093,7 @@ const Pos_CategoryGrid = forwardRef(({
                       <td>${item.qty}</td>
                       <td>${item.name}</td>
                       <td>${item.price.toFixed(2)}</td>
-                      <td class="total-column">${(item.total - (item.discount || 0)).toFixed(2)}</td>
+                      <td class="total-column">${item.total.toFixed(2)}</td>
                     </tr>
                   `).join('')
                 : '<tr><td colspan="5">No items</td></tr>'
@@ -1095,9 +1102,11 @@ const Pos_CategoryGrid = forwardRef(({
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
-            <p>Total: ${totalAmount.toFixed(2)}</p>
-            ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
-            ${employeeDiscount > 0 ? `<p>Employee Discount: ${employeeDiscount.toFixed(2)}</p>` : ''}
+            <p>Subtotal: ${subtotal.toFixed(2)}</p>
+            ${totalDiscount > 0 ? `<p>Product Discount: ${totalDiscount.toFixed(2)}</p>` : ''}
+            ${manualDiscount > 0 ? `<p>Manual Discount: -${manualDiscount.toFixed(2)}</p>` : ''}
+            ${employeeDiscount > 0 ? `<p>Employee Discount: -${employeeDiscount.toFixed(2)}</p>` : ''}
+            <p>Total: ${totalAfterDiscounts.toFixed(2)}</p>
             ${paymentMethods.map(method => `
               <p>${method.type}: ${method.amount.toFixed(2)}</p>
             `).join('')}
