@@ -324,11 +324,17 @@ const Dashboard = () => {
   const route = all_routes;
   const [xReportData, setXReportData] = useState({
     totalSales: 0,
-    totalTransactions: 0
+    totalTransactions: 0,
+    bankingTotal: 0,
+    payoutTotal: 0,
+    difference: 0
   });
   const [zReportData, setZReportData] = useState({
     totalTransactions: 0,
-    fullyTotalSales: 0
+    fullyTotalSales: 0,
+    banking: 0,
+    payout: 0,
+    difference: 0
   });
   const [loading, setLoading] = useState(true);
   const [lowStockProducts, setLowStockProducts] = useState([]);
@@ -344,7 +350,10 @@ const Dashboard = () => {
         if (xReportResponse.success && xReportResponse.data && xReportResponse.data.responseDto) {
           setXReportData({
             totalSales: xReportResponse.data.responseDto.totalSales || 0,
-            totalTransactions: xReportResponse.data.responseDto.totalTransactions || 0
+            totalTransactions: xReportResponse.data.responseDto.totalTransactions || 0,
+            bankingTotal: xReportResponse.data.responseDto.bankingTotal || 0,
+            payoutTotal: xReportResponse.data.responseDto.payoutTotal || 0,
+            difference: xReportResponse.data.responseDto.difference || 0
           });
         }
 
@@ -355,7 +364,10 @@ const Dashboard = () => {
           const lastRecord = zReportResponse[zReportResponse.length - 1];
           setZReportData({
             totalTransactions: lastRecord.salesDateDetails?.[0]?.totalTransactions || 0,
-            fullyTotalSales: lastRecord.fullyTotalSales || 0
+            fullyTotalSales: lastRecord.fullyTotalSales || 0,
+            banking: lastRecord.banking || 0,
+            payout: lastRecord.payout || 0,
+            difference: lastRecord.difference || 0
           });
         }
       } catch (error) {
@@ -436,9 +448,9 @@ const Dashboard = () => {
                         start={0}
                         end={zReportData.fullyTotalSales}
                         duration={3}
-                        prefix="$"
                         separator=","
                         decimal="."
+                        decimals={2}
                       />
                     )}
                   </h4>
@@ -452,7 +464,19 @@ const Dashboard = () => {
             <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
               <div className="dash-count das2 w-100">
                 <div className="dash-counts">
-                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>150</h4>
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <CountUp
+                        start={0}
+                        end={zReportData.banking}
+                        duration={3}
+                        separator=","
+                        decimals={2}
+                      />
+                    )}
+                  </h4>
                   <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Banking</h5>
                 </div>
                 <div className="dash-imgs">
@@ -463,7 +487,19 @@ const Dashboard = () => {
             <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
               <div className="dash-count das3 w-100">
                 <div className="dash-counts">
-                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>170</h4>
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <CountUp
+                        start={0}
+                        end={zReportData.payout}
+                        duration={3}
+                        separator=","
+                        decimals={2}
+                      />
+                    )}
+                  </h4>
                   <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Payouts</h5>
                 </div>
                 <div className="dash-imgs">
@@ -474,7 +510,19 @@ const Dashboard = () => {
             <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
               <div className="dash-count w-100">
                 <div className="dash-counts">
-                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>100</h4>
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? (
+                      <span>Loading...</span>
+                    ) : (
+                      <CountUp
+                        start={0}
+                        end={zReportData.difference}
+                        duration={3}
+                        separator=","
+                        decimals={2}
+                      />
+                    )}
+                  </h4>
                   <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Difference</h5>
                 </div>
                 <div className="dash-imgs">
@@ -527,13 +575,13 @@ const Dashboard = () => {
                     {loading ? (
                       <span>Loading...</span>
                     ) : (
-                      <CountUp 
-                        start={0} 
-                        end={xReportData.totalSales} 
-                        duration={3} 
-                        prefix="$" 
+                      <CountUp
+                        start={0}
+                        end={xReportData.totalSales}
+                        duration={3}
                         separator=","
                         decimal="."
+                        decimals={2}
                       />
                     )}
                   </h5>
@@ -554,12 +602,12 @@ const Dashboard = () => {
                 </div>
                 <div className="dash-widgetcontent">
                   <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
-                    $
                     <CountUp
                       start={0}
-                      end={385656.5}
+                      end={xReportData.bankingTotal}
                       duration={3}
-                      decimals={1}
+                      separator=","
+                      decimals={2}
                     />
                   </h5>
                   <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Banking</h6>
@@ -579,11 +627,12 @@ const Dashboard = () => {
                 </div>
                 <div className="dash-widgetcontent">
                   <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
-                    $
                     <CountUp
                       start={0}
-                      end={40000}
+                      end={xReportData.payoutTotal}
                       duration={3}
+                      separator=","
+                      decimals={2}
                     />
                   </h5>
                   <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Payouts</h6>
@@ -603,12 +652,12 @@ const Dashboard = () => {
                 </div>
                 <div className="dash-widgetcontent">
                   <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
-                    $
                     <CountUp
                       start={0}
-                      end={385656.5}
+                      end={xReportData.difference}
                       duration={3}
-                      decimals={1}
+                      separator=","
+                      decimals={2}
                     />
                   </h5>
                   <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Difference</h6>
