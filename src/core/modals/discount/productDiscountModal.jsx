@@ -24,6 +24,7 @@ const ProductDiscountModal = ({ onSave, onUpdate, selectedDiscount, discountType
   const [errors, setErrors] = useState({});
   const [allDiscounts, setAllDiscounts] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
+  const [barcodeInput, setBarcodeInput] = useState("");
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   useEffect(() => {
@@ -350,6 +351,52 @@ const ProductDiscountModal = ({ onSave, onUpdate, selectedDiscount, discountType
     }));
   };
 
+  const handleBarcodeScan = (e) => {
+    const barcode = e.target.value;
+    setBarcodeInput(barcode);
+    
+    if (barcode.trim() === "") return;
+    
+    const productByBarcode = products.find(product => 
+      product.barcode && product.barcode.toLowerCase() === barcode.toLowerCase()
+    );
+    
+    if (productByBarcode) {
+      const isAvailable = !allDiscounts.some(d => 
+        d.productDto.id === productByBarcode.id && 
+        d.isActive && 
+        d.productDiscountTypeDto.type === discountType &&
+        (!selectedDiscount || (d.id !== selectedDiscount.id))
+      );
+      
+      if (isAvailable || selectedDiscount) {
+        setFormData(prev => ({
+          ...prev,
+          productDto: { id: productByBarcode.id }
+        }));
+      } else {
+        Swal.fire({
+          title: "Warning",
+          text: "This product already has an active discount. New discount will be created as inactive.",
+          icon: "warning",
+          confirmButtonText: "OK"
+        });
+        setFormData(prev => ({
+          ...prev,
+          productDto: { id: productByBarcode.id },
+          isActive: 0
+        }));
+      }
+    } else {
+      Swal.fire({
+        title: "Product Not Found",
+        text: `No product found with barcode: ${barcode}`,
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validation = validateForm();
@@ -493,25 +540,37 @@ const ProductDiscountModal = ({ onSave, onUpdate, selectedDiscount, discountType
             <div className="col-lg-12">
               <div className="input-blocks">
                 <label>Product <span className="text-danger">*</span></label>
-                <select
-                  name="productDto"
-                  value={formData.productDto.id}
-                  onChange={handleChange}
-                  className={`form-control ${errors.productDto ? 'is-invalid' : ''}`}
-                  disabled={!!selectedDiscount}
-                >
-                  <option value="">Select Product</option>
-                  {availableProducts.map(product => (
-                    <option key={product.id} value={product.id}>
-                      {product.name}
-                    </option>
-                  ))}
-                  {selectedDiscount && (
-                    <option value={selectedDiscount.productDto.id}>
-                      {selectedDiscount.productDto.name}
-                    </option>
-                  )}
-                </select>
+                <div className="d-flex">
+                  <select
+                    name="productDto"
+                    value={formData.productDto.id}
+                    onChange={handleChange}
+                    className={`form-control ${errors.productDto ? 'is-invalid' : ''}`}
+                    disabled={!!selectedDiscount}
+                  >
+                    <option value="">Select Product</option>
+                    {availableProducts.map(product => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                    {selectedDiscount && (
+                      <option value={selectedDiscount.productDto.id}>
+                        {selectedDiscount.productDto.name}
+                      </option>
+                    )}
+                  </select>
+                  <div className="ms-2" style={{ width: '500px' }}>
+                    <input
+                      type="text"
+                      placeholder="Scan Barcode"
+                      value={barcodeInput}
+                      onChange={handleBarcodeScan}
+                      className="form-control"
+                      disabled={!!selectedDiscount}
+                    />
+                  </div>
+                </div>
                 {errors.productDto && (
                   <div className="invalid-feedback">{errors.productDto}</div>
                 )}
