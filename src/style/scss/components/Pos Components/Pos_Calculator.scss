@@ -929,3 +929,13 @@ $light-text: #000000;
     }
   }
 }
+
+.original-price {
+  text-decoration: line-through;
+  color: #999;
+  margin-right: 5px;
+}
+
+.discounted-price {
+  color: #e74c3c;
+}
