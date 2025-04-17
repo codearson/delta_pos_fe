@@ -24,6 +24,7 @@ import { getAllManagerToggles } from "../Api/ManagerToggle";
 import { fetchPayoutCategories } from "../Api/PayoutCategoryApi";
 import { savePayout } from "../Api/Payout.Api";
 import Swal from "sweetalert2";
+import { fetchProductDiscounts } from "../Api/productDiscountApi";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -150,7 +151,7 @@ const Pos = () => {
         setShowInPos(false);
       }
     };
-    
+
     fetchToggles();
   }, []);
 
@@ -177,10 +178,8 @@ const Pos = () => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    
-    // If switching to NonScan tab, refresh the data
+
     if (tab === "nonscan" && categoryGridRef.current) {
-      // Use setTimeout to ensure the component has updated before refreshing
       setTimeout(() => {
         categoryGridRef.current.refreshNonScanData();
       }, 100);
@@ -214,7 +213,7 @@ const Pos = () => {
       setShowPayoutPopup(true);
       return;
     }
-    
+
     if (category.name === "clear") {
       setSelectedItems([]);
       setTotalValue(0);
@@ -227,25 +226,23 @@ const Pos = () => {
     }
 
     if (activeTab === "category" && category?.name) {
-      
-      // Check if this is a Shopping Bags item from non-scan products
       if (category.name.toLowerCase().includes("shopping bag") || category.isNonScanProduct) {
         const inputQty = parseFloat(inputValue);
         const qty = inputQty > 0 ? inputQty : 1;
         const price = category.price || 0;
         const total = qty * price;
-        const newItem = { 
-          id: category.id, 
-          name: category.name, 
-          qty, 
-          price, 
-          total 
+        const newItem = {
+          id: category.id,
+          name: category.name,
+          qty,
+          price,
+          total
         };
-        
+
         const existingItemIndex = selectedItems.findIndex(
-          (item) => item.name === newItem.name && item.price === newItem.price
+          (item) => item.id === newItem.id
         );
-        
+
         let newItems;
         if (existingItemIndex !== -1) {
           newItems = [...selectedItems];
@@ -254,14 +251,14 @@ const Pos = () => {
         } else {
           newItems = [...selectedItems, newItem];
         }
-        
+
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         setInputScreenText("");
         resetInput();
         return;
       }
-      
+
       const parsedInput = parseFloat(inputValue);
       if (parsedInput > 0) {
         if (inputStage === "qty") {
@@ -271,7 +268,7 @@ const Pos = () => {
           const newItem = { id: category.id, name: category.name, qty, price, total };
 
           const existingItemIndex = selectedItems.findIndex(
-            (item) => item.name === newItem.name && item.price === newItem.price
+            (item) => item.id === newItem.id
           );
           let newItems;
           if (existingItemIndex !== -1) {
@@ -291,7 +288,7 @@ const Pos = () => {
           const newItem = { id: category.id, name: category.name, qty, price, total };
 
           const existingItemIndex = selectedItems.findIndex(
-            (item) => item.name === newItem.name && item.price === newItem.price
+            (item) => item.id === newItem.id
           );
           let newItems;
           if (existingItemIndex !== -1) {
@@ -314,16 +311,16 @@ const Pos = () => {
       }
     } else if (activeTab === "nonscan" && category?.name) {
       const price = category.price || 0;
-      
+
       if (inputStage === "qty" && parseFloat(inputValue) > 0) {
         const qty = parseFloat(inputValue);
         const total = qty * price;
         const newItem = { id: category.id, name: category.nonScanProduct || category.name, qty, price, total };
-        
+
         const existingItemIndex = selectedItems.findIndex(
-          (item) => item.name === newItem.name && item.price === newItem.price
+          (item) => item.id === newItem.id
         );
-        
+
         let newItems;
         if (existingItemIndex !== -1) {
           newItems = [...selectedItems];
@@ -332,7 +329,7 @@ const Pos = () => {
         } else {
           newItems = [...selectedItems, newItem];
         }
-        
+
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         setInputScreenText("");
@@ -341,11 +338,11 @@ const Pos = () => {
         const qty = 1;
         const total = qty * price;
         const newItem = { id: category.id, name: category.nonScanProduct || category.name, qty, price, total };
-        
+
         const existingItemIndex = selectedItems.findIndex(
-          (item) => item.name === newItem.name && item.price === newItem.price
+          (item) => item.id === newItem.id
         );
-        
+
         let newItems;
         if (existingItemIndex !== -1) {
           newItems = [...selectedItems];
@@ -354,7 +351,7 @@ const Pos = () => {
         } else {
           newItems = [...selectedItems, newItem];
         }
-        
+
         setSelectedItems(newItems);
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         setInputScreenText("");
@@ -413,7 +410,7 @@ const Pos = () => {
         const total = currentItem.qty * parseFloat(inputValue);
         const newItem = { ...currentItem, price: parseFloat(inputValue), total };
         const existingItemIndex = selectedItems.findIndex(
-          (item) => item.name === newItem.name && item.price === newItem.price
+          (item) => item.id === newItem.id
         );
         let newItems;
         if (existingItemIndex !== -1) {
@@ -427,13 +424,12 @@ const Pos = () => {
         setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
         resetInput();
       }
-      
-      // Check if we should save the transaction
+
       if (isPaymentStarted && selectedItems.length > 0) {
         const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
         const currentTotal = totalValue - manualDiscount - employeeDiscount;
         const remainingBalance = currentTotal - totalPaid;
-        
+
         if (remainingBalance <= 0) {
           handleSaveTransaction();
         } else {
@@ -473,21 +469,97 @@ const Pos = () => {
         return;
       }
 
-      const total = qty * pricePerUnit;
-      const newItem = { id, name, qty, price: pricePerUnit, total };
-
       const existingItemIndex = selectedItems.findIndex(
-        (item) => item.name === newItem.name && item.price === newItem.price
+        (item) => item.id === id
       );
 
-      let newItems;
+      let newItems = [...selectedItems];
+      let newQty;
+      let originalPrice = pricePerUnit;
+      let discountedPrice = pricePerUnit;
+      let discount = 0;
+      let discountType = null;
+
       if (existingItemIndex !== -1) {
-        newItems = [...selectedItems];
-        newItems[existingItemIndex].qty += qty;
-        newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+        newQty = newItems[existingItemIndex].qty + qty;
+        newItems[existingItemIndex].qty = newQty;
       } else {
-        newItems = [...selectedItems, newItem];
+        newQty = qty;
+        newItems.push({
+          id,
+          name,
+          qty: newQty,
+          price: pricePerUnit,
+          originalPrice: originalPrice,
+          discount: 0,
+          discountType: null,
+          total: 0,
+        });
       }
+
+      const itemIndex = existingItemIndex !== -1 ? existingItemIndex : newItems.length - 1;
+
+      try {
+        const discounts = await fetchProductDiscounts();
+        const activeDiscounts = discounts.filter(
+          (d) =>
+            d.productDto.id === id &&
+            d.isActive &&
+            new Date(d.endDate) >= new Date()
+        );
+
+        if (activeDiscounts.length > 0) {
+          if (activeDiscounts.some((d) => d.productDiscountTypeDto.type === "Quantity")) {
+            const quantityDiscounts = activeDiscounts
+              .filter((d) => d.productDiscountTypeDto.type === "Quantity")
+              .sort((a, b) => b.quantity - a.quantity);
+
+            let remainingQty = newQty;
+            let totalDiscount = 0;
+
+            for (const qd of quantityDiscounts) {
+              const discountQty = parseInt(qd.quantity);
+              const discountAmount = parseFloat(qd.discount);
+              while (remainingQty >= discountQty) {
+                totalDiscount += discountAmount;
+                remainingQty -= discountQty;
+              }
+            }
+
+            if (totalDiscount > 0) {
+              discount = totalDiscount / newQty;
+              discountType = "Quantity";
+              discountedPrice = pricePerUnit - discount;
+            }
+          } else {
+            const discountObj = activeDiscounts[0];
+            if (discountObj.productDiscountTypeDto.type === "Cash") {
+              discount = parseFloat(discountObj.discount);
+              discountType = "Cash";
+              discountedPrice = pricePerUnit - discount;
+            } else if (discountObj.productDiscountTypeDto.type === "Percentage") {
+              discount = (parseFloat(discountObj.discount) / 100) * pricePerUnit;
+              discountType = "Percentage";
+              discountedPrice = pricePerUnit - discount;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching discounts:", error);
+        showNotification("Failed to fetch discounts.", "error");
+      }
+
+      discountedPrice = Math.max(discountedPrice, 0);
+      const total = newQty * discountedPrice;
+
+      newItems[itemIndex] = {
+        ...newItems[itemIndex],
+        price: discountedPrice,
+        originalPrice: originalPrice,
+        discount: discount * newQty,
+        discountType: discountType,
+        total,
+      };
 
       setSelectedItems(newItems);
       setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
@@ -529,73 +601,73 @@ const Pos = () => {
 
     const displayItems = isPaymentStarted
       ? [
-          ...selectedItems,
-          ...(manualDiscounts.length > 0
-            ? manualDiscounts.map((discount, index) => ({
-                id: `manual-discount-${index}`,
-                name: "Manual Discount",
-                qty: 1,
-                price: -discount,
-                total: -discount,
-                type: "Discount",
-              }))
-            : []),
-          ...(employeeDiscount > 0
-            ? [{
-                id: 'employee-discount',
-                name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
-                qty: 1,
-                price: -employeeDiscount,
-                total: -employeeDiscount,
-                type: "EmployeeDiscount",
-              }]
-            : []),
-          ...(cashTotal > 0
-            ? [
-                {
-                  id: `payment-cash`,
-                  name: `Cash Payment`,
-                  qty: 1,
-                  price: cashTotal,
-                  total: cashTotal,
-                  type: "Cash",
-                },
-              ]
-            : []),
-          ...(cardPayments.length > 0
-            ? cardPayments.map((method, index) => ({
-                id: `payment-card-${index}`,
-                name: `${method.type} Payment`,
-                qty: 1,
-                price: method.amount,
-                total: method.amount,
-                type: "Card",
-              }))
-            : []),
-        ]
+        ...selectedItems,
+        ...(manualDiscounts.length > 0
+          ? manualDiscounts.map((discount, index) => ({
+            id: `manual-discount-${index}`,
+            name: "Manual Discount",
+            qty: 1,
+            price: -discount,
+            total: -discount,
+            type: "Discount",
+          }))
+          : []),
+        ...(employeeDiscount > 0
+          ? [{
+            id: 'employee-discount',
+            name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
+            qty: 1,
+            price: -employeeDiscount,
+            total: -employeeDiscount,
+            type: "EmployeeDiscount",
+          }]
+          : []),
+        ...(cashTotal > 0
+          ? [
+            {
+              id: `payment-cash`,
+              name: `Cash Payment`,
+              qty: 1,
+              price: cashTotal,
+              total: cashTotal,
+              type: "Cash",
+            },
+          ]
+          : []),
+        ...(cardPayments.length > 0
+          ? cardPayments.map((method, index) => ({
+            id: `payment-card-${index}`,
+            name: `${method.type} Payment`,
+            qty: 1,
+            price: method.amount,
+            total: method.amount,
+            type: "Card",
+          }))
+          : []),
+      ]
       : [
-          ...selectedItems,
-          ...(manualDiscounts.length > 0
-            ? manualDiscounts.map((discount, index) => ({
-                id: `manual-discount-${index}`,
-                name: "Manual Discount",
-                qty: 1,
-                price: -discount,
-                total: -discount,
-                type: "Discount",
-              }))
-            : []),
-          ...(employeeDiscount > 0
-            ? [{
-                id: 'employee-discount',
-                name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
-                qty: 1,
-                price: -employeeDiscount,
-                total: -employeeDiscount,
-                type: "EmployeeDiscount",
-              }]
-            : []),
-        ];
+        ...selectedItems,
+        ...(manualDiscounts.length > 0
+          ? manualDiscounts.map((discount, index) => ({
+            id: `manual-discount-${index}`,
+            name: "Manual Discount",
+            qty: 1,
+            price: -discount,
+            total: -discount,
+            type: "Discount",
+          }))
+          : []),
+        ...(employeeDiscount > 0
+          ? [{
+            id: 'employee-discount',
+            name: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
+            qty: 1,
+            price: -employeeDiscount,
+            total: -employeeDiscount,
+            type: "EmployeeDiscount",
+          }]
+          : []),
+      ];
 
     const selectedItem = displayItems[selectedRowIndex];
 
@@ -695,7 +767,7 @@ const Pos = () => {
     setEmployeeDiscount(discountAmount);
     setEmployeeId(empId);
     setEmployeeDiscountPercentage(discountPercentage);
-    
+
     const fetchEmployeeName = async () => {
       try {
         const usersResponse = await fetchUsers();
@@ -707,7 +779,7 @@ const Pos = () => {
         console.error("Error fetching employee name:", error);
       }
     };
-    
+
     fetchEmployeeName();
   };
 
@@ -777,7 +849,7 @@ const Pos = () => {
       if (cardPayments > 0) {
         combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
       }
-  
+
       const transactionData = {
         status: "Completed",
         isActive: 1,
@@ -793,8 +865,8 @@ const Pos = () => {
         transactionDetailsList: selectedItems.map((item) => ({
           productDto: { id: item.id },
           quantity: item.qty,
-          unitPrice: item.price,
-          discount: 0.0,
+          unitPrice: item.originalPrice || item.price,
+          discount: item.discount || 0,
         })),
         transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
           paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
@@ -803,7 +875,7 @@ const Pos = () => {
         })),
         transactionEmployee: employeeId ? [{ userDto: { id: employeeId } }] : [],
       };
-  
+
       const result = await saveTransaction(transactionData);
 
       if (result.success) {
@@ -817,16 +889,17 @@ const Pos = () => {
         } else {
           transactionId = 0;
           console.error("Transaction ID not found in API response:", result);
-          showNotification("Warning: Transaction ID not found in API response. Please check the backend response.", "error");
+          showNotification("Warning: Transaction ID not found in API response.", "error");
         }
-        
+
         setLastTransaction({
           id: transactionId,
           transactionDetailsList: selectedItems.map((item) => ({
             productDto: { id: item.id, name: item.name },
             quantity: item.qty,
             unitPrice: item.price,
-            discount: 0.0,
+            discount: item.discount || 0,
+            originalPrice: item.originalPrice || item.price,
           })),
           totalAmount: totalValue - manualDiscount - employeeDiscount,
           manualDiscount: manualDiscount,
@@ -860,14 +933,14 @@ const Pos = () => {
       showNotification("Failed to open print window. Please allow popups for this site and try again.", "error");
       return;
     }
-
+  
     const formattedDate = transactionDate && !isNaN(new Date(transactionDate).getTime())
       ? new Date(transactionDate).toLocaleString()
       : currentTime.toLocaleString();
-
+  
     const transactionId = lastTransaction?.id || 0;
     const formattedTransactionId = transactionId.toString().padStart(10, "0");
-
+  
     let barcodeDataUrl = "";
     try {
       if (barcodeRef.current) {
@@ -878,7 +951,9 @@ const Pos = () => {
       console.error("Failed to generate barcode image:", error);
       showNotification("Failed to generate barcode image.", "error");
     }
-
+  
+    const totalDiscount = selectedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
+  
     printWindow.document.write(`
       <html>
         <head>
@@ -939,8 +1014,12 @@ const Pos = () => {
                     <tr>
                       <td>${item.qty}</td>
                       <td>${item.name}</td>
-                      <td>${item.price.toFixed(2)}</td>
-                      <td class="total-column">${item.total.toFixed(2)}</td>
+                      <td>${(item.originalPrice || item.price).toFixed(2)}</td>
+                      <td class="total-column">
+                        ${item.originalPrice && item.originalPrice !== item.price
+                ? `<span style="text-decoration: line-through;">${(item.originalPrice * item.qty).toFixed(2)}</span> ${item.total.toFixed(2)}`
+                : item.total.toFixed(2)}
+                      </td>
                     </tr>
                   `
           )
@@ -950,9 +1029,11 @@ const Pos = () => {
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
-            <p>Total: ${totalValue.toFixed(2)}</p>
+            <p>Subtotal: ${totalValue.toFixed(2)}</p>
+            ${totalDiscount > 0 ? `<p>Product Discount: ${totalDiscount.toFixed(2)}</p>` : ''}
             ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
             ${employeeDiscount > 0 ? `<p>Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)${employeeName ? ` (${employeeName})` : ""}: ${employeeDiscount.toFixed(2)}</p>` : ''}
+            <p>Grand Total: ${(totalValue - totalDiscount - manualDiscount - employeeDiscount).toFixed(2)}</p>
             ${paymentMethods.map(method => `
               <p>${method.type}: ${method.amount.toFixed(2)}</p>
             `).join('')}
@@ -980,18 +1061,18 @@ const Pos = () => {
         </body>
       </html>
     `);
-
+  
     printWindow.document.close();
     printWindow.focus();
   };
-
+  
   const handlePrintLastBill = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       showNotification("Failed to open print window. Please allow popups for this site and try again.", "error");
       return;
     }
-
+  
     if (!lastTransaction) {
       printWindow.document.write("<p>No previous transaction found.</p>");
       showNotification("No previous transaction found.", "error");
@@ -999,25 +1080,29 @@ const Pos = () => {
       printWindow.close();
       return;
     }
-
+  
     try {
       const items = lastTransaction.transactionDetailsList.map((detail) => ({
         qty: detail.quantity,
         name: detail.productDto.name || "Unknown Item",
         price: detail.unitPrice,
+        originalPrice: detail.originalPrice,
+        discount: detail.discount || 0,
+        discountType: detail.discountType,
         total: detail.quantity * detail.unitPrice,
       }));
-
+  
       const totalAmount = lastTransaction.totalAmount;
+      const totalDiscount = items.reduce((sum, item) => sum + item.discount, 0);
       const manualDiscount = lastTransaction.manualDiscount || 0;
       const paymentMethods = lastTransaction.transactionPaymentMethod.map((method) => ({
         type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
         amount: method.amount,
       }));
-
+  
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
       const calculatedBalance = Math.abs(totalAmount - totalPaid);
-
+  
       let branchName = branchDetails.branchName;
       let branchCode = branchDetails.branchCode;
       let shopName = branchDetails.shopName;
@@ -1025,7 +1110,7 @@ const Pos = () => {
       let contactNumber = branchDetails.contactNumber;
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
-
+  
       let barcodeDataUrl = "";
       try {
         if (barcodeRef.current) {
@@ -1036,14 +1121,14 @@ const Pos = () => {
         console.error("Failed to generate barcode image:", error);
         barcodeDataUrl = "";
       }
-
+  
       const formattedDate = lastTransaction.dateTime && !isNaN(new Date(lastTransaction.dateTime).getTime())
         ? new Date(lastTransaction.dateTime).toLocaleString()
         : new Date().toLocaleString();
-
+  
       const transactionId = lastTransaction.id || 0;
       const formattedTransactionId = transactionId.toString().padStart(10, "0");
-
+  
       printWindow.document.write(`
         <html>
           <head>
@@ -1103,8 +1188,12 @@ const Pos = () => {
                   <tr>
                     <td>${item.qty}</td>
                     <td>${item.name}</td>
-                    <td>${item.price.toFixed(2)}</td>
-                    <td class="total-column">${item.total.toFixed(2)}</td>
+                    <td>${(item.originalPrice || item.price).toFixed(2)}</td>
+                    <td class="total-column">
+                      ${item.originalPrice && item.originalPrice !== item.price
+                ? `<span style="text-decoration: line-through;">${(item.originalPrice * item.qty).toFixed(2)}</span> ${item.total.toFixed(2)}`
+                : item.total.toFixed(2)}
+                    </td>
                   </tr>
                 `
           )
@@ -1113,9 +1202,11 @@ const Pos = () => {
             </table>
             <div class="divider"></div>
             <div class="receipt-details">
-              <p>Total: ${totalAmount.toFixed(2)}</p>
+              <p>Subtotal: ${(totalAmount + totalDiscount + manualDiscount + lastTransaction.employeeDiscount).toFixed(2)}</p>
+              ${totalDiscount > 0 ? `<p>Product Discount: ${totalDiscount.toFixed(2)}</p>` : ''}
               ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
               ${lastTransaction.employeeDiscount > 0 ? `<p>Employee Discount (${lastTransaction.employeeDiscountPercentage.toFixed(1)}%)${lastTransaction.employeeName ? ` (${lastTransaction.employeeName})` : ""}: ${lastTransaction.employeeDiscount.toFixed(2)}</p>` : ''}
+              <p>Grand Total: ${totalAmount.toFixed(2)}</p>
               ${paymentMethods.map((method) => `
                 <p>${method.type}: ${method.amount.toFixed(2)}</p>
               `).join('')}
@@ -1143,7 +1234,7 @@ const Pos = () => {
           </body>
         </html>
       `);
-
+  
       printWindow.document.close();
       printWindow.focus();
     } catch (error) {
@@ -1372,8 +1463,7 @@ const Pos = () => {
       if (response) {
         showNotification("Product added successfully!", "success");
         handleAddProductFormClose();
-        
-        // Refresh NonScan data if we're on the NonScan tab
+
         if (activeTab === "nonscan" && categoryGridRef.current) {
           categoryGridRef.current.refreshNonScanData();
         }
@@ -1419,13 +1509,12 @@ const Pos = () => {
     try {
       const result = await savePayout(payoutData);
       console.log("Payout save response:", result);
-      
+
       if (result) {
         setShowPayoutPopup(false);
         setSelectedPayoutCategory(null);
         setInputValue("0");
 
-        // Show SweetAlert for print
         Swal.fire({
           title: "Payout Saved!",
           text: "Do you want to print a payout receipt?",
@@ -1435,10 +1524,8 @@ const Pos = () => {
           cancelButtonText: "No, Thanks"
         }).then((swalResult) => {
           if (swalResult.isConfirmed) {
-            // Call your print function here
             printPayoutReceipt(amount, selectedPayoutCategory);
           }
-          // Clear POS display after printing or if user chooses not to print
           setSelectedItems([]);
           setTotalValue(0);
           setInputValue("0");
@@ -1461,7 +1548,6 @@ const Pos = () => {
     }
   };
 
-  // Example print function (implement as needed)
   const printPayoutReceipt = (amount, category) => {
     const shopName = localStorage.getItem("shopName") || "Shop Name";
     const branchName = localStorage.getItem("branchName") || "Branch Name";
@@ -1604,11 +1690,11 @@ const Pos = () => {
               employeeName={employeeName}
             />
             <div className="category-section">
-              <CategoryTabs 
-                activeTab={activeTab} 
-                onTabChange={handleTabChange} 
+              <CategoryTabs
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
                 darkMode={darkMode}
-                showInPos={showInPos} 
+                showInPos={showInPos}
               />
               <CategoryGrid
                 ref={categoryGridRef}
@@ -1616,8 +1702,8 @@ const Pos = () => {
                   activeTab === "category"
                     ? fetchCustomCategories
                     : activeTab === "nonscan" && showInPos
-                    ? fetchNonScanProducts
-                    : quickAccess
+                      ? fetchNonScanProducts
+                      : quickAccess
                 }
                 onCategorySelect={handleCategorySelect}
                 onManualDiscount={handleManualDiscount}
@@ -1664,23 +1750,21 @@ const Pos = () => {
                 </p>
                 {customerName && <p>Customer: {customerName}</p>}
                 <div className="bill-summary centered">
-                  <p>Total: {totalValue.toFixed(2)}</p>
-                  {manualDiscount > 0 && <p>Manual Discount: {manualDiscount.toFixed(2)}</p>}
+                  <p>Total: ${totalValue.toFixed(2)}</p>
+                  {manualDiscount > 0 && <p>Manual Discount: ${manualDiscount.toFixed(2)}</p>}
                   {employeeDiscount > 0 && (
                     <p>
-                      Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)
-                      {employeeName ? ` (${employeeName})` : ""}: {employeeDiscount.toFixed(2)}
+                      Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)
+                      ${employeeName ? ` (${employeeName})` : ""}: ${employeeDiscount.toFixed(2)}
                     </p>
                   )}
-                  <p>Grand Total: {(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
-                  {paymentMethods.map((method) => (
-                    <p key={method.type}>
-                      {method.type}: {method.amount.toFixed(2)}
-                    </p>
-                  ))}
+                  <p>Grand Total: ${(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
+                  ${paymentMethods.map((method) => `
+                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                  `).join('')}
                   <p>
                     <span className="balance-label">Balance:</span>{" "}
-                    <span className="balance-value">{Math.abs(balance).toFixed(2)}</span>
+                    <span className="balance-value">${Math.abs(balance).toFixed(2)}</span>
                   </p>
                 </div>
               </div>
@@ -1774,8 +1858,8 @@ const Pos = () => {
                               Payments:{" "}
                               {transaction.paymentMethods.length > 0
                                 ? transaction.paymentMethods
-                                    .map((p) => `${p.type}: ${p.amount.toFixed(2)}`)
-                                    .join(", ")
+                                  .map((p) => `${p.type}: ${p.amount.toFixed(2)}`)
+                                  .join(", ")
                                 : "None"}
                             </p>
                             <p>Balance: {transaction.balance.toFixed(2)}</p>
@@ -1875,12 +1959,12 @@ const Pos = () => {
                             ? "#666"
                             : "#e0e0e0"
                           : state.isFocused
-                          ? darkMode
-                            ? "#555"
-                            : "#f0f0f0"
-                          : darkMode
-                            ? "#444"
-                            : "#fff",
+                            ? darkMode
+                              ? "#555"
+                              : "#f0f0f0"
+                            : darkMode
+                              ? "#444"
+                              : "#fff",
                         color: darkMode ? "#fff" : "#000",
                       }),
                       input: (base) => ({
@@ -1965,12 +2049,12 @@ const Pos = () => {
                             ? "#666"
                             : "#e0e0e0"
                           : state.isFocused
-                          ? darkMode
-                            ? "#555"
-                            : "#f0f0f0"
-                          : darkMode
-                            ? "#444"
-                            : "#fff",
+                            ? darkMode
+                              ? "#555"
+                              : "#f0f0f0"
+                            : darkMode
+                              ? "#444"
+                              : "#fff",
                         color: darkMode ? "#fff" : "#000",
                       }),
                       input: (base) => ({
@@ -2029,9 +2113,9 @@ const Pos = () => {
                     value={
                       selectedPayoutCategory
                         ? {
-                            value: selectedPayoutCategory.id,
-                            label: selectedPayoutCategory.payoutCategory,
-                          }
+                          value: selectedPayoutCategory.id,
+                          label: selectedPayoutCategory.payoutCategory,
+                        }
                         : null
                     }
                     onChange={(selectedOption) => {
@@ -2069,8 +2153,8 @@ const Pos = () => {
                         backgroundColor: state.isSelected
                           ? darkMode ? "#2EB6E8" : "#e3f2fd"
                           : state.isFocused
-                          ? darkMode ? "#555" : "#f8f9fa"
-                          : "transparent",
+                            ? darkMode ? "#555" : "#f8f9fa"
+                            : "transparent",
                         color: "#000", // always black
                         "&:active": {
                           backgroundColor: darkMode ? "#2EB6E8" : "#e3f2fd"
@@ -2081,8 +2165,8 @@ const Pos = () => {
                 </div>
               </div>
               <div className="payout-actions">
-                <button 
-                  className="confirm-btn" 
+                <button
+                  className="confirm-btn"
                   onClick={handleSavePayout}
                   disabled={!selectedPayoutCategory}
                 >

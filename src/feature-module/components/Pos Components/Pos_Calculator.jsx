@@ -56,6 +56,8 @@ export const Pos_Calculator = ({
     .reduce((sum, method) => sum + method.amount, 0);
   const cardPayments = paymentMethods.filter((method) => method.type === "Card");
 
+  const totalDiscount = selectedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
+
   const displayItems = isPaymentStarted
     ? [
         ...selectedItems,
@@ -173,8 +175,21 @@ export const Pos_Calculator = ({
                 >
                   <span className="qty-column">{item.qty}</span>
                   <span className="item-column">{item.name}</span>
-                  <span className="price-column">{priceSymbol}{item.price.toFixed(2)}</span>
-                  <span className="total-column">{priceSymbol}{item.total.toFixed(2)}</span>
+                  <span className="price-column">
+                    {priceSymbol}{(item.originalPrice || item.price).toFixed(2)}
+                  </span>
+                  <span className="total-column">
+                    {item.originalPrice && item.originalPrice !== item.price ? (
+                      <>
+                        <span className="original-price" style={{ textDecoration: "line-through", color: "#999" }}>
+                          {priceSymbol}{(item.originalPrice * item.qty).toFixed(2)}
+                        </span>{" "}
+                        <span className="discounted-price">{priceSymbol}{item.total.toFixed(2)}</span>
+                      </>
+                    ) : (
+                      `${priceSymbol}${item.total.toFixed(2)}`
+                    )}
+                  </span>
                 </div>
               ))}
           </div>
@@ -198,7 +213,7 @@ export const Pos_Calculator = ({
         </div>
         <div className="summary-item">
           <span className="label">Discount</span>
-          <span className="value">{priceSymbol}0.00</span>
+          <span className="value">{priceSymbol}{totalDiscount.toFixed(2)}</span>
         </div>
         {manualDiscount > 0 && (
           <div className="summary-item">
@@ -248,6 +263,9 @@ Pos_Calculator.propTypes = {
       qty: PropTypes.number.isRequired,
       price: PropTypes.number.isRequired,
       total: PropTypes.number.isRequired,
+      originalPrice: PropTypes.number,
+      discount: PropTypes.number,
+      discountType: PropTypes.string,
     })
   ).isRequired,
   totalValue: PropTypes.number.isRequired,
