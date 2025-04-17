@@ -9,14 +9,12 @@ import PropTypes from 'prop-types'
 
 const EditBrand = ({ selectedCategory, refreshCategories }) => {
     const [categoryName, setCategoryName] = useState("")
-    const [isActive, setIsActive] = useState(true)
     const [error, setError] = useState("")
     const MySwal = withReactContent(Swal)
 
     useEffect(() => {
         if (selectedCategory) {
             setCategoryName(selectedCategory.payoutCategory)
-            setIsActive(selectedCategory.isActive)
         }
     }, [selectedCategory])
 
@@ -39,12 +37,15 @@ const EditBrand = ({ selectedCategory, refreshCategories }) => {
         try {
             // Check for duplicate name excluding current category
             const existingCategory = await getPayoutCategoryByName(categoryName.trim())
-            if (existingCategory?.responseDto && existingCategory.responseDto.id !== selectedCategory.id) {
+            if (existingCategory && existingCategory.responseDto && existingCategory.responseDto.id !== selectedCategory.id) {
                 MySwal.fire({
                     title: "Error!",
-                    text: "A category with this name already exists",
+                    text: "A category with this name already exists.",
                     icon: "error",
                     confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
                 })
                 return
             }
@@ -52,27 +53,32 @@ const EditBrand = ({ selectedCategory, refreshCategories }) => {
             const updateData = {
                 id: selectedCategory.id,
                 payoutCategory: categoryName.trim(),
-                isActive: isActive
+                isActive: selectedCategory.isActive
             }
 
             const response = await updatePayoutCategory(updateData)
             
             if (response?.responseDto) {
-                MySwal.fire({
+                // Close modal first
+                document.getElementById('edit-brand').classList.remove('show')
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
+                document.body.classList.remove('modal-open')
+
+                // Refresh categories immediately after successful update
+                if (refreshCategories) {
+                    await refreshCategories()
+                }
+
+                // Show success message after refresh
+                await MySwal.fire({
                     title: "Success!",
                     text: "Category updated successfully!",
                     icon: "success",
                     confirmButtonText: "OK",
+                    customClass: {
+                        confirmButton: "btn btn-primary",
+                    },
                 })
-                
-                if (refreshCategories) {
-                    refreshCategories()
-                }
-                
-                // Close modal
-                document.getElementById('edit-brand').classList.remove('show')
-                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
-                document.body.classList.remove('modal-open')
             }
         } catch (error) {
             MySwal.fire({
@@ -80,6 +86,9 @@ const EditBrand = ({ selectedCategory, refreshCategories }) => {
                 text: error.message || "Failed to update category",
                 icon: "error",
                 confirmButtonText: "OK",
+                customClass: {
+                    confirmButton: "btn btn-primary",
+                },
             })
         }
     }
@@ -114,19 +123,6 @@ const EditBrand = ({ selectedCategory, refreshCategories }) => {
                                         placeholder="Enter category name"
                                     />
                                     {error && <div className="invalid-feedback">{error}</div>}
-                                </div>
-                                <div className="mb-3">
-                                    <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                        <span className="status-label">Status</span>
-                                        <input
-                                            type="checkbox"
-                                            id="categoryStatus"
-                                            className="check"
-                                            checked={isActive}
-                                            onChange={(e) => setIsActive(e.target.checked)}
-                                        />
-                                        <label htmlFor="categoryStatus" className="checktoggle" />
-                                    </div>
                                 </div>
                                 <div className="modal-footer-btn">
                                     <button

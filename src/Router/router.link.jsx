@@ -4,6 +4,7 @@ import ProductList from "../feature-module/inventory/productlist";
 import Dashboard from "../feature-module/dashboard/Dashboard";
 import AddProduct from "../feature-module/inventory/addproduct";
 import CustomProductList from "../feature-module/inventory/customproductlist";
+import ProductDiscount from "../feature-module/discount/productDiscount";
 import SalesDashbaord from "../feature-module/dashboard/salesdashbaord";
 import BrandList from "../feature-module/inventory/brandlist";
 import VariantAttributes from "../feature-module/inventory/variantattributes";
@@ -204,6 +205,13 @@ export const publicRoutes = [
     path: routes.dashboard,
     name: "home",
     element: <Dashboard />,
+    route: Route,
+  },
+  {
+    id: 5,
+    path: routes.ProductDiscount,
+    name: "discount",
+    element: <ProductDiscount />,
     route: Route,
   },
   {
