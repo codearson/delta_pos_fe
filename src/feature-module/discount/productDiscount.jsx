@@ -31,6 +31,10 @@ const ProductDiscount = () => {
 
   useEffect(() => {
     loadInitialData();
+    
+    const intervalId = setInterval(checkExpiredDiscounts, 60000);
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ const ProductDiscount = () => {
   const loadInitialData = async () => {
     setIsLoading(true);
     await fetchDiscountsData(true);
+    await checkExpiredDiscounts();
     setIsLoading(false);
   };
 
@@ -464,6 +469,39 @@ const ProductDiscount = () => {
     {
       title: "End Date",
       dataIndex: "endDate",
+      render: (endDate) => {
+        const endDateObj = new Date(endDate);
+        const currentDate = new Date();
+        
+        const nextDayMidnight = new Date(endDateObj);
+        nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
+        nextDayMidnight.setHours(0, 0, 0, 0);
+        
+        const timeDiff = nextDayMidnight - currentDate;
+        const hoursRemaining = timeDiff / (1000 * 60 * 60);
+        
+        let statusClass = "";
+        let statusText = "";
+        
+        if (timeDiff < 0) {
+          statusClass = "text-danger";
+          statusText = "Expired";
+        } else if (hoursRemaining <= 24) {
+          statusClass = "text-warning";
+          statusText = "Expires Tonight";
+        }
+        
+        return (
+          <div>
+            {endDate}
+            {statusText && (
+              <span className={`ms-2 badge ${statusClass === "text-danger" ? "bg-danger" : "bg-warning"}`}>
+                {statusText}
+              </span>
+            )}
+          </div>
+        );
+      },
       sorter: (a, b) => new Date(a.endDate) - new Date(b.endDate),
     },
     {
@@ -518,6 +556,44 @@ const ProductDiscount = () => {
   const renderCollapseTooltip = (props) => (
     <Tooltip id="collapse-tooltip" {...props}>Collapse</Tooltip>
   );
+
+  const checkExpiredDiscounts = async () => {
+    try {
+      const currentDate = new Date();
+      let hasExpiredDiscounts = false;
+      
+      for (const discount of allDiscounts) {
+        if (discount.isActive && discount.endDate) {
+          const endDate = new Date(discount.endDate);
+          
+          const nextDayMidnight = new Date(endDate);
+          nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
+          nextDayMidnight.setHours(0, 0, 0, 0);
+          
+          if (currentDate >= nextDayMidnight) {
+            hasExpiredDiscounts = true;
+            
+            await updateProductDiscountStatus(discount.id, 0);
+            
+            console.log(`Discount ${discount.id} has expired and been deactivated`);
+          }
+        }
+      }
+      
+      if (hasExpiredDiscounts) {
+        await fetchDiscountsData(false);
+        
+        // MySwal.fire({
+        //   title: "Discounts Updated",
+        //   text: "Some discounts have expired and been automatically deactivated.",
+        //   icon: "info",
+        //   confirmButtonText: "OK",
+        // });
+      }
+    } catch (error) {
+      console.error("Error checking expired discounts:", error);
+    }
+  };
 
   if (isLoading) {
     return (
