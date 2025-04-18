@@ -164,19 +164,63 @@ const PurchasesList = () => {
     };
 
     const handlePrint = () => {
-        const printContent = `
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            Swal.fire({
+                title: "Error!",
+                text: "Failed to open print window. Please allow popups for this site and try again.",
+                icon: "error",
+                confirmButtonText: "OK",
+            });
+            return;
+        }
+
+        const formattedDate = new Date().toLocaleString();
+        const shopName = localStorage.getItem("shopName") || "Delta POS";
+        const branchName = localStorage.getItem("branchName") || "";
+        const branchCode = localStorage.getItem("branchCode") || "";
+        const address = localStorage.getItem("branchAddress") || "";
+        const contactNumber = localStorage.getItem("branchContact") || "";
+
+        printWindow.document.write(`
           <html>
             <head>
               <title>Purchase List</title>
               <style>
-                table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid black; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
+                @media print {
+                  @page { size: 72mm auto; margin: 0; }
+                  body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+                  header, footer, nav, .print-header, .print-footer { display: none !important; }
+                  html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
+                }
+                body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+                .receipt-header { text-align: center; margin-bottom: 5px; }
+                .receipt-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+                .receipt-details { margin-bottom: 5px; text-align: left; }
+                .receipt-details p { margin: 2px 0; }
+                .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-left: auto; margin-right: auto; }
+                .receipt-items th, .receipt-items td { padding: 2px 0; font-weight: bold; text-align: left; font-size: 12px; }
+                .receipt-items th { border-bottom: 1px dashed #000; }
+                .receipt-footer { text-align: center; margin-top: 5px; }
+                .receipt-footer p { margin: 2px 0; }
+                .divider { border-top: 1px dashed #000; margin: 5px 0; }
+                .spacing { height: 10px; }
               </style>
             </head>
             <body>
-              <h2>Purchase List</h2>
-              <table>
+              <div class="receipt-header">
+                <h2>${shopName}</h2>
+                <p>${branchName}</p>
+                <p>Branch Code: ${branchCode}</p>
+                <p>Address: ${address}</p>
+                <p>Contact: ${contactNumber}</p>
+              </div>
+              <div class="receipt-details">
+                <p>Date: ${formattedDate}</p>
+                <p>Purchase List</p>
+              </div>
+              <div class="divider"></div>
+              <table class="receipt-items">
                 <thead>
                   <tr>
                     <th>Barcode</th>
@@ -187,21 +231,37 @@ const PurchasesList = () => {
                   ${purchases.map(purchase => `
                     <tr>
                       <td>${purchase.barcode || ""}</td>
-                      <td>${purchase.productName || ""}</td>
+                      <td>${purchase.productName || "Unknown Product"}</td>
                     </tr>
                   `).join('')}
                 </tbody>
               </table>
+              <div class="divider"></div>
+              <div class="receipt-details">
+                <p>Total Items: ${purchases.length}</p>
+              </div>
+              <div class="divider"></div>
+              <div class="receipt-footer">
+                <p>Thank You!</p>
+                <div class="spacing"></div>
+                <p>Powered by Delta POS</p>
+                <p>(deltapos.codearson@gmail.com)</p>
+                <p>(0094762963979)</p>
+                <p>================================================</p>
+              </div>
+              <script>
+                setTimeout(() => {
+                  window.print();
+                  window.close();
+                }, 500);
+              </script>
             </body>
           </html>
-        `;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(printContent);
+        `);
+
         printWindow.document.close();
-        printWindow.focus(); // Ensure the window is focused
-        printWindow.print();
-        printWindow.close(); // Close the window after printing
-      };
+        printWindow.focus();
+    };
 
     const exportToExcel = () => {
         try {

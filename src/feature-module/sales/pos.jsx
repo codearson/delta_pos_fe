@@ -505,7 +505,13 @@ const Pos = () => {
           (d) =>
             d.productDto.id === id &&
             d.isActive &&
-            new Date(d.endDate) >= new Date()
+            (() => {
+              const endDate = new Date(d.endDate);
+              const nextDayMidnight = new Date(endDate);
+              nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
+              nextDayMidnight.setHours(0, 0, 0, 0);
+              return new Date() < nextDayMidnight;
+            })()
         );
 
         if (activeDiscounts.length > 0) {
@@ -1759,9 +1765,7 @@ const Pos = () => {
                     </p>
                   )}
                   <p>Grand Total: ${(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
-                  ${paymentMethods.map((method) => `
-                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                  `).join('')}
+                  ${paymentMethods.map((method) => `${method.type}: ${method.amount.toFixed(2)}`).join('')}
                   <p>
                     <span className="balance-label">Balance:</span>{" "}
                     <span className="balance-value">${Math.abs(balance).toFixed(2)}</span>
