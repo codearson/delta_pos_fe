@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
-import { ChevronUp, RotateCcw } from "feather-icons-react/build/IconComponents";
+import { ChevronUp, RotateCcw, Printer } from "feather-icons-react/build/IconComponents";
 import Table from "../../core/pagination/datatable";
 import { setToogleHeader } from "../../core/redux/action";
 import EditLowStock from "../../core/modals/inventory/editlowstock";
@@ -162,6 +162,11 @@ const LowStock = () => {
       Collapse
     </Tooltip>
   );
+  const renderPrintTooltip = (props) => (
+    <Tooltip id="print-tooltip" {...props}>
+      Print
+    </Tooltip>
+  );
 
   const exportToPDF = () => {
     const data = activeTab === "low" ? lowStockProducts : outOfStockProducts;
@@ -276,6 +281,129 @@ const LowStock = () => {
     }
   };
 
+  const handlePrint = () => {
+    try {
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        MySwal.fire({
+          title: "Error!",
+          text: "Please allow pop-ups to print the document.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
+        return;
+      }
+
+      const shopName = localStorage.getItem("shopName") || "Shop Name";
+      const branchName = localStorage.getItem("branchName") || "Branch Name";
+      const branchCode = localStorage.getItem("branchCode") || "Branch Code";
+      const address = localStorage.getItem("branchAddress") || "Address";
+      const contactNumber = localStorage.getItem("branchContact") || "Contact Number";
+      const currentDate = new Date().toLocaleString();
+
+      const productsToPrint = activeTab === "low" ? lowStockProducts : outOfStockProducts;
+      const title = activeTab === "low" ? "Low Stock Items" : "Out of Stock Items";
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              @page { size: 72mm auto; margin: 0; }
+              body { 
+                font-family: 'Courier New', monospace;
+                width: 72mm;
+                margin: 0 auto;
+                padding: 5mm;
+                font-size: 12px;
+              }
+              .receipt-header { text-align: center; margin-bottom: 5px; }
+              .receipt-header h2 { margin: 0; font-size: 14px; }
+              .receipt-details p { margin: 2px 0; }
+              .receipt-items { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-bottom: 5px; 
+                margin-left: auto; 
+                margin-right: auto; 
+              }
+              .receipt-items th, .receipt-items td { 
+                padding: 2px 0; 
+                font-weight: bold; 
+                text-align: left; 
+                font-size: 12px; 
+              }
+              .receipt-items th { border-bottom: 1px dashed #000; }
+              .receipt-footer { text-align: center; margin-top: 5px; }
+              .receipt-footer p { margin: 2px 0; }
+              .divider { border-top: 1px dashed #000; margin: 5px 0; }
+              .spacing { height: 10px; }
+            </style>
+          </head>
+          <body>
+            <div class="receipt-header">
+              <h2>${shopName}</h2>
+              <p>${branchName}</p>
+              <p>Branch Code: ${branchCode}</p>
+              <p>Address: ${address}</p>
+              <p>Contact: ${contactNumber}</p>
+            </div>
+            <div class="receipt-details">
+              <p>Date: ${currentDate}</p>
+              <p>${title}</p>
+            </div>
+            <div class="divider"></div>
+            <table class="receipt-items">
+              <thead>
+                <tr>
+                  <th>Barcode</th>
+                  <th>Product Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${productsToPrint.map(product => `
+                  <tr>
+                    <td>${product.barcode || ""}</td>
+                    <td>${product.name || "Unknown Product"}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="divider"></div>
+            <div class="receipt-details">
+              <p>Total Items: ${productsToPrint.length}</p>
+            </div>
+            <div class="divider"></div>
+            <div class="receipt-footer">
+              <p>Thank You!</p>
+              <div class="spacing"></div>
+              <p>Powered by Delta POS</p>
+              <p>(deltapos.codearson@gmail.com)</p>
+              <p>(0094762963979)</p>
+              <p>================================================</p>
+            </div>
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      setTimeout(() => {
+        printWindow.print();
+        setTimeout(() => {
+          printWindow.close();
+        }, 1000);
+      }, 500);
+    } catch (error) {
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to print: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    }
+  };
+
   const columns = [
     {
       title: "Product Name",
@@ -352,6 +480,13 @@ const LowStock = () => {
               </h6>
             </div>
             <ul className="table-top-head">
+              <li>
+                <OverlayTrigger placement="top" overlay={renderPrintTooltip}>
+                  <Link onClick={handlePrint}>
+                    <Printer />
+                  </Link>
+                </OverlayTrigger>
+              </li>
               <li>
                 <OverlayTrigger placement="top" overlay={renderTooltip}>
                   <Link onClick={exportToPDF}>
