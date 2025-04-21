@@ -14,6 +14,13 @@ export const SidebarData = [
         icon: <Icon.Grid />,
         showSubRoute: false,
         submenu: false
+      },
+      {
+        label: "POS",
+        link: "/pos",
+        icon: <Icon.ShoppingCart />,
+        showSubRoute: false,
+        submenu: false
       }
           // {
           //   label: "Application",
@@ -98,7 +105,7 @@ export const SidebarData = [
         submenu: false,
         showSubRoute: false,
         submenuItems: [
-          { label: "POS", link: "/pos", icon:  <Icon.HardDrive />,showSubRoute: false,submenu: false },
+          // { label: "POS", link: "/pos", icon:  <Icon.HardDrive />,showSubRoute: false,submenu: false },
           // { label: "Sales", link: "/sales-list", icon:  <Icon.ShoppingCart />,showSubRoute: false,submenu: false },
           { label: "Transaction", link: "/invoice-report", icon:  <Icon.FileText />,showSubRoute: false,submenu: false },
           { label: "Banking", link: "/banking", icon: <Icon.CreditCard />, showSubRoute: false},

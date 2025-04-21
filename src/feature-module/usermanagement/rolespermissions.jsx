@@ -121,20 +121,23 @@ const RolesPermissions = () => {
                 max-width: 1400px;
                 margin: 0 auto;
                 width: 100%;
+                display: flex;
+                justify-content: center;
               }
 
               .admin-cards-grid {
                 display: flex;
                 flex-wrap: wrap;
-                gap: clamp(10px, 2vw, 20px);
-                margin-bottom: clamp(15px, 3vw, 30px);
-                width: 100%;
+                gap: 20px;
                 justify-content: center;
+                max-width: 1000px;
+                margin: 0 auto;
               }
 
               .id-card {
                 position: relative;
                 width: 300px;
+                flex: 0 0 300px;
                 aspect-ratio: 9/16;
                 max-height: 380px;
                 background: white;
@@ -304,38 +307,16 @@ const RolesPermissions = () => {
                 color: #666;
               }
 
-              /* Extra Small Devices (phones) */
-              @media screen and (max-width: 576px) {
+              /* Media queries for responsive layout */
+              @media screen and (max-width: 992px) {
+                .admin-cards-grid {
+                  grid-template-columns: repeat(2, 300px);
+                }
+              }
+
+              @media screen and (max-width: 650px) {
                 .admin-cards-grid {
                   grid-template-columns: 300px;
-                }
-              }
-
-              /* Small Devices (tablets) */
-              @media screen and (min-width: 577px) and (max-width: 768px) {
-                .admin-cards-grid {
-                  grid-template-columns: repeat(auto-fit, 300px);
-                }
-              }
-
-              /* Medium Devices (laptops) */
-              @media screen and (min-width: 769px) {
-                .admin-cards-grid {
-                  grid-template-columns: repeat(auto-fit, 300px);
-                }
-              }
-
-              /* Large Devices (desktops) */
-              @media screen and (min-width: 993px) {
-                .admin-cards-grid {
-                  grid-template-columns: repeat(3, 1fr);
-                }
-              }
-
-              /* Extra Large Devices */
-              @media screen and (min-width: 1400px) {
-                .admin-cards-grid {
-                  grid-template-columns: repeat(4, 1fr);
                 }
               }
 
