@@ -236,7 +236,7 @@ export const Pos_Calculator = ({
         )}
         <div className="summary-item">
           <span className="label">Balance</span>
-          <span className="value red-text">{priceSymbol}{isPaymentStarted ? balance.toFixed(2) : "0.00"}</span>
+          <span className="value red-text">{priceSymbol}{isPaymentStarted ? (balance < 0 ? `- ${Math.abs(balance).toFixed(2)}` : `- ${balance.toFixed(2)}`) : "0.00"}</span>
         </div>
         <div className="divider" />
         <div className="total-summary">

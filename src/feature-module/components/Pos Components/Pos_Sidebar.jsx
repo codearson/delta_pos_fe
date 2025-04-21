@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { all_routes } from "../../../Router/all_routes";
 import "../../../style/scss/components/Pos Components/Pos_Sidebar.scss";
+import Swal from "sweetalert2";
 
 const Pos_Sidebar = ({ darkMode }) => {
   const navigate = useNavigate();
@@ -44,6 +45,40 @@ const Pos_Sidebar = ({ darkMode }) => {
   };
 
   const handleHomeClick = () => {
+    const searchInput = document.querySelector('.search-input');
+    const inputScreenBox = document.querySelector('.input-screen-box');
+    const displayBox = document.querySelector('.display-box');
+
+    // Check if elements exist
+    if (!searchInput || !inputScreenBox || !displayBox) {
+      console.log('Some elements not found');
+      navigate(route.dashboard);
+      return;
+    }
+
+    // More precise checks
+    const hasSearchInput = searchInput.value.trim() !== '';
+    const hasInputScreen = inputScreenBox.textContent.trim() !== '';
+    const hasDisplayItems = displayBox.querySelector('.result-row') !== null;
+
+    console.log('Check results:', {
+      hasSearchInput,
+      hasInputScreen,
+      hasDisplayItems,
+      searchInputValue: searchInput.value,
+      inputScreenContent: inputScreenBox.textContent,
+      displayBoxChildren: displayBox.children.length
+    });
+
+    if (hasSearchInput || hasInputScreen || hasDisplayItems) {
+      Swal.fire({
+        title: 'Complete Transaction',
+        text: 'Please complete the current transaction before leaving.',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
     navigate(route.dashboard);
   };
 

@@ -315,10 +315,17 @@ const Pos = () => {
     } else if (activeTab === "nonscan" && category?.name) {
       const price = category.price || 0;
 
-      if (inputStage === "qty" && parseFloat(inputValue) > 0) {
-        const qty = parseFloat(inputValue);
+      if (inputStage === "price" && pendingQty !== null) {
+        // Handle multiply functionality
+        const qty = pendingQty;
         const total = qty * price;
-        const newItem = { id: category.id, name: category.nonScanProduct || category.name, qty, price, total };
+        const newItem = { 
+          id: category.id, 
+          name: category.nonScanProduct || category.name, 
+          qty, 
+          price, 
+          total 
+        };
 
         const existingItemIndex = selectedItems.findIndex(
           (item) => item.id === newItem.id
@@ -339,9 +346,17 @@ const Pos = () => {
         setInputScreenText("");
         resetInput();
       } else {
-        const qty = 1;
+        // Handle direct quantity input
+        const inputQty = parseFloat(inputValue);
+        const qty = inputQty > 0 ? inputQty : 1;
         const total = qty * price;
-        const newItem = { id: category.id, name: category.nonScanProduct || category.name, qty, price, total };
+        const newItem = { 
+          id: category.id, 
+          name: category.nonScanProduct || category.name, 
+          qty, 
+          price, 
+          total 
+        };
 
         const existingItemIndex = selectedItems.findIndex(
           (item) => item.id === newItem.id

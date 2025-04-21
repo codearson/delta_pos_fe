@@ -38,7 +38,7 @@ const Pos_CategoryTabs = ({ activeTab, onTabChange, darkMode, showInPos }) => {
           }}
           onClick={() => onTabChange("nonscan")}
         >
-          NonScan
+          Non-Scan
         </button>
       )}
       <button
