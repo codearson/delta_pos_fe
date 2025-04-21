@@ -12,6 +12,7 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
   const [productName, setProductName] = useState("");
   const [isLoadingProduct, setIsLoadingProduct] = useState(false);
   const [products, setProducts] = useState([]);
+  const [productStatus, setProductStatus] = useState("");
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -42,18 +43,34 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    
+    if (name === "barcode") {
+      setProductName("");
+      setProductStatus("Scan barcode to check product");
+    }
+  };
 
-    if (name === "barcode" && value.trim()) {
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const barcode = formData.barcode.trim();
+      
+      if (barcode === "") {
+        setProductStatus("Enter a barcode to check");
+        return;
+      }
+
       const matchingProduct = products.find(
-        (product) => product.barcode === value && product.isActive === true
+        (product) => product.barcode === barcode && product.isActive === true
       );
+      
       if (matchingProduct && matchingProduct.name) {
         setProductName(matchingProduct.name);
+        setProductStatus(`Product: ${matchingProduct.name}`);
       } else {
         setProductName("Product not found or inactive");
+        setProductStatus("Product not found or inactive");
       }
-    } else {
-      setProductName("");
     }
   };
 
@@ -64,6 +81,7 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
       setFormData(initialFormState);
       setErrors({});
       setProductName("");
+      setProductStatus("");
       document.querySelector("#add-units .close").click();
     }
   };
@@ -90,7 +108,9 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
                         name="barcode"
                         value={formData.barcode}
                         onChange={handleChange}
+                        onKeyDown={handleKeyDown}
                         className="form-control"
+                        placeholder="Enter barcode and press Enter to check"
                       />
                       {errors.barcode && <span className="text-danger">{errors.barcode}</span>}
                     </div>
@@ -99,7 +119,7 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
                     <div className="input-blocks">
                       <label>Product Name</label>
                       <p className="form-control-static">
-                        {isLoadingProduct ? "Loading..." : productName || "Enter a barcode to see product name"}
+                        {isLoadingProduct ? "Loading..." : productStatus || "Enter a barcode and press Enter to check"}
                       </p>
                     </div>
                   </div>
@@ -108,7 +128,7 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
                   <button type="button" className="btn btn-cancel me-2" data-bs-dismiss="modal">
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-submit">
+                  <button type="submit" className="btn btn-submit" disabled={!productName}>
                     Submit
                   </button>
                 </div>

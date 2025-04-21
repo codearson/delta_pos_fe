@@ -67,22 +67,16 @@ const Pos_BarcodeCreation = ({ onClose }) => {
         <head>
           <title>Print Barcode</title>
           <style>
-            body {
-              margin: 0;
-              padding: 20px;
-              display: block;
-              text-align: center;
+            @media print {
+              @page { size: 72mm auto; margin: 0; }
+              body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+              header, footer, nav, .print-header, .print-footer { display: none !important; }
+              html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
             }
-            .barcode-container {
-              display: inline-block;
-              text-align: center;
-            }
-            .product-info {
-              font-size: 16px;
-              font-weight: bold;
-              margin-bottom: 10px;
-              font-family: Arial, sans-serif;
-            }
+            body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+            .barcode-container { display: inline-block; text-align: center; width: 100%; }
+            .product-info { font-size: 16px; font-weight: bold; margin-bottom: 10px; font-family: Arial, sans-serif; }
+            #barcodeImage { width: 100%; max-width: 100%; height: auto; }
           </style>
         </head>
         <body>
@@ -107,9 +101,9 @@ const Pos_BarcodeCreation = ({ onClose }) => {
     const svg = barcodeElement.querySelector('svg');
     
     if (svg) {
-      // Clone SVG to modify height for printing
       const clonedSvg = svg.cloneNode(true);
-      clonedSvg.setAttribute('height', '50'); // Reduce height to half
+      clonedSvg.setAttribute('width', '100%');
+      clonedSvg.setAttribute('height', '10');
       const svgData = new XMLSerializer().serializeToString(clonedSvg);
       const img = printWindow.document.getElementById('barcodeImage');
       img.src = 'data:image/svg+xml;base64,' + btoa(svgData);

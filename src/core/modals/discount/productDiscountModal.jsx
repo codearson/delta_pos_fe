@@ -354,46 +354,53 @@ const ProductDiscountModal = ({ onSave, onUpdate, selectedDiscount, discountType
   const handleBarcodeScan = (e) => {
     const barcode = e.target.value;
     setBarcodeInput(barcode);
-    
-    if (barcode.trim() === "") return;
-    
-    const productByBarcode = products.find(product => 
-      product.barcode && product.barcode.toLowerCase() === barcode.toLowerCase()
-    );
-    
-    if (productByBarcode) {
-      const isAvailable = !allDiscounts.some(d => 
-        d.productDto.id === productByBarcode.id && 
-        d.isActive && 
-        d.productDiscountTypeDto.type === discountType &&
-        (!selectedDiscount || (d.id !== selectedDiscount.id))
+  };
+
+  const handleBarcodeKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const barcode = barcodeInput;
+      
+      if (barcode.trim() === "") return;
+      
+      const productByBarcode = products.find(product => 
+        product.barcode && product.barcode.toLowerCase() === barcode.toLowerCase()
       );
       
-      if (isAvailable || selectedDiscount) {
-        setFormData(prev => ({
-          ...prev,
-          productDto: { id: productByBarcode.id }
-        }));
+      if (productByBarcode) {
+        const isAvailable = !allDiscounts.some(d => 
+          d.productDto.id === productByBarcode.id && 
+          d.isActive && 
+          d.productDiscountTypeDto.type === discountType &&
+          (!selectedDiscount || (d.id !== selectedDiscount.id))
+        );
+        
+        if (isAvailable || selectedDiscount) {
+          setFormData(prev => ({
+            ...prev,
+            productDto: { id: productByBarcode.id }
+          }));
+        } else {
+          Swal.fire({
+            title: "Warning",
+            text: "This product already has an active discount. New discount will be created as inactive.",
+            icon: "warning",
+            confirmButtonText: "OK"
+          });
+          setFormData(prev => ({
+            ...prev,
+            productDto: { id: productByBarcode.id },
+            isActive: 0
+          }));
+        }
       } else {
         Swal.fire({
-          title: "Warning",
-          text: "This product already has an active discount. New discount will be created as inactive.",
-          icon: "warning",
+          title: "Product Not Found",
+          text: `No product found with barcode: ${barcode}`,
+          icon: "error",
           confirmButtonText: "OK"
         });
-        setFormData(prev => ({
-          ...prev,
-          productDto: { id: productByBarcode.id },
-          isActive: 0
-        }));
       }
-    } else {
-      Swal.fire({
-        title: "Product Not Found",
-        text: `No product found with barcode: ${barcode}`,
-        icon: "error",
-        confirmButtonText: "OK"
-      });
     }
   };
 
@@ -467,7 +474,6 @@ const ProductDiscountModal = ({ onSave, onUpdate, selectedDiscount, discountType
           success = allOperationsSuccessful;
         }
 
-        // Show single success message for quantity discounts
         if (success) {
           Swal.fire({
             title: "Success!",
@@ -502,7 +508,6 @@ const ProductDiscountModal = ({ onSave, onUpdate, selectedDiscount, discountType
           success = await onSave(discountData);
         }
 
-        // Success message will be shown by the parent component
         if (success) {
           resetForm();
           onHide();
@@ -566,6 +571,7 @@ const ProductDiscountModal = ({ onSave, onUpdate, selectedDiscount, discountType
                       placeholder="Scan Barcode"
                       value={barcodeInput}
                       onChange={handleBarcodeScan}
+                      onKeyDown={handleBarcodeKeyDown}
                       className="form-control"
                       disabled={!!selectedDiscount}
                     />

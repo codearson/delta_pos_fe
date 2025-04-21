@@ -637,25 +637,32 @@ const Pos_CategoryGrid = forwardRef(({
     const value = e.target.value.trim();
     setBarcode(value);
     setError("");
-    setProductName(""); // Reset product name
+    setProductName("");
+    setProductStatus("");
+  };
 
-    if (value === "") {
-      setProductStatus("");
-      return;
-    }
-
-    try {
-      const productData = await getProductByBarcode(value);
-      if (productData && productData.responseDto && productData.responseDto.length > 0) {
-        const product = productData.responseDto[0];
-        setProductName(product.name);
-        setProductStatus(`Product: ${product.name}`);
-      } else {
-        setProductStatus("No product found");
+  const handleBarcodeKeyDown = async (e) => {
+    if (e.key === 'Enter') {
+      const value = barcode.trim();
+      
+      if (value === "") {
+        setProductStatus("Enter a barcode to check");
+        return;
       }
-    } catch (err) {
-      setProductStatus("Error fetching product");
-      console.error("Error fetching product by barcode:", err);
+
+      try {
+        const productData = await getProductByBarcode(value);
+        if (productData && productData.responseDto && productData.responseDto.length > 0) {
+          const product = productData.responseDto[0];
+          setProductName(product.name);
+          setProductStatus(`Product: ${product.name}`);
+        } else {
+          setProductStatus("No product found");
+        }
+      } catch (err) {
+        setProductStatus("Error fetching product");
+        console.error("Error fetching product by barcode:", err);
+      }
     }
   };
 
@@ -1447,11 +1454,12 @@ const Pos_CategoryGrid = forwardRef(({
                 type="text"
                 value={barcode}
                 onChange={handleBarcodeChange}
+                onKeyDown={handleBarcodeKeyDown}
                 placeholder="Enter barcode number"
                 className="purchase-popup-input"
               />
               <p className="purchase-popup-status">
-                {productStatus || "Enter a barcode to check"}
+                {productStatus || "Scan barcode"}
               </p>
               {error && (
                 <p className="purchase-popup-status" style={{ color: "red" }}>

@@ -505,7 +505,13 @@ const Pos = () => {
           (d) =>
             d.productDto.id === id &&
             d.isActive &&
-            new Date(d.endDate) >= new Date()
+            (() => {
+              const endDate = new Date(d.endDate);
+              const nextDayMidnight = new Date(endDate);
+              nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
+              nextDayMidnight.setHours(0, 0, 0, 0);
+              return new Date() < nextDayMidnight;
+            })()
         );
 
         if (activeDiscounts.length > 0) {

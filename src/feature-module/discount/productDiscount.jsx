@@ -582,13 +582,6 @@ const ProductDiscount = () => {
       
       if (hasExpiredDiscounts) {
         await fetchDiscountsData(false);
-        
-        // MySwal.fire({
-        //   title: "Discounts Updated",
-        //   text: "Some discounts have expired and been automatically deactivated.",
-        //   icon: "info",
-        //   confirmButtonText: "OK",
-        // });
       }
     } catch (error) {
       console.error("Error checking expired discounts:", error);
