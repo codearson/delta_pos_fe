@@ -513,7 +513,7 @@ const SalesReport = () => {
                 />
               ) : (
                 <div className="text-center p-4">
-                  {searchTerm ? "No matching records found" : "No data available"}
+                  {searchTerm ? "No matching records found" : "Loading..."}
                 </div>
               )}
             </div>

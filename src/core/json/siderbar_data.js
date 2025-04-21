@@ -93,8 +93,19 @@ export const SidebarData = [
         submenu: true,
         showSubRoute: false,
         submenuItems: [
-          { label: "Manager Toggle", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+          // { label: "Manager Toggle", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
           { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+        //  { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
+        ]
+      },{
+        label: "Toggle",
+        submenuOpen: true,
+        submenuHdr: "Toggle",
+        submenu: true,
+        showSubRoute: false,
+        submenuItems: [
+          { label: "Manager Toggle", link: "/stock-adjustment", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+        //  { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
         //  { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
         ]
       },
