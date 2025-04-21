@@ -103,10 +103,10 @@ $light-text: #000000;
 
 .result-header {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr;
+  grid-template-columns: 50px 1fr 100px 100px;
   font-weight: bold;
   border-bottom: 2px solid $bg-gray-600;
-  padding-bottom: 8px;
+  padding: 8px 12px;
   margin-bottom: 8px;
   font-size: 14px;
   color: $text-gray-900;
@@ -118,48 +118,61 @@ $light-text: #000000;
 
 .result-row {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr 1fr;
-  padding: 8px 0;
-  border-bottom: 1px dashed $bg-gray-700;
-  font-size: 13px;
-  color: $text-gray-900;
-  line-height: 1.5;
+  grid-template-columns: 50px 1fr 100px 100px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s;
 
-  &.in-progress {
-    color: $text-gray-400;
-    background: $bg-gray-700;
-  }
-
-  &.cash-row {
-    background-color: rgb(34, 197, 94); // Specific green for cash payments
-    color: $text-black;
-  }
-
-  &.card-row {
-    background-color: rgb(37, 99, 235); // Specific blue for card payments
-    color: $text-white; // White text for better contrast on blue
-  }
-
-  &.discount-row {
-    background-color: #d83d4a; // Light red for discounts
-    color: $text-black;
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
   }
 
   &.selected {
-    background-color: #e0f2fe; // Selection color overrides payment colors
-    color: #1e40af;
-    border-radius: 0.25rem;
+    background-color: rgba(0, 123, 255, 0.1);
+    
+    &.cash-row,
+    &.card-row,
+    &.discount-row,
+    &.age-restricted-row {
+      background-color: rgba(0, 123, 255, 0.1);
+    }
+  }
+
+  &.cash-row {
+    background-color: rgba(40, 167, 69, 0.1);
+  }
+
+  &.card-row {
+    background-color: rgba(23, 162, 184, 0.1);
+  }
+
+  &.discount-row {
+    background-color: rgba(255, 193, 7, 0.1);
+  }
+
+  &.age-restricted-row {
+    background-color: transparent;
+    
+    .age-restricted-badge {
+      display: inline-block;
+      background-color: #dc3545;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
   }
 }
 
 .qty-column {
-  padding-right: 10px;
+  text-align: center;
 }
 
 .item-column {
-  padding-right: 20px;
+  text-align: left;
+  padding-right: 10px;
   white-space: normal;
   word-wrap: break-word;
   overflow: visible;
