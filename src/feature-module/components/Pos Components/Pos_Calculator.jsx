@@ -23,7 +23,7 @@ export const Pos_Calculator = ({
   employeeDiscountPercentage,
   employeeName,
 }) => {
-  const priceSymbol = localStorage.getItem("priceSymbol") || "$"; // Default to $ if not found
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   const handleBarcodeChange = (e) => {
     const value = e.target.value.trim();
@@ -170,11 +170,17 @@ export const Pos_Calculator = ({
                     ${item.type === "Card" ? "card-row" : ""}
                     ${item.type === "Discount" ? "discount-row" : ""}
                     ${item.type === "EmployeeDiscount" ? "discount-row" : ""}
+                    ${item.ageRestricted ? "age-restricted-row" : ""}
                   `}
                   onClick={() => onRowSelect(reversedDisplayItems.length - 1 - index)}
                 >
                   <span className="qty-column">{item.qty}</span>
-                  <span className="item-column">{item.name}</span>
+                  <span className="item-column">
+                    {item.name}
+                    {item.ageRestricted && (
+                      <span className="age-restricted-badge">Age Restricted</span>
+                    )}
+                  </span>
                   <span className="price-column">
                     {priceSymbol}{(item.originalPrice || item.price).toFixed(2)}
                   </span>
