@@ -862,6 +862,7 @@ const Pos = () => {
         shopDetailsDto: { id: shopDetailsId },
         customerDto: { id: customerId },
         userDto: { id: userId },
+        balanceAmount: Math.abs(balance),
         transactionDetailsList: selectedItems.map((item) => ({
           productDto: { id: item.id },
           quantity: item.qty,
@@ -933,14 +934,14 @@ const Pos = () => {
       showNotification("Failed to open print window. Please allow popups for this site and try again.", "error");
       return;
     }
-  
+
     const formattedDate = transactionDate && !isNaN(new Date(transactionDate).getTime())
       ? new Date(transactionDate).toLocaleString()
       : currentTime.toLocaleString();
-  
+
     const transactionId = lastTransaction?.id || 0;
     const formattedTransactionId = transactionId.toString().padStart(10, "0");
-  
+
     let barcodeDataUrl = "";
     try {
       if (barcodeRef.current) {
@@ -951,9 +952,9 @@ const Pos = () => {
       console.error("Failed to generate barcode image:", error);
       showNotification("Failed to generate barcode image.", "error");
     }
-  
+
     const totalDiscount = selectedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
-  
+
     printWindow.document.write(`
       <html>
         <head>
@@ -1061,18 +1062,18 @@ const Pos = () => {
         </body>
       </html>
     `);
-  
+
     printWindow.document.close();
     printWindow.focus();
   };
-  
+
   const handlePrintLastBill = async () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       showNotification("Failed to open print window. Please allow popups for this site and try again.", "error");
       return;
     }
-  
+
     if (!lastTransaction) {
       printWindow.document.write("<p>No previous transaction found.</p>");
       showNotification("No previous transaction found.", "error");
@@ -1080,7 +1081,7 @@ const Pos = () => {
       printWindow.close();
       return;
     }
-  
+
     try {
       const items = lastTransaction.transactionDetailsList.map((detail) => ({
         qty: detail.quantity,
@@ -1091,7 +1092,7 @@ const Pos = () => {
         discountType: detail.discountType,
         total: detail.quantity * detail.unitPrice,
       }));
-  
+
       const totalAmount = lastTransaction.totalAmount;
       const totalDiscount = items.reduce((sum, item) => sum + item.discount, 0);
       const manualDiscount = lastTransaction.manualDiscount || 0;
@@ -1099,10 +1100,10 @@ const Pos = () => {
         type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
         amount: method.amount,
       }));
-  
+
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
       const calculatedBalance = Math.abs(totalAmount - totalPaid);
-  
+
       let branchName = branchDetails.branchName;
       let branchCode = branchDetails.branchCode;
       let shopName = branchDetails.shopName;
@@ -1110,7 +1111,7 @@ const Pos = () => {
       let contactNumber = branchDetails.contactNumber;
       let firstName = userDetails.firstName;
       let lastName = userDetails.lastName;
-  
+
       let barcodeDataUrl = "";
       try {
         if (barcodeRef.current) {
@@ -1121,14 +1122,14 @@ const Pos = () => {
         console.error("Failed to generate barcode image:", error);
         barcodeDataUrl = "";
       }
-  
+
       const formattedDate = lastTransaction.dateTime && !isNaN(new Date(lastTransaction.dateTime).getTime())
         ? new Date(lastTransaction.dateTime).toLocaleString()
         : new Date().toLocaleString();
-  
+
       const transactionId = lastTransaction.id || 0;
       const formattedTransactionId = transactionId.toString().padStart(10, "0");
-  
+
       printWindow.document.write(`
         <html>
           <head>
@@ -1234,7 +1235,7 @@ const Pos = () => {
           </body>
         </html>
       `);
-  
+
       printWindow.document.close();
       printWindow.focus();
     } catch (error) {
@@ -1750,21 +1751,21 @@ const Pos = () => {
                 </p>
                 {customerName && <p>Customer: {customerName}</p>}
                 <div className="bill-summary centered">
-                  <p>Total: ${totalValue.toFixed(2)}</p>
-                  {manualDiscount > 0 && <p>Manual Discount: ${manualDiscount.toFixed(2)}</p>}
+                  <p>Total: {totalValue.toFixed(2)}</p>
+                  {manualDiscount > 0 && <p>Manual Discount: {manualDiscount.toFixed(2)}</p>}
                   {employeeDiscount > 0 && (
                     <p>
-                      Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)
-                      ${employeeName ? ` (${employeeName})` : ""}: ${employeeDiscount.toFixed(2)}
+                      Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)
+                      {employeeName ? ` (${employeeName})` : ""}: {employeeDiscount.toFixed(2)}
                     </p>
                   )}
-                  <p>Grand Total: ${(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
-                  ${paymentMethods.map((method) => `
-                    <p>${method.type}: ${method.amount.toFixed(2)}</p>
-                  `).join('')}
+                  <p>Grand Total: {(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
+                  {paymentMethods.map((method) => (
+                    <p key={method.type}>{method.type}: {method.amount.toFixed(2)}</p>
+                  ))}
                   <p>
                     <span className="balance-label">Balance:</span>{" "}
-                    <span className="balance-value">${Math.abs(balance).toFixed(2)}</span>
+                    <span className="balance-value">{Math.abs(balance).toFixed(2)}</span>
                   </p>
                 </div>
               </div>
