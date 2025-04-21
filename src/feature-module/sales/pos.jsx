@@ -248,6 +248,7 @@ const Pos = () => {
           newItems = [...selectedItems];
           newItems[existingItemIndex].qty += qty;
           newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          newItems[existingItemIndex].ageRestricted = category.ageRestricted;
         } else {
           newItems = [...selectedItems, newItem];
         }
@@ -275,6 +276,7 @@ const Pos = () => {
             newItems = [...selectedItems];
             newItems[existingItemIndex].qty += qty;
             newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+            newItems[existingItemIndex].ageRestricted = category.ageRestricted;
           } else {
             newItems = [...selectedItems, newItem];
           }
@@ -295,6 +297,7 @@ const Pos = () => {
             newItems = [...selectedItems];
             newItems[existingItemIndex].qty += qty;
             newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+            newItems[existingItemIndex].ageRestricted = category.ageRestricted;
           } else {
             newItems = [...selectedItems, newItem];
           }
@@ -333,6 +336,7 @@ const Pos = () => {
           newItems = [...selectedItems];
           newItems[existingItemIndex].qty += qty;
           newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          newItems[existingItemIndex].ageRestricted = category.ageRestricted;
         } else {
           newItems = [...selectedItems, newItem];
         }
@@ -363,6 +367,7 @@ const Pos = () => {
           newItems = [...selectedItems];
           newItems[existingItemIndex].qty += qty;
           newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          newItems[existingItemIndex].ageRestricted = category.ageRestricted;
         } else {
           newItems = [...selectedItems, newItem];
         }
@@ -432,6 +437,7 @@ const Pos = () => {
           newItems = [...selectedItems];
           newItems[existingItemIndex].qty += newItem.qty;
           newItems[existingItemIndex].total = newItems[existingItemIndex].qty * newItems[existingItemIndex].price;
+          newItems[existingItemIndex].ageRestricted = category.ageRestricted;
         } else {
           newItems = [...selectedItems, newItem];
         }
@@ -471,10 +477,19 @@ const Pos = () => {
       }
 
       const productData = product.responseDto[0];
-      const { id, name, pricePerUnit, quantity } = productData;
+      const { id, name, pricePerUnit, quantity, productCategoryDto } = productData;
       if (!name || pricePerUnit === undefined || quantity === undefined) {
         resetInput();
         return;
+      }
+
+      if (productCategoryDto && productCategoryDto.agevalidation) {
+        const isAdult = await showAgeVerificationPopup(name);
+        if (!isAdult) {
+          showNotification("Age verification failed. Product not added.", "error");
+          resetInput();
+          return;
+        }
       }
 
       const qty = inputStage === "price" && pendingQty ? pendingQty : 1;
@@ -494,10 +509,12 @@ const Pos = () => {
       let discountedPrice = pricePerUnit;
       let discount = 0;
       let discountType = null;
+      let ageRestricted = productCategoryDto && productCategoryDto.agevalidation;
 
       if (existingItemIndex !== -1) {
         newQty = newItems[existingItemIndex].qty + qty;
         newItems[existingItemIndex].qty = newQty;
+        newItems[existingItemIndex].ageRestricted = ageRestricted;
       } else {
         newQty = qty;
         newItems.push({
@@ -509,6 +526,7 @@ const Pos = () => {
           discount: 0,
           discountType: null,
           total: 0,
+          ageRestricted: ageRestricted
         });
       }
 
@@ -1676,6 +1694,34 @@ const Pos = () => {
     `);
     printWindow.document.close();
     printWindow.focus();
+  };
+
+  const showAgeVerificationPopup = (productName) => {
+    return new Promise((resolve) => {
+      const today = new Date();
+      const eighteenYearsAgo = new Date();
+      eighteenYearsAgo.setFullYear(today.getFullYear() - 18);
+      
+      const formattedDate = eighteenYearsAgo.toISOString().split('T')[0];
+      
+      Swal.fire({
+        title: 'Age Verification Required',
+        html: `
+          <p>This is an age restricted product: <strong>${productName}</strong></p>
+          <p>Please confirm that the customer's date of birth is before: <strong>${formattedDate}</strong></p>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Customer is 18+',
+        cancelButtonText: 'No, Customer is under 18',
+        customClass: {
+          confirmButton: 'btn btn-primary',
+          cancelButton: 'btn btn-danger'
+        }
+      }).then((result) => {
+        resolve(result.isConfirmed);
+      });
+    });
   };
 
   return (

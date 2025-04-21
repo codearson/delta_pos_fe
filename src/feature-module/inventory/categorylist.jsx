@@ -29,6 +29,7 @@ const CategoryList = () => {
     const [showActive, setShowActive] = useState(true);
     const [togglingId, setTogglingId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [ageFilter, setAgeFilter] = useState('all'); // New state for dropdown
 
     useEffect(() => {
         loadInitialData();
@@ -38,7 +39,7 @@ const CategoryList = () => {
         if (!isLoading) {
             loadCategories(false);
         }
-    }, [showActive]);
+    }, [showActive, ageFilter]);
 
     const loadInitialData = async () => {
         setIsLoading(true);
@@ -63,10 +64,14 @@ const CategoryList = () => {
                     !category.productCategoryName?.toLowerCase().includes('nonscan')
                 );
                 setAllCategories(filteredCategories);
-                const activeFilteredCategories = filteredCategories
-                    .filter(category => category.isActive === showActive)
-                    .reverse();
-                setCategories(activeFilteredCategories);
+                let activeFilteredCategories = filteredCategories
+                    .filter(category => category.isActive === showActive);
+                if (ageFilter === 'restricted') {
+                    activeFilteredCategories = activeFilteredCategories.filter(category => category.agevalidation === true);
+                } else if (ageFilter === 'non-restricted') {
+                    activeFilteredCategories = activeFilteredCategories.filter(category => category.agevalidation === false);
+                }
+                setCategories(activeFilteredCategories.reverse());
             } else {
                 setAllCategories([]);
                 setCategories([]);
@@ -121,7 +126,7 @@ const CategoryList = () => {
                         Swal.fire('Error', 'Failed to update category status', 'error');
                     }
                 } catch (error) {
-                    Swal.fire('Error', 'Something went wrong', 'error');
+                    Swal.fire('Error', 'Something went wrong: ' + (error.message || 'Unknown error'), 'error');
                 }
             }
             setTogglingId(null);
@@ -131,17 +136,20 @@ const CategoryList = () => {
     const handleAddCategory = async (newCategory) => {
         try {
             const response = await saveProductCategory(newCategory);
-            if (response) {
+            console.log('Add Category Response:', response); // Debug log
+            if (response && response.data) {
                 Swal.fire('Success', 'Category has been added!', 'success');
-                await loadCategories(false);
-                const modal = document.getElementById('add-category');
-                const bootstrapModal = new window.bootstrap.Modal(modal);
-                bootstrapModal.hide();
+                await loadCategories(false); // Refresh table
+                const closeButton = document.querySelector('#add-units-category .close');
+                if (closeButton) {
+                    closeButton.click();
+                }
             } else {
                 Swal.fire('Error', 'Failed to add category', 'error');
             }
         } catch (error) {
-            Swal.fire('Error', 'Something went wrong', 'error');
+            console.error('Add Category Error:', error); // Debug log
+            Swal.fire('Error', 'Something went wrong: ' + (error.message || 'Unknown error'), 'error');
         }
     };
 
@@ -153,7 +161,13 @@ const CategoryList = () => {
                 category.productCategoryName.toLowerCase().includes(query.toLowerCase()) &&
                 category.productCategoryName.toLowerCase() !== 'custom'
             );
-            setCategories(searchCategories.length > 0 ? searchCategories : []);
+            let filteredSearchCategories = searchCategories;
+            if (ageFilter === 'restricted') {
+                filteredSearchCategories = searchCategories.filter(category => category.agevalidation === true);
+            } else if (ageFilter === 'non-restricted') {
+                filteredSearchCategories = searchCategories.filter(category => category.agevalidation === false);
+            }
+            setCategories(filteredSearchCategories.length > 0 ? filteredSearchCategories : []);
         } else {
             loadCategories(false);
         }
@@ -161,24 +175,30 @@ const CategoryList = () => {
 
     const exportToPDF = () => {
         const doc = new jsPDF();
-        doc.text(`Category List (${showActive ? 'Active' : 'Inactive'})`, 20, 10);
-        const tableData = categories.map(category => [category.productCategoryName || 'N/A']);
+        doc.text(`Category List (${showActive ? 'Active' : 'Inactive'}${ageFilter !== 'all' ? ` - ${ageFilter === 'restricted' ? 'Age Restricted' : 'Age Non-Restricted'}` : ''})`, 20, 10);
+        const tableData = categories.map(category => [
+            category.agevalidation 
+                ? `${category.productCategoryName} (Age Restricted Category)` 
+                : category.productCategoryName || 'N/A'
+        ]);
         autoTable(doc, {
             head: [['Category']],
             body: tableData,
             startY: 20,
         });
-        doc.save(`category_list_${showActive ? 'active' : 'inactive'}.pdf`);
+        doc.save(`category_list_${showActive ? 'active' : 'inactive'}_${ageFilter}.pdf`);
     };
 
     const exportToExcel = () => {
         const worksheetData = categories.map(category => ({
-            Category: category.productCategoryName || 'N/A',
+            Category: category.agevalidation 
+                ? `${category.productCategoryName} (Age Restricted Category)` 
+                : category.productCategoryName || 'N/A',
         }));
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Categories');
-        XLSX.writeFile(workbook, `category_list_${showActive ? 'active' : 'inactive'}.xlsx`);
+        XLSX.writeFile(workbook, `category_list_${showActive ? 'active' : 'inactive'}_${ageFilter}.xlsx`);
     };
 
     const renderTooltip = (props) => (
@@ -198,7 +218,16 @@ const CategoryList = () => {
         {
             title: 'Category',
             dataIndex: 'productCategoryName',
-            render: (text) => <Link to="#">{text}</Link>,
+            render: (text, record) => (
+                <Link to="#">
+                    {text}
+                    {record.agevalidation && (
+                        <span style={{ color: 'red', marginLeft: '5px' }}>
+                            (Age Restricted Category)
+                        </span>
+                    )}
+                </Link>
+            ),
             sorter: (a, b) => (a.productCategoryName || '').length - (b.productCategoryName || '').length,
         },
         {
@@ -314,7 +343,7 @@ const CategoryList = () => {
                                 to="#"
                                 className="btn btn-added"
                                 data-bs-toggle="modal"
-                                data-bs-target="#add-category"
+                                data-bs-target="#add-units-category"
                             >
                                 <PlusCircle className="me-2" />
                                 Add New
@@ -337,6 +366,17 @@ const CategoryList = () => {
                                             <i data-feather="search" className="feather-search" />
                                         </Link>
                                     </div>
+                                    <div className="ms-2">
+                                        <select
+                                            className="form-control form-control-sm"
+                                            value={ageFilter}
+                                            onChange={(e) => setAgeFilter(e.target.value)}
+                                        >
+                                            <option value="all">Show all categories</option>
+                                            <option value="restricted">Show age restricted categories</option>
+                                            <option value="non-restricted">Show age non-restricted categories</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                             <div className="table-responsive">
@@ -351,7 +391,7 @@ const CategoryList = () => {
                     </div>
                 </div>
             </div>
-            <AddCategoryList onAddCategory={handleAddCategory} onUpdate={loadCategories} />
+            <AddCategoryList refreshCategories={loadCategories} onCategoryAdded={handleAddCategory} />
             <EditCategoryList selectedCategory={selectedCategory} onUpdate={loadCategories} />
         </div>
     );

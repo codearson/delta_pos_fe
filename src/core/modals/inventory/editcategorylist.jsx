@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Link } from 'react-router-dom'
-import { updateProductCategory, getProductCategoryByName } from '../../../feature-module/Api/ProductCategoryApi'
+import { Link } from 'react-router-dom';
+import { updateProductCategory } from '../../../feature-module/Api/ProductCategoryApi';
 import Swal from "sweetalert2";
 import PropTypes from "prop-types";
 
 const EditCategoryList = ({ selectedCategory, onUpdate }) => {
     const [categoryName, setCategoryName] = useState("");
     const [isActive, setIsActive] = useState(1);
+    const [agevalidation, setAgevalidation] = useState(false);
     const [validationError, setValidationError] = useState("");
 
     useEffect(() => {
         if (selectedCategory) {
             setCategoryName(selectedCategory.productCategoryName);
             setIsActive(selectedCategory.isActive);
+            setAgevalidation(selectedCategory.agevalidation || false);
             setValidationError("");
         }
     }, [selectedCategory]);
@@ -26,29 +28,15 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
         if (!selectedCategory) return;
 
         try {
-            // Check for existing category (excluding current category)
-            const existingCategory = await getProductCategoryByName(categoryName);
-            if (existingCategory?.responseDto && 
-                existingCategory.responseDto.id !== selectedCategory.id) {
-                Swal.fire({
-                    title: "Error!",
-                    text: "A category with this name already exists.",
-                    icon: "error",
-                    confirmButtonText: "OK",
-                    customClass: {
-                        confirmButton: "btn btn-primary",
-                    },
-                });
-                return;
-            }
-
             const updatedData = { 
                 productCategoryName: categoryName, 
-                isActive 
+                isActive,
+                agevalidation
             };
 
             const response = await updateProductCategory(selectedCategory.id, updatedData);
-            if (response) {
+            console.log('Update Category Response:', response); // Debug log
+            if (response && response.data) {
                 Swal.fire({
                     title: "Success",
                     text: "Category updated successfully!",
@@ -72,9 +60,10 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
                 });
             }
         } catch (error) {
+            console.error('Update Category Error:', error); // Debug log
             Swal.fire({
                 title: "Error",
-                text: "Something went wrong",
+                text: "Something went wrong: " + (error.message || 'Unknown error'),
                 icon: "error",
                 confirmButtonText: "OK",
                 customClass: {
@@ -87,13 +76,13 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
     const handleCloseModal = () => {
         if (selectedCategory) {
             setCategoryName(selectedCategory.productCategoryName);
+            setAgevalidation(selectedCategory.agevalidation || false);
         }
         setValidationError("");
     };
 
     return (
         <div>
-            {/* Edit Category */}
             <div className="modal fade" id="edit-category" aria-hidden="true" inert>
                 <div className="modal-dialog modal-dialog-centered custom-modal-two">
                     <div className="modal-content">
@@ -122,10 +111,7 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
                                                 type="text"
                                                 className={`form-control ${validationError ? 'is-invalid' : ''}`}
                                                 value={categoryName}
-                                                onChange={(e) => {
-                                                    setCategoryName(e.target.value);
-                                                    setValidationError("");
-                                                }}
+                                                readOnly
                                             />
                                             {validationError && (
                                                 <div className="invalid-feedback">
@@ -133,27 +119,17 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
                                                 </div>
                                             )}
                                         </div>
-                                        {/* <div className="mb-3">
-                                            <label className="form-label">Category Slug</label>
-                                            <input
-                                                type="text"
+                                        <div className="mb-3">
+                                            <label className="form-label">Age Restriction</label>
+                                            <select
                                                 className="form-control"
-                                                defaultValue="laptop"
-                                            />
-                                        </div> */}
-                                        {/* <div className="mb-0">
-                                            <div className="status-toggle modal-status d-flex justify-content-between align-items-center">
-                                                <span className="status-label">Status</span>
-                                                <input
-                                                    type="checkbox"
-                                                    id="status-toggle"
-                                                    className="check"
-                                                    checked={isActive === 1}
-                                                    onChange={() => setIsActive(isActive === 1 ? 0 : 1)}
-                                                />
-                                                <label htmlFor="user3" className="checktoggle" onClick={handleDelete} />
-                                            </div>
-                                        </div> */}
+                                                value={agevalidation}
+                                                onChange={(e) => setAgevalidation(e.target.value === 'true')}
+                                            >
+                                                <option value={false}>false</option>
+                                                <option value={true}>true</option>
+                                            </select>
+                                        </div>
                                         <div className="modal-footer-btn">
                                             <button
                                                 type="button"
@@ -174,18 +150,18 @@ const EditCategoryList = ({ selectedCategory, onUpdate }) => {
                     </div>
                 </div>
             </div>
-            {/* /Edit Category */}
         </div>
-    )
-}
+    );
+};
 
 EditCategoryList.propTypes = {
     selectedCategory: PropTypes.shape({
         id: PropTypes.number.isRequired,
         productCategoryName: PropTypes.string.isRequired,
         isActive: PropTypes.bool,
+        agevalidation: PropTypes.bool,
     }).isRequired,
     onUpdate: PropTypes.func.isRequired,
 };
 
-export default EditCategoryList
+export default EditCategoryList;

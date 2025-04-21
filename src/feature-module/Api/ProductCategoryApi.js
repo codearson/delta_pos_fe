@@ -1,20 +1,13 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-// Save Api
-export const saveProductCategory = async (categoryName) => {
+export const saveProductCategory = async (categoryData) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
-
-        const categoryData = {
-            productCategoryName: categoryName,
-            isActive: true,
-        };
 
         const response = await axios.post(`${BASE_BACKEND_URL}/productCategory/save`, categoryData, {
             headers: {
@@ -23,20 +16,18 @@ export const saveProductCategory = async (categoryName) => {
             },
         });
 
-        return response.data;
+        return response;
     } catch (error) {
-        //console.error("Error saving product category:", error.response?.status, error.response?.data);
+        console.error('Save Product Category Error:', error.response || error);
         return null;
     }
 };
 
-// Get All Api
 export const fetchProductCategories = async () => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return [];
         }
 
@@ -48,18 +39,16 @@ export const fetchProductCategories = async () => {
 
         return response.data.responseDto || [];
     } catch (error) {
-        //console.error("Error fetching product categories:", error.response?.status, error.response?.data);
+        console.error('Fetch Product Categories Error:', error.response || error);
         return [];
     }
 };
 
-// Update Product Category Api
 export const updateProductCategory = async (categoryId, updatedData) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -73,20 +62,18 @@ export const updateProductCategory = async (categoryId, updatedData) => {
             }
         );
 
-        return response.data;
+        return response;
     } catch (error) {
-        //console.error("Error updating product category:", error.response?.status, error.response?.data);
+        console.error('Update Product Category Error:', error.response || error);
         return null;
     }
 };
 
-// Update Product Category Status Api
 export const updateProductCategoryStatus = async (categoryId, status = 0) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -102,19 +89,16 @@ export const updateProductCategoryStatus = async (categoryId, status = 0) => {
 
         return response.data;
     } catch (error) {
-        //console.error("Error updating product category status:", error.response?.status, error.response?.data);
+        console.error('Update Product Category Status Error:', error.response || error);
         return null;
     }
 };
 
-// Get Product Category By Name Api
 export const getProductCategoryByName = async (categoryName) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
-        // Check if access token exists
         if (!accessToken) {
-            //console.error("No access token found. Please log in.");
             return null;
         }
 
@@ -129,7 +113,7 @@ export const getProductCategoryByName = async (categoryName) => {
 
         return response.data;
     } catch (error) {
-        //console.error("Error fetching product category by name:", error.response?.status, error.response?.data);
+        console.error('Get Product Category By Name Error:', error.response || error);
         return null;
     }
 };
