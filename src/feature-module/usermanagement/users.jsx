@@ -72,8 +72,16 @@ const Users = () => {
     const loadUserRoles = async () => {
         try {
             const roles = await fetchUserRoles();
+            let filteredRoles = roles;
+            
+            if (isManager) {
+                filteredRoles = roles.filter(role => 
+                    role.userRole === "MANAGER" || role.userRole === "USER"
+                );
+            }
+            
             const formattedRoles = [
-                ...roles.map(role => ({
+                ...filteredRoles.map(role => ({
                     value: role.userRole,
                     label: role.userRole
                 }))

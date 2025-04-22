@@ -44,7 +44,15 @@ const EditUser = ({ user, onUpdate }) => {
     const loadUserRoles = async () => {
         try {
             const roles = await fetchUserRoles();
-            const formattedRoles = roles.map(role => ({
+            let filteredRoles = roles;
+            
+            if (isManager) {
+                filteredRoles = roles.filter(role => 
+                    role.userRole === "MANAGER" || role.userRole === "USER"
+                );
+            }
+            
+            const formattedRoles = filteredRoles.map(role => ({
                 value: role.id,
                 label: role.userRole
             }));
@@ -138,16 +146,25 @@ const EditUser = ({ user, onUpdate }) => {
     };
 
     const handleRoleChange = (selectedOption) => {
-        if (isManager) return;
-        
-        setSelectedRole(selectedOption);
-        setFormData(prev => ({
-            ...prev,
-            userRoleDto: {
-                id: selectedOption.value,
-                userRole: selectedOption.label
-            }
-        }));
+        if (isManager) {
+            setSelectedRole(selectedOption);
+            setFormData(prev => ({
+                ...prev,
+                userRoleDto: {
+                    id: selectedOption.value,
+                    userRole: selectedOption.label
+                }
+            }));
+        } else {
+            setSelectedRole(selectedOption);
+            setFormData(prev => ({
+                ...prev,
+                userRoleDto: {
+                    id: selectedOption.value,
+                    userRole: selectedOption.label
+                }
+            }));
+        }
     };
 
     const validateForm = () => {
