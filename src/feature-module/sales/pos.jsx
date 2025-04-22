@@ -90,6 +90,8 @@ const Pos = () => {
   const [showPayoutPopup, setShowPayoutPopup] = useState(false);
   const [payoutCategories, setPayoutCategories] = useState([]);
   const [selectedPayoutCategory, setSelectedPayoutCategory] = useState(null);
+  const [ageVerifiedForTransaction, setAgeVerifiedForTransaction] = useState(false);
+  const [isAgeRestrictionEnabled, setIsAgeRestrictionEnabled] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -146,9 +148,12 @@ const Pos = () => {
         const toggles = await getAllManagerToggles();
         const nonScanToggle = toggles.responseDto.find(toggle => toggle.action === "Non Scan Product");
         setShowInPos(nonScanToggle ? nonScanToggle.isActive : false);
+        const ageRestrictionToggle = toggles.responseDto.find(toggle => toggle.action === "Age Validation");
+        setIsAgeRestrictionEnabled(ageRestrictionToggle ? ageRestrictionToggle.isActive : false);
       } catch (error) {
         console.error('Error fetching toggles:', error);
         setShowInPos(false);
+        setIsAgeRestrictionEnabled(false);
       }
     };
 
@@ -483,13 +488,15 @@ const Pos = () => {
         return;
       }
 
-      if (productCategoryDto && productCategoryDto.agevalidation) {
+      // Only check age restriction if the toggle is enabled
+      if (isAgeRestrictionEnabled && productCategoryDto && productCategoryDto.agevalidation && !ageVerifiedForTransaction) {
         const isAdult = await showAgeVerificationPopup(name);
         if (!isAdult) {
           showNotification("Age verification failed. Product not added.", "error");
           resetInput();
           return;
         }
+        setAgeVerifiedForTransaction(true);
       }
 
       const qty = inputStage === "price" && pendingQty ? pendingQty : 1;
@@ -509,7 +516,8 @@ const Pos = () => {
       let discountedPrice = pricePerUnit;
       let discount = 0;
       let discountType = null;
-      let ageRestricted = productCategoryDto && productCategoryDto.agevalidation;
+      // Only set ageRestricted flag if the toggle is enabled
+      let ageRestricted = isAgeRestrictionEnabled ? (productCategoryDto && productCategoryDto.agevalidation) : false;
 
       if (existingItemIndex !== -1) {
         newQty = newItems[existingItemIndex].qty + qty;
@@ -773,6 +781,7 @@ const Pos = () => {
     setEmployeeDiscount(0);
     setEmployeeId(null);
     setEmployeeDiscountPercentage(0);
+    setAgeVerifiedForTransaction(false); // Reset age verification status
     showNotification("All items and payments voided.", "success");
   };
 
@@ -1299,6 +1308,7 @@ const Pos = () => {
     setEmployeeId(null);
     setEmployeeDiscountPercentage(0);
     setEmployeeName("");
+    setAgeVerifiedForTransaction(false); // Reset age verification status
     resetInput();
   };
 
@@ -1349,6 +1359,7 @@ const Pos = () => {
     setEmployeeDiscount(0);
     setEmployeeId(null);
     setEmployeeDiscountPercentage(0);
+    setAgeVerifiedForTransaction(false); // Reset age verification status
     resetInput();
   };
 
@@ -1756,6 +1767,7 @@ const Pos = () => {
               employeeDiscount={employeeDiscount}
               employeeDiscountPercentage={employeeDiscountPercentage}
               employeeName={employeeName}
+              isAgeRestrictionEnabled={isAgeRestrictionEnabled}
             />
             <div className="category-section">
               <CategoryTabs

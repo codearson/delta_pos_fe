@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import "../../../style/scss/components/Pos Components/Pos_Header.scss";
 import PropTypes from 'prop-types';
 import { fetchCustomers, saveCustomer } from "../../Api/customerApi";
+import { getAllManagerToggles } from "../../Api/ManagerToggle";
 import FeatherIcon from "feather-icons-react";
 
 export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAdded }) => {
@@ -12,6 +13,24 @@ export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAd
   const [errors, setErrors] = useState({ phoneNumber: "", customerName: "" });
   const [existingCustomer, setExistingCustomer] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+
+  useEffect(() => {
+    const checkAddCustomerToggle = async () => {
+      try {
+        const toggles = await getAllManagerToggles();
+        const addCustomerToggle = toggles.responseDto.find(
+          toggle => toggle.action === "Add Customer"
+        );
+        setShowAddCustomer(addCustomerToggle?.isActive || false);
+      } catch (error) {
+        console.error('Error fetching Add Customer toggle:', error);
+        setShowAddCustomer(false);
+      }
+    };
+
+    checkAddCustomerToggle();
+  }, []);
 
   // Fullscreen effect
   useEffect(() => {
@@ -158,7 +177,6 @@ export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAd
       </button>
 
       <div className="header-right">
-
         <button
           id="btnFullscreen"
           onClick={() => toggleFullscreen()}
@@ -167,12 +185,14 @@ export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAd
           <FeatherIcon icon="maximize" />
         </button>
 
-        <button
-          className="add-customer-btn"
-          onClick={() => setShowPopup(true)}
-        >
-          Add Customer
-        </button>
+        {showAddCustomer && (
+          <button
+            className="add-customer-btn"
+            onClick={() => setShowPopup(true)}
+          >
+            Add Customer
+          </button>
+        )}
 
         <div className="time-display">
           <div className="date">
@@ -182,8 +202,6 @@ export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAd
             {format(currentTime, "HH:mm:ss")}
           </div>
         </div>
-
-
       </div>
 
       {showPopup && (
