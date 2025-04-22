@@ -228,7 +228,7 @@ const Pos = () => {
     if (activeTab === "category" && category?.name) {
       if (category.name.toLowerCase().includes("shopping bag") || category.isNonScanProduct) {
         const inputQty = parseFloat(inputValue);
-        const qty = inputQty > 0 ? inputQty : 1;
+        const qty = inputStage === "price" && pendingQty !== null ? pendingQty : (inputQty > 0 ? inputQty : 1);
         const price = category.price || 0;
         const total = qty * price;
         const newItem = {
