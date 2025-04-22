@@ -140,9 +140,10 @@ const Pos_BarcodeCreation = ({ onClose }) => {
             <div className="barcode-popup-barcode" ref={barcodeRef}>
               <Barcode
                 value={barcodeValue}
-                width={2}
-                height={100} // Keep full height in popup
-                displayValue={true}
+                format="CODE128"
+                width={1}
+                height={30}
+                displayValue={false}
                 margin={10}
               />
             </div>
