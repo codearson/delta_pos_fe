@@ -129,6 +129,16 @@ export const Pos_Calculator = ({
       ];
 
   const reversedDisplayItems = [...displayItems].reverse();
+  
+  // Calculate grand total (after discounts)
+  const grandTotal = totalValue - manualDiscount - employeeDiscount;
+  
+  // Calculate total payments
+  const totalPayments = cashTotal + cardPayments.reduce((sum, method) => sum + method.amount, 0);
+  
+  // Determine if balance should be displayed as negative (when overpaid)
+  const displayBalance = isPaymentStarted ? balance : 0;
+  const isOverpaid = totalPayments > grandTotal;
 
   return (
     <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
@@ -236,12 +246,14 @@ export const Pos_Calculator = ({
         )}
         <div className="summary-item">
           <span className="label">Balance</span>
-          <span className="value red-text">{priceSymbol}{isPaymentStarted ? (balance < 0 ? `- ${Math.abs(balance).toFixed(2)}` : `- ${balance.toFixed(2)}`) : "0.00"}</span>
+          <span className={`value ${isOverpaid ? "green-text" : "red-text"}`}>
+            {isOverpaid ? "- " : ""}{priceSymbol}{Math.abs(displayBalance).toFixed(2)}
+          </span>
         </div>
         <div className="divider" />
         <div className="total-summary">
           <span className="label">Grand Total</span>
-          <span className="value">{priceSymbol}{(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</span>
+          <span className="value">{priceSymbol}{grandTotal.toFixed(2)}</span>
         </div>
         {cashTotal > 0 && (
           <div className="summary-item">

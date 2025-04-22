@@ -831,208 +831,268 @@ const Pos_CategoryGrid = forwardRef(({
   };
 
   const handlePrintXReport = () => {
-    if (!xReportData) return;
+    if (!xReportData || !xReportData.responseDto) return;
 
     const printFrame = document.createElement('iframe');
     printFrame.style.display = 'none';
     document.body.appendChild(printFrame);
 
+    const reportData = xReportData.responseDto;
+
+    // Set receipt paper size (80mm or 57mm width, length is auto for POS printers)
+    const paperWidth = '80mm'; // Options: '80mm' or '57mm'
+
+    // Prepare data with fallbacks
+    const startDate = reportData.startDate
+      ? new Date(reportData.startDate).toLocaleDateString()
+      : 'N/A';
+    const endDate = reportData.endDate
+      ? new Date(reportData.endDate).toLocaleDateString()
+      : 'N/A';
+    const generatedBy = reportData.reportGeneratedBy || 'Unknown';
+    const totalSales = reportData.totalSales
+      ? parseFloat(reportData.totalSales).toFixed(2)
+      : '0.00';
+    const totalTransactions = reportData.totalTransactions || 0;
+    const categoryTotals = reportData.categoryTotals || {};
+    const bankingCount = reportData.bankingCount || 0;
+    const bankingTotal = reportData.bankingTotal
+      ? parseFloat(reportData.bankingTotal).toFixed(2)
+      : '0.00';
+    const payoutCount = reportData.payoutCount || 0;
+    const payoutTotal = reportData.payoutTotal
+      ? parseFloat(reportData.payoutTotal).toFixed(2)
+      : '0.00';
+    const difference = reportData.difference
+      ? parseFloat(reportData.difference).toFixed(2)
+      : '0.00';
+
+    // Handle overallPaymentTotals for Payment Methods
+    const paymentMethods = reportData.overallPaymentTotals || {};
+    const paymentEntries = typeof paymentMethods === 'object' && !Array.isArray(paymentMethods)
+      ? Object.entries(paymentMethods)
+      : [];
+
+    // Calculate After Balance Cash for X Report
+    const cashAmount = paymentMethods.Cash || 0;
+    const afterBalanceCash = (cashAmount - parseFloat(difference)).toFixed(2);
+
+    // Handle userPaymentDetails
+    const userPaymentDetails = reportData.userPaymentDetails || [];
+
     printFrame.contentWindow.document.write(`
       <html>
         <head>
-          <title>X Report - ${xReportData.responseDto.reportGeneratedBy}</title>
+          <title>X Report - ${generatedBy}</title>
           <style>
-            @page {
-              size: 80mm 297mm;
-              margin: 0;
+            @media print {
+              @page {
+                size: ${paperWidth} auto;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: ${paperWidth === '57mm' ? '3px' : '5px'};
+                width: ${paperWidth};
+                font-family: 'Courier New', Courier, monospace;
+                font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
+                font-weight: bold;
+                color: #000;
+                box-sizing: border-box;
+              }
             }
             body {
-              font-family: sans-serif;
-              width: 80mm;
-              margin: 0;
-              padding: 10px;
-              font-size: 12px;
+              font-family: 'Courier New', Courier, monospace;
+              width: ${paperWidth};
+              margin: 0 auto;
+              padding: ${paperWidth === '57mm' ? '3px' : '5px'};
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
+              line-height: 1.2;
               font-weight: bold;
+              color: #000;
+              text-align: center;
             }
             .receipt-header {
               text-align: center;
-              border-bottom: 1px dashed #000;
-              padding-bottom: 10px;
               margin-bottom: 10px;
             }
             .receipt-title {
-              font-size: 20px;
-              font-family: sans-serif;
-              font-weight: 900;
+              font-size: ${paperWidth === '57mm' ? '14px' : '16px'};
+              font-weight: bold;
               margin: 5px 0;
               letter-spacing: 1px;
             }
             .info-row {
               display: flex;
               justify-content: space-between;
-              margin: 5px 0;
-              font-weight: bold;
+              margin: 3px 0;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
             }
             .info-row span:last-child {
-              font-weight: 900;
+              font-weight: bold;
             }
             .section {
               margin: 10px 0;
-              border-bottom: 1px dashed #000;
-              padding-bottom: 10px;
+              padding-bottom: 5px;
             }
             .section-title {
-              font-family: sans-serif;
-              font-weight: 900;
-              font-size: 14px;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
+              font-weight: bold;
               text-align: center;
               margin: 8px 0;
               text-transform: uppercase;
-              letter-spacing: 1px;
               border-top: 1px dashed #000;
               border-bottom: 1px dashed #000;
-              padding: 5px 0;
+              padding: 3px 0;
+              letter-spacing: 1px;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 10px;
+              margin: 5px 0;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
+            }
+            th, td {
+              padding: 2px 0;
+              text-align: left;
+              font-weight: bold;
             }
             th {
-              font-family: sans-serif;
-              font-weight: 900;
-              text-align: left;
-              padding: 3px 0;
               text-transform: uppercase;
-              font-size: 12px;
-            }
-            td {
-              font-weight: bold;
-              padding: 3px 0;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
             }
             .amount {
               text-align: right;
-              font-weight: 900;
+            }
+            .after-balance-row td {
+              padding-top: 4px; /* Add spacing above After Balance Cash for clarity */
+              font-weight: bold;
             }
             .footer {
               text-align: center;
               margin-top: 10px;
-              font-size: 10px;
-              font-weight: 900;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
               border-top: 1px dashed #000;
-              padding-top: 10px;
+              padding-top: 5px;
             }
-            .date-header {
-              font-weight: bold;
-              text-align: center;
-              margin: 10px 0;
-              padding: 5px;
+            .divider {
               border-top: 1px dashed #000;
-              border-bottom: 1px dashed #000;
+              margin: 5px 0;
             }
           </style>
         </head>
         <body>
           <div class="receipt-header">
             <div class="receipt-title">X REPORT</div>
-            <div>${new Date(xReportData.responseDto.startDate).toLocaleDateString()}</div>
-            <div>Generated by: ${xReportData.responseDto.reportGeneratedBy}</div>
+            <div>${startDate}</div>
+            <div>Generated by: ${generatedBy}</div>
             <div>Front Office</div>
           </div>
-
+  
           <div class="section">
             <div class="info-row">
               <span>Period:</span>
-              <span>${new Date(xReportData.responseDto.startDate).toLocaleDateString()} - ${new Date(xReportData.responseDto.endDate).toLocaleDateString()}</span>
+              <span>${startDate} - ${endDate}</span>
             </div>
             <div class="info-row">
               <span>Total Sales:</span>
-              <span>${xReportData.responseDto.totalSales.toFixed(2)}</span>
+              <span>${totalSales}</span>
             </div>
             <div class="info-row">
               <span>Total Transactions:</span>
-              <span>${xReportData.responseDto.totalTransactions}</span>
+              <span>${totalTransactions}</span>
             </div>
           </div>
-
+  
           <div class="section">
-            <div class="section-title">Categories</div>
+            <div class="section-title">CATEGORIES</div>
             <table>
-              ${Object.entries(xReportData.responseDto.categoryTotals)
-        .map(([category, amount]) => `
-                  <tr>
-                    <td>${category}</td>
-                    <td class="amount">${amount.toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-            </table>
-          </div>
-
-          <div class="section">
-            <div class="section-title">Payment Methods</div>
-            <table>
-              ${Object.entries(xReportData.responseDto.overallPaymentTotals)
-        .map(([method, amount]) => `
-                  <tr>
-                    <td>${method}</td>
-                    <td class="amount">${amount.toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              ${xReportData.responseDto.difference !== 0 && (
-        <tr>
-          <td>After Balance Cash</td>
-          <td>{isNaN((xReportData.responseDto.overallPaymentTotals.Cash || 0) - (xReportData.responseDto.difference || 0)) ? '0.00' : ((xReportData.responseDto.overallPaymentTotals.Cash || 0) - (xReportData.responseDto.difference || 0)).toFixed(2)}</td>
-        </tr>
-      )}
-            </table>
-          </div>
-
-          <div class="section">
-            <div class="section-title">User Payment Details</div>
-            <table>
-              ${xReportData.responseDto.userPaymentDetails
-        .map(user =>
-          Object.entries(user.payments)
-            .map(([method, amount]) => `
+              ${Object.keys(categoryTotals).length > 0
+        ? Object.entries(categoryTotals)
+          .map(([category, amount]) => `
                       <tr>
-                        <td>${user.userName.split(' ')[0]}</td>
-                        <td>${method}</td>
-                        <td class="amount">${amount.toFixed(2)}</td>
+                        <td>${category}</td>
+                        <td class="amount">${parseFloat(amount).toFixed(2)}</td>
                       </tr>
-                    `).join('')
-        ).join('')}
+                    `)
+          .join('')
+        : '<tr><td colspan="2">No categories found</td></tr>'
+      }
             </table>
           </div>
-
+  
           <div class="section">
-            <div class="section-title">Banking & Payout Details</div>
+            <div class="section-title">PAYMENT METHODS</div>
+            <table>
+              ${paymentEntries.length > 0
+        ? paymentEntries
+          .map(([method, amount]) => `
+                      <tr>
+                        <td>${method}</td>
+                        <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                      </tr>
+                    `)
+          .join('')
+        : '<tr><td colspan="2">No payment methods found</td></tr>'
+      }
+              <tr class="after-balance-row">
+                <td>After Balance Cash</td>
+                <td class="amount">${isNaN(afterBalanceCash) ? '0.00' : afterBalanceCash}</td>
+              </tr>
+            </table>
+          </div>
+  
+          <div class="section">
+            <div class="section-title">USER PAYMENT DETAILS</div>
+            <table>
+              ${userPaymentDetails.length > 0
+        ? userPaymentDetails
+          .map(user =>
+            Object.entries(user.payments || {})
+              .map(([method, amount]) => `
+                          <tr>
+                            <td>${user.userName.split(' ')[0]}</td>
+                            <td>${method}</td>
+                            <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                          </tr>
+                        `)
+              .join('')
+          )
+          .join('')
+        : '<tr><td colspan="3">No user payments found</td></tr>'
+      }
+            </table>
+          </div>
+  
+          <div class="section">
+            <div class="section-title">BANKING & PAYOUT DETAILS</div>
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Count</th>
-                  <th class="amount">Amount</th>
+                  <th>TYPE</th>
+                  <th>COUNT</th>
+                  <th class="amount">AMOUNT</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td>Banking</td>
-                  <td>${xReportData.responseDto.bankingCount || 0}</td>
-                  <td>${xReportData.responseDto.bankingTotal.toFixed(2)}</td>
+                  <td>${bankingCount}</td>
+                  <td class="amount">${bankingTotal}</td>
                 </tr>
                 <tr>
                   <td>Payout</td>
-                  <td>${xReportData.responseDto.payoutCount || 0}</td>
-                  <td>${xReportData.responseDto.payoutTotal.toFixed(2)}</td>
+                  <td>${payoutCount}</td>
+                  <td class="amount">${payoutTotal}</td>
                 </tr>
                 <tr>
-                  <td colSpan="2"><strong>Difference</strong></td>
-                  <td><strong>${xReportData.responseDto.difference.toFixed(2)}</strong></td>
+                  <td colspan="2">Difference</td>
+                  <td class="amount">${difference}</td>
                 </tr>
               </tbody>
             </table>
           </div>
-
+  
           <div class="footer">
             <div>*** End of X Report ***</div>
             <div>Printed on ${new Date().toLocaleString()}</div>
@@ -1220,7 +1280,6 @@ const Pos_CategoryGrid = forwardRef(({
   };
 
   const handlePrintZReport = () => {
-    // Validate zReportData
     if (!zReportData || !zReportData.responseDto) {
       showNotification("No Z-Report data available to print", "error");
       return;
@@ -1232,7 +1291,10 @@ const Pos_CategoryGrid = forwardRef(({
 
     const reportData = zReportData.responseDto;
 
-    // Fallback for missing data
+    // Set receipt paper size (80mm or 57mm width, length is auto for POS printers)
+    const paperWidth = '80mm'; // Options: '80mm' or '57mm'
+
+    // Prepare data with fallbacks
     const startDate = reportData.startDate
       ? new Date(reportData.startDate).toLocaleDateString()
       : 'N/A';
@@ -1263,41 +1325,37 @@ const Pos_CategoryGrid = forwardRef(({
           <style>
             @media print {
               @page {
-                size: 80mm auto;
-                margin: 5mm;
+                size: ${paperWidth} auto;
+                margin: 0;
               }
               body {
                 margin: 0;
-                padding: 10px;
-                width: 80mm;
+                padding: ${paperWidth === '57mm' ? '3px' : '5px'};
+                width: ${paperWidth};
                 font-family: 'Courier New', Courier, monospace;
-                font-size: 12px;
+                font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
                 font-weight: bold;
                 color: #000;
                 box-sizing: border-box;
               }
-              header, footer, nav, .print-header, .print-footer {
-                display: none !important;
-              }
             }
             body {
-  font-family: 'Courier New', Courier, monospace;
-  width: 80mm;
-  margin: 0 auto;
-  padding: 10px;
-  font-size: 12px;
-  line-height: 1.4;
-  font-weight: bold;
-  color: #000;
-}
+              font-family: 'Courier New', Courier, monospace;
+              width: ${paperWidth};
+              margin: 0 auto;
+              padding: ${paperWidth === '57mm' ? '3px' : '5px'};
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
+              line-height: 1.2;
+              font-weight: bold;
+              color: #000;
+              text-align: center;
+            }
             .receipt-header {
               text-align: center;
-              border-bottom: 1px dashed #000;
-              padding-bottom: 10px;
               margin-bottom: 10px;
             }
             .receipt-title {
-              font-size: 18px;
+              font-size: ${paperWidth === '57mm' ? '14px' : '16px'};
               font-weight: bold;
               margin: 5px 0;
               letter-spacing: 1px;
@@ -1305,62 +1363,68 @@ const Pos_CategoryGrid = forwardRef(({
             .info-row {
               display: flex;
               justify-content: space-between;
-              margin: 5px 0;
+              margin: 3px 0;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
             }
             .info-row span:last-child {
               font-weight: bold;
             }
             .section {
               margin: 10px 0;
-              padding-bottom: 10px;
-              border-bottom: 1px dashed #000;
+              padding-bottom: 5px;
             }
             .section-title {
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
               font-weight: bold;
-              font-size: 14px;
               text-align: center;
               margin: 8px 0;
               text-transform: uppercase;
               border-top: 1px dashed #000;
               border-bottom: 1px dashed #000;
-              padding: 5px 0;
+              padding: 3px 0;
+              letter-spacing: 1px;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 10px;
+              margin: 5px 0;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
             }
             th, td {
-              padding: 4px 2px;
+              padding: 2px 0;
               text-align: left;
               font-weight: bold;
-              border-bottom: 1px solid #ddd;
             }
             th {
               text-transform: uppercase;
-              font-size: 11px;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
             }
             .amount {
               text-align: right;
             }
+            .after-balance-row td {
+              padding-top: 4px; /* Add spacing above After Balance Cash for clarity */
+              font-weight: bold;
+            }
             .footer {
               text-align: center;
               margin-top: 10px;
-              font-size: 10px;
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
               border-top: 1px dashed #000;
-              padding-top: 10px;
+              padding-top: 5px;
+            }
+            .divider {
+              border-top: 1px dashed #000;
+              margin: 5px 0;
             }
             .date-header {
+              font-size: ${paperWidth === '57mm' ? '10px' : '12px'};
               font-weight: bold;
               text-align: center;
-              margin: 10px 0;
-              padding: 5px;
+              margin: 8px 0;
               border-top: 1px dashed #000;
               border-bottom: 1px dashed #000;
-            }
-            .total-row td {
-              font-weight: bold;
-              border-top: 1px solid #000;
+              padding: 3px 0;
             }
           </style>
         </head>
@@ -1384,13 +1448,13 @@ const Pos_CategoryGrid = forwardRef(({
           </div>
   
           <div class="section">
-            <div class="section-title">Banking & Payout Details</div>
+            <div class="section-title">BANKING & PAYOUT DETAILS</div>
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Count</th>
-                  <th class="amount">Amount</th>
+                  <th>TYPE</th>
+                  <th>COUNT</th>
+                  <th class="amount">AMOUNT</th>
                 </tr>
               </thead>
               <tbody>
@@ -1404,7 +1468,7 @@ const Pos_CategoryGrid = forwardRef(({
                   <td>${payoutCount}</td>
                   <td class="amount">${payoutTotal}</td>
                 </tr>
-                <tr class="total-row">
+                <tr>
                   <td colspan="2">Difference</td>
                   <td class="amount">${difference}</td>
                 </tr>
@@ -1417,120 +1481,78 @@ const Pos_CategoryGrid = forwardRef(({
           const categoryTotals = data.categoryTotals || {};
           const overallPaymentTotals = data.overallPaymentTotals || {};
           const userPaymentDetails = data.userPaymentDetails || {};
-          const dateDifference = data.difference
-            ? parseFloat(data.difference).toFixed(2)
-            : '0.00';
+
+          // Fallback to top-level difference if date-specific difference is incorrect
+          const cashAmount = overallPaymentTotals.Cash ? parseFloat(overallPaymentTotals.Cash) : 0.0;
+          const dateDifference = data.difference && !isNaN(parseFloat(data.difference)) ? parseFloat(data.difference) : parseFloat(difference);
+          const afterBalanceCash = (cashAmount - dateDifference).toFixed(2);
+
+          // Debug logging to verify values
+          console.log(`Z Report Print - Date: ${date}, Cash: ${cashAmount}, Difference: ${dateDifference}, After Balance Cash: ${afterBalanceCash}`);
 
           return `
                 <div class="section">
-                  <div class="date-header">Date: ${new Date(
-            date
-          ).toLocaleDateString()}</div>
+                  <div class="date-header">Date: ${new Date(date).toLocaleDateString()}</div>
   
-                  <div class="section-title">Categories Breakdown</div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th class="amount">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <div class="section">
+                    <div class="section-title">CATEGORIES BREAKDOWN</div>
+                    <table>
                       ${Object.keys(categoryTotals).length > 0
               ? Object.entries(categoryTotals)
-                .map(
-                  ([category, amount]) => `
-                                <tr>
-                                  <td>${category}</td>
-                                  <td class="amount">${parseFloat(
-                    amount
-                  ).toFixed(2)}</td>
-                                </tr>
-                              `
-                )
+                .map(([category, amount]) => `
+                              <tr>
+                                <td>${category}</td>
+                                <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                              </tr>
+                            `)
                 .join('')
               : '<tr><td colspan="2">No categories found</td></tr>'
             }
-                    </tbody>
-                  </table>
+                    </table>
+                  </div>
   
-                  <div class="section-title">Payment Methods</div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Method</th>
-                        <th class="amount">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <div class="section">
+                    <div class="section-title">PAYMENT METHODS</div>
+                    <table>
                       ${Object.keys(overallPaymentTotals).length > 0
               ? Object.entries(overallPaymentTotals)
-                .map(
-                  ([method, amount]) => `
-                                <tr>
-                                  <td>${method}</td>
-                                  <td class="amount">${parseFloat(
-                    amount
-                  ).toFixed(2)}</td>
-                                </tr>
-                              `
-                )
+                .map(([method, amount]) => `
+                              <tr>
+                                <td>${method}</td>
+                                <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                              </tr>
+                            `)
                 .join('')
               : '<tr><td colspan="2">No payment methods found</td></tr>'
             }
-                      ${parseFloat(dateDifference) !== 0
-              ? `
-                            <tr>
-                              <td>After Balance Cash</td>
-                              <td class="amount">${isNaN(
-                (overallPaymentTotals.Cash || 0) -
-                parseFloat(dateDifference)
-              )
-                ? '0.00'
-                : (
-                  (overallPaymentTotals.Cash || 0) -
-                  parseFloat(dateDifference)
-                ).toFixed(2)
-              }</td>
-                            </tr>
-                          `
-              : ''
-            }
-                    </tbody>
-                  </table>
-  
-                  <div class="section-title">User Payment Details</div>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>User Name</th>
-                        <th>Payment Method</th>
-                        <th class="amount">Amount</th>
+                      <tr class="after-balance-row">
+                        <td>After Balance Cash</td>
+                        <td class="amount">${afterBalanceCash}</td>
                       </tr>
-                    </thead>
-                    <tbody>
+                    </table>
+                  </div>
+  
+                  <div class="section">
+                    <div class="section-title">USER PAYMENT DETAILS</div>
+                    <table>
                       ${Object.keys(userPaymentDetails).length > 0
               ? Object.entries(userPaymentDetails)
                 .map(([userName, payments]) =>
                   Object.entries(payments)
-                    .map(
-                      ([method, amount]) => `
-                                    <tr>
-                                      <td>${userName}</td>
-                                      <td>${method}</td>
-                                      <td class="amount">${parseFloat(
-                        amount
-                      ).toFixed(2)}</td>
-                                    </tr>
-                                  `
-                    )
+                    .map(([method, amount]) => `
+                                  <tr>
+                                    <td>${userName}</td>
+                                    <td>${method}</td>
+                                    <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                                  </tr>
+                                `)
                     .join('')
                 )
                 .join('')
               : '<tr><td colspan="3">No user payments found</td></tr>'
             }
-                    </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               `;
         })
@@ -1553,7 +1575,6 @@ const Pos_CategoryGrid = forwardRef(({
         console.error('Error during printing:', error);
         showNotification('Failed to print Z-Report. Please try again.', 'error');
       } finally {
-        // Delay removal to ensure print dialog appears
         setTimeout(() => {
           if (printFrame && document.body.contains(printFrame)) {
             document.body.removeChild(printFrame);
@@ -1923,23 +1944,23 @@ const Pos_CategoryGrid = forwardRef(({
                         <tr>
                           <th>Type</th>
                           <th>Count</th>
-                          <th>Amount</th>
+                          <th className="amount">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
                           <td>Banking</td>
                           <td>{xReportData.responseDto.bankingCount || 0}</td>
-                          <td>{xReportData.responseDto.bankingTotal.toFixed(2)}</td>
+                          <td className="amount">{xReportData.responseDto.bankingTotal.toFixed(2)}</td>
                         </tr>
                         <tr>
                           <td>Payout</td>
                           <td>{xReportData.responseDto.payoutCount || 0}</td>
-                          <td>{xReportData.responseDto.payoutTotal.toFixed(2)}</td>
+                          <td className="amount">{xReportData.responseDto.payoutTotal.toFixed(2)}</td>
                         </tr>
-                        <tr>
-                          <td colSpan="2"><strong>Difference</strong></td>
-                          <td><strong>{xReportData.responseDto.difference.toFixed(2)}</strong></td>
+                        <tr className="total-row">
+                          <td colSpan="2">Difference</td>
+                          <td className="amount">{xReportData.responseDto.difference.toFixed(2)}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1950,14 +1971,14 @@ const Pos_CategoryGrid = forwardRef(({
                       <thead>
                         <tr>
                           <th>Category</th>
-                          <th>Amount</th>
+                          <th className="amount">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Object.entries(xReportData.responseDto.categoryTotals).map(([category, amount]) => (
                           <tr key={category}>
                             <td>{category}</td>
-                            <td>{amount.toFixed(2)}</td>
+                            <td className="amount">{amount.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1969,22 +1990,20 @@ const Pos_CategoryGrid = forwardRef(({
                       <thead>
                         <tr>
                           <th>Method</th>
-                          <th>Amount</th>
+                          <th className="amount">Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {Object.entries(xReportData.responseDto.overallPaymentTotals).map(([method, amount]) => (
                           <tr key={method}>
                             <td>{method}</td>
-                            <td>{amount.toFixed(2)}</td>
+                            <td className="amount">{amount.toFixed(2)}</td>
                           </tr>
                         ))}
-                        {xReportData.responseDto.difference !== 0 && (
-                          <tr>
-                            <td>After Balance Cash</td>
-                            <td>{isNaN((xReportData.responseDto.overallPaymentTotals.Cash || 0) - (xReportData.responseDto.difference || 0)) ? '0.00' : ((xReportData.responseDto.overallPaymentTotals.Cash || 0) - (xReportData.responseDto.difference || 0)).toFixed(2)}</td>
-                          </tr>
-                        )}
+                        <tr>
+                          <td>After Balance Cash</td>
+                          <td className="amount">{isNaN((xReportData.responseDto.overallPaymentTotals.Cash || 0) - (xReportData.responseDto.difference || 0)) ? '0.00' : ((xReportData.responseDto.overallPaymentTotals.Cash || 0) - (xReportData.responseDto.difference || 0)).toFixed(2)}</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -1997,33 +2016,27 @@ const Pos_CategoryGrid = forwardRef(({
                       <table className="table table-bordered table-striped">
                         <thead>
                           <tr>
-                            <th style={{
-                              backgroundColor: '#f8f9fa',
-                              fontWeight: '600',
-                              borderBottom: '2px solid #dee2e6'
-                            }}>User Name</th>
-                            <th style={{
-                              backgroundColor: '#f8f9fa',
-                              fontWeight: '600',
-                              borderBottom: '2px solid #dee2e6'
-                            }}>Payment Method</th>
-                            <th style={{
-                              backgroundColor: '#f8f9fa',
-                              fontWeight: '600',
-                              borderBottom: '2px solid #dee2e6'
-                            }}>Amount</th>
+                            <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>User Name</th>
+                            <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Payment Method</th>
+                            <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Amount</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {xReportData.responseDto.userPaymentDetails.map((user) => (
-                            Object.entries(user.payments).map(([method, amount]) => (
+                          {xReportData.responseDto.userPaymentDetails.map((user) => {
+                            // Debug log for After Balance Cash calculation
+                            const cashAmount = xReportData.responseDto.overallPaymentTotals.Cash || 0;
+                            const difference = xReportData.responseDto.difference || 0;
+                            const afterBalanceCash = (cashAmount - difference).toFixed(2);
+                            console.log(`X Report Popup - Cash: ${cashAmount}, Difference: ${difference}, After Balance Cash: ${afterBalanceCash}`);
+
+                            return Object.entries(user.payments).map(([method, amount]) => (
                               <tr key={`${user.userName}-${method}`}>
                                 <td style={{ padding: '12px 15px' }}>{user.userName.split(' ')[0]}</td>
                                 <td style={{ padding: '12px 15px' }}>{method}</td>
                                 <td style={{ padding: '12px 15px' }}>{amount.toFixed(2)}</td>
                               </tr>
-                            ))
-                          ))}
+                            ));
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -2080,7 +2093,7 @@ const Pos_CategoryGrid = forwardRef(({
                 </div>
 
                 <div className="section">
-                  <div className="section-title">Banking & Payout Details</div>
+                  <h4>Banking & Payout Details</h4>
                   <table className="table table-bordered">
                     <thead>
                       <tr>
@@ -2108,86 +2121,95 @@ const Pos_CategoryGrid = forwardRef(({
                   </table>
                 </div>
 
-                {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => (
-                  <div key={date} className="mb-4">
-                    <h4 className="date-header">Date: {new Date(date).toLocaleDateString()}</h4>
+                {Object.entries(zReportData.responseDto.dateWiseTotals).map(([date, data]) => {
+                  // Explicitly parse values to ensure correct calculation
+                  const cashAmount = data.overallPaymentTotals.Cash ? parseFloat(data.overallPaymentTotals.Cash) : 0.0;
+                  // Fallback to top-level difference if date-specific difference is invalid
+                  const difference = data.difference && !isNaN(parseFloat(data.difference)) ? parseFloat(data.difference) : parseFloat(zReportData.responseDto.difference || 0.0);
+                  const afterBalanceCash = (cashAmount - difference).toFixed(2);
 
-                    <div className="row">
-                      <div className="col-md-6">
-                        <h4>Categories Breakdown</h4>
-                        <table className="table table-bordered">
-                          <thead>
-                            <tr>
-                              <th>Category</th>
-                              <th>Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(data.categoryTotals).map(([category, amount]) => (
-                              <tr key={category}>
-                                <td>{category}</td>
-                                <td>{amount.toFixed(2)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <div className="col-md-6">
-                        <h4>Payment Methods</h4>
-                        <table className="table table-bordered">
-                          <thead>
-                            <tr>
-                              <th>Method</th>
-                              <th>Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
-                              <tr key={method}>
-                                <td>{method}</td>
-                                <td>{amount.toFixed(2)}</td>
-                              </tr>
-                            ))}
-                            {data.difference !== 0 && (
-                              <tr>
-                                <td>After Balance Cash</td>
-                                <td>{isNaN((data.overallPaymentTotals.Cash || 0) - (data.difference || 0)) ? '0.00' : ((data.overallPaymentTotals.Cash || 0) - (data.difference || 0)).toFixed(2)}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                  // Debug log to verify values
+                  console.log(`Popup - Date: ${date}, Cash: ${cashAmount}, Difference: ${difference}, After Balance Cash: ${afterBalanceCash}`);
 
-                    <div className="row mt-4">
-                      <div className="col-12">
-                        <h4>User Payment Details</h4>
-                        <div className="table-responsive">
-                          <table className="table table-bordered table-striped">
+                  return (
+                    <div key={date} className="mb-4">
+                      <h4 className="date-header">Date: {new Date(date).toLocaleDateString()}</h4>
+
+                      <div className="row">
+                        <div className="col-md-6">
+                          <h4>Categories Breakdown</h4>
+                          <table className="table table-bordered">
                             <thead>
                               <tr>
-                                <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>User Name</th>
-                                <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Payment Method</th>
-                                <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Amount</th>
+                                <th>Category</th>
+                                <th className="amount">Amount</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {Object.entries(data.userPaymentDetails).map(([userName, payments]) => (
-                                Object.entries(payments).map(([method, amount]) => (
-                                  <tr key={`${userName}-${method}`}>
-                                    <td style={{ padding: '12px 15px' }}>{userName}</td>
-                                    <td style={{ padding: '12px 15px' }}>{method}</td>
-                                    <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
-                                  </tr>
-                                ))
+                              {Object.entries(data.categoryTotals).map(([category, amount]) => (
+                                <tr key={category}>
+                                  <td>{category}</td>
+                                  <td className="amount">{parseFloat(amount).toFixed(2)}</td>
+                                </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
+                        <div className="col-md-6">
+                          <h4>Payment Methods</h4>
+                          <table className="table table-bordered">
+                            <thead>
+                              <tr>
+                                <th>Method</th>
+                                <th className="amount">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
+                                <tr key={method}>
+                                  <td>{method}</td>
+                                  <td className="amount">{parseFloat(amount).toFixed(2)}</td>
+                                </tr>
+                              ))}
+                              <tr>
+                                <td>After Balance Cash</td>
+                                <td className="amount">{afterBalanceCash}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div className="row mt-4">
+                        <div className="col-12">
+                          <h4>User Payment Details</h4>
+                          <div className="table-responsive">
+                            <table className="table table-bordered table-striped">
+                              <thead>
+                                <tr>
+                                  <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>User Name</th>
+                                  <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Payment Method</th>
+                                  <th style={{ backgroundColor: '#f8f9fa', fontWeight: '600', borderBottom: '2px solid #dee2e6' }}>Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.entries(data.userPaymentDetails).map(([userName, payments]) =>
+                                  Object.entries(payments).map(([method, amount]) => (
+                                    <tr key={`${userName}-${method}`}>
+                                      <td style={{ padding: '12px 15px' }}>{userName}</td>
+                                      <td style={{ padding: '12px 15px' }}>{method}</td>
+                                      <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
+                                    </tr>
+                                  ))
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
