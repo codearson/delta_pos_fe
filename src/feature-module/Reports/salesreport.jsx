@@ -185,28 +185,32 @@ const SalesReport = () => {
               <span>${selectedReport.salesDateDetails[0].totalTransactions}</span>
             </div>
             <div class="info-row">
-              <span>Total Sales:</span>
-              <span>${formatCurrency(selectedReport.fullyTotalSales)}</span>
-            </div>
-            <div class="info-row">
-              <span>Banking Total:</span>
-              <span>${formatCurrency(selectedReport.banking || 0)}</span>
-            </div>
-            <div class="info-row">
               <span>Banking Count:</span>
               <span>${selectedReport.bankingCount || 0}</span>
-            </div>
-            <div class="info-row">
-              <span>Payout Total:</span>
-              <span>${formatCurrency(selectedReport.payout || 0)}</span>
             </div>
             <div class="info-row">
               <span>Payout Count:</span>
               <span>${selectedReport.payoutCount || 0}</span>
             </div>
             <div class="info-row">
+              <span>Banking Total:</span>
+              <span>${formatCurrency(selectedReport.banking || 0)}</span>
+            </div>
+            <div class="info-row">
+              <span>Payout Total:</span>
+              <span>${formatCurrency(selectedReport.payout || 0)}</span>
+            </div>
+            <div class="info-row">
+              <span>Total Sales:</span>
+              <span>${formatCurrency(selectedReport.fullyTotalSales)}</span>
+            </div>
+            <div class="info-row">
               <span>Difference:</span>
               <span>${formatCurrency(selectedReport.difference)}</span>
+            </div>
+            <div class="info-row">
+              <span>After Balance Cash:</span>
+              <span>${formatCurrency(selectedReport.salesDateDetails[0].overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash')?.paymentTotal - selectedReport.difference)}</span>
             </div>
           </div>
           
@@ -551,6 +555,7 @@ const SalesReport = () => {
                     <p><strong>Total Transactions:</strong> {selectedReport.salesDateDetails[0].totalTransactions}</p>
                     <p><strong>Total Sales:</strong> {formatCurrency(selectedReport.fullyTotalSales)}</p>
                     <p><strong>Difference:</strong> <span className={selectedReport.difference >= 0 ? "text-success" : "text-danger"}>{formatCurrency(selectedReport.difference)}</span></p>
+                    <p><strong>After Balance Cash:</strong> <span className="text-primary">{formatCurrency(selectedReport.salesDateDetails[0].overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash')?.paymentTotal - selectedReport.difference)}</span></p>
                   </div>
                   <div className="col-md-6">
                     <h5>Report Period</h5>
@@ -648,6 +653,18 @@ const SalesReport = () => {
                                       <td>{formatCurrency(payment.paymentTotal)}</td>
                                     </tr>
                                   ))}
+                                  {dateDetail.overallPaymentTotals.some(payment => payment.paymentMethod.toLowerCase() === 'cash') && (
+                                    <tr className="font-weight-bold">
+                                      <td>After Balance Cash</td>
+                                      <td>
+                                        {formatCurrency(
+                                          dateDetail.overallPaymentTotals
+                                            .find(payment => payment.paymentMethod.toLowerCase() === 'cash')
+                                            ?.paymentTotal - selectedReport.difference
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )}
                                 </tbody>
                               </table>
                             </div>

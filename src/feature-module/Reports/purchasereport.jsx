@@ -168,28 +168,32 @@ const PurchaseReport = () => {
               <span>${latestReport.salesDateDetails[0].totalTransactions}</span>
             </div>
             <div class="info-row">
-              <span>Total Sales:</span>
-              <span>${formatCurrency(latestReport.fullyTotalSales)}</span>
-            </div>
-            <div class="info-row">
-              <span>Banking Total:</span>
-              <span>${formatCurrency(latestReport.bankingTotal)}</span>
-            </div>
-            <div class="info-row">
               <span>Banking Count:</span>
               <span>${latestReport.bankingCount}</span>
-            </div>
-            <div class="info-row">
-              <span>Payout Total:</span>
-              <span>${formatCurrency(latestReport.payoutTotal)}</span>
             </div>
             <div class="info-row">
               <span>Payout Count:</span>
               <span>${latestReport.payoutCount}</span>
             </div>
             <div class="info-row">
+              <span>Banking Total:</span>
+              <span>${formatCurrency(latestReport.bankingTotal)}</span>
+            </div>
+            <div class="info-row">
+              <span>Payout Total:</span>
+              <span>${formatCurrency(latestReport.payoutTotal)}</span>
+            </div>
+            <div class="info-row">
+              <span>Total Sales:</span>
+              <span>${formatCurrency(latestReport.fullyTotalSales)}</span>
+            </div>
+            <div class="info-row">
               <span>Difference:</span>
               <span>${formatCurrency(latestReport.difference)}</span>
+            </div>
+            <div class="info-row">
+              <span>After Balance Cash:</span>
+              <span>${formatCurrency(latestReport.salesDateDetails[0].overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash')?.paymentTotal - latestReport.difference || 0)}</span>
             </div>
           </div>
 
@@ -215,6 +219,12 @@ const PurchaseReport = () => {
                     <td class="amount">${formatCurrency(payment.paymentTotal)}</td>
                   </tr>
                 `).join('')}
+                ${dateDetail.overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash') ? `
+                  <tr class="total-row">
+                    <td>After Balance Cash</td>
+                    <td class="amount">${formatCurrency(dateDetail.overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash').paymentTotal - dateDetail.difference)}</td>
+                  </tr>
+                ` : ''}
               </table>
             </div>
 
@@ -313,6 +323,7 @@ const PurchaseReport = () => {
                           <p className="mb-1"><strong className="text-secondary">Total Transactions:</strong> <span className="text-primary">{latestReport.salesDateDetails[0].totalTransactions}</span></p>
                           <p className="mb-1"><strong className="text-secondary">Total Sales:</strong> <span className="text-success">{formatCurrency(latestReport.fullyTotalSales)}</span></p>
                           <p className="mb-1"><strong className="text-secondary">Difference:</strong> <span className={latestReport.difference >= 0 ? "text-success" : "text-danger"}>{formatCurrency(latestReport.difference)}</span></p>
+                          <p className="mb-1"><strong className="text-secondary">After Balance Cash:</strong> <span className="text-primary">{formatCurrency(latestReport.salesDateDetails[0].overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash')?.paymentTotal - latestReport.difference || 0)}</span></p>
                         </div>
                         <div className="col-md-6">
                           <h5 className="text-dark">Report Period</h5>
@@ -391,33 +402,50 @@ const PurchaseReport = () => {
                       <Tab eventKey="payments" title="Payment Methods">
                         {latestReport.salesDateDetails && latestReport.salesDateDetails.length > 0 && (
                           <div className="mt-3">
-                            {latestReport.salesDateDetails.map((dateDetail, dateIndex) => (
-                              <div key={dateIndex} className="mb-4">
-                                <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - Payment Methods</h5>
-                                {dateDetail.overallPaymentTotals && dateDetail.overallPaymentTotals.length > 0 ? (
-                                  <div className="table-responsive">
-                                    <table className="table table-bordered">
-                                      <thead className="thead-light bg-primary text-white">
-                                        <tr>
-                                          <th>Payment Method</th>
-                                          <th>Amount</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {dateDetail.overallPaymentTotals.map((payment, payIndex) => (
-                                          <tr key={payIndex}>
-                                            <td className="text-dark">{payment.paymentMethod}</td>
-                                            <td className="text-success">{formatCurrency(payment.paymentTotal)}</td>
+                            {latestReport.salesDateDetails.map((dateDetail, dateIndex) => {
+                              // Find the cash payment total
+                              const cashPayment = dateDetail.overallPaymentTotals.find(
+                                payment => payment.paymentMethod.toLowerCase() === 'cash'
+                              );
+                              const cashTotal = cashPayment ? cashPayment.paymentTotal : 0;
+                              const afterBalanceCash = cashTotal - dateDetail.difference;
+
+                              return (
+                                <div key={dateIndex} className="mb-4">
+                                  <h5 className="border-bottom pb-2 text-primary">{formatDate(dateDetail.salesDate)} - Payment Methods</h5>
+                                  {dateDetail.overallPaymentTotals && dateDetail.overallPaymentTotals.length > 0 ? (
+                                    <div className="table-responsive">
+                                      <table className="table table-bordered">
+                                        <thead className="thead-light bg-primary text-white">
+                                          <tr>
+                                            <th>Payment Method</th>
+                                            <th>Amount</th>
                                           </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                ) : (
-                                  <p className="text-muted">No payment data available for this date</p>
-                                )}
-                              </div>
-                            ))}
+                                        </thead>
+                                        <tbody>
+                                          {dateDetail.overallPaymentTotals.map((payment, payIndex) => (
+                                            <tr key={payIndex}>
+                                              <td className="text-dark">{payment.paymentMethod}</td>
+                                              <td className="text-success">{formatCurrency(payment.paymentTotal)}</td>
+                                            </tr>
+                                          ))}
+                                          {cashPayment && (
+                                            <tr className="font-weight-bold">
+                                              <td className="text-dark">After Balance Cash</td>
+                                              <td className={afterBalanceCash >= 0 ? "text-success" : "text-danger"}>
+                                                {formatCurrency(afterBalanceCash)}
+                                              </td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  ) : (
+                                    <p className="text-muted">No payment data available for this date</p>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </Tab>
