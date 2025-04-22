@@ -22,6 +22,7 @@ export const Pos_Calculator = ({
   employeeDiscount,
   employeeDiscountPercentage,
   employeeName,
+  isAgeRestrictionEnabled,
 }) => {
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
@@ -170,14 +171,14 @@ export const Pos_Calculator = ({
                     ${item.type === "Card" ? "card-row" : ""}
                     ${item.type === "Discount" ? "discount-row" : ""}
                     ${item.type === "EmployeeDiscount" ? "discount-row" : ""}
-                    ${item.ageRestricted ? "age-restricted-row" : ""}
+                    ${isAgeRestrictionEnabled && item.ageRestricted ? "age-restricted-row" : ""}
                   `}
                   onClick={() => onRowSelect(reversedDisplayItems.length - 1 - index)}
                 >
                   <span className="qty-column">{item.qty}</span>
                   <span className="item-column">
                     {item.name}
-                    {item.ageRestricted && (
+                    {isAgeRestrictionEnabled && item.ageRestricted && (
                       <span className="age-restricted-badge">Age Restricted</span>
                     )}
                   </span>
@@ -296,6 +297,7 @@ Pos_Calculator.propTypes = {
   employeeDiscount: PropTypes.number.isRequired,
   employeeDiscountPercentage: PropTypes.number.isRequired,
   employeeName: PropTypes.string,
+  isAgeRestrictionEnabled: PropTypes.bool,
 };
 
 export default Pos_Calculator;

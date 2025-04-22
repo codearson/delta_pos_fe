@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
-//import Breadcrumbs from "../../core/breadcrumbs";
 import "react-datepicker/dist/react-datepicker.css";
 import StockadjustmentModal from "../../core/modals/stocks/stockadjustmentModal";
 import { getAllManagerToggles, updateManagerToggleStatus } from "../Api/ManagerToggle";
 import { fetchEmployeeDiscounts, updateEmployeeDiscount, saveEmployeeDiscount } from "../Api/EmployeeDis";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import ReactDOM from "react-dom";
-import PropTypes from "prop-types";
 
 const styles = `
   .nav-tabs-wrapper {
@@ -78,6 +75,40 @@ const styles = `
   .toggle-wrapper {
     display: flex;
     align-items: center;
+  }
+
+  .card {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .card.age-validation {
+    border-left: 4px solid #ff9800;
+  }
+
+  .card.discount {
+    border-left: 4px solid #2196f3;
+  }
+
+  .card.customer {
+    border-left: 4px solid #4CAF50;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .card-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 4px;
   }
 
   /* Manual Discount card styling */
@@ -209,126 +240,102 @@ const styles = `
     font-size: 12px;
     color: #dc3545;
   }
+
+  .discount-info {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+  }
+
+  .discount-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #2196f3;
+    margin-right: 12px;
+  }
+
+  .edit-discount-btn {
+    padding: 4px 12px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .edit-discount-btn:hover {
+    background-color: #1976d2;
+  }
+
+  .edit-discount-input {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-size: 1rem;
+  }
+
+  .edit-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .save-btn, .cancel-btn {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .save-btn {
+    background-color: #4caf50;
+    color: white;
+  }
+
+  .save-btn:hover {
+    background-color: #388e3c;
+  }
+
+  .cancel-btn {
+    background-color: #f44336;
+    color: white;
+  }
+
+  .cancel-btn:hover {
+    background-color: #d32f2f;
+  }
 `;
-
-// Add Discount Modal Component
-const AddDiscountModal = ({ isOpen, onClose, onSave }) => {
-  const [discountValue, setDiscountValue] = useState("");
-  const [error, setError] = useState("");
-
-  const handleChange = (e) => {
-    const value = e.target.value;
-    // Allow empty value, single decimal point, or valid number
-    if (value === "" || value === "." || /^\d*\.?\d*$/.test(value)) {
-      setDiscountValue(value);
-      // Clear error when user starts typing
-      if (error) setError("");
-    }
-  };
-
-  const validateDiscount = (value) => {
-    if (value === "") {
-      return "Discount is required";
-    }
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-      return "Please enter a valid number";
-    }
-    if (numValue < 0) {
-      return "Discount cannot be negative";
-    }
-    if (numValue > 100) {
-      return "Discount cannot be more than 100%";
-    }
-    // Check if the number has more than 2 decimal places
-    if (value.split(".")[1]?.length > 2) {
-      return "Discount can have maximum 2 decimal places";
-    }
-    return "";
-  };
-
-  const handleSave = () => {
-    const validationError = validateDiscount(discountValue);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    
-    onSave(discountValue);
-    setDiscountValue("");
-    setError("");
-  };
-
-  const handleCancel = () => {
-    setDiscountValue("");
-    setError("");
-    onClose();
-  };
-
-  if (!isOpen) return null;
-
-  return ReactDOM.createPortal(
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <h4>Add Employee Discount</h4>
-        <div className="form-group">
-          <label>Discount</label>
-          <input
-            type="text"
-            className={`form-control ${error ? 'is-invalid' : ''}`}
-            value={discountValue}
-            onChange={handleChange}
-            placeholder="Enter discount percentage"
-          />
-          {error && <div className="invalid-feedback">{error}</div>}
-        </div>
-        <div className="modal-actions">
-          <button 
-            className="btn btn-primary me-2" 
-            onClick={handleSave}
-          >
-            Apply
-          </button>
-          <button 
-            className="btn btn-secondary" 
-            onClick={handleCancel}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
-
-// Add PropTypes validation
-AddDiscountModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired
-};
 
 const StockAdjustment = () => {
   const [toggles, setToggles] = useState([]);
   const [employeeDiscounts, setEmployeeDiscounts] = useState([]);
   const [editingDiscount, setEditingDiscount] = useState(null);
   const [editValue, setEditValue] = useState("");
-  const [showAddDiscountModal, setShowAddDiscountModal] = useState(false);
   const [employeeDiscountEnabled, setEmployeeDiscountEnabled] = useState(false);
+  const [isAddingDiscount, setIsAddingDiscount] = useState(false);
+  const [newDiscountValue, setNewDiscountValue] = useState("");
 
   useEffect(() => {
     const fetchToggles = async () => {
       try {
         const toggles = await getAllManagerToggles();
-        // Filter to only get discount-related toggles
-        const discountToggles = toggles.responseDto.filter(
-          toggle => toggle.action.includes("Discount")
+        // Filter to get discount-related toggles, Age Validation toggle, and Add Customer toggle
+        const relevantToggles = toggles.responseDto.filter(
+          toggle => toggle.action.includes("Discount") || 
+                    toggle.action === "Age Validation" ||
+                    toggle.action === "Add Customer"
         );
-        setToggles(discountToggles);
+        setToggles(relevantToggles);
         
         // Find the employeeDiscount toggle and set its state
-        const employeeDiscountToggle = discountToggles.find(
+        const employeeDiscountToggle = relevantToggles.find(
           toggle => toggle.action === "Employee Discount"
         );
         if (employeeDiscountToggle) {
@@ -361,22 +368,56 @@ const StockAdjustment = () => {
   const handleToggleChange = async (id, currentStatus) => {
     try {
       const newStatus = !currentStatus;
-      await updateManagerToggleStatus(id, newStatus);
       
-      // Update the toggles state
-      setToggles(prevToggles => 
-        prevToggles.map(toggle => 
-          toggle.id === id ? { ...toggle, isActive: newStatus } : toggle
-        )
-      );
+      // Find the toggle to get its name
+      const toggle = toggles.find(t => t.id === id);
+      const toggleName = toggle ? toggle.action : "this setting";
       
-      // If this is the employeeDiscount toggle, update the state
-      const updatedToggle = toggles.find(toggle => toggle.id === id);
-      if (updatedToggle && updatedToggle.action === "Employee Discount") {
-        setEmployeeDiscountEnabled(newStatus);
+      // Ask for confirmation
+      const result = await Swal.fire({
+        title: `Confirm ${newStatus ? 'Enable' : 'Disable'} ${toggleName}`,
+        text: `Are you sure you want to ${newStatus ? 'enable' : 'disable'} ${toggleName}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes',
+        cancelButtonText: 'No',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33'
+      });
+      
+      // If user confirmed, proceed with the update
+      if (result.isConfirmed) {
+        await updateManagerToggleStatus(id, newStatus);
+        
+        // Update the toggles state
+        setToggles(prevToggles => 
+          prevToggles.map(toggle => 
+            toggle.id === id ? { ...toggle, isActive: newStatus } : toggle
+          )
+        );
+        
+        // If this is the employeeDiscount toggle, update the state
+        const updatedToggle = toggles.find(toggle => toggle.id === id);
+        if (updatedToggle && updatedToggle.action === "Employee Discount") {
+          setEmployeeDiscountEnabled(newStatus);
+        }
+        
+        // Show success message
+        Swal.fire({
+          title: 'Success!',
+          text: `${toggleName} has been ${newStatus ? 'enabled' : 'disabled'}`,
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        });
       }
     } catch (error) {
       console.error('Error updating toggle status:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to update the toggle status',
+        icon: 'error'
+      });
     }
   };
 
@@ -391,6 +432,27 @@ const StockAdjustment = () => {
     if (value === "" || value === "." || /^\d*\.?\d*$/.test(value)) {
       setEditValue(value);
     }
+  };
+
+  const validateDiscount = (value) => {
+    if (value === "" || value === ".") {
+      return "Please enter a valid discount value";
+    }
+    
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      return "Please enter a valid number";
+    }
+    
+    if (numValue < 0) {
+      return "Discount cannot be negative";
+    }
+    
+    if (numValue > 100) {
+      return "Discount cannot exceed 100%";
+    }
+    
+    return null; // No error
   };
 
   const handleEditSave = async () => {
@@ -445,75 +507,90 @@ const StockAdjustment = () => {
     }
   };
 
-  const validateDiscount = (value) => {
-    if (value === "") {
-      return "Discount is required";
-    }
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) {
-      return "Please enter a valid number";
-    }
-    if (numValue < 0) {
-      return "Discount cannot be negative";
-    }
-    if (numValue > 100) {
-      return "Discount cannot be more than 100%";
-    }
-    // Check if the number has more than 2 decimal places
-    if (value.split(".")[1]?.length > 2) {
-      return "Discount can have maximum 2 decimal places";
-    }
-    return "";
-  };
-
   const handleEditCancel = () => {
     setEditingDiscount(null);
     setEditValue("");
   };
 
   const handleAddDiscountClick = () => {
-    setShowAddDiscountModal(true);
+    setIsAddingDiscount(true);
+    setNewDiscountValue("");
   };
 
-  const handleAddDiscountSave = async (newDiscountValue) => {
+  const handleNewDiscountChange = (e) => {
+    const value = e.target.value;
+    // Allow empty value, single decimal point, or valid number
+    if (value === "" || value === "." || /^\d*\.?\d*$/.test(value)) {
+      setNewDiscountValue(value);
+    }
+  };
+
+  const handleSaveNewDiscount = async () => {
+    const validationError = validateDiscount(newDiscountValue);
+    if (validationError) {
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Error!",
+        text: validationError,
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+      return;
+    }
+
     try {
-      const discountData = {
+      const userId = localStorage.getItem("userId"); // Get the logged-in user's ID
+      if (!userId) {
+        throw new Error("User ID not found. Please log in again.");
+      }
+
+      const newDiscount = {
         userDto: {
-          id: 1
+          id: parseInt(userId)
         },
         discount: parseFloat(newDiscountValue),
         isActive: true
       };
       
-      await saveEmployeeDiscount(discountData);
+      console.log('Sending discount data:', newDiscount);
+      const response = await saveEmployeeDiscount(newDiscount);
+      console.log('API Response:', response);
       
-      // Refresh the employee discounts list
-      const updatedData = await fetchEmployeeDiscounts(true);
-      setEmployeeDiscounts(updatedData);
-      
-      const MySwal = withReactContent(Swal);
-      MySwal.fire({
-        title: "Success!",
-        text: "Employee discount added successfully",
-        icon: "success",
-        confirmButtonText: "OK"
-      });
-      
-      setShowAddDiscountModal(false);
+      if (response && !response.error) {
+        // Refresh the employee discounts list
+        const data = await fetchEmployeeDiscounts(true);
+        console.log('Fetched updated discounts:', data);
+        setEmployeeDiscounts(data);
+        
+        setIsAddingDiscount(false);
+        setNewDiscountValue("");
+        
+        const MySwal = withReactContent(Swal);
+        MySwal.fire({
+          title: "Success!",
+          text: "Employee discount added successfully",
+          icon: "success",
+          confirmButtonText: "OK"
+        });
+      } else {
+        throw new Error(response?.error || "Failed to save employee discount");
+      }
     } catch (error) {
-      console.error("Error adding employee discount:", error);
+      console.error("Error saving employee discount:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to save employee discount";
       const MySwal = withReactContent(Swal);
       MySwal.fire({
         title: "Error!",
-        text: "Failed to add employee discount",
+        text: errorMessage,
         icon: "error",
         confirmButtonText: "OK"
       });
     }
   };
 
-  const handleAddDiscountCancel = () => {
-    setShowAddDiscountModal(false);
+  const handleCancelAddDiscount = () => {
+    setIsAddingDiscount(false);
+    setNewDiscountValue("");
   };
 
   return (
@@ -524,10 +601,87 @@ const StockAdjustment = () => {
           {toggles.length > 0 ? (
             toggles.map((toggle) => (
               <div key={toggle.id} className="col-12 mb-4">
-                <div className="card">
+                <div className={`card ${
+                  toggle.action === "Age Validation" ? "age-validation" : 
+                  toggle.action === "Add Customer" ? "customer" : "discount"
+                }`}>
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-center">
-                      <h5 className="card-title mb-0">{toggle.action}</h5>
+                      <div>
+                        <h5 className="card-title mb-0">{toggle.action}</h5>
+                        <p className="card-description">
+                          {toggle.action === "Age Validation" 
+                            ? "Enable age verification for age-restricted products"
+                            : toggle.action === "Employee Discount"
+                            ? "Enable employee discount functionality"
+                            : toggle.action === "Add Customer"
+                            ? "Enable add customer button in POS"
+                            : "Enable manual discount functionality"}
+                        </p>
+                        {toggle.action === "Employee Discount" && toggle.isActive && (
+                          <div className="discount-info">
+                            {isAddingDiscount ? (
+                              <>
+                                <input
+                                  type="text"
+                                  className="edit-discount-input"
+                                  value={newDiscountValue}
+                                  onChange={handleNewDiscountChange}
+                                  placeholder="Enter %"
+                                />
+                                <div className="edit-actions">
+                                  <button className="save-btn" onClick={handleSaveNewDiscount}>
+                                    Save
+                                  </button>
+                                  <button className="cancel-btn" onClick={handleCancelAddDiscount}>
+                                    Cancel
+                                  </button>
+                                </div>
+                              </>
+                            ) : editingDiscount ? (
+                              <>
+                                <input
+                                  type="text"
+                                  className="edit-discount-input"
+                                  value={editValue}
+                                  onChange={handleEditChange}
+                                  placeholder="Enter %"
+                                />
+                                <div className="edit-actions">
+                                  <button className="save-btn" onClick={handleEditSave}>
+                                    Save
+                                  </button>
+                                  <button className="cancel-btn" onClick={handleEditCancel}>
+                                    Cancel
+                                  </button>
+                                </div>
+                              </>
+                            ) : employeeDiscounts.length > 0 ? (
+                              <>
+                                <span className="discount-value">
+                                  {employeeDiscounts[0]?.discount}% Discount
+                                </span>
+                                <button 
+                                  className="edit-discount-btn"
+                                  onClick={() => handleEditClick(employeeDiscounts[0])}
+                                >
+                                  Edit
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <span className="discount-value">No discount defined</span>
+                                <button 
+                                  className="edit-discount-btn"
+                                  onClick={handleAddDiscountClick}
+                                >
+                                  Add Discount
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <div className="toggle-wrapper">
                         <label className="toggle-switch">
                           <input 
@@ -547,98 +701,12 @@ const StockAdjustment = () => {
             <div className="col-12 mb-4">
               <div className="card">
                 <div className="card-body">
-                  <p className="text-center mb-0">No discount settings available.</p>
+                  <p className="text-center mb-0">No settings available.</p>
                 </div>
               </div>
             </div>
           )}
         </div>
-
-        {/* Employee Discounts Section - Only show if toggle is enabled */}
-        {employeeDiscountEnabled && (
-          <div className="row">
-            <div className="col-12">
-              <div className="card">
-                <div className="card-body">
-                  {employeeDiscounts.length === 0 ? (
-                    <div className="text-center">
-                      <p>No employee discounts found.</p>
-                      <button 
-                        className="btn btn-primary" 
-                        onClick={handleAddDiscountClick}
-                      >
-                        Add Discount
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="employee-discount-table">
-                        <thead>
-                          <tr>
-                            <th>Employee Name</th>
-                            <th>Discount</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {employeeDiscounts.map((discount) => (
-                            <tr key={discount.id}>
-                              <td>Employee</td>
-                              <td>
-                                {editingDiscount?.id === discount.id ? (
-                                  <input
-                                    type="text"
-                                    className="discount-input"
-                                    value={editValue}
-                                    onChange={handleEditChange}
-                                  />
-                                ) : (
-                                  `${discount.discount}%`
-                                )}
-                              </td>
-                              <td>
-                                {editingDiscount?.id === discount.id ? (
-                                  <>
-                                    <button 
-                                      className="edit-btn me-2" 
-                                      onClick={handleEditSave}
-                                    >
-                                      Save
-                                    </button>
-                                    <button 
-                                      className="edit-btn" 
-                                      onClick={handleEditCancel}
-                                    >
-                                      Cancel
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button 
-                                    className="edit-btn" 
-                                    onClick={() => handleEditClick(discount)}
-                                  >
-                                    Edit
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Add Discount Modal */}
-        <AddDiscountModal 
-          isOpen={showAddDiscountModal}
-          onClose={handleAddDiscountCancel}
-          onSave={handleAddDiscountSave}
-        />
 
         <StockadjustmentModal />
       </div>
