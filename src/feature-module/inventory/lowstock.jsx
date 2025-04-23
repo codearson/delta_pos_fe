@@ -202,8 +202,8 @@ const LowStock = () => {
         product.taxDto?.taxPercentage
           ? `${product.taxDto.taxPercentage}%`
           : "N/A",
-        `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
-        `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
+        product.purchasePrice?.toFixed(2) || "0.00",
+        product.pricePerUnit?.toFixed(2) || "0.00",
         product.quantity?.toString() || "0",
         product.lowStock?.toString() || "0",
       ]);
@@ -249,8 +249,8 @@ const LowStock = () => {
         "Tax Percentage": product.taxDto?.taxPercentage
           ? `${product.taxDto.taxPercentage}%`
           : "N/A",
-        "Purchase Price": `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
-        "Price Per Unit": `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
+        "Purchase Price": product.purchasePrice?.toFixed(2) || "0.00",
+        "Price Per Unit": product.pricePerUnit?.toFixed(2) || "0.00",
         Quantity: product.quantity || 0,
         "Low Stock": product.lowStock || 0,
       }));
@@ -435,13 +435,13 @@ const LowStock = () => {
     {
       title: "Purchase Price",
       dataIndex: "purchasePrice",
-      render: (purchasePrice) => `$${purchasePrice.toFixed(2)}`,
+      render: (purchasePrice) => `${purchasePrice.toFixed(2)}`,
       sorter: (a, b) => a.purchasePrice - b.purchasePrice,
     },
     {
       title: "Price Per Unit",
       dataIndex: "pricePerUnit",
-      render: (pricePerUnit) => `$${pricePerUnit.toFixed(2)}`,
+      render: (pricePerUnit) => `${pricePerUnit.toFixed(2)}`,
       sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
     },
     {
