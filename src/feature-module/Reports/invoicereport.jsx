@@ -34,6 +34,7 @@ const Invoicereport = () => {
   const [totalElements, setTotalElements] = useState(0);
   const [branchOptions, setBranchOptions] = useState([]);
   const [userOptions, setUserOptions] = useState([]);
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -164,7 +165,7 @@ const Invoicereport = () => {
         transaction.shopDetailsDto?.name || "N/A",
         transaction.userDto?.firstName || "N/A",
         transaction.customerDto?.name || "N/A",
-        `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
+        `${priceSymbol}${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
         transaction.dateTime ? new Date(transaction.dateTime).toLocaleString() : "N/A",
       ]);
 
@@ -206,7 +207,7 @@ const Invoicereport = () => {
         "Shop Name": transaction.shopDetailsDto?.name || "N/A",
         "User Name": transaction.userDto?.firstName || "N/A",
         "Customer Name": transaction.customerDto?.name || "N/A",
-        "Total Amount": `LKR ${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
+        "Total Amount": `${priceSymbol}${parseFloat(transaction.totalAmount || 0).toFixed(2)}`,
         "Date Time": transaction.dateTime
           ? new Date(transaction.dateTime).toLocaleString()
           : "N/A",
@@ -305,8 +306,8 @@ const Invoicereport = () => {
     {
       title: "Total Amount",
       dataIndex: "totalAmount",
-      render: (totalAmount) => `LKR ${parseFloat(totalAmount || 0).toFixed(2)}`,
-      sorter: (a, b) => (a.totalAmount || 0) - (b.totalAmount || 0),
+      key: "totalAmount",
+      render: (totalAmount) => `${priceSymbol}${parseFloat(totalAmount || 0).toFixed(2)}`,
     },
     {
       title: "Date Time",
@@ -510,19 +511,16 @@ const Invoicereport = () => {
                     </p>
                     {selectedTransaction.manualDiscount > 0 && (
                       <p>
-                        <strong>Manual Discount:</strong> LKR{" "}
-                        {parseFloat(selectedTransaction.manualDiscount || 0).toFixed(2)}
+                        <strong>Manual Discount:</strong> {priceSymbol}{parseFloat(selectedTransaction.manualDiscount || 0).toFixed(2)}
                       </p>
                     )}
                     {selectedTransaction.employeeDiscount > 0 && (
                       <p>
-                        <strong>Employee Discount:</strong> LKR{" "}
-                        {parseFloat(selectedTransaction.employeeDiscount || 0).toFixed(2)}
+                        <strong>Employee Discount:</strong> {priceSymbol}{parseFloat(selectedTransaction.employeeDiscount || 0).toFixed(2)}
                       </p>
                     )}
                     <p>
-                      <strong>Total Amount:</strong> LKR{" "}
-                      {parseFloat(selectedTransaction.totalAmount || 0).toFixed(2)}
+                      <strong>Total Amount:</strong> {priceSymbol}{parseFloat(selectedTransaction.totalAmount || 0).toFixed(2)}
                     </p>
                     <p>
                       <strong>Status:</strong>{" "}
@@ -602,14 +600,11 @@ const Invoicereport = () => {
                           <tr key={index}>
                             <td>{item.productDto?.name || "N/A"}</td>
                             <td>{item.productDto?.barcode || "N/A"}</td>
-                            <td>LKR {parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+                            <td>{priceSymbol}{parseFloat(item.unitPrice || 0).toFixed(2)}</td>
                             <td>{item.quantity || 0}</td>
-                            <td>LKR {parseFloat(item.discount || 0).toFixed(2)}</td>
+                            <td>{priceSymbol}{parseFloat(item.discount || 0).toFixed(2)}</td>
                             <td>
-                              LKR{" "}
-                              {parseFloat(
-                                (item.unitPrice * item.quantity - item.discount) || 0
-                              ).toFixed(2)}
+                              {priceSymbol}{parseFloat((item.unitPrice * item.quantity) - (item.discount || 0)).toFixed(2)}
                             </td>
                           </tr>
                         ))
@@ -642,7 +637,7 @@ const Invoicereport = () => {
                           (payment, index) => (
                             <tr key={index}>
                               <td>{payment.paymentMethodDto?.type || "N/A"}</td>
-                              <td>LKR {parseFloat(payment.amount || 0).toFixed(2)}</td>
+                              <td>{priceSymbol}{parseFloat(payment.amount || 0).toFixed(2)}</td>
                             </tr>
                           )
                         )

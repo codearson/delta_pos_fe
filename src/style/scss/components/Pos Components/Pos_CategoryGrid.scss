@@ -654,6 +654,16 @@
       gap: 1rem;
       margin-top: 1.5rem;
 
+      .purchase-popup-actions-left {
+        flex: 1;
+      }
+
+      .purchase-popup-actions-right {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+      }
+
       .purchase-popup-button {
         padding: 0.75rem 1.5rem;
         border-radius: 0.5rem;
