@@ -14,7 +14,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import "../../style/scss/pages/_categorylist.scss";
-import { getAllManagerToggles, updateManagerToggleStatus } from "../Api/ManagerToggle";
 
 const styles = `
   .nav-tabs-wrapper {
@@ -109,12 +108,10 @@ const NonSaleProductList = () => {
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [toggles, setToggles] = useState([]);
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   useEffect(() => {
     loadInitialData();
-    fetchToggles();
   }, []);
 
   useEffect(() => {
@@ -122,33 +119,6 @@ const NonSaleProductList = () => {
       fetchProductsData(false);
     }
   }, [showActive]);
-
-  const fetchToggles = async () => {
-    try {
-      const toggles = await getAllManagerToggles();
-      // Filter to only get the Non Scan Product toggle
-      const nonScanToggle = toggles.responseDto.find(toggle => toggle.action === "Non Scan Product");
-      setToggles(nonScanToggle ? [nonScanToggle] : []);
-    } catch (error) {
-      console.error('Error fetching toggles:', error);
-    }
-  };
-
-  const handleToggleChange = async (id, currentStatus) => {
-    try {
-      const newStatus = !currentStatus;
-      await updateManagerToggleStatus(id, newStatus);
-      
-      // Update the toggles state
-      setToggles(prevToggles => 
-        prevToggles.map(toggle => 
-          toggle.id === id ? { ...toggle, isActive: newStatus } : toggle
-        )
-      );
-    } catch (error) {
-      console.error('Error updating toggle status:', error);
-    }
-  };
 
   const loadInitialData = async () => {
     setIsLoading(true);
@@ -485,23 +455,6 @@ const NonSaleProductList = () => {
                   </Link>
                 </div>
               </div>
-              {toggles.map((toggle) => (
-                <div key={toggle.id} className="toggle-card">
-                  <div className="d-flex align-items-center">
-                    <span className="toggle-label">Show In Pos</span>
-                    <div className="toggle-wrapper">
-                      <label className="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          checked={toggle.isActive} 
-                          onChange={() => handleToggleChange(toggle.id, toggle.isActive)}
-                        />
-                        <span className="toggle-slider"></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
             <div className="table-responsive">
               <Table

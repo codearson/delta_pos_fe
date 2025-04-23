@@ -97,17 +97,6 @@ export const SidebarData = [
           { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
         //  { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
         ]
-      },{
-        label: "Toggle",
-        submenuOpen: true,
-        submenuHdr: "Toggle",
-        submenu: true,
-        showSubRoute: false,
-        submenuItems: [
-          { label: "Manager Settings", link: "/stock-adjustment", icon:  <Icon.Settings />,showSubRoute: false,submenu: false },
-        //  { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
-        //  { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
-        ]
       },
       {
         label: "Sales",
@@ -235,8 +224,18 @@ export const SidebarData = [
           // { label: "Profit & Loss", link: "/profit-loss-report", icon:  <Icon.TrendingDown />,showSubRoute: false }
         ],
       },
-
-
+      {
+        label: "Settings",
+        submenuOpen: true,
+        submenuHdr: "Settings",
+        submenu: true,
+        showSubRoute: false,
+        submenuItems: [
+          { label: "Manager Settings", link: "/stock-adjustment", icon:  <Icon.Settings />,showSubRoute: false,submenu: false },
+        //  { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+        //  { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
+        ]
+      },
       {
         label: "User Management",
         submenuOpen: true,

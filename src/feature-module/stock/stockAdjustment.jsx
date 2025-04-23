@@ -99,6 +99,10 @@ const styles = `
     border-left: 4px solid #4CAF50;
   }
 
+  .card.non-scan {
+    border-left: 4px solid #ff0000;
+  }
+
   .card-title {
     font-size: 1.1rem;
     font-weight: 500;
@@ -326,11 +330,12 @@ const StockAdjustment = () => {
     const fetchToggles = async () => {
       try {
         const toggles = await getAllManagerToggles();
-        // Filter to get discount-related toggles, Age Validation toggle, and Add Customer toggle
+        // Filter to get discount-related toggles, Age Validation toggle, Add Customer toggle, and Non Scan Product toggle
         const relevantToggles = toggles.responseDto.filter(
           toggle => toggle.action.includes("Discount") || 
                     toggle.action === "Age Validation" ||
-                    toggle.action === "Add Customer"
+                    toggle.action === "Add Customer" ||
+                    toggle.action === "Non Scan Product"
         );
         setToggles(relevantToggles);
         
@@ -603,7 +608,8 @@ const StockAdjustment = () => {
               <div key={toggle.id} className="col-12 mb-4">
                 <div className={`card ${
                   toggle.action === "Age Validation" ? "age-validation" : 
-                  toggle.action === "Add Customer" ? "customer" : "discount"
+                  toggle.action === "Add Customer" ? "customer" : 
+                  toggle.action === "Non Scan Product" ? "non-scan" : "discount"
                 }`}>
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-center">
@@ -616,6 +622,8 @@ const StockAdjustment = () => {
                             ? "Enable employee discount functionality"
                             : toggle.action === "Add Customer"
                             ? "Enable add customer button in POS"
+                            : toggle.action === "Non Scan Product"
+                            ? "Show non-scan products in POS"
                             : "Enable manual discount functionality"}
                         </p>
                         {toggle.action === "Employee Discount" && toggle.isActive && (
