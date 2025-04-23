@@ -2067,6 +2067,7 @@ const Pos_CategoryGrid = forwardRef(({
           </div>
         </div>
       )}
+
       {showZReportPopup && zReportData && zReportData.responseDto && (
         <div className="purchase-popup-overlay">
           <div
@@ -2126,16 +2127,16 @@ const Pos_CategoryGrid = forwardRef(({
                       <tr>
                         <td>Banking</td>
                         <td>{zReportData.responseDto.bankingCount || 0}</td>
-                        <td className="amount">${priceSymbol}${zReportData.responseDto.bankingTotal}</td>
+                        <td className="amount">{priceSymbol}{zReportData.responseDto.bankingTotal}</td>
                       </tr>
                       <tr>
                         <td>Payout</td>
                         <td>{zReportData.responseDto.payoutCount || 0}</td>
-                        <td className="amount">${priceSymbol}${zReportData.responseDto.payoutTotal}</td>
+                        <td className="amount">{priceSymbol}{zReportData.responseDto.payoutTotal}</td>
                       </tr>
                       <tr className="total-row">
                         <td colSpan="2">Difference</td>
-                        <td className="amount">${priceSymbol}${zReportData.responseDto.difference}</td>
+                        <td className="amount">{priceSymbol}{zReportData.responseDto.difference}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2169,7 +2170,7 @@ const Pos_CategoryGrid = forwardRef(({
                               {Object.entries(data.categoryTotals).map(([category, amount]) => (
                                 <tr key={category}>
                                   <td>{category}</td>
-                                  <td className="amount">${priceSymbol}${parseFloat(amount).toFixed(2)}</td>
+                                  <td className="amount">{priceSymbol}{parseFloat(amount).toFixed(2)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -2188,12 +2189,12 @@ const Pos_CategoryGrid = forwardRef(({
                               {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
                                 <tr key={method}>
                                   <td>{method}</td>
-                                  <td className="amount">${priceSymbol}${parseFloat(amount).toFixed(2)}</td>
+                                  <td className="amount">{priceSymbol}{parseFloat(amount).toFixed(2)}</td>
                                 </tr>
                               ))}
                               <tr className="after-balance-row">
                                 <td>After Balance Cash</td>
-                                <td className="amount">${priceSymbol}${afterBalanceCash}</td>
+                                <td className="amount">{priceSymbol}{afterBalanceCash}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -2218,7 +2219,7 @@ const Pos_CategoryGrid = forwardRef(({
                                     <tr key={`${userName}-${method}`}>
                                       <td style={{ padding: '12px 15px' }}>{userName}</td>
                                       <td style={{ padding: '12px 15px' }}>{method}</td>
-                                      <td style={{ padding: '12px 15px' }}>${priceSymbol}${parseFloat(amount).toFixed(2)}</td>
+                                      <td style={{ padding: '12px 15px' }}>{priceSymbol}{parseFloat(amount).toFixed(2)}</td>
                                     </tr>
                                   ))
                                 )}
@@ -2235,6 +2236,7 @@ const Pos_CategoryGrid = forwardRef(({
           </div>
         </div>
       )}
+
       {showRequestLeavePopup && (
         <Pos_RequestLeave onClose={() => setShowRequestLeavePopup(false)} />
       )}
