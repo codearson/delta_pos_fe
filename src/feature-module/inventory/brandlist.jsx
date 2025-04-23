@@ -137,9 +137,9 @@ const BrandList = () => {
     const exportToPDF = () => {
         const doc = new jsPDF();
         doc.text(`Payout Categories (${showActive ? 'Active' : 'Inactive'})`, 20, 10);
-        const tableData = payoutCategories.map(cat => [cat.payoutCategory, cat.createdDate, cat.status]);
+        const tableData = payoutCategories.map(cat => [cat.payoutCategory, cat.isActive ? 'Active' : 'Inactive']);
         autoTable(doc, {
-            head: [['Payout Category', 'Created Date', 'Status']],
+            head: [['Payout Category', 'Status']],
             body: tableData,
             startY: 20,
         });
@@ -149,8 +149,7 @@ const BrandList = () => {
     const exportToExcel = () => {
         const worksheetData = payoutCategories.map(cat => ({
             'Payout Category': cat.payoutCategory,
-            'Created Date': cat.createdDate,
-            Status: cat.status
+            'Status': cat.isActive ? 'Active' : 'Inactive'
         }));
         const worksheet = XLSX.utils.json_to_sheet(worksheetData);
         const workbook = XLSX.utils.book_new();
