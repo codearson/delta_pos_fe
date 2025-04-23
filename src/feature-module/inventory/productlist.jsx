@@ -29,6 +29,7 @@ const ProductList = () => {
   const [selectedTax, setSelectedTax] = useState(null);
   const [showActive, setShowActive] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
@@ -260,8 +261,8 @@ const ProductList = () => {
         "Bar Code": product.barcode || "",
         "Category": product.productCategoryDto?.productCategoryName || "N/A",
         "Tax Percentage": product.taxDto?.taxPercentage ? `${product.taxDto.taxPercentage}%` : "N/A",
-        "Purchase Price": `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
-        "Price Per Unit": `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
+        "Purchase Price": `${priceSymbol}${product.purchasePrice?.toFixed(2) || "0.00"}`,
+        "Price Per Unit": `${priceSymbol}${product.pricePerUnit?.toFixed(2) || "0.00"}`,
         "Quantity": product.quantity || 0,
         "Low Stock": product.lowStock || 0
       }));
@@ -314,14 +315,14 @@ const ProductList = () => {
     {
       title: "Purchase Price",
       dataIndex: "purchasePrice",
-      render: (purchasePrice) => `${purchasePrice.toFixed(2)}`,
-      sorter: (a, b) => a.purchasePrice - b.purchasePrice,
+      key: "purchasePrice",
+      render: (purchasePrice) => `${priceSymbol}${purchasePrice.toFixed(2)}`,
     },
     {
       title: "Price Per Unit",
       dataIndex: "pricePerUnit",
-      render: (pricePerUnit) => `${pricePerUnit.toFixed(2)}`,
-      sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
+      key: "pricePerUnit",
+      render: (pricePerUnit) => `${priceSymbol}${pricePerUnit.toFixed(2)}`,
     },
     { title: "Qty", dataIndex: "quantity", sorter: (a, b) => a.quantity - b.quantity },
     { title: "Low Stock", dataIndex: "lowStock", sorter: (a, b) => a.lowStock - b.lowStock },

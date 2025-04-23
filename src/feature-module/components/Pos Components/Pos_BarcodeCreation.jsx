@@ -10,6 +10,7 @@ const Pos_BarcodeCreation = ({ onClose }) => {
   const [productStatus, setProductStatus] = useState("");
   const [productDetails, setProductDetails] = useState(null); // Store name and price
   const barcodeRef = useRef(null);
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   // Handle input change without triggering barcode check
   const handleInputChange = (e) => {
@@ -31,7 +32,7 @@ const Pos_BarcodeCreation = ({ onClose }) => {
       const productData = await getProductByBarcode(value);
       if (productData && productData.responseDto && productData.responseDto.length > 0) {
         const productItem = productData.responseDto[0];
-        setProductStatus(`Product: ${productItem.name} - $${parseFloat(productItem.pricePerUnit).toFixed(2)}`);
+        setProductStatus(`Product: ${productItem.name} - ${priceSymbol}${parseFloat(productItem.pricePerUnit).toFixed(2)}`);
         setBarcodeValue(value);
         setProductDetails({
           name: productItem.name,
@@ -82,7 +83,7 @@ const Pos_BarcodeCreation = ({ onClose }) => {
         <body>
           <div class="barcode-container">
             <div class="product-info">
-              ${productDetails.name}<br>$${productDetails.price}
+              ${productDetails.name}<br>${priceSymbol}${productDetails.price}
             </div>
             <img id="barcodeImage" />
           </div>

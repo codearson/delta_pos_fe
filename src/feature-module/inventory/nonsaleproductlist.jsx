@@ -110,6 +110,7 @@ const NonSaleProductList = () => {
   const [togglingId, setTogglingId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [toggles, setToggles] = useState([]);
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   useEffect(() => {
     loadInitialData();
@@ -339,8 +340,8 @@ const NonSaleProductList = () => {
     {
       title: "Price",
       dataIndex: "pricePerUnit",
-      render: (price) => parseFloat(price).toFixed(2),
-      sorter: (a, b) => parseFloat(a.pricePerUnit || 0) - parseFloat(b.pricePerUnit || 0),
+      key: "pricePerUnit",
+      render: (pricePerUnit) => `${priceSymbol}${pricePerUnit.toFixed(2)}`,
     },
     {
       title: "Status",

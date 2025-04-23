@@ -24,6 +24,7 @@ const LowStock = () => {
   const [searchQueryOut, setSearchQueryOut] = useState("");
   const [activeTab, setActiveTab] = useState("low");
   const [isLoading, setIsLoading] = useState(true);
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   const MySwal = withReactContent(Swal);
 
@@ -202,8 +203,8 @@ const LowStock = () => {
         product.taxDto?.taxPercentage
           ? `${product.taxDto.taxPercentage}%`
           : "N/A",
-        `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
-        `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
+        `${priceSymbol}${product.purchasePrice?.toFixed(2) || "0.00"}`,
+        `${priceSymbol}${product.pricePerUnit?.toFixed(2) || "0.00"}`,
         product.quantity?.toString() || "0",
         product.lowStock?.toString() || "0",
       ]);
@@ -249,8 +250,8 @@ const LowStock = () => {
         "Tax Percentage": product.taxDto?.taxPercentage
           ? `${product.taxDto.taxPercentage}%`
           : "N/A",
-        "Purchase Price": `$${product.purchasePrice?.toFixed(2) || "0.00"}`,
-        "Price Per Unit": `$${product.pricePerUnit?.toFixed(2) || "0.00"}`,
+        "Purchase Price": `${priceSymbol}${product.purchasePrice?.toFixed(2) || "0.00"}`,
+        "Price Per Unit": `${priceSymbol}${product.pricePerUnit?.toFixed(2) || "0.00"}`,
         Quantity: product.quantity || 0,
         "Low Stock": product.lowStock || 0,
       }));
@@ -435,14 +436,14 @@ const LowStock = () => {
     {
       title: "Purchase Price",
       dataIndex: "purchasePrice",
-      render: (purchasePrice) => `$${purchasePrice.toFixed(2)}`,
-      sorter: (a, b) => a.purchasePrice - b.purchasePrice,
+      key: "purchasePrice",
+      render: (purchasePrice) => `${priceSymbol}${purchasePrice.toFixed(2)}`,
     },
     {
       title: "Price Per Unit",
       dataIndex: "pricePerUnit",
-      render: (pricePerUnit) => `$${pricePerUnit.toFixed(2)}`,
-      sorter: (a, b) => a.pricePerUnit - b.pricePerUnit,
+      key: "pricePerUnit",
+      render: (pricePerUnit) => `${priceSymbol}${pricePerUnit.toFixed(2)}`,
     },
     {
       title: "Qty",

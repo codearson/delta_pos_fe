@@ -57,7 +57,8 @@ const Pos_CategoryGrid = forwardRef(({
   const [showZReportPopup, setShowZReportPopup] = useState(false);
   const [managerToggles, setManagerToggles] = useState([]);
   const [showEmployeeDiscountPopup, setShowEmployeeDiscountPopup] = useState(false);
-  const [productName, setProductName] = useState(""); // New state for product name
+  const [productName, setProductName] = useState("");
+  const priceSymbol = localStorage.getItem("priceSymbol") || "";
 
   // Function to manually refresh NonScan data
   const refreshNonScanData = async () => {
@@ -534,13 +535,13 @@ const Pos_CategoryGrid = forwardRef(({
             <tbody>
               <tr>
                 <td>Banking</td>
-                <td class="total-column">${bankingAmount.toFixed(2)}</td>
+                <td class="total-column">${priceSymbol}${bankingAmount.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
-            <p>Total: ${bankingAmount.toFixed(2)}</p>
+            <p>Total: ${priceSymbol}${bankingAmount.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
           <div class="receipt-footer">
@@ -1242,15 +1243,15 @@ const Pos_CategoryGrid = forwardRef(({
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
-            <p>Subtotal: ${subtotal.toFixed(2)}</p>
-            ${totalDiscount > 0 ? `<p>Product Discount: ${totalDiscount.toFixed(2)}</p>` : ''}
-            ${manualDiscount > 0 ? `<p>Manual Discount: -${manualDiscount.toFixed(2)}</p>` : ''}
-            ${employeeDiscount > 0 ? `<p>Employee Discount: -${employeeDiscount.toFixed(2)}</p>` : ''}
-            <p>Total: ${totalAfterDiscounts.toFixed(2)}</p>
+            <p>Subtotal: ${priceSymbol}${subtotal.toFixed(2)}</p>
+            ${totalDiscount > 0 ? `<p>Product Discount: ${priceSymbol}${totalDiscount.toFixed(2)}</p>` : ''}
+            ${manualDiscount > 0 ? `<p>Manual Discount: -${priceSymbol}${manualDiscount.toFixed(2)}</p>` : ''}
+            ${employeeDiscount > 0 ? `<p>Employee Discount: -${priceSymbol}${employeeDiscount.toFixed(2)}</p>` : ''}
+            <p>Total: ${priceSymbol}${totalAfterDiscounts.toFixed(2)}</p>
             ${paymentMethods.map(method => `
-              <p>${method.type}: ${method.amount.toFixed(2)}</p>
+              <p>${method.type}: ${priceSymbol}${method.amount.toFixed(2)}</p>
             `).join('')}
-            <p>Balance: ${balance.toFixed(2)}</p>
+            <p>Balance: ${priceSymbol}${balance.toFixed(2)}</p>
           </div>
           <div class="divider"></div>
           <div class="barcode-container">
@@ -1461,16 +1462,16 @@ const Pos_CategoryGrid = forwardRef(({
                 <tr>
                   <td>Banking</td>
                   <td>${bankingCount}</td>
-                  <td class="amount">${bankingTotal}</td>
+                  <td class="amount">${priceSymbol}${bankingTotal}</td>
                 </tr>
                 <tr>
                   <td>Payout</td>
                   <td>${payoutCount}</td>
-                  <td class="amount">${payoutTotal}</td>
+                  <td class="amount">${priceSymbol}${payoutTotal}</td>
                 </tr>
                 <tr>
                   <td colspan="2">Difference</td>
-                  <td class="amount">${difference}</td>
+                  <td class="amount">${priceSymbol}${difference}</td>
                 </tr>
               </tbody>
             </table>
@@ -1527,7 +1528,7 @@ const Pos_CategoryGrid = forwardRef(({
             }
                       <tr class="after-balance-row">
                         <td>After Balance Cash</td>
-                        <td class="amount">${afterBalanceCash}</td>
+                        <td class="amount">${priceSymbol}${afterBalanceCash}</td>
                       </tr>
                     </table>
                   </div>
@@ -1631,13 +1632,26 @@ const Pos_CategoryGrid = forwardRef(({
               )}
             </div>
             <div className="purchase-popup-actions">
-              <button
-                onClick={handleAddPurchase}
-                className="purchase-popup-button add"
-                disabled={!productName} // Disable if no product found
-              >
-                Add
-              </button>
+              <div className="purchase-popup-actions-left">
+                {getUserRole() !== "USER" && (
+                  <button
+                    onClick={handleClearTable}
+                    disabled={purchases.length === 0}
+                    className="purchase-popup-button clear"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="purchase-popup-actions-right">
+                <button
+                  onClick={handleAddPurchase}
+                  className="purchase-popup-button add"
+                  disabled={!productName} // Disable if no product found
+                >
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1681,20 +1695,26 @@ const Pos_CategoryGrid = forwardRef(({
               </table>
             </div>
             <div className="purchase-popup-actions">
-              <button
-                onClick={handleClearTable}
-                disabled={purchases.length === 0}
-                className="purchase-popup-button clear"
-              >
-                Clear
-              </button>
-              <button
-                onClick={handlePrintPurchase}
-                disabled={purchases.length === 0}
-                className="purchase-popup-button print"
-              >
-                Print
-              </button>
+              <div className="purchase-popup-actions-left">
+                {getUserRole() !== "USER" && (
+                  <button
+                    onClick={handleClearTable}
+                    disabled={purchases.length === 0}
+                    className="purchase-popup-button clear"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="purchase-popup-actions-right">
+                <button
+                  onClick={handlePrintPurchase}
+                  disabled={purchases.length === 0}
+                  className="purchase-popup-button print"
+                >
+                  Print
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2106,16 +2126,16 @@ const Pos_CategoryGrid = forwardRef(({
                       <tr>
                         <td>Banking</td>
                         <td>{zReportData.responseDto.bankingCount || 0}</td>
-                        <td className="amount">{zReportData.responseDto.bankingTotal.toFixed(2)}</td>
+                        <td className="amount">${priceSymbol}${zReportData.responseDto.bankingTotal}</td>
                       </tr>
                       <tr>
                         <td>Payout</td>
                         <td>{zReportData.responseDto.payoutCount || 0}</td>
-                        <td className="amount">{zReportData.responseDto.payoutTotal.toFixed(2)}</td>
+                        <td className="amount">${priceSymbol}${zReportData.responseDto.payoutTotal}</td>
                       </tr>
                       <tr className="total-row">
                         <td colSpan="2">Difference</td>
-                        <td className="amount">{zReportData.responseDto.difference.toFixed(2)}</td>
+                        <td className="amount">${priceSymbol}${zReportData.responseDto.difference}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2149,7 +2169,7 @@ const Pos_CategoryGrid = forwardRef(({
                               {Object.entries(data.categoryTotals).map(([category, amount]) => (
                                 <tr key={category}>
                                   <td>{category}</td>
-                                  <td className="amount">{parseFloat(amount).toFixed(2)}</td>
+                                  <td className="amount">${priceSymbol}${parseFloat(amount).toFixed(2)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -2168,12 +2188,12 @@ const Pos_CategoryGrid = forwardRef(({
                               {Object.entries(data.overallPaymentTotals).map(([method, amount]) => (
                                 <tr key={method}>
                                   <td>{method}</td>
-                                  <td className="amount">{parseFloat(amount).toFixed(2)}</td>
+                                  <td className="amount">${priceSymbol}${parseFloat(amount).toFixed(2)}</td>
                                 </tr>
                               ))}
-                              <tr>
+                              <tr className="after-balance-row">
                                 <td>After Balance Cash</td>
-                                <td className="amount">{afterBalanceCash}</td>
+                                <td className="amount">${priceSymbol}${afterBalanceCash}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -2198,7 +2218,7 @@ const Pos_CategoryGrid = forwardRef(({
                                     <tr key={`${userName}-${method}`}>
                                       <td style={{ padding: '12px 15px' }}>{userName}</td>
                                       <td style={{ padding: '12px 15px' }}>{method}</td>
-                                      <td style={{ padding: '12px 15px' }}>{parseFloat(amount).toFixed(2)}</td>
+                                      <td style={{ padding: '12px 15px' }}>${priceSymbol}${parseFloat(amount).toFixed(2)}</td>
                                     </tr>
                                   ))
                                 )}
