@@ -74,10 +74,11 @@ const Pos_BarcodeCreation = ({ onClose }) => {
               header, footer, nav, .print-header, .print-footer { display: none !important; }
               html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
             }
-            body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+            body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1; box-sizing: border-box; text-align: center; }
             .barcode-container { display: inline-block; text-align: center; width: 100%; }
-            .product-info { font-size: 16px; font-weight: bold; margin-bottom: 10px; font-family: Arial, sans-serif; }
-            #barcodeImage { width: 100%; max-width: 100%; height: auto; }
+            .product-info { font-size: 16px; font-weight: bold; margin-bottom: 2px; font-family: Arial, sans-serif; }
+            #barcodeImage { width: 100%; max-width: 100%; height: auto; margin-bottom: 2px; }
+            .barcode-number { font-size: 12px; font-family: monospace; }
           </style>
         </head>
         <body>
