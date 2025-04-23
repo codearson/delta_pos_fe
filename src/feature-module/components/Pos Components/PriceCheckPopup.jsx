@@ -8,6 +8,7 @@ const PriceCheckPopup = ({ onClose, darkMode }) => {
   const [itemDetails, setItemDetails] = useState(null);
   const [error, setError] = useState("");
   const barcodeInputRef = useRef(null);
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   useEffect(() => {
     barcodeInputRef.current?.focus();
@@ -27,6 +28,7 @@ const PriceCheckPopup = ({ onClose, darkMode }) => {
   const handlePriceCheck = async () => {
     if (barcode.length < 3) {
       setError("Barcode must be at least 3 characters long.");
+      setItemDetails(null);
       return;
     }
 
@@ -91,7 +93,7 @@ const PriceCheckPopup = ({ onClose, darkMode }) => {
               </tr>
               <tr>
                 <td>Price</td>
-                <td>{itemDetails.price.toFixed(2)}</td>
+                <td>{priceSymbol}{itemDetails.price.toFixed(2)}</td>
               </tr>
               <tr>
                 <td>Stock</td>

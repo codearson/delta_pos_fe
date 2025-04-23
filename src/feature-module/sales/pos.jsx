@@ -92,6 +92,7 @@ const Pos = () => {
   const [selectedPayoutCategory, setSelectedPayoutCategory] = useState(null);
   const [ageVerifiedForTransaction, setAgeVerifiedForTransaction] = useState(false);
   const [isAgeRestrictionEnabled, setIsAgeRestrictionEnabled] = useState(false);
+  const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -1078,15 +1079,15 @@ const Pos = () => {
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
-            <p>Subtotal: ${totalValue.toFixed(2)}</p>
-            ${totalDiscount > 0 ? `<p>Product Discount: ${totalDiscount.toFixed(2)}</p>` : ''}
-            ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
-            ${employeeDiscount > 0 ? `<p>Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)${employeeName ? ` (${employeeName})` : ""}: ${employeeDiscount.toFixed(2)}</p>` : ''}
-            <p>Grand Total: ${(totalValue - totalDiscount - manualDiscount - employeeDiscount).toFixed(2)}</p>
+            <p>Subtotal: ${priceSymbol}${totalValue.toFixed(2)}</p>
+            ${totalDiscount > 0 ? `<p>Product Discount: ${priceSymbol}${totalDiscount.toFixed(2)}</p>` : ''}
+            ${manualDiscount > 0 ? `<p>Manual Discount: ${priceSymbol}${manualDiscount.toFixed(2)}</p>` : ''}
+            ${employeeDiscount > 0 ? `<p>Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)${employeeName ? ` (${employeeName})` : ""}: ${priceSymbol}${employeeDiscount.toFixed(2)}</p>` : ''}
+            <p>Grand Total: ${priceSymbol}${(totalValue - totalDiscount - manualDiscount - employeeDiscount).toFixed(2)}</p>
             ${paymentMethods.map(method => `
-              <p>${method.type}: ${method.amount.toFixed(2)}</p>
+              <p>${method.type}: ${priceSymbol}${method.amount.toFixed(2)}</p>
             `).join('')}
-            <p>Balance: ${Math.abs(balance).toFixed(2)}</p>
+            <p>Balance: ${priceSymbol}${Math.abs(balance).toFixed(2)}</p>
           </div>
           <div class="divider"></div>
           <div class="barcode-container">
@@ -1251,15 +1252,15 @@ const Pos = () => {
             </table>
             <div class="divider"></div>
             <div class="receipt-details">
-              <p>Subtotal: ${(totalAmount + totalDiscount + manualDiscount + lastTransaction.employeeDiscount).toFixed(2)}</p>
-              ${totalDiscount > 0 ? `<p>Product Discount: ${totalDiscount.toFixed(2)}</p>` : ''}
-              ${manualDiscount > 0 ? `<p>Manual Discount: ${manualDiscount.toFixed(2)}</p>` : ''}
-              ${lastTransaction.employeeDiscount > 0 ? `<p>Employee Discount (${lastTransaction.employeeDiscountPercentage.toFixed(1)}%)${lastTransaction.employeeName ? ` (${lastTransaction.employeeName})` : ""}: ${lastTransaction.employeeDiscount.toFixed(2)}</p>` : ''}
-              <p>Grand Total: ${totalAmount.toFixed(2)}</p>
+              <p>Subtotal: ${priceSymbol}${(totalAmount + totalDiscount + manualDiscount + lastTransaction.employeeDiscount).toFixed(2)}</p>
+              ${totalDiscount > 0 ? `<p>Product Discount: ${priceSymbol}${totalDiscount.toFixed(2)}</p>` : ''}
+              ${manualDiscount > 0 ? `<p>Manual Discount: ${priceSymbol}${manualDiscount.toFixed(2)}</p>` : ''}
+              ${lastTransaction.employeeDiscount > 0 ? `<p>Employee Discount (${lastTransaction.employeeDiscountPercentage.toFixed(1)}%)${lastTransaction.employeeName ? ` (${lastTransaction.employeeName})` : ""}: ${priceSymbol}${lastTransaction.employeeDiscount.toFixed(2)}</p>` : ''}
+              <p>Grand Total: ${priceSymbol}${totalAmount.toFixed(2)}</p>
               ${paymentMethods.map((method) => `
-                <p>${method.type}: ${method.amount.toFixed(2)}</p>
+                <p>${method.type}: ${priceSymbol}${method.amount.toFixed(2)}</p>
               `).join('')}
-              <p>Balance: ${Math.abs(calculatedBalance).toFixed(2)}</p>
+              <p>Balance: ${priceSymbol}${Math.abs(calculatedBalance).toFixed(2)}</p>
             </div>
             <div class="divider"></div>
             <div class="barcode-container">
@@ -1830,21 +1831,21 @@ const Pos = () => {
                 </p>
                 {customerName && <p>Customer: {customerName}</p>}
                 <div className="bill-summary centered">
-                  <p>Total: {totalValue.toFixed(2)}</p>
-                  {manualDiscount > 0 && <p>Manual Discount: {manualDiscount.toFixed(2)}</p>}
+                  <p>Total: {priceSymbol}{totalValue.toFixed(2)}</p>
+                  {manualDiscount > 0 && <p>Manual Discount: {priceSymbol}{manualDiscount.toFixed(2)}</p>}
                   {employeeDiscount > 0 && (
                     <p>
                       Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)
-                      {employeeName ? ` (${employeeName})` : ""}: {employeeDiscount.toFixed(2)}
+                      {employeeName ? ` (${employeeName})` : ""}: {priceSymbol}{employeeDiscount.toFixed(2)}
                     </p>
                   )}
-                  <p>Grand Total: {(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
+                  <p>Grand Total: {priceSymbol}{(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
                   {paymentMethods.map((method) => (
-                    <p key={method.type}>{method.type}: {method.amount.toFixed(2)}</p>
+                    <p key={method.type}>{method.type}: {priceSymbol}{method.amount.toFixed(2)}</p>
                   ))}
                   <p>
                     <span className="balance-label">Balance:</span>{" "}
-                    <span className="balance-value">{Math.abs(balance).toFixed(2)}</span>
+                    <span className="balance-value">{priceSymbol}{Math.abs(balance).toFixed(2)}</span>
                   </p>
                 </div>
               </div>
