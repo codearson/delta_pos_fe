@@ -421,8 +421,11 @@ const Dashboard = () => {
         setUpcomingHolidayLoading(true);
         const holidays = await fetchHolidays();
         if (Array.isArray(holidays)) {
-          // Filter pending holidays
-          const pending = holidays.filter(holiday => holiday.status === 'Pending');
+          // Filter pending holidays - only active and pending status
+          const pending = holidays.filter(holiday => 
+            holiday.status === 'Pending' && 
+            (holiday.isActive === true || holiday.isActive === 1)
+          );
           setPendingHolidays(pending);
 
           // Filter upcoming approved holidays
@@ -434,7 +437,11 @@ const Dashboard = () => {
           thirtyDaysFromNow.setHours(23, 59, 59, 999); // Set to end of day
 
           const upcomingApproved = holidays.filter(holiday => {
-            if (holiday.status !== 'Approved') return false;
+            // Check if holiday is active and approved
+            if (holiday.status !== 'Approved' || 
+                !(holiday.isActive === true || holiday.isActive === 1)) {
+              return false;
+            }
             
             const startDate = new Date(holiday.startDate);
             startDate.setHours(0, 0, 0, 0);
