@@ -849,7 +849,7 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="row">
-            <div className="col-xl-5 col-sm-12 col-12 d-flex">
+            <div className="col-xl-6 col-sm-12 col-12 d-flex">
               <div className="card flex-fill default-cover mb-4 holiday-card">
                 <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: '#ffc107', padding: '12px 15px' }}>
                   <div className="d-flex align-items-center">
@@ -922,7 +922,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-            <div className="col-xl-5 col-sm-12 col-12 d-flex">
+            <div className="col-xl-6 col-sm-12 col-12 d-flex">
               <div className="card flex-fill default-cover mb-4 holiday-card">
                 <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: '#28a745', padding: '12px 15px' }}>
                   <div className="d-flex align-items-center">
