@@ -2,6 +2,7 @@ export const all_routes = {
   dashboard: "/",
   productlist: "/product-list",
   ProductDiscount: "/productDiscount",
+  UserManual: "/userManual",
   customproductlist: "/custom-products",
   nonsaleproduct: "/nonsaleproduct",
   addproduct: "/add-product",
