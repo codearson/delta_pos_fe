@@ -198,6 +198,7 @@ import WareHouses from "../core/modals/peoples/warehouses";
 import Coupons from "../feature-module/coupons/coupons";
 import { all_routes } from "./all_routes";
 import NonSaleProductList from "../feature-module/inventory/nonsaleproductlist";
+import UserManual from "../feature-module/documentation/userManual";
 
 export const publicRoutes = [
   {
@@ -212,6 +213,13 @@ export const publicRoutes = [
     path: routes.ProductDiscount,
     name: "discount",
     element: <ProductDiscount />,
+    route: Route,
+  },
+  {
+    id: 98,
+    path: routes.UserManual,
+    name: "usermanual",
+    element: <UserManual />,
     route: Route,
   },
   {
