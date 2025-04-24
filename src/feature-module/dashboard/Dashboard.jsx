@@ -16,6 +16,7 @@ import { fetchXReport } from "../Api/TransactionApi";
 import { getAllByZReports } from "../Api/SalesReport";
 import { fetchProducts } from "../Api/productApi";
 import { fetchTransactionDetails } from "../Api/TransactionDetailListApi";
+import { fetchHolidays } from "../Api/HolidayApi";
 import PropTypes from 'prop-types';
 import './dashboard.css';  // We'll create this CSS file next
 
@@ -340,6 +341,10 @@ const Dashboard = () => {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [outOfStockProducts, setOutOfStockProducts] = useState([]);
   const [stockLoading, setStockLoading] = useState(true);
+  const [pendingHolidays, setPendingHolidays] = useState([]);
+  const [holidayLoading, setHolidayLoading] = useState(true);
+  const [upcomingApprovedHolidays, setUpcomingApprovedHolidays] = useState([]);
+  const [upcomingHolidayLoading, setUpcomingHolidayLoading] = useState(true);
 
   useEffect(() => {
     const loadReportData = async () => {
@@ -407,6 +412,58 @@ const Dashboard = () => {
     };
 
     loadStockData();
+  }, []);
+
+  useEffect(() => {
+    const loadHolidayData = async () => {
+      try {
+        setHolidayLoading(true);
+        setUpcomingHolidayLoading(true);
+        const holidays = await fetchHolidays();
+        if (Array.isArray(holidays)) {
+          // Filter pending holidays
+          const pending = holidays.filter(holiday => holiday.status === 'Pending');
+          setPendingHolidays(pending);
+
+          // Filter upcoming approved holidays
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Set to start of day
+          
+          const thirtyDaysFromNow = new Date(today);
+          thirtyDaysFromNow.setDate(today.getDate() + 30);
+          thirtyDaysFromNow.setHours(23, 59, 59, 999); // Set to end of day
+
+          const upcomingApproved = holidays.filter(holiday => {
+            if (holiday.status !== 'Approved') return false;
+            
+            const startDate = new Date(holiday.startDate);
+            startDate.setHours(0, 0, 0, 0);
+            
+            const endDate = new Date(holiday.endDate);
+            endDate.setHours(23, 59, 59, 999);
+
+            // Show if:
+            // 1. Holiday starts within the next 30 days OR
+            // 2. Holiday ends within the next 30 days OR
+            // 3. Holiday spans across the current period (starts before and ends after)
+            return (
+              (startDate >= today && startDate <= thirtyDaysFromNow) || // Starts within period
+              (endDate >= today && endDate <= thirtyDaysFromNow) || // Ends within period
+              (startDate <= today && endDate >= thirtyDaysFromNow) // Spans across period
+            );
+          }).sort((a, b) => new Date(a.startDate) - new Date(b.startDate)); // Sort by start date
+
+          setUpcomingApprovedHolidays(upcomingApproved);
+        }
+      } catch (error) {
+        console.error("Error fetching holiday data:", error);
+      } finally {
+        setHolidayLoading(false);
+        setUpcomingHolidayLoading(false);
+      }
+    };
+
+    loadHolidayData();
   }, []);
 
   return (
@@ -776,6 +833,149 @@ const Dashboard = () => {
                         <div className="no-alerts-message">
                           <i className="fas fa-check-circle mb-3" style={{ fontSize: '2rem', color: '#28a745' }}></i>
                           <p>No stock alerts at this time.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-xl-5 col-sm-12 col-12 d-flex">
+              <div className="card flex-fill default-cover mb-4 holiday-card">
+                <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: '#ffc107', padding: '12px 15px' }}>
+                  <div className="d-flex align-items-center">
+                    <div className="notification-bell me-2">
+                      <i className="fas fa-calendar-alt"></i>
+                      <span className="notification-badge">
+                        {pendingHolidays.length}
+                      </span>
+                    </div>
+                    <h4 className="card-title mb-0" style={{ color: '#000' }}>
+                      Pending Holiday Requests
+                    </h4>
+                  </div>
+                  <div className="view-all-link">
+                    <Link to="/holidays" className="view-all d-flex align-items-center" style={{ color: '#000' }}>
+                      View All
+                      <span className="ps-2 d-flex align-items-center">
+                        <ArrowRight className="feather-16" />
+                      </span>
+                    </Link>
+                  </div>
+                </div>
+                <div className="card-body">
+                  {holidayLoading ? (
+                    <div className="text-center py-3">Loading...</div>
+                  ) : (
+                    <div className="stock-alerts-container">
+                      {pendingHolidays.length > 0 ? (
+                        <div className="alert-section">
+                          <div className="alert-items">
+                            {pendingHolidays.slice(0, 5).map((holiday, index) => (
+                              <div key={`holiday-${holiday.id || index}`} className="alert-item">
+                                <div className="alert-item-content">
+                                  <div className="alert-item-title">
+                                    <span>{holiday.userDto?.firstName || 'Unknown User'}</span>
+                                    <small>
+                                      {new Date(holiday.startDate).toLocaleDateString()} - {new Date(holiday.endDate).toLocaleDateString()}
+                                    </small>
+                                    {holiday.description && (
+                                      <small style={{ marginTop: '4px', color: '#666', fontStyle: 'italic' }}>
+                                        {holiday.description}
+                                      </small>
+                                    )}
+                                  </div>
+                                  <div className="alert-item-badge">
+                                    <span className="badge">
+                                      Pending
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {pendingHolidays.length > 5 && (
+                              <div className="alert-more">
+                                <Link to="/holidays" className="alert-more-link">
+                                  +{pendingHolidays.length - 5} more requests
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="no-alerts-message">
+                          <i className="fas fa-check-circle mb-3"></i>
+                          <p>No pending holiday requests at this time.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-5 col-sm-12 col-12 d-flex">
+              <div className="card flex-fill default-cover mb-4 holiday-card">
+                <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: '#28a745', padding: '12px 15px' }}>
+                  <div className="d-flex align-items-center">
+                    <div className="notification-bell me-2">
+                      <i className="fas fa-calendar-check"></i>
+                      <span className="notification-badge">
+                        {upcomingApprovedHolidays.length}
+                      </span>
+                    </div>
+                    <h4 className="card-title mb-0" style={{ color: '#fff' }}>
+                      Upcoming Approved Holidays
+                    </h4>
+                  </div>
+                  <div className="view-all-link">
+                    <Link to="/holidays" className="view-all d-flex align-items-center" style={{ color: '#fff' }}>
+                      View All
+                      <span className="ps-2 d-flex align-items-center">
+                        <ArrowRight className="feather-16" />
+                      </span>
+                    </Link>
+                  </div>
+                </div>
+                <div className="card-body">
+                  {upcomingHolidayLoading ? (
+                    <div className="text-center py-3">Loading...</div>
+                  ) : (
+                    <div className="stock-alerts-container">
+                      {upcomingApprovedHolidays.length > 0 ? (
+                        <div className="alert-section">
+                          <div className="alert-items">
+                            {upcomingApprovedHolidays.slice(0, 5).map((holiday, index) => (
+                              <div key={`upcoming-${holiday.id || index}`} className="alert-item">
+                                <div className="alert-item-content">
+                                  <div className="alert-item-title">
+                                    <span>{holiday.userDto?.firstName || 'Unknown User'}</span>
+                                    <small>
+                                      {new Date(holiday.startDate).toLocaleDateString()} - {new Date(holiday.endDate).toLocaleDateString()}
+                                    </small>
+                                    {holiday.description && (
+                                      <small style={{ marginTop: '4px', color: '#666', fontStyle: 'italic' }}>
+                                        {holiday.description}
+                                      </small>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                            {upcomingApprovedHolidays.length > 5 && (
+                              <div className="alert-more">
+                                <Link to="/holidays" className="alert-more-link">
+                                  +{upcomingApprovedHolidays.length - 5} more holidays
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="no-alerts-message">
+                          <i className="fas fa-calendar-check mb-3"></i>
+                          <p>No upcoming approved holidays in the next 30 days.</p>
                         </div>
                       )}
                     </div>
