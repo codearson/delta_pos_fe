@@ -3,6 +3,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import StockadjustmentModal from "../../core/modals/stocks/stockadjustmentModal";
 import { getAllManagerToggles, updateManagerToggleStatus } from "../Api/ManagerToggle";
 import { fetchEmployeeDiscounts, updateEmployeeDiscount, saveEmployeeDiscount } from "../Api/EmployeeDis";
+import { fetchMinimamBanking, updateMinimamBanking, saveMinimamBanking } from "../Api/MinimamBankingApi";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
@@ -101,6 +102,10 @@ const styles = `
 
   .card.non-scan {
     border-left: 4px solid #ff0000;
+  }
+
+  .card.banking {
+    border-left: 4px solid #ffc107;
   }
 
   .card-title {
@@ -325,6 +330,13 @@ const StockAdjustment = () => {
   const [employeeDiscountEnabled, setEmployeeDiscountEnabled] = useState(false);
   const [isAddingDiscount, setIsAddingDiscount] = useState(false);
   const [newDiscountValue, setNewDiscountValue] = useState("");
+  
+  // Minimam Banking states
+  const [minimamBanking, setMinimamBanking] = useState(null);
+  const [editingBanking, setEditingBanking] = useState(false);
+  const [bankingValue, setBankingValue] = useState("");
+  const [isAddingBanking, setIsAddingBanking] = useState(false);
+  const [newBankingValue, setNewBankingValue] = useState("");
 
   useEffect(() => {
     const fetchToggles = async () => {
@@ -337,6 +349,7 @@ const StockAdjustment = () => {
                     toggle.action === "Add Customer" ||
                     toggle.action === "Non Scan Product"
         );
+        
         setToggles(relevantToggles);
         
         // Find the employeeDiscount toggle and set its state
@@ -369,6 +382,23 @@ const StockAdjustment = () => {
       loadEmployeeDiscounts();
     }
   }, [employeeDiscountEnabled]);
+  
+  // Load Minimam Banking data when component mounts
+  useEffect(() => {
+    const loadMinimamBanking = async () => {
+      try {
+        const data = await fetchMinimamBanking();
+        // Filter to get only active banking data
+        const activeBanking = data.find(item => item.isActive === true);
+        setMinimamBanking(activeBanking || null);
+      } catch (error) {
+        console.error("Error loading minimam banking:", error);
+      }
+    };
+    
+    // Always load minimam banking data regardless of toggle state
+    loadMinimamBanking();
+  }, []);
 
   const handleToggleChange = async (id, currentStatus) => {
     try {
@@ -598,11 +628,245 @@ const StockAdjustment = () => {
     setNewDiscountValue("");
   };
 
+  // Minimam Banking functions
+  const handleEditBankingClick = () => {
+    if (minimamBanking) {
+      setEditingBanking(true);
+      setBankingValue(minimamBanking.amount.toString());
+    }
+  };
+
+  const handleBankingValueChange = (e) => {
+    const value = e.target.value;
+    // Allow empty value, single decimal point, or valid number
+    if (value === "" || value === "." || /^\d*\.?\d*$/.test(value)) {
+      setBankingValue(value);
+    }
+  };
+
+  const validateBankingValue = (value) => {
+    if (value === "" || value === ".") {
+      return "Please enter a valid amount";
+    }
+    
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+      return "Please enter a valid number";
+    }
+    
+    if (numValue < 0) {
+      return "Amount cannot be negative";
+    }
+    
+    return null; // No error
+  };
+
+  const handleEditBankingSave = async () => {
+    if (!minimamBanking) return;
+
+    const validationError = validateBankingValue(bankingValue);
+    if (validationError) {
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Error!",
+        text: validationError,
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+      return;
+    }
+
+    try {
+      const updatedData = {
+        amount: parseFloat(bankingValue),
+        isActive: true
+      };
+      
+      await updateMinimamBanking(minimamBanking.id, updatedData);
+      
+      // Update the local state
+      setMinimamBanking({
+        ...minimamBanking,
+        amount: parseFloat(bankingValue)
+      });
+      
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Success!",
+        text: "Minimam Banking amount updated successfully",
+        icon: "success",
+        confirmButtonText: "OK"
+      });
+      
+      setEditingBanking(false);
+      setBankingValue("");
+    } catch (error) {
+      console.error("Error updating minimam banking:", error);
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Error!",
+        text: "Failed to update minimam banking amount",
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+    }
+  };
+
+  const handleEditBankingCancel = () => {
+    setEditingBanking(false);
+    setBankingValue("");
+  };
+
+  const handleAddBankingClick = () => {
+    setIsAddingBanking(true);
+    setNewBankingValue("");
+  };
+
+  const handleNewBankingValueChange = (e) => {
+    const value = e.target.value;
+    // Allow empty value, single decimal point, or valid number
+    if (value === "" || value === "." || /^\d*\.?\d*$/.test(value)) {
+      setNewBankingValue(value);
+    }
+  };
+
+  const handleSaveNewBanking = async () => {
+    const validationError = validateBankingValue(newBankingValue);
+    if (validationError) {
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Error!",
+        text: validationError,
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+      return;
+    }
+
+    try {
+      const response = await saveMinimamBanking(parseFloat(newBankingValue));
+      
+      if (response && !response.error) {
+        // Refresh the minimam banking data
+        const data = await fetchMinimamBanking();
+        // Filter to get only active banking data
+        const activeBanking = data.find(item => item.isActive === true);
+        setMinimamBanking(activeBanking || null);
+        
+        setIsAddingBanking(false);
+        setNewBankingValue("");
+        
+        const MySwal = withReactContent(Swal);
+        MySwal.fire({
+          title: "Success!",
+          text: "Minimam Banking amount added successfully",
+          icon: "success",
+          confirmButtonText: "OK"
+        });
+      } else {
+        throw new Error(response?.error || "Failed to save minimam banking amount");
+      }
+    } catch (error) {
+      console.error("Error saving minimam banking:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to save minimam banking amount";
+      const MySwal = withReactContent(Swal);
+      MySwal.fire({
+        title: "Error!",
+        text: errorMessage,
+        icon: "error",
+        confirmButtonText: "OK"
+      });
+    }
+  };
+
+  const handleCancelAddBanking = () => {
+    setIsAddingBanking(false);
+    setNewBankingValue("");
+  };
+
   return (
     <div className="page-wrapper">
       <style>{styles}</style>
       <div className="content">
         <div className="row">
+          {/* Minimam Banking Card - Always visible without toggle */}
+          <div className="col-12 mb-4">
+            <div className="card banking">
+              <div className="card-body">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h5 className="card-title mb-0">Minimam Banking</h5>
+                    <p className="card-description">
+                      Set minimum banking amount for transactions
+                    </p>
+                    <div className="discount-info">
+                      {isAddingBanking ? (
+                        <>
+                          <input
+                            type="text"
+                            className="edit-discount-input"
+                            value={newBankingValue}
+                            onChange={handleNewBankingValueChange}
+                            placeholder="Enter amount"
+                          />
+                          <div className="edit-actions">
+                            <button className="save-btn" onClick={handleSaveNewBanking}>
+                              Save
+                            </button>
+                            <button className="cancel-btn" onClick={handleCancelAddBanking}>
+                              Cancel
+                            </button>
+                          </div>
+                        </>
+                      ) : editingBanking ? (
+                        <>
+                          <input
+                            type="text"
+                            className="edit-discount-input"
+                            value={bankingValue}
+                            onChange={handleBankingValueChange}
+                            placeholder="Enter amount"
+                          />
+                          <div className="edit-actions">
+                            <button className="save-btn" onClick={handleEditBankingSave}>
+                              Save
+                            </button>
+                            <button className="cancel-btn" onClick={handleEditBankingCancel}>
+                              Cancel
+                            </button>
+                          </div>
+                        </>
+                      ) : minimamBanking ? (
+                        <>
+                          <span className="discount-value">
+                            {minimamBanking.amount} Amount
+                          </span>
+                          <button 
+                            className="edit-discount-btn"
+                            onClick={handleEditBankingClick}
+                          >
+                            Edit
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="discount-value">No amount defined</span>
+                          <button 
+                            className="edit-discount-btn"
+                            onClick={handleAddBankingClick}
+                          >
+                            Add Amount
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Other Toggle Cards */}
           {toggles.length > 0 ? (
             toggles.map((toggle) => (
               <div key={toggle.id} className="col-12 mb-4">
