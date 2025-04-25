@@ -132,11 +132,11 @@ const Signin = () => {
                 <div className="login-userheading">
                   <h3>Sign In</h3>
                   <h4>
-                    Access the Codearson POS panel using your email and password.
+                    Access the Codearson Delta_POS panel using your email and password.
                   </h4>
                 </div>
                 <div className="form-login mb-3">
-                  <label className="form-label">Username Or Email</label>
+                  <label className="form-label">Email</label>
                   <div className="form-addons">
                     <input
                       type="text"
@@ -192,7 +192,7 @@ const Signin = () => {
                   </button>
                 </div>
                 <div className="my-4 d-flex justify-content-center align-items-center copyright-text">
-                  <p>Copyright © 2025 Codearson POS. All rights reserved</p>
+                  <p>Copyright © {new Date().getFullYear()} Codearson Delta_POS. All rights reserved</p>
                 </div>
               </div>
             </form>
