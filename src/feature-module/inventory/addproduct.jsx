@@ -20,6 +20,7 @@ import withReactContent from "sweetalert2-react-content";
 import { saveProduct, getProductByName, getProductByBarcode } from "../Api/productApi";
 import { fetchProductCategories } from "../Api/ProductCategoryApi";
 import { fetchTaxes } from "../Api/TaxApi";
+import { getAllManagerToggles } from "../Api/ManagerToggle";
 
 const AddProduct = () => {
   const route = all_routes;
@@ -28,6 +29,7 @@ const AddProduct = () => {
   const data = useSelector((state) => state.toggle_header);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingTaxes, setLoadingTaxes] = useState(true);
+  const [isTaxEnabled, setIsTaxEnabled] = useState(false);
   const MySwal = withReactContent(Swal);
   const [productName, setProductName] = useState("");
   const [barcode, setBarcode] = useState("");
@@ -54,6 +56,17 @@ const AddProduct = () => {
   useEffect(() => {
     loadCategoriesData();
     loadTaxesData();
+    const fetchTaxToggle = async () => {
+      try {
+        const toggles = await getAllManagerToggles();
+        const taxToggle = toggles.responseDto.find(toggle => toggle.action === "Tax");
+        setIsTaxEnabled(taxToggle?.isActive || false);
+      } catch (error) {
+        console.error('Error fetching tax toggle:', error);
+        setIsTaxEnabled(false);
+      }
+    };
+    fetchTaxToggle();
   }, []);
 
   const loadCategoriesData = async () => {
@@ -154,7 +167,7 @@ const AddProduct = () => {
       isValid = false;
     }
 
-    if (!taxType) {
+    if (isTaxEnabled && !taxType) {
       newErrors.taxType = "Please select a tax percentage";
       isValid = false;
     }
@@ -240,7 +253,7 @@ const AddProduct = () => {
         name: productName,
         barcode: barcode,
         pricePerUnit: parseFloat(pricePerUnit),
-        taxDto: { id: parseInt(taxType.value) },
+        taxDto: { id: isTaxEnabled ? parseInt(taxType.value) : 1 },
         isActive: true,
         productCategoryDto: { id: parseInt(category.value) },
         expiryDate: "2025-12-31T23:59:59",
@@ -351,9 +364,13 @@ const AddProduct = () => {
           </div>
           <ul className="table-top-head">
             <li>
-              <div className="page-btn">
-                <Link to={route.productlist} className="btn btn-secondary">
-                  <ArrowLeft className="me-2" />
+              <div className="page-btn me-2">
+                <Link 
+                  to={route.productlist} 
+                  className="btn btn-secondary d-flex align-items-center"
+                  style={{ padding: '6px 25px', minWidth: '180px', color: '#ffffff' }}
+                >
+                  <ArrowLeft className="me-1" style={{ width: '16px', height: '16px', color: '#ffffff' }} />
                   Back to Product
                 </Link>
               </div>
@@ -529,32 +546,34 @@ const AddProduct = () => {
                                 {errors.pricePerUnit && <div className="invalid-feedback">{errors.pricePerUnit}</div>}
                               </div>
                             </div>
-                            <div className="col-lg-4 col-sm-6 col-12">
-                              <div className="input-blocks add-product">
-                                <div className="add-newplus">
-                                  <label>Tax Percentage</label>
-                                  <Link to="#" data-bs-toggle="modal" data-bs-target="#add-units-tax">
-                                    <PlusCircle className="plus-down-add" />
-                                    <span>Add New</span>
-                                  </Link>
-                                </div>
-                                {loadingTaxes ? (
-                                  <p>Loading taxes...</p>
-                                ) : (
-                                  <div>
-                                    <Select
-                                      options={taxes}
-                                      placeholder="Select Option"
-                                      value={taxType}
-                                      onChange={setTaxType}
-                                      className={errors.taxType ? 'is-invalid' : ''}
-                                      required
-                                    />
-                                    {errors.taxType && <div className="text-danger mt-1" style={{ fontSize: '0.875em' }}>{errors.taxType}</div>}
+                            {isTaxEnabled && (
+                              <div className="col-lg-4 col-sm-6 col-12">
+                                <div className="input-blocks add-product">
+                                  <div className="add-newplus">
+                                    <label>Tax Percentage</label>
+                                    <Link to="#" data-bs-toggle="modal" data-bs-target="#add-units-tax">
+                                      <PlusCircle className="plus-down-add" />
+                                      <span>Add New</span>
+                                    </Link>
                                   </div>
-                                )}
+                                  {loadingTaxes ? (
+                                    <p>Loading taxes...</p>
+                                  ) : (
+                                    <div>
+                                      <Select
+                                        options={taxes}
+                                        placeholder="Select Option"
+                                        value={taxType}
+                                        onChange={setTaxType}
+                                        className={errors.taxType ? 'is-invalid' : ''}
+                                        required
+                                      />
+                                      {errors.taxType && <div className="text-danger mt-1" style={{ fontSize: '0.875em' }}>{errors.taxType}</div>}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            )}
                             <div className="col-lg-4 col-sm-6 col-12">
                               <div className="input-blocks add-product">
                                 <label>Low Stock</label>
