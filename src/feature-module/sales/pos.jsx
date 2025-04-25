@@ -24,7 +24,6 @@ import { getAllManagerToggles } from "../Api/ManagerToggle";
 import { fetchPayoutCategories } from "../Api/PayoutCategoryApi";
 import { savePayout } from "../Api/Payout.Api";
 import Swal from "sweetalert2";
-import { fetchProductDiscounts } from "../Api/productDiscountApi";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -106,8 +105,13 @@ const Pos = () => {
   useEffect(() => {
     if (isPaymentStarted) {
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-      const currentTotal = totalValue - manualDiscount - employeeDiscount;
-      const newBalance = Math.abs(currentTotal - totalPaid);
+      const totalTax = selectedItems.reduce((sum, item) => {
+        const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
+        const itemTax = (item.total * itemTaxPercentage) / 100;
+        return sum + itemTax;
+      }, 0);
+      const currentTotal = totalValue - manualDiscount - employeeDiscount + totalTax;
+      const newBalance = totalPaid - currentTotal;
       setBalance(newBalance);
     } else {
       setBalance(0);
@@ -483,7 +487,7 @@ const Pos = () => {
       }
 
       const productData = product.responseDto[0];
-      const { id, name, pricePerUnit, quantity, productCategoryDto } = productData;
+      const { id, name, pricePerUnit, quantity, productCategoryDto, taxDto } = productData;
       if (!name || pricePerUnit === undefined || quantity === undefined) {
         resetInput();
         return;
@@ -516,7 +520,6 @@ const Pos = () => {
       let originalPrice = pricePerUnit;
       let discountedPrice = pricePerUnit;
       let discount = 0;
-      let discountType = null;
       // Only set ageRestricted flag if the toggle is enabled
       let ageRestricted = isAgeRestrictionEnabled ? (productCategoryDto && productCategoryDto.agevalidation) : false;
 
@@ -524,6 +527,8 @@ const Pos = () => {
         newQty = newItems[existingItemIndex].qty + qty;
         newItems[existingItemIndex].qty = newQty;
         newItems[existingItemIndex].ageRestricted = ageRestricted;
+        // Preserve tax information for existing items
+        newItems[existingItemIndex].taxDto = taxDto;
       } else {
         newQty = qty;
         newItems.push({
@@ -533,83 +538,37 @@ const Pos = () => {
           price: pricePerUnit,
           originalPrice: originalPrice,
           discount: 0,
-          discountType: null,
           total: 0,
-          ageRestricted: ageRestricted
+          ageRestricted: ageRestricted,
+          taxDto: taxDto
         });
       }
 
       const itemIndex = existingItemIndex !== -1 ? existingItemIndex : newItems.length - 1;
-
-      try {
-        const discounts = await fetchProductDiscounts();
-        const activeDiscounts = discounts.filter(
-          (d) =>
-            d.productDto.id === id &&
-            d.isActive &&
-            (() => {
-              const endDate = new Date(d.endDate);
-              const nextDayMidnight = new Date(endDate);
-              nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
-              nextDayMidnight.setHours(0, 0, 0, 0);
-              return new Date() < nextDayMidnight;
-            })()
-        );
-
-        if (activeDiscounts.length > 0) {
-          if (activeDiscounts.some((d) => d.productDiscountTypeDto.type === "Quantity")) {
-            const quantityDiscounts = activeDiscounts
-              .filter((d) => d.productDiscountTypeDto.type === "Quantity")
-              .sort((a, b) => b.quantity - a.quantity);
-
-            let remainingQty = newQty;
-            let totalDiscount = 0;
-
-            for (const qd of quantityDiscounts) {
-              const discountQty = parseInt(qd.quantity);
-              const discountAmount = parseFloat(qd.discount);
-              while (remainingQty >= discountQty) {
-                totalDiscount += discountAmount;
-                remainingQty -= discountQty;
-              }
-            }
-
-            if (totalDiscount > 0) {
-              discount = totalDiscount / newQty;
-              discountType = "Quantity";
-              discountedPrice = pricePerUnit - discount;
-            }
-          } else {
-            const discountObj = activeDiscounts[0];
-            if (discountObj.productDiscountTypeDto.type === "Cash") {
-              discount = parseFloat(discountObj.discount);
-              discountType = "Cash";
-              discountedPrice = pricePerUnit - discount;
-            } else if (discountObj.productDiscountTypeDto.type === "Percentage") {
-              discount = (parseFloat(discountObj.discount) / 100) * pricePerUnit;
-              discountType = "Percentage";
-              discountedPrice = pricePerUnit - discount;
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching discounts:", error);
-        showNotification("Failed to fetch discounts.", "error");
-      }
-
       discountedPrice = Math.max(discountedPrice, 0);
       const total = newQty * discountedPrice;
+
+      // Calculate tax if taxDto exists
+      let taxAmount = 0;
+      let taxPercentage = 0;
+      if (taxDto && taxDto.taxPercentage) {
+        taxPercentage = taxDto.taxPercentage;
+        taxAmount = (total * taxPercentage) / 100;
+      }
 
       newItems[itemIndex] = {
         ...newItems[itemIndex],
         price: discountedPrice,
         originalPrice: originalPrice,
         discount: discount * newQty,
-        discountType: discountType,
         total,
+        taxAmount,
+        taxPercentage,
+        taxDto
       };
 
       setSelectedItems(newItems);
+      // Update totalValue without adding tax (tax will be added separately in the UI)
       setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
       resetInput();
     } catch (error) {
@@ -902,7 +861,11 @@ const Pos = () => {
       const transactionData = {
         status: "Completed",
         isActive: 1,
-        totalAmount: totalValue - manualDiscount - employeeDiscount,
+        totalAmount: totalValue - manualDiscount - employeeDiscount + selectedItems.reduce((sum, item) => {
+          const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
+          const itemTax = (item.total * itemTaxPercentage) / 100;
+          return sum + itemTax;
+        }, 0),
         manualDiscount: manualDiscount,
         employeeDiscount: employeeDiscount,
         employeeDiscountPercentage: employeeDiscountPercentage,
@@ -912,11 +875,17 @@ const Pos = () => {
         customerDto: { id: customerId },
         userDto: { id: userId },
         balanceAmount: Math.abs(balance),
+        // Calculate total tax for the entire transaction
+        taxAmount: selectedItems.reduce((sum, item) => {
+          const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
+          const itemTax = (item.total * itemTaxPercentage) / 100;
+          return sum + itemTax;
+        }, 0),
         transactionDetailsList: selectedItems.map((item) => ({
           productDto: { id: item.id },
           quantity: item.qty,
           unitPrice: item.originalPrice || item.price,
-          discount: item.discount || 0,
+          discount: item.discount || 0
         })),
         transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
           paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
@@ -942,6 +911,13 @@ const Pos = () => {
           showNotification("Warning: Transaction ID not found in API response.", "error");
         }
 
+        // Calculate total tax for display
+        const totalTax = selectedItems.reduce((sum, item) => {
+          const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
+          const itemTax = (item.total * itemTaxPercentage) / 100;
+          return sum + itemTax;
+        }, 0);
+
         setLastTransaction({
           id: transactionId,
           transactionDetailsList: selectedItems.map((item) => ({
@@ -952,6 +928,7 @@ const Pos = () => {
             originalPrice: item.originalPrice || item.price,
           })),
           totalAmount: totalValue - manualDiscount - employeeDiscount,
+          taxAmount: totalTax,
           manualDiscount: manualDiscount,
           employeeDiscount: employeeDiscount,
           employeeDiscountPercentage: employeeDiscountPercentage,
@@ -1002,7 +979,24 @@ const Pos = () => {
       showNotification("Failed to generate barcode image.", "error");
     }
 
-    const totalDiscount = selectedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
+    const items = selectedItems.map((item) => ({
+      qty: item.qty,
+      name: item.name,
+      price: item.price,
+      discount: item.discount || 0,
+      total: item.total,
+      taxPercentage: item.taxDto?.taxPercentage || 0
+    }));
+
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    const totalDiscount = items.reduce((sum, item) => sum + (item.discount || 0), 0);
+    const totalTax = items.reduce((sum, item) => {
+      const itemTax = (item.total * item.taxPercentage) / 100;
+      return sum + itemTax;
+    }, 0);
+
+    const totalAfterDiscounts = subtotal - manualDiscount - employeeDiscount;
+    const grandTotal = totalAfterDiscounts + totalTax;
 
     printWindow.document.write(`
       <html>
@@ -1030,6 +1024,7 @@ const Pos = () => {
             .barcode-container { text-align: center; margin: 5px 0; }
             .barcode-container img { width: 100%; height: 30px; }
             .spacing { height: 10px; }
+            .tax-info { font-size: 10px; color: #666; }
           </style>
         </head>
         <body>
@@ -1057,33 +1052,27 @@ const Pos = () => {
               </tr>
             </thead>
             <tbody>
-              ${selectedItems.length > 0
-        ? selectedItems
-          .map(
-            (item) => `
-                    <tr>
-                      <td>${item.qty}</td>
-                      <td>${item.name}</td>
-                      <td>${(item.originalPrice || item.price).toFixed(2)}</td>
-                      <td class="total-column">
-                        ${item.originalPrice && item.originalPrice !== item.price
-                ? `<span style="text-decoration: line-through;">${(item.originalPrice * item.qty).toFixed(2)}</span> ${item.total.toFixed(2)}`
-                : item.total.toFixed(2)}
-                      </td>
-                    </tr>
-                  `
-          )
-          .join("")
-        : "<tr><td colspan='4'>No items</td></tr>"}
+              ${items.map(item => `
+                <tr>
+                  <td>${item.qty}</td>
+                  <td>
+                    ${item.name}
+                    ${item.taxPercentage > 0 ? `<div class="tax-info">(Tax: ${item.taxPercentage}%)</div>` : ''}
+                  </td>
+                  <td>${priceSymbol}${item.price.toFixed(2)}</td>
+                  <td class="total-column">${priceSymbol}${item.total.toFixed(2)}</td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
           <div class="divider"></div>
           <div class="receipt-details">
-            <p>Subtotal: ${priceSymbol}${totalValue.toFixed(2)}</p>
+            <p>Subtotal: ${priceSymbol}${subtotal.toFixed(2)}</p>
             ${totalDiscount > 0 ? `<p>Product Discount: ${priceSymbol}${totalDiscount.toFixed(2)}</p>` : ''}
             ${manualDiscount > 0 ? `<p>Manual Discount: ${priceSymbol}${manualDiscount.toFixed(2)}</p>` : ''}
             ${employeeDiscount > 0 ? `<p>Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)${employeeName ? ` (${employeeName})` : ""}: ${priceSymbol}${employeeDiscount.toFixed(2)}</p>` : ''}
-            <p>Grand Total: ${priceSymbol}${(totalValue - totalDiscount - manualDiscount - employeeDiscount).toFixed(2)}</p>
+            <p>Total Tax: ${priceSymbol}${totalTax.toFixed(2)}</p>
+            <p>Grand Total: ${priceSymbol}${grandTotal.toFixed(2)}</p>
             ${paymentMethods.map(method => `
               <p>${method.type}: ${priceSymbol}${method.amount.toFixed(2)}</p>
             `).join('')}
@@ -1132,26 +1121,34 @@ const Pos = () => {
     }
 
     try {
-      const items = lastTransaction.transactionDetailsList.map((detail) => ({
-        qty: detail.quantity,
-        name: detail.productDto.name || "Unknown Item",
-        price: detail.unitPrice,
-        originalPrice: detail.originalPrice,
-        discount: detail.discount || 0,
-        discountType: detail.discountType,
-        total: detail.quantity * detail.unitPrice,
-      }));
+      const items = lastTransaction.transactionDetailsList.map((detail) => {
+        const taxPercentage = detail.taxPercentage || 0;
+        const taxAmount = detail.taxAmount || 0;
+        return {
+          qty: detail.quantity,
+          name: detail.productDto.name || "Unknown Item",
+          price: detail.unitPrice,
+          originalPrice: detail.originalPrice,
+          discount: detail.discount || 0,
+          discountType: detail.discountType,
+          total: detail.quantity * detail.unitPrice,
+          taxPercentage,
+          taxAmount,
+          taxDto: { taxPercentage }
+        };
+      });
 
       const totalAmount = lastTransaction.totalAmount;
       const totalDiscount = items.reduce((sum, item) => sum + item.discount, 0);
       const manualDiscount = lastTransaction.manualDiscount || 0;
+      const totalTax = lastTransaction.taxAmount || 0;
       const paymentMethods = lastTransaction.transactionPaymentMethod.map((method) => ({
         type: method.paymentMethodDto.id === 1 ? "Cash" : "Card",
         amount: method.amount,
       }));
 
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-      const calculatedBalance = Math.abs(totalAmount - totalPaid);
+      const calculatedBalance = totalPaid - (totalAmount + totalTax);
 
       let branchName = branchDetails.branchName;
       let branchCode = branchDetails.branchCode;
@@ -1232,35 +1229,47 @@ const Pos = () => {
                 </tr>
               </thead>
               <tbody>
-                ${items
-          .map(
-            (item) => `
-                  <tr>
-                    <td>${item.qty}</td>
-                    <td>${item.name}</td>
-                    <td>${(item.originalPrice || item.price).toFixed(2)}</td>
-                    <td class="total-column">
-                      ${item.originalPrice && item.originalPrice !== item.price
-                ? `<span style="text-decoration: line-through;">${(item.originalPrice * item.qty).toFixed(2)}</span> ${item.total.toFixed(2)}`
-                : item.total.toFixed(2)}
-                    </td>
-                  </tr>
-                `
-          )
-          .join("")}
+                ${items.length > 0
+          ? items.map(item => `
+                      <tr>
+                        <td>${item.qty}</td>
+                        <td>
+                          ${item.name}
+                          ${item.taxPercentage > 0 ? `<div class="tax-info">(Tax: ${item.taxPercentage}%)</div>` : ''}
+                        </td>
+                        <td>${priceSymbol}${item.price.toFixed(2)}</td>
+                        <td class="total-column">
+                          ${item.originalPrice && item.originalPrice !== item.price ? 
+                            `<span class="original-price" style="text-decoration: line-through; color: #999">
+                              ${priceSymbol}${(item.originalPrice * item.qty).toFixed(2)}
+                             </span> 
+                             <span class="discounted-price">
+                              ${priceSymbol}${item.total.toFixed(2)}
+                             </span>` 
+                            : `${priceSymbol}${item.total.toFixed(2)}`}
+                        </td>
+                      </tr>
+                    `).join('')
+          : '<tr><td colspan="5">No items</td></tr>'
+        }
               </tbody>
             </table>
             <div class="divider"></div>
             <div class="receipt-details">
-              <p>Subtotal: ${priceSymbol}${(totalAmount + totalDiscount + manualDiscount + lastTransaction.employeeDiscount).toFixed(2)}</p>
+              <p>Subtotal: ${priceSymbol}${totalAmount.toFixed(2)}</p>
               ${totalDiscount > 0 ? `<p>Product Discount: ${priceSymbol}${totalDiscount.toFixed(2)}</p>` : ''}
               ${manualDiscount > 0 ? `<p>Manual Discount: ${priceSymbol}${manualDiscount.toFixed(2)}</p>` : ''}
-              ${lastTransaction.employeeDiscount > 0 ? `<p>Employee Discount (${lastTransaction.employeeDiscountPercentage.toFixed(1)}%)${lastTransaction.employeeName ? ` (${lastTransaction.employeeName})` : ""}: ${priceSymbol}${lastTransaction.employeeDiscount.toFixed(2)}</p>` : ''}
-              <p>Grand Total: ${priceSymbol}${totalAmount.toFixed(2)}</p>
+              ${lastTransaction.employeeDiscount > 0 ? 
+                `<p>Employee Discount (${lastTransaction.employeeDiscountPercentage.toFixed(1)}%)
+                  ${lastTransaction.employeeName ? ` (${lastTransaction.employeeName})` : ""}: 
+                  ${priceSymbol}${lastTransaction.employeeDiscount.toFixed(2)}</p>` 
+                : ''}
+              <p>Total Tax: ${priceSymbol}${totalTax.toFixed(2)}</p>
+              <p>Grand Total: ${priceSymbol}${(totalAmount + totalTax).toFixed(2)}</p>
               ${paymentMethods.map((method) => `
                 <p>${method.type}: ${priceSymbol}${method.amount.toFixed(2)}</p>
               `).join('')}
-              <p>Balance: ${priceSymbol}${Math.abs(calculatedBalance).toFixed(2)}</p>
+              <p>Balance: ${priceSymbol}${calculatedBalance.toFixed(2)}</p>
             </div>
             <div class="divider"></div>
             <div class="barcode-container">
@@ -1807,6 +1816,7 @@ const Pos = () => {
                   showNotification={showNotification}
                   manualDiscount={manualDiscount}
                   employeeDiscount={employeeDiscount}
+                  selectedItems={selectedItems}
                 />
                 <FunctionButtons
                   onVoidLine={handleVoidLine}
@@ -1826,28 +1836,39 @@ const Pos = () => {
             <div className={`bill-popup ${darkMode ? "dark-mode" : ""}`}>
               <div className="bill-content">
                 <h2>Transaction Receipt</h2>
-                <p>
-                  Date: {transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}
-                </p>
-                {customerName && <p>Customer: {customerName}</p>}
-                <div className="bill-summary centered">
-                  <p>Total: {priceSymbol}{totalValue.toFixed(2)}</p>
-                  {manualDiscount > 0 && <p>Manual Discount: {priceSymbol}{manualDiscount.toFixed(2)}</p>}
-                  {employeeDiscount > 0 && (
-                    <p>
-                      Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)
-                      {employeeName ? ` (${employeeName})` : ""}: {priceSymbol}{employeeDiscount.toFixed(2)}
-                    </p>
-                  )}
-                  <p>Grand Total: {priceSymbol}{(totalValue - manualDiscount - employeeDiscount).toFixed(2)}</p>
-                  {paymentMethods.map((method) => (
-                    <p key={method.type}>{method.type}: {priceSymbol}{method.amount.toFixed(2)}</p>
-                  ))}
-                  <p>
-                    <span className="balance-label">Balance:</span>{" "}
-                    <span className="balance-value">{priceSymbol}{Math.abs(balance).toFixed(2)}</span>
-                  </p>
-                </div>
+                {(() => {
+                  const totalTax = selectedItems.reduce((sum, item) => {
+                    const itemTax = (item.total * (item.taxDto?.taxPercentage || 0)) / 100;
+                    return sum + itemTax;
+                  }, 0);
+                  return (
+                    <>
+                      <p>
+                        Date: {transactionDate ? transactionDate.toLocaleString() : currentTime.toLocaleString()}
+                      </p>
+                      {customerName && <p>Customer: {customerName}</p>}
+                      <div className="bill-summary centered">
+                        <p>Subtotal: {priceSymbol}{totalValue.toFixed(2)}</p>
+                        {manualDiscount > 0 && <p>Manual Discount: {priceSymbol}{manualDiscount.toFixed(2)}</p>}
+                        {employeeDiscount > 0 && (
+                          <p>
+                            Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)
+                            {employeeName ? ` (${employeeName})` : ""}: {priceSymbol}{employeeDiscount.toFixed(2)}
+                          </p>
+                        )}
+                        {totalTax > 0 && <p>Total Tax: {priceSymbol}{totalTax.toFixed(2)}</p>}
+                        <p>Grand Total: {priceSymbol}{(totalValue - manualDiscount - employeeDiscount + totalTax).toFixed(2)}</p>
+                        {paymentMethods.map((method) => (
+                          <p key={method.type}>{method.type}: {priceSymbol}{method.amount.toFixed(2)}</p>
+                        ))}
+                        <p>
+                          <span className="balance-label">Balance:</span>{" "}
+                          <span className="balance-value">{priceSymbol}{Math.abs(balance).toFixed(2)}</span>
+                        </p>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div className="bill-actions">
                 <button onClick={handlePrintBill} className="print-btn">

@@ -18,6 +18,7 @@ import { jsPDF } from "jspdf";
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import "../../style/scss/pages/_categorylist.scss";
+import { getAllManagerToggles } from "../Api/ManagerToggle";
 
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -30,6 +31,7 @@ const ProductList = () => {
   const [showActive, setShowActive] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
+  const [isTaxEnabled, setIsTaxEnabled] = useState(false);
 
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
@@ -117,6 +119,20 @@ const ProductList = () => {
       filterData(searchQuery, selectedCategory, selectedTax);
     }
   }, [showActive, allProducts, searchQuery, selectedCategory, selectedTax]);
+
+  useEffect(() => {
+    const fetchTaxToggle = async () => {
+      try {
+        const toggles = await getAllManagerToggles();
+        const taxToggle = toggles.responseDto.find(toggle => toggle.action === "Tax");
+        setIsTaxEnabled(taxToggle?.isActive || false);
+      } catch (error) {
+        console.error('Error fetching tax toggle:', error);
+        setIsTaxEnabled(false);
+      }
+    };
+    fetchTaxToggle();
+  }, []);
 
   const handleToggleStatus = async (productId, currentStatus) => {
     const newStatusText = currentStatus ? 'Inactive' : 'Active';
@@ -306,12 +322,12 @@ const ProductList = () => {
       render: (productCategoryDto) => productCategoryDto?.productCategoryName || 'N/A',
       sorter: (a, b) => (a.productCategoryDto?.productCategoryName || '').localeCompare(b.productCategoryDto?.productCategoryName || ''),
     },
-    {
+    ...(isTaxEnabled ? [{
       title: "Tax Percentage",
       dataIndex: "taxDto",
       render: (taxDto) => taxDto ? `${taxDto.taxPercentage}%` : 'N/A',
       sorter: (a, b) => (a.taxDto?.taxPercentage || 0) - (b.taxDto?.taxPercentage || 0),
-    },
+    }] : []),
     {
       title: "Purchase Price",
       dataIndex: "purchasePrice",
@@ -424,16 +440,18 @@ const ProductList = () => {
                       isClearable
                     />
                   </div>
-                  <div style={{ width: '200px' }}>
-                    <Select
-                      className="select"
-                      options={taxes}
-                      placeholder="Select Tax"
-                      value={selectedTax}
-                      onChange={(selected) => handleFilterChange(selected, 'tax')}
-                      isClearable
-                    />
-                  </div>
+                  {isTaxEnabled && (
+                    <div style={{ width: '200px' }}>
+                      <Select
+                        className="select"
+                        options={taxes}
+                        placeholder="Select Tax"
+                        value={selectedTax}
+                        onChange={(selected) => handleFilterChange(selected, 'tax')}
+                        isClearable
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

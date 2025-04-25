@@ -511,25 +511,22 @@ const Invoicereport = () => {
                     </p>
                     {selectedTransaction.manualDiscount > 0 && (
                       <p>
-                        <strong>Manual Discount:</strong> {priceSymbol}{parseFloat(selectedTransaction.manualDiscount || 0).toFixed(2)}
+                        <strong>Manual Discount:</strong> {priceSymbol} {parseFloat(selectedTransaction.manualDiscount || 0).toFixed(2)}
                       </p>
                     )}
-                    {selectedTransaction.employeeDiscount > 0 && (
-                      <p>
-                        <strong>Employee Discount:</strong> {priceSymbol}{parseFloat(selectedTransaction.employeeDiscount || 0).toFixed(2)}
-                      </p>
-                    )}
-                    <p>
-                      <strong>Total Amount:</strong> {priceSymbol}{parseFloat(selectedTransaction.totalAmount || 0).toFixed(2)}
+                    <p style={{color: 'red'}}>
+                      <strong style={{color: 'black'}}>Balance Amount:</strong> {priceSymbol} {parseFloat(selectedTransaction.balanceAmount || 0).toFixed(2)}
+                    </p>
+                    <p style={{color: 'green'}}>
+                      <strong style={{color: 'black'}}>Total Amount:</strong> {priceSymbol} {parseFloat(selectedTransaction.totalAmount || 0).toFixed(2)}
                     </p>
                     <p>
                       <strong>Status:</strong>{" "}
                       <span
-                        className={`badge ${
-                          selectedTransaction.status?.toLowerCase() === "completed"
+                        className={`badge ${selectedTransaction.status?.toLowerCase() === "completed"
                             ? "badge-linesuccess"
                             : "badge-linedanger"
-                        }`}
+                          }`}
                       >
                         {selectedTransaction.status || "N/A"}
                       </span>
@@ -544,6 +541,16 @@ const Invoicereport = () => {
                       <strong>Shop Name:</strong>{" "}
                       {selectedTransaction.shopDetailsDto?.name || "N/A"}
                     </p>
+                    {selectedTransaction.taxAmount > 0 && (
+                      <p>
+                        <strong>Tax Amount:</strong> {priceSymbol} {parseFloat(selectedTransaction.taxAmount || 0).toFixed(2)}
+                      </p>
+                    )}
+                    {selectedTransaction.employeeDiscount > 0 && (
+                      <p>
+                        <strong>Employee Discount:</strong> {priceSymbol} {parseFloat(selectedTransaction.employeeDiscount || 0).toFixed(2)}
+                      </p>
+                    )}                    
                   </div>
                 </div>
 
@@ -595,7 +602,7 @@ const Invoicereport = () => {
                     </thead>
                     <tbody>
                       {selectedTransaction.transactionDetailsList &&
-                      selectedTransaction.transactionDetailsList.length > 0 ? (
+                        selectedTransaction.transactionDetailsList.length > 0 ? (
                         selectedTransaction.transactionDetailsList.map((item, index) => (
                           <tr key={index}>
                             <td>{item.productDto?.name || "N/A"}</td>
@@ -632,7 +639,7 @@ const Invoicereport = () => {
                     </thead>
                     <tbody>
                       {selectedTransaction.transactionPaymentMethod &&
-                      selectedTransaction.transactionPaymentMethod.length > 0 ? (
+                        selectedTransaction.transactionPaymentMethod.length > 0 ? (
                         selectedTransaction.transactionPaymentMethod.map(
                           (payment, index) => (
                             <tr key={index}>
