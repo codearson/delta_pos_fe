@@ -5,6 +5,8 @@ import PropTypes from 'prop-types';
 import { fetchCustomers, saveCustomer } from "../../Api/customerApi";
 import { getAllManagerToggles } from "../../Api/ManagerToggle";
 import FeatherIcon from "feather-icons-react";
+import { fetchCashTotal } from "../../Api/TransactionApi";
+import { fetchMinimamBanking } from "../../Api/MinimamBankingApi";
 
 export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAdded }) => {
   const [showPopup, setShowPopup] = useState(false);
@@ -14,6 +16,102 @@ export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAd
   const [existingCustomer, setExistingCustomer] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [bankingRequired, setBankingRequired] = useState(false);
+  const [blinkState, setBlinkState] = useState(true);
+
+  // Effect for blinking animation
+  useEffect(() => {
+    if (bankingRequired) {
+      const blinkInterval = setInterval(() => {
+        setBlinkState(prev => !prev);
+      }, 500);
+      
+      return () => clearInterval(blinkInterval);
+    }
+  }, [bankingRequired]);
+
+  // Check banking status on component mount
+  useEffect(() => {
+    // Check if we should trigger a banking check (set during login)
+    const shouldCheckBanking = localStorage.getItem("shouldCheckBanking");
+    if (shouldCheckBanking === "true") {
+      // Clear the flag
+      localStorage.removeItem("shouldCheckBanking");
+      // Trigger an immediate banking check
+      checkBankingStatus();
+    } else {
+      // Even if no flag, do an initial check
+      checkBankingStatus();
+    }
+    
+    // Set up interval to check banking status every 30 seconds
+    const bankingCheckInterval = setInterval(() => {
+      checkBankingStatus();
+    }, 30000); // 30000 ms = 30 seconds
+    
+    // Listen for banking status changes from other components
+    const handleBankingStatusChange = (event) => {
+      const { isRequired } = event.detail;
+      setBankingRequired(isRequired);
+    };
+    
+    window.addEventListener('bankingStatusChanged', handleBankingStatusChange);
+    
+    return () => {
+      clearInterval(bankingCheckInterval);
+      window.removeEventListener('bankingStatusChanged', handleBankingStatusChange);
+    };
+  }, []);
+
+  const checkBankingStatus = async () => {
+    try {
+      // Get cash total data
+      const cashTotalResult = await fetchCashTotal();
+      
+      if (!cashTotalResult.success) {
+        return;
+      }
+      
+      const difference = cashTotalResult.data.responseDto.difference;
+      
+      // Get minimum banking amount
+      const bankingData = await fetchMinimamBanking();
+      
+      if (!bankingData || bankingData.length === 0) {
+        return;
+      }
+      
+      // Find the active minimum banking amount
+      const activeBanking = bankingData.find(item => item.isActive === true);
+      if (!activeBanking) {
+        return;
+      }
+      
+      const minBankingAmount = activeBanking.amount;
+      
+      // Check if banking is required (difference >= 2 * minBankingAmount)
+      const isRequired = difference >= (2 * minBankingAmount);
+      
+      // Save to localStorage
+      localStorage.setItem('bankingRequired', JSON.stringify({
+        isRequired,
+        difference,
+        minBankingAmount,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Update state
+      setBankingRequired(isRequired);
+      
+      // Dispatch a custom event to notify other components
+      const event = new CustomEvent('bankingStatusChanged', { 
+        detail: { isRequired, difference, minBankingAmount } 
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      // Error handling without console.error
+    }
+  };
 
   useEffect(() => {
     const checkAddCustomerToggle = async () => {
@@ -177,6 +275,12 @@ export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAd
       </button>
 
       <div className="header-right">
+        {bankingRequired && (
+          <div className={`banking-required ${blinkState ? 'visible' : 'hidden'}`}>
+            Banking Required!
+          </div>
+        )}
+        
         <button
           id="btnFullscreen"
           onClick={() => toggleFullscreen()}

@@ -88,6 +88,7 @@ const Signin = () => {
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
       } else if (user.userRoleDto?.userRole === "USER") {
+        localStorage.setItem("shouldCheckBanking", "true");
         navigate(route.pos);
       } else if (user.userRoleDto?.userRole === "MANAGER") {
         navigate(route.dashboard);
