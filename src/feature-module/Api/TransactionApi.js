@@ -128,3 +128,23 @@ export const fetchXReport = async () => {
     return { success: false, error: error.message };
   }
 };
+
+export const fetchCashTotal = async (userId = 1) => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      return { success: false, error: "No access token" };
+    }
+
+    const response = await axios.get(`${BASE_BACKEND_URL}/transaction/getCashTotal`, {
+      params: { userId },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};

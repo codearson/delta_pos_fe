@@ -16,6 +16,7 @@ $transition-speed: 0.2s; /* Animation speed */
   padding: 0.5rem;
   border-radius: 0.5rem;
   background-color: $bg-color;
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   height: 100%;
   display: flex;

@@ -364,6 +364,18 @@ const Pos_CategoryGrid = forwardRef(({
         });
 
         if (result.isConfirmed) {
+          // Stop "Banking Required!" message by setting bankingRequired to false in localStorage
+          localStorage.setItem('bankingRequired', JSON.stringify({
+            isRequired: false,
+            timestamp: new Date().toISOString()
+          }));
+          
+          // Dispatch a custom event to notify other components
+          const event = new CustomEvent('bankingStatusChanged', { 
+            detail: { isRequired: false } 
+          });
+          window.dispatchEvent(event);
+          
           const xReportResponse = await fetchXReport();
           if (!xReportResponse.success || !xReportResponse.data) {
             Swal.fire({
@@ -413,21 +425,24 @@ const Pos_CategoryGrid = forwardRef(({
 
   const handleBankingSaveAndPrint = async () => {
     try {
-      const userId = localStorage.getItem("userId") || "1";
+      // Stop "Banking Required!" message by setting bankingRequired to false in localStorage
+      localStorage.setItem('bankingRequired', JSON.stringify({
+        isRequired: false,
+        timestamp: new Date().toISOString()
+      }));
+      
+      // Dispatch a custom event to notify other components
+      const event = new CustomEvent('bankingStatusChanged', { 
+        detail: { isRequired: false } 
+      });
+      window.dispatchEvent(event);
+      
       const bankingAmount = parseFloat(inputValue) || 0;
-
-      const bankingData = {
-        amount: bankingAmount,
-        userDto: {
-          id: parseInt(userId)
-        }
-      };
-
-      if (bankingAmount <= 0) {
+      if (isNaN(bankingAmount) || bankingAmount <= 0) {
         Swal.fire({
-          icon: 'warning',
-          title: 'No Amount',
-          text: 'Please enter an amount before saving to banking',
+          icon: 'error',
+          title: 'Invalid Amount',
+          text: 'Please enter a valid banking amount.',
           confirmButtonColor: '#3085d6',
         });
         return;
@@ -445,7 +460,12 @@ const Pos_CategoryGrid = forwardRef(({
       });
 
       if (result.isConfirmed) {
-        const response = await saveBanking(bankingData);
+        const response = await saveBanking({
+          amount: bankingAmount,
+          userDto: {
+            id: parseInt(localStorage.getItem("userId") || "1")
+          }
+        });
         if (response) {
           Swal.fire({
             icon: 'success',
