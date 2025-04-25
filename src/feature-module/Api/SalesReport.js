@@ -44,18 +44,14 @@ export const getAllByZReportsPages = async (pageNumber = 1, pageSize = 10) => {
 
     console.log('Raw API response:', response.data);
 
-    if (!response.data) {
-      console.log('No response data received');
+    if (!response.data || !response.data.responseDto) {
+      console.log('No response data or responseDto received');
       return { content: [], totalElements: 0 };
     }
 
-    if (!Array.isArray(response.data.responseDto)) {
-      console.log('responseDto is not an array');
-      return { content: [], totalElements: 0 };
-    }
-
-    const content = response.data.responseDto;
-    const totalElements = response.data.totalRecords || content.length;
+    const responseDto = response.data.responseDto;
+    const content = Array.isArray(responseDto.payload) ? responseDto.payload : [];
+    const totalElements = responseDto.totalRecords || content.length;
 
     console.log('Processed response:', {
       contentLength: content.length,

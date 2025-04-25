@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Breadcrumbs from "../../core/breadcrumbs";
 //import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import { Link } from "react-router-dom";
-import { getAllByZReports } from "../Api/SalesReport";
+import { getAllByZReportsPages } from "../Api/SalesReport";
 import { Eye, Printer } from "react-feather";
 import Table from "../../core/pagination/datatable";
 import { Modal, Tabs, Tab } from "react-bootstrap";
@@ -15,28 +15,48 @@ const SalesReport = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState("summary");
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalElements, setTotalElements] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const fetchReportData = async () => {
-      const data = await getAllByZReports();
-      const reversedData = [...data].reverse();
-      const mappedData = reversedData.map((item, index) => ({
-        ...item,
-        key: index, 
-        action: (
-          <Link to="#" className="action-btn">
-            <Eye className="action-eye" />
-          </Link>
-        )
-      }));
-      setReportData(mappedData);
-      setFilteredData(mappedData);
+      try {
+        setIsLoading(true);
+        const response = await getAllByZReportsPages(currentPage, pageSize);
+        
+        if (response && response.content) {
+          const mappedData = response.content.map((item, index) => ({
+            ...item,
+            key: index,
+            action: (
+              <Link to="#" className="action-btn" onClick={() => handleViewDetails(item)}>
+                <Eye className="action-eye" />
+              </Link>
+            )
+          }));
+          setReportData(mappedData);
+          setFilteredData(mappedData);
+          setTotalElements(response.totalElements || 0);
+        } else {
+          setReportData([]);
+          setFilteredData([]);
+          setTotalElements(0);
+        }
+      } catch (error) {
+        console.error("Error fetching report data:", error);
+        setReportData([]);
+        setFilteredData([]);
+        setTotalElements(0);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     fetchReportData();
-  }, []);
+  }, [currentPage, pageSize]);
 
   const handleViewDetails = (record) => {
     setSelectedReport(record);
@@ -314,14 +334,34 @@ const SalesReport = () => {
     }
   };
 
-  const onSelectChange = (selectedKeys) => {
-    setSelectedRowKeys(selectedKeys);
+  const handleRefresh = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getAllByZReportsPages(1, pageSize);
+      const mappedData = response.responseDto.payload.map((item, index) => ({
+        ...item,
+        key: index,
+        action: (
+          <Link to="#" className="action-btn">
+            <Eye className="action-eye" />
+          </Link>
+        )
+      }));
+      setReportData(mappedData);
+      setFilteredData(mappedData);
+      setTotalElements(response.responseDto.totalRecords);
+      setCurrentPage(1);
+      setSearchTerm("");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: onSelectChange,
-    columnWidth: 55,
+  const onShowSizeChange = (current, size) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
 
   const columns = [
@@ -394,26 +434,13 @@ const SalesReport = () => {
     }));
   };
 
-  const handleRefresh = () => {
-    const fetchReportData = async () => {
-      const data = await getAllByZReports();
-      const reversedData = [...data].reverse();
-      const mappedData = reversedData.map((item, index) => ({
-        ...item,
-        key: index,
-        action: (
-          <Link to="#" className="action-btn">
-            <Eye className="action-eye" />
-          </Link>
-        )
-      }));
-      setReportData(mappedData);
-      setFilteredData(mappedData);
-      setSearchTerm("");
-    };
-    
-    fetchReportData();
-  };
+  if (isLoading) {
+    return (
+      <div className="page-wrapper">
+        <div>Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-wrapper">
@@ -509,17 +536,23 @@ const SalesReport = () => {
             </div> */}
             {/* /Filter */}
             <div className="table-responsive">
-              {filteredData.length > 0 ? (
-                <Table 
-                  columns={columns} 
-                  dataSource={filteredData}
-                  rowSelection={rowSelection}
-                />
-              ) : (
-                <div className="text-center p-4">
-                  {searchTerm ? "No matching records found" : "Loading..."}
-                </div>
-              )}
+              <Table
+                columns={columns}
+                dataSource={filteredData}
+                rowKey={(record) => record.id}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: totalElements,
+                  onChange: (page, pageSize) => {
+                    setCurrentPage(page);
+                    setPageSize(pageSize);
+                  },
+                  showSizeChanger: true,
+                  onShowSizeChange: onShowSizeChange,
+                  pageSizeOptions: ["10", "20", "50", "100"],
+                }}
+              />
             </div>
           </div>
         </div>
