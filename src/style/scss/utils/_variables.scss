@@ -284,7 +284,7 @@ $h4-font-size: $font-size-base * 1.5;
 $h5-font-size: $font-size-base * 1.25;
 $h6-font-size: $font-size-base;
 
-// Modern Dark Mode Variables
+
 $dark-bg-color: #20202b; // Dark background
 $dark-card-bg: #25273c; // Card background
 $dark-header-bg: #2d2f48; // Header background
@@ -299,3 +299,9 @@ $dark-danger-color: #bf616a; // Danger color
 $dark-success-color: #a3be8c; // Success color
 $dark-warning-color: #ebcb8b; // Warning color
 $dark-info-color: #88c0d0; // Info color
+
+$dark-chart-text-color: #ffffff;
+$dark-chart-grid-color: #3a3d55;
+$dark-chart-tooltip-bg: #3a3d55;
+$dark-chart-tooltip-text: #ffffff;
+$dark-chart-legend-text: #ffffff;

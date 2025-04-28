@@ -141,6 +141,76 @@
     }
   }
 
+  .apexcharts-text tspan, 
+  .apexcharts-title-text, 
+  .apexcharts-legend-text, 
+  .apexcharts-yaxis-title,
+  .apexcharts-xaxis-title {
+    fill: $dark-chart-text-color !important;
+  }
+
+  .apexcharts-yaxis-label,
+  .apexcharts-xaxis-label {
+    fill: $dark-chart-text-color !important;
+  }
+
+  .apexcharts-grid line {
+    stroke: $dark-chart-grid-color !important;
+  }
+
+  .apexcharts-tooltip {
+    background-color: $dark-chart-tooltip-bg !important;
+    border: 1px solid $dark-border-color !important;
+    
+    .apexcharts-tooltip-title,
+    .apexcharts-tooltip-text,
+    .apexcharts-tooltip-y-group,
+    .apexcharts-tooltip-text-y-value {
+      color: $dark-chart-tooltip-text !important;
+    }
+  }
+
+
+  .apexcharts-toolbar {
+    .apexcharts-menu {
+      background-color: $dark-card-bg !important;
+      border: 1px solid $dark-border-color !important;
+      
+      .apexcharts-menu-item {
+        color: $dark-text-color !important;
+        
+        &:hover {
+          background-color: $dark-border-color !important;
+        }
+      }
+    }
+    
+    .apexcharts-toolbar-custom-icon,
+    .apexcharts-zoom-in-icon,
+    .apexcharts-zoom-out-icon,
+    .apexcharts-zoom-icon,
+    .apexcharts-menu-icon,
+    .apexcharts-reset-zoom-icon {
+      fill: $dark-text-color !important;
+    }
+  }
+
+  #sales_charts {
+    .apexcharts-yaxis-texts-g text,
+    .apexcharts-xaxis-texts-g text {
+      fill: $dark-chart-text-color !important;
+    }
+    
+    .apexcharts-xaxis-title-text,
+    .apexcharts-yaxis-title-text {
+      fill: $dark-chart-text-color !important;
+    }
+    
+    .apexcharts-legend-text {
+      color: $dark-chart-legend-text !important;
+    }
+  }
+
   h1, h2, h3, h4, h5, h6, p, a, li, th, td {
     color: $dark-text-color; // Ensure all text elements use the dark text color
   }
