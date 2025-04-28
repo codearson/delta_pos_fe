@@ -82,7 +82,8 @@ const Pos_CategoryGrid = forwardRef(({
 
   // Expose the refresh function through a ref
   useImperativeHandle(ref, () => ({
-    refreshNonScanData
+    refreshNonScanData,
+    resetPageIndex: () => setPageIndex(0)
   }));
 
   useEffect(() => {
