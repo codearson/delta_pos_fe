@@ -1,3 +1,4 @@
+@import "../utils/variables";
 .page-wrapper {
     .content {
       padding: 1.875rem 1.875rem 0;
@@ -91,3 +92,225 @@
       }
     }
   } 
+  
+  
+
+
+  body.dark-mode {
+  background-color: $dark-bg-color;
+  color: $dark-text-color; // Apply dark text color globally
+  
+  .header {
+    .nav.user-menu {
+      .nav-item {
+        &.has-arrow.main-drop {
+          .nav-link.userset {
+            .user-info {
+              .user-detail {
+                .user-name,
+                .user-role {
+                  color: $white !important;
+                }
+              }
+            }
+          }
+
+          .dropdown-menu.menu-drop-user {
+            background-color: $dark-card-bg;
+            border-color: $dark-border-color;
+
+            .profilename {
+              .profilesets {
+                h5, h6 {
+                  color: $white !important;
+                }
+              }
+            }
+
+            .dropdown-item {
+              color: $white !important;
+
+              &:hover {
+                background-color: $dark-border-color;
+                color: $white !important;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6, p, a, li, th, td {
+    color: $dark-text-color; // Ensure all text elements use the dark text color
+  }
+  
+  .header {
+    background-color: $dark-header-bg;
+    color: $dark-text-color;
+
+    .li.nav.user-menu.nav-item.nav-item-box {
+      background-color: $dark-card-bg; // Background for the nav item
+      color: white; // Text color
+      
+
+      a {
+        color: $dark-text-color; // Link color
+        transition: all 0.3s ease;
+  
+        &:hover {
+          color: $dark-hover-color; // Hover color
+          background-color: $dark-border-color; // Optional hover background
+        }
+      }
+  }
+  .theme-toggle-btn {
+    color: $dark-text-color;
+
+    &:hover {
+      color: $dark-hover-color;
+    }
+  }
+}
+
+  
+
+.page-wrapper {
+  .content {
+    .page-header {
+      .page-title {
+        h4 {
+          color: $dark-text-color !important;
+        }
+        
+        h6 {
+          color: $dark-text-color !important;
+        }
+      }
+    }
+  }
+.dropdown-toggle.nav-link.userset{
+  background-color: $dark-card-bg; // Background for the dropdown toggle
+  color: $dark-text-color; // Text color
+
+  .user-detail {
+    .user-name,
+    .user-role {
+      color: $white; // Change text color to white in dark mode
+    }
+  }
+  &:hover {
+    color: $dark-hover-color; // Hover color
+    background-color: $dark-border-color; // Optional hover background
+  }
+}
+.dropdown-menu.menu-drop-user {
+  background-color: $dark-card-bg; // Ensure the dropdown has a dark background
+  color: $dark-text-color;
+
+  .profilename {
+    .profilesets {
+      h6, h5 {
+        color: $white; // Change text color to white in dark mode
+      }
+    }
+  }
+  
+}
+  .dropdown-item {
+    color: $dark-text-color;
+
+    &:hover {
+      color: $dark-hover-color;
+      background-color: $dark-border-color;
+    }
+  }
+}
+
+.sidebar {
+  background-color: $dark-sidebar-bg;
+  color: $dark-text-color;
+
+  #sidebar-menu {
+    ul {
+      li {
+        &.submenu-open {
+          .submenu-hdr {
+            color: $white !important; // Force white color for headers
+          }
+        }
+
+        .submenu {
+          a {
+            color: $white !important; // Force white color for all links
+
+            &:hover {
+              color: $dark-hover-color !important;
+            }
+
+            &.active {
+              color: $dark-hover-color !important;
+            }
+
+            span {
+              color: $white !important; // Force white color for icons and text
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+  .card {
+    background-color: $dark-card-bg;
+    border-color: $dark-border-color;
+    color: $dark-text-color;
+  }
+
+  .btn {
+    background-color: $dark-accent-color;
+    color: $dark-text-color;
+
+    &:hover {
+      background-color: $dark-hover-color;
+    }
+  }
+
+  .table {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+
+    th, td {
+      border-color: $dark-border-color;
+    }
+  }
+
+  .alert {
+    &.alert-danger {
+      background-color: $dark-danger-color;
+      color: $dark-text-color;
+    }
+
+    &.alert-success {
+      background-color: $dark-success-color;
+      color: $dark-text-color;
+    }
+
+    &.alert-warning {
+      background-color: $dark-warning-color;
+      color: $dark-text-color;
+    }
+
+    &.alert-info {
+      background-color: $dark-info-color;
+      color: $dark-text-color;
+    }
+  }
+ .page-wrapper{
+  .page-title{
+    h4{
+      color: $dark-text-color;
+    }
+  }
+ }}

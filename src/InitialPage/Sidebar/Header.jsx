@@ -3,8 +3,9 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import FeatherIcon from "feather-icons-react";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
-import { Search, XCircle } from "react-feather";
+//import { Search, XCircle } from "react-feather";
 import { all_routes } from "../../Router/all_routes";
+//import customisedstyles from "../../assets/css/customisedstyles.css";
 
 const Header = () => {
   const route = all_routes;
@@ -124,7 +125,35 @@ const Header = () => {
       );
     };
   }, []);
+  
+  const [themeMode, setThemeMode] = useState("light");
+  const toggleThemeMode = () => {
+    const newTheme = themeMode === "light" ? "dark" : "light";
+    setThemeMode(newTheme);
+    document.body.classList.toggle("dark-mode", newTheme === "dark");
+    localStorage.setItem("themeMode", newTheme); // Save the theme preference
+  };
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("themeMode") || "light";
+    setThemeMode(savedTheme);
+    document.body.classList.toggle("dark-mode", savedTheme === "dark");
+  }, []);
+
+  const toggleThemeModes = () => {
+    const newTheme = themeMode === "light" ? "dark" : "light";
+    setThemeMode(newTheme);
+    document.body.classList.toggle("dark-mode", newTheme === "dark");
+    localStorage.setItem("themeMode", newTheme);
+  };
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("themeMode") || "light";
+    setThemeMode(savedTheme);
+    document.body.classList.toggle("dark-mode", savedTheme === "dark");
+  }, []);
+  
+  // Function to toggle fullscreen mode
+  // This function is called when the user clicks the fullscreen button
   const toggleFullscreen = (elem) => {
     elem = elem || document.documentElement;
     if (
@@ -380,6 +409,18 @@ const Header = () => {
               <FeatherIcon icon="maximize" />
             </Link>
           </li>
+
+          <li className="nav-item nav-item-box">
+            <Link
+              to="#"
+              onClick={toggleThemeModes}
+              className="theme-toggle-btn"
+              title={themeMode === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+            >
+              <FeatherIcon icon={themeMode === "light" ? "moon" : "sun"} />
+            </Link>
+          </li>
+
           <li className="nav-item dropdown has-arrow main-drop">
             <Link
               to="#"
