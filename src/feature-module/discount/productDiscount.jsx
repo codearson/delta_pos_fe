@@ -31,9 +31,9 @@ const ProductDiscount = () => {
 
   useEffect(() => {
     loadInitialData();
-    
+
     const intervalId = setInterval(checkExpiredDiscounts, 60000);
-    
+
     return () => clearInterval(intervalId);
   }, []);
 
@@ -45,22 +45,30 @@ const ProductDiscount = () => {
 
   const loadInitialData = async () => {
     setIsLoading(true);
-    await fetchDiscountsData(true);
-    await checkExpiredDiscounts();
-    setIsLoading(false);
+    try {
+      await fetchDiscountsData(true);
+      await checkExpiredDiscounts();
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+      // Silently handle the error without showing an alert
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const fetchDiscountsData = async (isInitial = false) => {
+  const fetchDiscountsData = async (isInitial = false, status = showActive) => {
     try {
       if (isInitial) {
         setIsLoading(true);
       }
-      const data = await fetchProductDiscounts();
+      const data = await fetchProductDiscounts(1, 10, status);
       if (Array.isArray(data)) {
         const normalizedData = data.map(discount => ({
           ...discount,
           isActive: discount.isActive === 1 || discount.isActive === true,
-          quantityDiscounts: discount.productDiscountTypeDto.type === "Quantity" ? [{ quantity: discount.quantity, discount: discount.discount }] : [],
+          quantityDiscounts: discount.productDiscountTypeDto.type === "Quantity"
+            ? [{ quantity: discount.quantity, discount: discount.discount }]
+            : [],
         }));
         setAllDiscounts(normalizedData);
         filterData(normalizedData, searchTerm);
@@ -76,6 +84,7 @@ const ProductDiscount = () => {
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "Unknown error";
+      console.error("Error in fetchDiscountsData:", errorMessage);
       MySwal.fire({
         title: "Error!",
         text: `Failed to fetch discounts: ${errorMessage}`,
@@ -92,14 +101,11 @@ const ProductDiscount = () => {
   };
 
   const filterData = (discountsData, query) => {
-    // First filter by discount type and active status
-    let filteredData = discountsData.filter(discount => 
-      discount.productDiscountTypeDto?.type === activeTab &&
-      discount.isActive === showActive
+    let filteredData = discountsData.filter(discount =>
+      discount.productDiscountTypeDto?.type === activeTab
     );
 
     if (activeTab === "Quantity") {
-      // Group quantity discounts by product
       const groupedByProduct = {};
       filteredData.forEach(discount => {
         const productId = discount.productDto.id;
@@ -114,7 +120,6 @@ const ProductDiscount = () => {
             isActive: discount.isActive
           };
         } else {
-          // Add this quantity discount to the existing product's discounts
           groupedByProduct[productId].quantityDiscounts.push({
             quantity: discount.quantity,
             discount: discount.discount,
@@ -123,17 +128,14 @@ const ProductDiscount = () => {
         }
       });
 
-      // Sort quantity discounts within each product
       Object.values(groupedByProduct).forEach(product => {
         product.quantityDiscounts = product.quantityDiscounts
           .sort((a, b) => (parseInt(a.quantity) || 0) - (parseInt(b.quantity) || 0));
       });
 
-      // Convert back to array
       filteredData = Object.values(groupedByProduct);
     }
 
-    // Apply search filter if query exists
     if (query.trim() !== "") {
       filteredData = filteredData.filter(discount =>
         (discount.productDto?.name && discount.productDto.name.toLowerCase().includes(query.toLowerCase())) ||
@@ -232,7 +234,7 @@ const ProductDiscount = () => {
         try {
           const newStatus = currentStatus ? 0 : 1;
           if (activeTab === "Quantity") {
-            const productDiscounts = allDiscounts.filter(d => 
+            const productDiscounts = allDiscounts.filter(d =>
               d.productDto.id === productId && d.productDiscountTypeDto.type === "Quantity"
             );
             for (const discount of productDiscounts) {
@@ -410,7 +412,7 @@ const ProductDiscount = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSearchTerm("");
-    filterData(allDiscounts, "");
+    fetchDiscountsData(false, showActive); // Pass the current `showActive` state
   };
 
   const columns = [
@@ -431,8 +433,8 @@ const ProductDiscount = () => {
             .join(', ');
         }
         if (!record.discount) return "N/A";
-        return record.productDiscountTypeDto?.type === "Percentage" 
-          ? `${record.discount}%` 
+        return record.productDiscountTypeDto?.type === "Percentage"
+          ? `${record.discount}%`
           : `${priceSymbol} ${parseFloat(record.discount).toFixed(2)}`;
       },
       sorter: (a, b) => {
@@ -472,17 +474,17 @@ const ProductDiscount = () => {
       render: (endDate) => {
         const endDateObj = new Date(endDate);
         const currentDate = new Date();
-        
+
         const nextDayMidnight = new Date(endDateObj);
         nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
         nextDayMidnight.setHours(0, 0, 0, 0);
-        
+
         const timeDiff = nextDayMidnight - currentDate;
         const hoursRemaining = timeDiff / (1000 * 60 * 60);
-        
+
         let statusClass = "";
         let statusText = "";
-        
+
         if (timeDiff < 0) {
           statusClass = "text-danger";
           statusText = "Expired";
@@ -490,7 +492,7 @@ const ProductDiscount = () => {
           statusClass = "text-warning";
           statusText = "Expires Tonight";
         }
-        
+
         return (
           <div>
             {endDate}
@@ -525,13 +527,16 @@ const ProductDiscount = () => {
       render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <button
-              className="btn me-2 p-2"
-              type="button"
-              onClick={() => handleEditClick(record)}
+            <Link
+              className="me-2 p-2"
+              to="#"
+              onClick={e => {
+                e.preventDefault();
+                handleEditClick(record);
+              }}
             >
               <Edit className="feather-edit" />
-            </button>
+            </Link>
           </div>
         </td>
       ),
@@ -561,25 +566,22 @@ const ProductDiscount = () => {
     try {
       const currentDate = new Date();
       let hasExpiredDiscounts = false;
-      
+
       for (const discount of allDiscounts) {
         if (discount.isActive && discount.endDate) {
           const endDate = new Date(discount.endDate);
-          
+
           const nextDayMidnight = new Date(endDate);
           nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
           nextDayMidnight.setHours(0, 0, 0, 0);
-          
+
           if (currentDate >= nextDayMidnight) {
             hasExpiredDiscounts = true;
-            
             await updateProductDiscountStatus(discount.id, 0);
-            
-            console.log(`Discount ${discount.id} has expired and been deactivated`);
           }
         }
       }
-      
+
       if (hasExpiredDiscounts) {
         await fetchDiscountsData(false);
       }
@@ -614,14 +616,20 @@ const ProductDiscount = () => {
                 <button
                   type="button"
                   className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                  onClick={() => setShowActive(true)}
+                  onClick={() => {
+                    setShowActive(true);
+                    fetchDiscountsData(false, true); // Fetch active discounts
+                  }}
                 >
                   Active
                 </button>
                 <button
                   type="button"
                   className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                  onClick={() => setShowActive(false)}
+                  onClick={() => {
+                    setShowActive(false);
+                    fetchDiscountsData(false, false); // Fetch inactive discounts
+                  }}
                 >
                   Inactive
                 </button>

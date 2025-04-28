@@ -20,10 +20,15 @@ const PurchasesList = () => {
     const [purchases, setPurchases] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setIsLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        pageNumber: 1,
+        pageSize: 10,
+        totalRecords: 0
+    });
 
     useEffect(() => {
         loadInitialData();
-    }, []);
+    }, [pagination.pageNumber, pagination.pageSize]);
 
     const loadInitialData = async () => {
         setIsLoading(true);
@@ -33,9 +38,13 @@ const PurchasesList = () => {
 
     const fetchPurchasesData = async () => {
         try {
-            const data = await fetchPurchases();
-            if (Array.isArray(data)) {
-                setPurchases(data);
+            const data = await fetchPurchases(pagination.pageNumber, pagination.pageSize);
+            if (data && data.payload) {
+                setPurchases(data.payload);
+                setPagination(prev => ({
+                    ...prev,
+                    totalRecords: data.totalRecords
+                }));
             } else {
                 setPurchases([]);
                 Swal.fire({
@@ -297,6 +306,14 @@ const PurchasesList = () => {
         }
     };
 
+    const handlePageChange = (page, pageSize) => {
+        setPagination(prev => ({
+            ...prev,
+            pageNumber: page,
+            pageSize: pageSize
+        }));
+    };
+
     const columns = [
         {
             title: "Barcode",
@@ -408,6 +425,12 @@ const PurchasesList = () => {
                                 columns={columns}
                                 dataSource={purchases}
                                 rowKey={(record) => record.id}
+                                pagination={{
+                                    current: pagination.pageNumber,
+                                    pageSize: pagination.pageSize,
+                                    total: pagination.totalRecords,
+                                    onChange: handlePageChange
+                                }}
                             />
                         </div>
                     </div>

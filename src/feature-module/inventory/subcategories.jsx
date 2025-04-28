@@ -9,7 +9,7 @@ import AddSubcategory from '../../core/modals/inventory/addsubcategory';
 import EditSubcategories from './editsubcategories';
 import Swal from 'sweetalert2';
 import Table from '../../core/pagination/datatable';
-import { fetchTaxes, updateTaxStatus } from '../Api/TaxApi';
+import { fetchTaxesPages, updateTaxStatus } from '../Api/TaxApi';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -23,6 +23,9 @@ const SubCategories = () => {
     const [togglingId, setTogglingId] = useState(null);
     const [showActive, setShowActive] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalRecords, setTotalRecords] = useState(0);
 
     useEffect(() => {
         loadInitialData();
@@ -30,28 +33,30 @@ const SubCategories = () => {
 
     useEffect(() => {
         if (!isLoading) {
-            loadTaxes(false);
+            loadTaxes();
         }
-    }, [showActive]);
+    }, [showActive, currentPage, pageSize]);
 
     const loadInitialData = async () => {
         setIsLoading(true);
-        await loadTaxes(true);
+        await loadTaxes();
         setIsLoading(false);
     };
 
-    const loadTaxes = async (isInitial = false) => {
+    const loadTaxes = async () => {
         try {
-            if (isInitial) {
-                setIsLoading(true);
+            setIsLoading(true);
+            const response = await fetchTaxesPages(currentPage, pageSize, showActive);
+            if (response && response.responseDto) {
+                setTaxes(response.responseDto.payload || []);
+                setTotalRecords(response.responseDto.totalRecords);
+            } else {
+                setTaxes([]);
+                setTotalRecords(0);
             }
-            const fetchedTaxes = await fetchTaxes();
-            const filteredTaxes = Array.isArray(fetchedTaxes)
-                ? fetchedTaxes.filter(tax => tax.isActive === showActive).reverse()
-                : [];
-            setTaxes(filteredTaxes);
         } catch (error) {
             setTaxes([]);
+            setTotalRecords(0);
             Swal.fire({
                 title: "Error!",
                 text: "Failed to fetch taxes: " + error.message,
@@ -59,10 +64,18 @@ const SubCategories = () => {
                 confirmButtonText: "OK",
             });
         } finally {
-            if (isInitial) {
-                setIsLoading(false);
-            }
+            setIsLoading(false);
         }
+    };
+
+    const handleTableChange = (page, pageSize) => {
+        setCurrentPage(page);
+        setPageSize(pageSize);
+    };
+
+    const onShowSizeChange = (current, size) => {
+        setPageSize(size);
+        setCurrentPage(1);
     };
 
     const handleToggleStatus = (taxId, currentStatus) => {
@@ -84,7 +97,7 @@ const SubCategories = () => {
                     const newStatus = currentStatus ? 0 : 1;
                     const response = await updateTaxStatus(taxId, newStatus);
                     if (response) {
-                        loadTaxes(false);
+                        loadTaxes();
                     } else {
                         Swal.fire('Error', 'Failed to update tax status', 'error');
                     }
@@ -181,7 +194,7 @@ const SubCategories = () => {
     ];
 
     const handleTaxCreated = () => {
-        loadTaxes(false);
+        loadTaxes();
     };
 
     if (isLoading) {
@@ -207,14 +220,20 @@ const SubCategories = () => {
                                     <button
                                         type="button"
                                         className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                                        onClick={() => setShowActive(true)}
+                                        onClick={() => {
+                                            setShowActive(true);
+                                            setCurrentPage(1);
+                                        }}
                                     >
                                         Active
                                     </button>
                                     <button
                                         type="button"
                                         className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                                        onClick={() => setShowActive(false)}
+                                        onClick={() => {
+                                            setShowActive(false);
+                                            setCurrentPage(1);
+                                        }}
                                     >
                                         Inactive
                                     </button>
@@ -238,7 +257,7 @@ const SubCategories = () => {
                             </li>
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                                    <Link onClick={() => loadTaxes(false)}>
+                                    <Link onClick={() => loadTaxes()}>
                                         <RotateCcw />
                                     </Link>
                                 </OverlayTrigger>
@@ -275,6 +294,15 @@ const SubCategories = () => {
                                     columns={columns}
                                     dataSource={taxes}
                                     rowKey={(record) => record.id}
+                                    pagination={{
+                                        current: currentPage,
+                                        pageSize: pageSize,
+                                        total: totalRecords,
+                                        showSizeChanger: true,
+                                        onChange: handleTableChange,
+                                        onShowSizeChange: onShowSizeChange,
+                                        pageSizeOptions: ["10", "20", "50", "100"],
+                                    }}
                                 />
                             </div>
                         </div>

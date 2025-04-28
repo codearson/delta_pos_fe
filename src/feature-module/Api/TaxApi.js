@@ -131,3 +131,27 @@ export const updateTaxStatus = async (taxId, status = 0) => {
         return null;
     }
 };
+
+// Get All Taxes with Pagination Api
+export const fetchTaxesPages = async (pageNumber = 1, pageSize = 10, status = true) => {
+    try {
+        const accessToken = localStorage.getItem("accessToken");
+        if (!accessToken) {
+            return null;
+        }
+
+        const response = await axios.get(
+            `${BASE_BACKEND_URL}/tax/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=${status}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching paginated taxes:", error.response?.status, error.response?.data);
+        return null;
+    }
+};

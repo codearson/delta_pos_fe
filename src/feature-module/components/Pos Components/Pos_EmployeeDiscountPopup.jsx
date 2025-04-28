@@ -18,7 +18,7 @@ const Pos_EmployeeDiscountPopup = ({
     const loadUsers = async () => {
       try {
         setLoading(true);
-        const response = await fetchUsers(1, 100);
+        const response = await fetchUsers(1, 100, true);
         if (response && response.payload) {
           const filteredUsers = response.payload.filter(user => 
             user.userRoleDto?.userRole === "MANAGER" || 

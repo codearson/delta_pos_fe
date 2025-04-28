@@ -783,7 +783,7 @@ const Pos = () => {
 
     const fetchEmployeeName = async () => {
       try {
-        const usersResponse = await fetchUsers();
+        const usersResponse = await fetchUsers(1, 100, true);
         const employee = usersResponse.payload.find(u => u.id === empId);
         if (employee) {
           setEmployeeName(employee.firstName);
@@ -828,7 +828,7 @@ const Pos = () => {
         console.warn("Branch not found with ID:", branchId);
       }
 
-      const usersResponse = await fetchUsers();
+      const usersResponse = await fetchUsers(1, 100, true);
       const user = usersResponse.payload.find((u) => u.id === userId);
       if (user) {
         setUserDetails({

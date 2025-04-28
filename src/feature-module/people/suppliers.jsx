@@ -24,7 +24,10 @@ const Suppliers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Changed variable name to isLoading for clarity
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   useEffect(() => {
     loadInitialData();
@@ -32,35 +35,32 @@ const Suppliers = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      fetchSuppliersData(false);
+      fetchSuppliersData();
     }
-  }, [showActive]);
+  }, [showActive, currentPage, pageSize]);
 
   const loadInitialData = async () => {
     setIsLoading(true);
-    await fetchSuppliersData(true);
+    await fetchSuppliersData();
     setIsLoading(false);
   };
 
-  const fetchSuppliersData = async (isInitial = false) => {
+  const fetchSuppliersData = async () => {
     try {
-      if (isInitial) {
-        setIsLoading(true);
-      }
-      const data = await fetchSuppliers();
-      if (Array.isArray(data)) {
-        const normalizedData = data.map(supplier => ({
-          ...supplier,
-          isActive: supplier.isActive === 1 || supplier.isActive === true
-        }));
-        setAllSuppliers(normalizedData);
-        filterData(normalizedData, searchTerm);
+      setIsLoading(true);
+      const response = await fetchSuppliers(currentPage, pageSize, showActive);
+      if (response && response.status !== false) {
+        const suppliersData = response.responseDto.payload || [];
+        setAllSuppliers(suppliersData);
+        setTotalRecords(response.responseDto.totalRecords);
+        filterData(suppliersData, searchTerm);
       } else {
         setAllSuppliers([]);
         setSuppliers([]);
+        setTotalRecords(0);
         Swal.fire({
           title: "Warning!",
-          text: "No supplier data received from the server.",
+          text: response.errorDescription || "No supplier data received from the server.",
           icon: "warning",
           confirmButtonText: "OK",
         });
@@ -73,17 +73,15 @@ const Suppliers = () => {
         confirmButtonText: "OK",
       });
     } finally {
-      if (isInitial) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
   const filterData = (suppliersData, query) => {
-    let filteredData = suppliersData.filter(supplier => supplier.isActive === showActive);
+    let filteredData = suppliersData;
 
     if (query.trim() !== "") {
-      filteredData = filteredData.filter(supplier =>
+      filteredData = suppliersData.filter(supplier =>
         (supplier.name && supplier.name.toLowerCase().includes(query.toLowerCase())) ||
         (supplier.emailAddress && supplier.emailAddress.toLowerCase().includes(query.toLowerCase())) ||
         (supplier.mobileNumber && supplier.mobileNumber.toLowerCase().includes(query.toLowerCase())) ||
@@ -91,7 +89,7 @@ const Suppliers = () => {
       );
     }
 
-    setSuppliers(filteredData.reverse());
+    setSuppliers(filteredData);
   };
 
   const handleSaveSupplier = async (supplierData) => {
@@ -169,7 +167,7 @@ const Suppliers = () => {
       const supplierDataWithActive = { ...supplierData, isActive: 1 };
       const result = await saveSupplier(supplierDataWithActive);
       if (result) {
-        await fetchSuppliersData(false);
+        await fetchSuppliersData();
         setSelectedSupplier(null);
         Swal.fire({
           title: "Success!",
@@ -268,7 +266,7 @@ const Suppliers = () => {
 
       const result = await updateSupplier(supplierData);
       if (result) {
-        await fetchSuppliersData(false);
+        await fetchSuppliersData();
         setSelectedSupplier(null);
         Swal.fire({
           title: "Success!",
@@ -308,7 +306,7 @@ const Suppliers = () => {
           const newStatus = currentStatus ? 0 : 1;
           const response = await updateSupplierStatus(supplierId, newStatus);
           if (response && response.success !== false) {
-            await fetchSuppliersData(false);
+            await fetchSuppliersData();
             Swal.fire({
               title: "Success!",
               text: `Supplier status changed to ${newStatusText}.`,
@@ -337,6 +335,16 @@ const Suppliers = () => {
     const value = e.target.value;
     setSearchTerm(value);
     filterData(allSuppliers, value);
+  };
+
+  const handleTableChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
+
+  const onShowSizeChange = (current, size) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
 
   const exportToPDF = () => {
@@ -540,7 +548,7 @@ const Suppliers = () => {
             </li>
             <li>
               <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                <Link onClick={() => fetchSuppliersData(false)}>
+                <Link onClick={() => fetchSuppliersData()}>
                   <RotateCcw />
                 </Link>
               </OverlayTrigger>
@@ -597,6 +605,15 @@ const Suppliers = () => {
                 columns={columns}
                 dataSource={suppliers}
                 rowKey={(record) => record.id}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: totalRecords,
+                  showSizeChanger: true,
+                  onChange: handleTableChange,
+                  onShowSizeChange: onShowSizeChange,
+                  pageSizeOptions: ["10", "20", "50", "100"],
+                }}
               />
             </div>
           </div>

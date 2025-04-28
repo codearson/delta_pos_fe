@@ -53,7 +53,7 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
     try {
       setIsLoadingUsers(true);
       setUserLoadError(null);
-      const userData = await fetchUsers();
+      const userData = await fetchUsers(1, 100, true);
       const userOptions = userData.payload.map(user => ({
         value: user.id,
         label: `${user.firstName} ${user.lastName}`,

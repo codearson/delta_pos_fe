@@ -24,7 +24,7 @@ const StockTransferModal = ({ onSave }) => {
 
   const loadUsers = async () => {
     try {
-      const response = await fetchUsers();
+      const response = await fetchUsers(1, 100, true);
       const userOptions = (response.payload || []).map(user => ({
         value: user.id,
         label: `${user.firstName} ${user.lastName}`

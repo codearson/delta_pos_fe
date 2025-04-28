@@ -44,18 +44,9 @@ const BrandList = () => {
     const loadPayoutCategories = async () => {
         try {
             setIsLoading(true);
-            const categories = await fetchPayoutCategories();
+            const categories = await fetchPayoutCategories(1, 10, showActive);
             if (Array.isArray(categories)) {
-                const filteredCategories = categories
-                    .filter(cat => cat.isActive === showActive)
-                    .map(cat => ({
-                        id: cat.id,
-                        payoutCategory: cat.payoutCategory,
-                        isActive: cat.isActive,
-                        createdDate: cat.createdDate ? new Date(cat.createdDate).toLocaleDateString() : 'N/A'
-                    }))
-                    .reverse();
-                setPayoutCategories(filteredCategories);
+                setPayoutCategories(categories);
             } else {
                 console.error("Categories is not an array:", categories);
                 setPayoutCategories([]);

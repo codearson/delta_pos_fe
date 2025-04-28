@@ -19,20 +19,20 @@ export const saveCustomer = async (customerData) => {
   
 };
 
-export const fetchCustomers = async () => {
-    const accessToken = localStorage.getItem("accessToken");
+export const fetchCustomers = async (pageNumber = 1, pageSize = 10, status = true) => {
+    const accessToken = localStorage.getItem("accessToken")
 
     if (!accessToken) {
       return [];
     }
 
-    const response = await axios.get(`${BASE_BACKEND_URL}/customer/getAll`, {
+    const response = await axios.get(`${BASE_BACKEND_URL}/customer/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=${status}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
 
-    return response.data.responseDto || [];
+    return response.data.responseDto || { pageNumber: 1, pageSize: 10, totalRecords: 0, payload: [] };
   
 };
 
