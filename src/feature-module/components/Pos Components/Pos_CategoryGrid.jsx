@@ -1165,13 +1165,12 @@ const Pos_CategoryGrid = forwardRef(({
     }));
 
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-
     const totalDiscount = items.reduce((sum, item) => sum + (item.discount || 0), 0);
-
     const manualDiscount = transaction.manualDiscount || 0;
     const employeeDiscount = transaction.employeeDiscount || 0;
-
-    const totalAfterDiscounts = subtotal - manualDiscount - employeeDiscount;
+    const totalTax = transaction.taxAmount || 0;
+    const totalAfterDiscounts = subtotal - totalDiscount - manualDiscount - employeeDiscount;
+    const grandTotal = totalAfterDiscounts + totalTax;
 
     const paymentMethods = transaction.transactionPaymentMethod.map((method) => ({
       type: method.paymentMethodDto?.type || "Unknown",
@@ -1179,7 +1178,7 @@ const Pos_CategoryGrid = forwardRef(({
     }));
 
     const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-    const balance = totalPaid - totalAfterDiscounts;
+    const balance = totalPaid - grandTotal;
 
     setCurrentTransactionId(formattedTransactionId);
 
@@ -1267,7 +1266,8 @@ const Pos_CategoryGrid = forwardRef(({
             ${totalDiscount > 0 ? `<p>Product Discount: ${priceSymbol}${totalDiscount.toFixed(2)}</p>` : ''}
             ${manualDiscount > 0 ? `<p>Manual Discount: -${priceSymbol}${manualDiscount.toFixed(2)}</p>` : ''}
             ${employeeDiscount > 0 ? `<p>Employee Discount: -${priceSymbol}${employeeDiscount.toFixed(2)}</p>` : ''}
-            <p>Total: ${priceSymbol}${totalAfterDiscounts.toFixed(2)}</p>
+            <p>Total Tax: ${priceSymbol}${totalTax.toFixed(2)}</p>
+            <p>Grand Total: ${priceSymbol}${grandTotal.toFixed(2)}</p>
             ${paymentMethods.map(method => `
               <p>${method.type}: ${priceSymbol}${method.amount.toFixed(2)}</p>
             `).join('')}
@@ -1754,6 +1754,7 @@ const Pos_CategoryGrid = forwardRef(({
                         <th>Shop Name</th>
                         <th>User Name</th>
                         <th>Customer Name</th>
+                        <th>Tax Amount</th>
                         <th>Total Amount</th>
                         <th>Date Time</th>
                         <th>Actions</th>
@@ -1768,6 +1769,7 @@ const Pos_CategoryGrid = forwardRef(({
                             <td>{transaction.shopDetailsDto?.name || "N/A"}</td>
                             <td>{transaction.userDto?.firstName || "N/A"}</td>
                             <td>{transaction.customerDto?.name || "N/A"}</td>
+                            <td>{parseFloat(transaction.taxAmount || 0).toFixed(2)}</td>
                             <td>{parseFloat(transaction.totalAmount || 0).toFixed(2)}</td>
                             <td>
                               {transaction.dateTime

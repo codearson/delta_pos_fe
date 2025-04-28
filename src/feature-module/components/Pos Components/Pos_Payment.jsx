@@ -7,40 +7,48 @@ const Pos_Payment = ({
   resetInput,
   setPaymentMethods,
   totalValue,
-  setBalance,
   setIsPaymentStarted,
   paymentMethods,
+  showNotification,
   manualDiscount,
   employeeDiscount,
+  selectedItems
 }) => {
   const handlePayment = (type) => {
-    let amount;
-    // Check if inputValue is "0" or empty (no amount entered)
-    if (!inputValue || inputValue === "0") {
-      const currentTotal = totalValue - manualDiscount - employeeDiscount;
-      const totalPaidSoFar = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
-      const remainingBalance = currentTotal - totalPaidSoFar;
-
-      // If no payments have been made yet, use the discounted total value
-      // Otherwise, use the remaining balance (if negative, take absolute value)
-      amount = totalPaidSoFar === 0 ? currentTotal : Math.abs(remainingBalance);
-    } else {
-      // Use the entered amount if provided
-      amount = parseFloat(inputValue) || 0;
+    if (selectedItems.length === 0) {
+      showNotification("Please add items before making payment", "error");
+      return;
     }
 
-    if (amount > 0 && totalValue > 0) {
-      const paymentData = { type, amount };
-      setPaymentMethods((prevMethods) => {
-        const newMethods = [...prevMethods, paymentData];
-        const totalPaid = newMethods.reduce((sum, method) => sum + method.amount, 0);
-        const newBalance = totalPaid - (totalValue - manualDiscount - employeeDiscount);
-        setBalance(newBalance);
-        setIsPaymentStarted(true);
-        return newMethods;
-      });
-      resetInput();
+    // Calculate total tax
+    const totalTax = selectedItems.reduce((sum, item) => {
+      const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
+      const itemTax = (item.total * itemTaxPercentage) / 100;
+      return sum + itemTax;
+    }, 0);
+
+    // Calculate grand total including tax
+    const grandTotal = totalValue - manualDiscount - employeeDiscount + totalTax;
+
+    // If no amount entered, use the grand total
+    const amount = parseFloat(inputValue) || grandTotal;
+
+    const existingPayments = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
+    const remainingTotal = grandTotal - existingPayments;
+
+    if (amount <= 0) {
+      showNotification("Invalid payment amount", "error");
+      return;
     }
+
+    if (amount > remainingTotal && type === "Card") {
+      showNotification("Card payment cannot exceed the remaining balance", "error");
+      return;
+    }
+
+    setPaymentMethods((prev) => [...prev, { type, amount }]);
+    setIsPaymentStarted(true);
+    resetInput();
   };
 
   return (
@@ -66,7 +74,6 @@ Pos_Payment.propTypes = {
   resetInput: PropTypes.func.isRequired,
   setPaymentMethods: PropTypes.func.isRequired,
   totalValue: PropTypes.number.isRequired,
-  setBalance: PropTypes.func.isRequired,
   setIsPaymentStarted: PropTypes.func.isRequired,
   paymentMethods: PropTypes.arrayOf(
     PropTypes.shape({
@@ -74,8 +81,10 @@ Pos_Payment.propTypes = {
       amount: PropTypes.number,
     })
   ).isRequired,
+  showNotification: PropTypes.func.isRequired,
   manualDiscount: PropTypes.number.isRequired,
   employeeDiscount: PropTypes.number.isRequired,
+  selectedItems: PropTypes.array.isRequired,
 };
 
 export default Pos_Payment;

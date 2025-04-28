@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/Pos_Calculator.scss";
+import { getAllManagerToggles } from "../../Api/ManagerToggle";
 
 export const Pos_Calculator = ({
   darkMode,
@@ -24,7 +25,22 @@ export const Pos_Calculator = ({
   employeeName,
   isAgeRestrictionEnabled,
 }) => {
+  const [isTaxEnabled, setIsTaxEnabled] = useState(false);
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
+
+  useEffect(() => {
+    const fetchTaxToggle = async () => {
+      try {
+        const toggles = await getAllManagerToggles();
+        const taxToggle = toggles.responseDto.find(toggle => toggle.action === "Tax");
+        setIsTaxEnabled(taxToggle?.isActive || false);
+      } catch (error) {
+        console.error('Error fetching tax toggle:', error);
+        setIsTaxEnabled(false);
+      }
+    };
+    fetchTaxToggle();
+  }, []);
 
   const handleBarcodeChange = (e) => {
     const value = e.target.value.trim();
@@ -58,6 +74,12 @@ export const Pos_Calculator = ({
   const cardPayments = paymentMethods.filter((method) => method.type === "Card");
 
   const totalDiscount = selectedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
+  const totalTax = isTaxEnabled ? selectedItems.reduce((sum, item) => {
+    const itemPrice = item.originalPrice || item.price;
+    const itemTotal = itemPrice * item.qty;
+    const itemTax = (itemTotal * (item.taxDto?.taxPercentage || 0)) / 100;
+    return sum + itemTax;
+  }, 0) : 0;
 
   const displayItems = isPaymentStarted
     ? [
@@ -131,8 +153,8 @@ export const Pos_Calculator = ({
 
   const reversedDisplayItems = [...displayItems].reverse();
   
-  // Calculate grand total (after discounts)
-  const grandTotal = totalValue - manualDiscount - employeeDiscount;
+  // Calculate grand total (after discounts and including tax)
+  const grandTotal = totalValue - totalDiscount - manualDiscount - employeeDiscount + totalTax;
   
   // Calculate total payments
   const totalPayments = cashTotal + cardPayments.reduce((sum, method) => sum + method.amount, 0);
@@ -243,6 +265,12 @@ export const Pos_Calculator = ({
             <span className="label">Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)</span>
             <span className="value">{employeeName ? `(${employeeName})` : ""}</span>
             <span className="value">{priceSymbol}{employeeDiscount.toFixed(2)}</span>
+          </div>
+        )}
+        {isTaxEnabled && (
+          <div className="summary-item">
+            <span className="label">Total Tax</span>
+            <span className="value">{priceSymbol}{totalTax.toFixed(2)}</span>
           </div>
         )}
         <div className="summary-item">
