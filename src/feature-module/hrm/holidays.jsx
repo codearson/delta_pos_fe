@@ -28,6 +28,9 @@ const Holidays = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState(null);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalItems, setTotalItems] = useState(0);
 
     const MySwal = withReactContent(Swal);
 
@@ -37,30 +40,30 @@ const Holidays = () => {
 
     useEffect(() => {
         if (!isLoading) {
-            fetchHolidaysData(false);
+            fetchHolidaysData();
         }
-    }, [showActive]);
+    }, [showActive, currentPage, pageSize]);
 
     const loadInitialData = async () => {
         setIsLoading(true);
-        await fetchHolidaysData(true);
+        await fetchHolidaysData();
         setIsLoading(false);
     };
 
-    const fetchHolidaysData = async (isInitial = false) => {
+    const fetchHolidaysData = async () => {
         try {
-            if (isInitial) {
-                setIsLoading(true);
-            }
-            const data = await fetchHolidays();
-            if (Array.isArray(data)) {
-                const normalizedData = data.map(holiday => ({
+            setIsLoading(true);
+            const response = await fetchHolidays(currentPage, pageSize, showActive);
+            if (response && response.payload) {
+                const normalizedData = response.payload.map(holiday => ({
                     ...holiday,
                     isActive: holiday.isActive === 1 || holiday.isActive === true
                 }));
-                setHolidays(normalizedData.reverse());
+                setHolidays(normalizedData);
+                setTotalItems(response.totalRecords || 0);
             } else {
                 setHolidays([]);
+                setTotalItems(0);
                 Swal.fire({
                     title: "Warning!",
                     text: "No holiday data received from the server.",
@@ -68,15 +71,14 @@ const Holidays = () => {
                 });
             }
         } catch (error) {
+            console.error("Error fetching holidays:", error);
             Swal.fire({
                 title: "Error!",
                 text: "Failed to fetch holidays: " + error.message,
                 icon: "error",
             });
         } finally {
-            if (isInitial) {
-                setIsLoading(false);
-            }
+            setIsLoading(false);
         }
     };
 
@@ -98,7 +100,7 @@ const Holidays = () => {
                 try {
                     const response = await updateHolidayStatus(holidayId, newStatus);
                     if (response) {
-                        await fetchHolidaysData(false);
+                        await fetchHolidaysData();
                         Swal.fire({
                             title: "Success!",
                             text: `Holiday status changed to ${newStatusText}.`,
@@ -135,8 +137,17 @@ const Holidays = () => {
             label: name
         }));
 
+    const handleTableChange = (page, pageSize) => {
+        setCurrentPage(page);
+        setPageSize(pageSize);
+    };
+
+    const onShowSizeChange = (current, size) => {
+        setPageSize(size);
+        setCurrentPage(1);
+    };
+
     const filteredHolidays = holidays
-        .filter(holiday => showActive ? holiday.isActive : !holiday.isActive)
         .filter(holiday =>
             holiday.description.toLowerCase().includes(searchTerm.toLowerCase())
         )
@@ -350,7 +361,7 @@ const Holidays = () => {
                         </li>
                         <li>
                             <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                                <Link onClick={() => fetchHolidaysData(false)}>
+                                <Link onClick={() => fetchHolidaysData()}>
                                     <RotateCcw />
                                 </Link>
                             </OverlayTrigger>
@@ -423,13 +434,26 @@ const Holidays = () => {
                             </div>
                         </div>
                         <div className="table-responsive">
-                            <Table columns={columns} dataSource={filteredHolidays} rowKey={(record) => record.id} />
+                            <Table 
+                                columns={columns} 
+                                dataSource={filteredHolidays} 
+                                rowKey={(record) => record.id}
+                                pagination={{
+                                    current: currentPage,
+                                    pageSize: pageSize,
+                                    total: totalItems,
+                                    showSizeChanger: true,
+                                    onChange: handleTableChange,
+                                    onShowSizeChange: onShowSizeChange,
+                                    pageSizeOptions: ["10", "20", "50", "100"],
+                                }}
+                            />
                         </div>
                     </div>
                 </div>
             </div>
-            <AddHolidays onSave={() => fetchHolidaysData(false)} />
-            <EditHolidays selectedHoliday={selectedHoliday} onUpdate={() => fetchHolidaysData(false)} />
+            <AddHolidays onSave={() => fetchHolidaysData()} />
+            <EditHolidays selectedHoliday={selectedHoliday} onUpdate={() => fetchHolidaysData()} />
         </div>
     );
 };

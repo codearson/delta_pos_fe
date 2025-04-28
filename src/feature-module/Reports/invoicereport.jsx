@@ -40,20 +40,26 @@ const Invoicereport = () => {
     const loadInitialData = async () => {
       try {
         const branchesResponse = await fetchBranches();
-        const branches = branchesResponse.map((branch) => ({
+        const branches = (branchesResponse.payload || []).map((branch) => ({
           value: branch.branchName,
           label: branch.branchName,
         }));
         setBranchOptions(branches);
 
-        const usersResponse = await fetchUsers(1, 100);
-        const users = usersResponse.payload.map((user) => ({
+        const usersResponse = await fetchUsers(1, 100, true);
+        const users = (usersResponse.payload || []).map((user) => ({
           value: user.firstName,
           label: `${user.firstName} ${user.lastName || ""}`,
         }));
         setUserOptions(users);
       } catch (error) {
         console.error("Error loading dropdown data:", error);
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to load dropdown data: " + error.message,
+          icon: "error",
+          confirmButtonText: "OK",
+        });
       }
     };
 

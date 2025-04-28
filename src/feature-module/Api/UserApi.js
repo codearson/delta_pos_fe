@@ -1,7 +1,7 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
+export const fetchUsers = async (pageNumber = 1, pageSize = 10, status = true) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
@@ -17,8 +17,14 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10) => {
             return { payload: [], totalRecords: 0 };
         }
 
+        // Build the URL with optional status parameter
+        let url = `${BASE_BACKEND_URL}/user/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}`;
+        if (status !== null) {
+            url += `&status=${status}`;
+        }
+
         const response = await axios.get(
-            `${BASE_BACKEND_URL}/user/getAll?pageNumber=${pageNumber}&pageSize=${pageSize}`, 
+            url, 
             {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -67,7 +73,7 @@ export const fetchAdmins = async (pageNumber = 1, pageSize = 10) => {
         }
 
         const response = await axios.get(
-            `${BASE_BACKEND_URL}/user/getAll?pageNumber=${pageNumber}&pageSize=${pageSize}`, 
+            `${BASE_BACKEND_URL}/user/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=true`, 
             {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,

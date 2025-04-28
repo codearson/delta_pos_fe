@@ -10,7 +10,7 @@ import EditCategoryList from '../../core/modals/inventory/editcategorylist';
 import Swal from 'sweetalert2';
 import Table from '../../core/pagination/datatable';
 import {
-    fetchProductCategories,
+    fetchProductCategoriesPages,
     updateProductCategoryStatus,
     saveProductCategory
 } from '../Api/ProductCategoryApi';
@@ -30,6 +30,9 @@ const CategoryList = () => {
     const [togglingId, setTogglingId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [ageFilter, setAgeFilter] = useState('all'); // New state for dropdown
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalRecords, setTotalRecords] = useState(0);
 
     useEffect(() => {
         loadInitialData();
@@ -39,7 +42,7 @@ const CategoryList = () => {
         if (!isLoading) {
             loadCategories(false);
         }
-    }, [showActive, ageFilter]);
+    }, [showActive, ageFilter, currentPage, pageSize]);
 
     const loadInitialData = async () => {
         setIsLoading(true);
@@ -52,35 +55,37 @@ const CategoryList = () => {
             if (isInitial) {
                 setIsLoading(true);
             }
-            const fetchedCategories = await fetchProductCategories();
-            let categoryArray = fetchedCategories;
-            if (fetchedCategories?.responseDto) {
-                categoryArray = fetchedCategories.responseDto;
-            }
-            if (Array.isArray(categoryArray)) {
-                const filteredCategories = categoryArray.filter(category => 
-                    category.productCategoryName?.toLowerCase() !== 'custom' &&
-                    category.productCategoryName?.toLowerCase() !== 'non scan' &&
-                    !category.productCategoryName?.toLowerCase().includes('nonscan')
-                );
-                setAllCategories(filteredCategories);
-                let activeFilteredCategories = filteredCategories
-                    .filter(category => category.isActive === showActive);
-                if (ageFilter === 'restricted') {
-                    activeFilteredCategories = activeFilteredCategories.filter(category => category.agevalidation === true);
-                } else if (ageFilter === 'non-restricted') {
-                    activeFilteredCategories = activeFilteredCategories.filter(category => category.agevalidation === false);
+            const response = await fetchProductCategoriesPages(currentPage, pageSize, showActive);
+            
+            if (response) {
+                setTotalRecords(response.totalRecords);
+                let categoryArray = response.payload || [];
+                
+                if (Array.isArray(categoryArray)) {
+                    const filteredCategories = categoryArray.filter(category => 
+                        category.productCategoryName?.toLowerCase() !== 'custom' &&
+                        category.productCategoryName?.toLowerCase() !== 'non scan' &&
+                        !category.productCategoryName?.toLowerCase().includes('nonscan')
+                    );
+                    setAllCategories(filteredCategories);
+                    
+                    let activeFilteredCategories = filteredCategories;
+                    if (ageFilter === 'restricted') {
+                        activeFilteredCategories = activeFilteredCategories.filter(category => category.agevalidation === true);
+                    } else if (ageFilter === 'non-restricted') {
+                        activeFilteredCategories = activeFilteredCategories.filter(category => category.agevalidation === false);
+                    }
+                    setCategories(activeFilteredCategories);
+                } else {
+                    setAllCategories([]);
+                    setCategories([]);
+                    Swal.fire({
+                        title: "Warning!",
+                        text: "No category data received from the server.",
+                        icon: "warning",
+                        confirmButtonText: "OK",
+                    });
                 }
-                setCategories(activeFilteredCategories.reverse());
-            } else {
-                setAllCategories([]);
-                setCategories([]);
-                Swal.fire({
-                    title: "Warning!",
-                    text: "No category data received from the server.",
-                    icon: "warning",
-                    confirmButtonText: "OK",
-                });
             }
         } catch (error) {
             setAllCategories([]);
@@ -385,6 +390,17 @@ const CategoryList = () => {
                                     columns={columns}
                                     dataSource={categories}
                                     rowKey={(record) => record.id}
+                                    pagination={{
+                                        current: currentPage,
+                                        pageSize: pageSize,
+                                        total: totalRecords,
+                                        onChange: (page, pageSize) => {
+                                            setCurrentPage(page);
+                                            setPageSize(pageSize);
+                                        },
+                                        showSizeChanger: true,
+                                        pageSizeOptions: ['10', '20', '50', '100'],
+                                    }}
                                 />
                             </div>
                         </div>

@@ -1,7 +1,7 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-export const fetchPayoutCategories = async () => {
+export const fetchPayoutCategories = async (pageNumber = 1, pageSize = 10, status = true) => {
   try {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
@@ -9,17 +9,24 @@ export const fetchPayoutCategories = async () => {
       return [];
     }
 
-    const response = await axios.get(`${BASE_BACKEND_URL}/payoutCategory/getAll`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-    return (response.data.responseDto || []).map(category => ({
-      id: category.id,
-      payoutCategory: category.payoutCategory,
-      isActive: category.isActive,
-      createdDate: category.createdDate
-    }));
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/payoutCategory/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=${status}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (response.data?.responseDto?.payload) {
+      return response.data.responseDto.payload.map(category => ({
+        id: category.id,
+        payoutCategory: category.payoutCategory,
+        isActive: category.isActive,
+        createdDate: category.createdDate
+      }));
+    }
+    return [];
   } catch (error) {
     console.error("Error fetching payout categories:", error.response?.status, error.response?.data);
     return [];
