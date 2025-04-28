@@ -194,6 +194,11 @@ const Pos = () => {
         categoryGridRef.current.refreshNonScanData();
       }, 100);
     }
+    
+    // Reset page index to 0 when changing tabs
+    if (categoryGridRef.current) {
+      categoryGridRef.current.resetPageIndex();
+    }
   };
 
   const showNotification = (message, type = "error") => {

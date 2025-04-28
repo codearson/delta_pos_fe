@@ -6,7 +6,7 @@ import EditBrand from '../../core/modals/inventory/editbrand';
 import Swal from 'sweetalert2';
 import Table from '../../core/pagination/datatable'
 import Select from 'react-select';
-import { ChevronUp, PlusCircle, RotateCcw, StopCircle, Zap } from 'feather-icons-react/build/IconComponents';
+import { ChevronUp, PlusCircle, RotateCcw, StopCircle, Zap, Edit } from 'feather-icons-react/build/IconComponents';
 import { DatePicker } from 'antd';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import ImageWithBasePath from '../../core/img/imagewithbasebath';
@@ -27,11 +27,6 @@ const BrandList = () => {
 
     useEffect(() => {
         loadInitialData();
-        // Set up auto-refresh every second
-        const interval = setInterval(() => {
-            loadPayoutCategories();
-        }, 1000);
-        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -226,17 +221,19 @@ const BrandList = () => {
             title: 'Actions',
             dataIndex: 'actions',
             render: (_, record) => (
-                <div className="edit-delete-action">
+                <td className="action-table-data">
+                  <div className="edit-delete-action">
                     <Link
-                        className="me-2 p-2"
-                        to="#"
-                        data-bs-toggle="modal"
-                        data-bs-target="#edit-brand"
-                        onClick={() => setSelectedCategory(record)}
+                      className="me-2 p-2"
+                      to="#"
+                      data-bs-toggle="modal"
+                      data-bs-target="#edit-brand"
+                      onClick={() => setSelectedCategory(record)}
                     >
-                        <i data-feather="edit" className="feather-edit"></i>
+                      <Edit className="feather-edit" />
                     </Link>
-                </div>
+                  </div>
+                </td>
             ),
         },
     ];
