@@ -8,7 +8,7 @@ import { all_routes } from "../../Router/all_routes";
 import Select from "react-select";
 import { Link } from "react-router-dom";
 import Table from "../../core/pagination/datatable";
-import { fetchProducts, updateProductStatus } from '../Api/productApi';
+import { getAllProductsPage, updateProductStatus } from '../Api/productApi';
 import { fetchProductCategories } from '../Api/ProductCategoryApi';
 import { fetchTaxes } from '../Api/TaxApi';
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -29,6 +29,9 @@ const ProductList = () => {
   const [selectedTax, setSelectedTax] = useState(null);
   const [showActive, setShowActive] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   const dispatch = useDispatch();
@@ -36,31 +39,46 @@ const ProductList = () => {
   const MySwal = withReactContent(Swal);
   const route = all_routes;
 
-  const loadProductsData = async (isInitial = false) => {
+  const loadProductsData = async () => {
     try {
-      if (isInitial) {
-        setIsLoading(true);
-      }
-      const data = await fetchProducts();
-      if (Array.isArray(data)) {
-        const filteredProducts = data.filter(product => 
-          product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'custom'
-        );
-        setAllProducts(filteredProducts);
-        filterData(searchQuery, selectedCategory, selectedTax);
+      setIsLoading(true);
+      
+      const status = showActive ? 'true' : 'false';
+      
+      const response = await getAllProductsPage(currentPage, pageSize, status);
+      
+      if (response && response.responseDto) {
+        const products = response.responseDto.payload;
+        const totalRecords = response.responseDto.totalRecords;
+        
+        // Set the products directly without any filtering
+        setAllProducts(products);
+        setProducts(products);
+        setTotalRecords(totalRecords);
       } else {
         setAllProducts([]);
         setProducts([]);
-        Swal.fire({
-          title: "Warning!",
-          text: "No product data received from the server.",
-          icon: "warning",
-          confirmButtonText: "OK",
-        });
+        setTotalRecords(0);
+        
+        // Only show warning if we're not on page 1
+        if (currentPage > 1) {
+          // Reset to page 1 and try again
+          setCurrentPage(1);
+          // Don't show the warning message, just silently reset to page 1
+        } else {
+          // Only show the warning if we're already on page 1
+          Swal.fire({
+            title: "Warning!",
+            text: "No product data received from the server.",
+            icon: "warning",
+            confirmButtonText: "OK",
+          });
+        }
       }
     } catch (error) {
       setAllProducts([]);
       setProducts([]);
+      setTotalRecords(0);
       Swal.fire({
         title: "Error!",
         text: "Failed to fetch products: " + error.message,
@@ -68,9 +86,8 @@ const ProductList = () => {
         confirmButtonText: "OK",
       });
     } finally {
-      if (isInitial) {
-        setIsLoading(false);
-      }
+      // Always hide loading state when done
+      setIsLoading(false);
     }
   };
 
@@ -104,7 +121,7 @@ const ProductList = () => {
     const loadInitialData = async () => {
       setIsLoading(true);
       await Promise.all([
-        loadProductsData(true),
+        loadProductsData(),
         loadFilterOptions()
       ]);
       setIsLoading(false);
@@ -113,10 +130,29 @@ const ProductList = () => {
   }, []);
 
   useEffect(() => {
+    // Reset to first page when changing tabs
+    setCurrentPage(1);
+    
+    // Use setTimeout to ensure the state update has completed before loading data
+    const timer = setTimeout(() => {
+      loadProductsData();
+    }, 0);
+    
+    return () => clearTimeout(timer);
+  }, [showActive]);
+
+  useEffect(() => {
+    // Only load data if we're not already loading
+    if (!isLoading) {
+      loadProductsData();
+    }
+  }, [currentPage, pageSize]);
+
+  useEffect(() => {
     if (!isLoading) {
       filterData(searchQuery, selectedCategory, selectedTax);
     }
-  }, [showActive, allProducts, searchQuery, selectedCategory, selectedTax]);
+  }, [searchQuery, selectedCategory, selectedTax]);
 
   const handleToggleStatus = async (productId, currentStatus) => {
     const newStatusText = currentStatus ? 'Inactive' : 'Active';
@@ -136,7 +172,7 @@ const ProductList = () => {
         const newStatus = currentStatus ? 0 : 1;
         const response = await updateProductStatus(productId, newStatus);
         if (response && response.success !== false) {
-          loadProductsData(false);
+          loadProductsData();
           Swal.fire({
             title: 'Success!',
             text: `Product status changed to ${newStatusText}`,
@@ -171,11 +207,7 @@ const ProductList = () => {
 
   const filterData = (query, categoryFilter, taxFilter) => {
     let filteredData = [...allProducts];
-    filteredData = filteredData.filter(product => 
-        product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'custom' &&
-        product.productCategoryDto?.productCategoryName?.toLowerCase() !== 'non scan'
-    );
-
+    
     if (query.trim() !== '') {
         filteredData = filteredData.filter(product =>
             product.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -185,8 +217,6 @@ const ProductList = () => {
             product.taxDto?.taxPercentage?.toString().includes(query) ||
             product.productCategoryDto?.productCategoryName?.toLowerCase().includes(query)
         );
-    } else {
-        filteredData = filteredData.filter(product => product.isActive === showActive);
     }
 
     if (categoryFilter) {
@@ -201,13 +231,22 @@ const ProductList = () => {
         );
     }
 
-    setProducts(filteredData.reverse());
+    setProducts(filteredData);
   };
 
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
     filterData(query, selectedCategory, selectedTax);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (current, size) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
 
   const exportToPDF = () => {
@@ -356,7 +395,17 @@ const ProductList = () => {
   ];
 
   if (isLoading) {
-    return <div className="page-wrapper">{/* Loading spinner or message */}</div>;
+    return (
+      <div className="page-wrapper">
+        <div className="content">
+          <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -390,7 +439,7 @@ const ProductList = () => {
           <ul className="table-top-head">
             <li><OverlayTrigger placement="top" overlay={renderTooltip}><Link onClick={exportToPDF}><ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" /></Link></OverlayTrigger></li>
             <li><OverlayTrigger placement="top" overlay={renderExcelTooltip}><Link onClick={exportToExcel}><ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" /></Link></OverlayTrigger></li>
-            <li><OverlayTrigger placement="top" overlay={renderRefreshTooltip}><Link onClick={() => loadProductsData(false)}><RotateCcw /></Link></OverlayTrigger></li>
+            <li><OverlayTrigger placement="top" overlay={renderRefreshTooltip}><Link onClick={() => loadProductsData()}><RotateCcw /></Link></OverlayTrigger></li>
             <li><OverlayTrigger placement="top" overlay={renderCollapseTooltip}><Link id="collapse-header" className={data ? "active" : ""} onClick={(e) => { e.preventDefault(); dispatch(setToogleHeader(!data)); }}><ChevronUp /></Link></OverlayTrigger></li>
           </ul>
           <div className="page-btn d-flex gap-2">
@@ -438,7 +487,19 @@ const ProductList = () => {
               </div>
             </div>
             <div className="table-responsive">
-              <Table columns={columns} dataSource={products} rowKey={(record) => record.id} />
+              <Table 
+                columns={columns} 
+                dataSource={products} 
+                rowKey={(record) => record.id}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: totalRecords,
+                  onChange: handlePageChange,
+                  onShowSizeChange: handlePageSizeChange,
+                  showSizeChanger: true
+                }}
+              />
             </div>
           </div>
         </div>
