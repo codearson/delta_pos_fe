@@ -199,6 +199,7 @@ import Coupons from "../feature-module/coupons/coupons";
 import { all_routes } from "./all_routes";
 import NonSaleProductList from "../feature-module/inventory/nonsaleproductlist";
 import UserManual from "../feature-module/documentation/userManual";
+import AdminSettings from "../feature-module/settings/adminsettings/AdminSettings";
 
 export const publicRoutes = [
   {
@@ -1432,6 +1433,13 @@ export const publicRoutes = [
     path: "/nonsaleproduct",
     name: "nonsaleproduct",
     element: <NonSaleProductList />,
+    route: Route,
+  },
+  {
+    id: 122,
+    path: "/admin-settings",
+    name: "admin-settings",
+    element: <AdminSettings />,
     route: Route,
   },
 ];

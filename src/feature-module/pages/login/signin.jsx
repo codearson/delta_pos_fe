@@ -1,9 +1,10 @@
 // Signin.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 import { getAccessToken, getUserByEmail } from "../../Api/config";
+import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
 const Signin = () => {
   const route = all_routes;
@@ -15,6 +16,43 @@ const Signin = () => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [deviceId, setDeviceId] = useState("");
+
+  useEffect(() => {
+    // Get device fingerprint on component mount
+    const getDeviceFingerprint = async () => {
+      try {
+        console.log('%c 🔍 FingerprintJS: Initializing...', 'color: #4CAF50; font-weight: bold;');
+        
+        // Initialize FingerprintJS
+        const fp = await FingerprintJS.load();
+        console.log('%c ✅ FingerprintJS: Successfully loaded', 'color: #4CAF50; font-weight: bold;');
+        
+        // Get the visitor identifier
+        console.log('%c 🔍 FingerprintJS: Getting visitor ID...', 'color: #4CAF50; font-weight: bold;');
+        const result = await fp.get();
+        const visitorId = result.visitorId;
+        
+        // Store the device ID in state
+        setDeviceId(visitorId);
+        
+        // Store in localStorage for future use
+        localStorage.setItem('deviceId', visitorId);
+        
+        // Enhanced console logging
+        console.log('%c 🔑 DEVICE ID DETECTED', 'color: #2196F3; font-size: 16px; font-weight: bold; background: #E3F2FD; padding: 5px; border-radius: 5px;');
+        console.log('%c Device ID:', 'color: #2196F3; font-weight: bold;', visitorId);
+        console.log('%c Components used for fingerprint:', 'color: #2196F3; font-weight: bold;', result.components);
+        
+        // Log to localStorage
+        console.log('%c Device ID stored in localStorage:', 'color: #2196F3; font-weight: bold;', localStorage.getItem('deviceId'));
+      } catch (error) {
+        console.error('%c ❌ Error getting device fingerprint:', 'color: #F44336; font-weight: bold;', error);
+      }
+    };
+    
+    getDeviceFingerprint();
+  }, []);
 
   const validateInputs = () => {
     let isValid = true;
@@ -51,6 +89,26 @@ const Signin = () => {
     setIsLoading(true);
 
     try {
+      // Make sure we have a device ID before proceeding
+      if (!deviceId) {
+        console.log('%c ⚠️ No device ID in state, checking localStorage...', 'color: #FF9800; font-weight: bold;');
+        
+        // Try to get it from localStorage if not in state
+        const storedDeviceId = localStorage.getItem('deviceId');
+        if (storedDeviceId) {
+          console.log('%c ✅ Found device ID in localStorage:', 'color: #4CAF50; font-weight: bold;', storedDeviceId);
+          setDeviceId(storedDeviceId);
+        } else {
+          // If still no device ID, generate a temporary one
+          const tempDeviceId = 'temp_' + Date.now();
+          console.log('%c ⚠️ No device ID found, generating temporary ID:', 'color: #FF9800; font-weight: bold;', tempDeviceId);
+          setDeviceId(tempDeviceId);
+          localStorage.setItem('deviceId', tempDeviceId);
+        }
+      }
+
+      console.log('%c 🔐 Attempting login with device ID:', 'color: #2196F3; font-weight: bold;', deviceId);
+      
       const loginResult = await getAccessToken(email, password);
       if (!loginResult.success) {
         if (loginResult.error === "email_not_found") {
@@ -84,6 +142,16 @@ const Signin = () => {
       localStorage.setItem("branchAddress", user.branchDto.address);
       localStorage.setItem("branchContact", user.branchDto.contactNumber);
       localStorage.setItem("shopName", user.branchDto.shopDetailsDto.name);
+      
+      // Store device ID with user session
+      localStorage.setItem("userDeviceId", deviceId);
+      console.log('%c ✅ Login successful! Device ID associated with user session:', 'color: #4CAF50; font-weight: bold;', deviceId);
+      console.log('%c 🔍 User details:', 'color: #2196F3; font-weight: bold;', {
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.emailAddress,
+        role: user.userRoleDto?.userRole,
+        deviceId: deviceId
+      });
 
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
@@ -96,6 +164,7 @@ const Signin = () => {
         setError("Unknown role. Please contact support.");
       }
     } catch (error) {
+      console.error('%c ❌ Login error:', 'color: #F44336; font-weight: bold;', error);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
