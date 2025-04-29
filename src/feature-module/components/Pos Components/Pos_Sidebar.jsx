@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { all_routes } from "../../../Router/all_routes";
 import "../../../style/scss/components/Pos Components/Pos_Sidebar.scss";
@@ -35,13 +35,56 @@ const Pos_Sidebar = ({ darkMode }) => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("firstName");
-    localStorage.removeItem("lastName");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("branchId");
-    navigate(route.signin);
+    const swalOptions = {
+      title: 'Sign Off or Log Out?',
+      text: 'Choose an action:',
+      icon: 'question',
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: 'LogOut',
+      denyButtonText: 'SignOff',
+      cancelButtonText: 'Cancel',
+      reverseButtons: false
+    };
+    if (darkMode) {
+      swalOptions.customClass = {
+        popup: 'swal2-dark-popup',
+        title: 'swal2-dark-title',
+        htmlContainer: 'swal2-dark-html',
+        confirmButton: 'swal2-dark-confirm',
+        denyButton: 'swal2-dark-deny',
+        cancelButton: 'swal2-dark-cancel'
+      };
+    }
+    if (userDetails.userRole === "USER") {
+      Swal.fire(swalOptions).then((result) => {
+        if (result.isConfirmed) {
+          // LogOut: clear local storage and go to device authentication
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("userRole");
+          localStorage.removeItem("firstName");
+          localStorage.removeItem("lastName");
+          localStorage.removeItem("userId");
+          localStorage.removeItem("branchId");
+          localStorage.removeItem("deviceId");
+          navigate(route.deviceAuthentication);
+        } else if (result.isDenied) {
+          // SignOff: go to signin without clearing local storage
+          navigate(route.signin);
+        }
+        // If cancelled, do nothing
+      });
+    } else {
+      // Direct logout for other roles
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("firstName");
+      localStorage.removeItem("lastName");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("branchId");
+      localStorage.removeItem("deviceId");
+      navigate(route.deviceAuthentication);
+    }
   };
 
   const handleHomeClick = () => {
@@ -120,13 +163,13 @@ const Pos_Sidebar = ({ darkMode }) => {
             {userDetails.firstName || "User"}
           </span>
         </div>
-        <Link className="logout-button" to={route.signin} onClick={handleLogout}>
+        <button className="logout-button" onClick={handleLogout} type="button">
           <ImageWithBasePath
             src="assets/img/icons/log-out.svg"
             alt="Logout"
             className="logout-icon"
           />
-        </Link>
+        </button>
       </div>
     </aside>
   );

@@ -458,13 +458,25 @@ const Header = () => {
                 </div>
                 <hr className="m-0" />
                 <Link
+                  className="dropdown-item"
+                  to={route.signin}
+                >
+                  <ImageWithBasePath
+                    src="assets/img/icons/log-out.svg"
+                    alt="img"
+                    className="me-2"
+                  />
+                  SignOff
+                </Link>
+                <Link
                   className="dropdown-item logout pb-0"
-                  to="/signIn"
+                  to={route.deviceAuthentication}
                   onClick={() => {
                     localStorage.removeItem("accessToken");
                     localStorage.removeItem("firstName");
                     localStorage.removeItem("lastName");
                     localStorage.removeItem("userRole");
+                    localStorage.removeItem("deviceId");
                     console.log("User logged out. Access token and user details removed.");
                   }}
                 >
@@ -497,7 +509,24 @@ const Header = () => {
             <Link className="dropdown-item" to="generalsettings">
               Settings
             </Link>
-            <Link className="dropdown-item" to="signin">
+            <Link 
+              className="dropdown-item" 
+              to={route.signin}
+            >
+              SignOff
+            </Link>
+            <Link 
+              className="dropdown-item" 
+              to={route.deviceAuthentication}
+              onClick={() => {
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("firstName");
+                localStorage.removeItem("lastName");
+                localStorage.removeItem("userRole");
+                localStorage.removeItem("deviceId");
+                console.log("User logged out. Access token and user details removed.");
+              }}
+            >
               Logout
             </Link>
           </div>

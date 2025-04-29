@@ -1,11 +1,9 @@
 // Signin.js
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 import { getAccessToken, getUserByEmail } from "../../Api/config";
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
-import { v4 as uuidv4 } from 'uuid';
 
 const Signin = () => {
   const route = all_routes;
@@ -17,46 +15,6 @@ const Signin = () => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [deviceId, setDeviceId] = useState("");
-
-  useEffect(() => {
-    // Device authentication logic with UUID and FingerprintJS
-    const authenticateDevice = async () => {
-      // 1. Persistent UUID
-      let uuid = localStorage.getItem('posDeviceUUID');
-      if (!uuid) {
-        uuid = uuidv4();
-        localStorage.setItem('posDeviceUUID', uuid);
-        console.log('%c 🆕 New Device UUID generated and stored:', 'color: #4CAF50; font-weight: bold;', uuid);
-      } else {
-        console.log('%c 🗂️ Existing Device UUID found in localStorage:', 'color: #2196F3; font-weight: bold;', uuid);
-      }
-
-      // 2. FingerprintJS visitorId
-      try {
-        console.log('%c 🔍 FingerprintJS: Initializing...', 'color: #4CAF50; font-weight: bold;');
-        const fp = await FingerprintJS.load();
-        const result = await fp.get();
-        const visitorId = result.visitorId;
-        console.log('%c 🔑 FingerprintJS visitorId:', 'color: #4CAF50; font-weight: bold;', visitorId);
-
-        // 3. Hybrid ID
-        const hybridId = `${uuid}_${visitorId}`;
-        console.log('%c 🛡️ Hybrid Device ID (UUID_Fingerprint):', 'color: #FF9800; font-weight: bold;', hybridId);
-
-        // Store for later use
-        localStorage.setItem('hybridDeviceId', hybridId);
-        setDeviceId(hybridId);
-
-        // Ready to send to backend
-        console.log('%c ✅ Device authentication data ready to send to backend!', 'color: #4CAF50; font-weight: bold;');
-      } catch (error) {
-        console.error('%c ❌ Error initializing FingerprintJS:', 'color: #F44336; font-weight: bold;', error);
-      }
-    };
-
-    authenticateDevice();
-  }, []);
 
   const validateInputs = () => {
     let isValid = true;
@@ -93,26 +51,6 @@ const Signin = () => {
     setIsLoading(true);
 
     try {
-      // Make sure we have a device ID before proceeding
-      if (!deviceId) {
-        console.log('%c ⚠️ No device ID in state, checking localStorage...', 'color: #FF9800; font-weight: bold;');
-        
-        // Try to get it from localStorage if not in state
-        const storedDeviceId = localStorage.getItem('deviceId');
-        if (storedDeviceId) {
-          console.log('%c ✅ Found device ID in localStorage:', 'color: #4CAF50; font-weight: bold;', storedDeviceId);
-          setDeviceId(storedDeviceId);
-        } else {
-          // If still no device ID, generate a temporary one
-          const tempDeviceId = 'temp_' + Date.now();
-          console.log('%c ⚠️ No device ID found, generating temporary ID:', 'color: #FF9800; font-weight: bold;', tempDeviceId);
-          setDeviceId(tempDeviceId);
-          localStorage.setItem('deviceId', tempDeviceId);
-        }
-      }
-
-      console.log('%c 🔐 Attempting login with device ID:', 'color: #2196F3; font-weight: bold;', deviceId);
-      
       const loginResult = await getAccessToken(email, password);
       if (!loginResult.success) {
         if (loginResult.error === "email_not_found") {
@@ -147,12 +85,8 @@ const Signin = () => {
       localStorage.setItem("branchContact", user.branchDto.contactNumber);
       localStorage.setItem("shopName", user.branchDto.shopDetailsDto.name);
       
-      // Store device ID with user session
-      localStorage.setItem("userDeviceId", deviceId);
-      
       // Store additional device info for authentication
       const loginDeviceInfo = {
-        deviceId: deviceId,
         basicDeviceHash: localStorage.getItem('basicDeviceHash'),
         fingerprintId: localStorage.getItem('fingerprintId'),
         deviceInfo: JSON.parse(localStorage.getItem('deviceInfo') || '{}'),
@@ -162,12 +96,10 @@ const Signin = () => {
       
       localStorage.setItem("loginDeviceInfo", JSON.stringify(loginDeviceInfo));
       
-      console.log('%c ✅ Login successful! Device ID associated with user session:', 'color: #4CAF50; font-weight: bold;', deviceId);
       console.log('%c 🔍 User details:', 'color: #2196F3; font-weight: bold;', {
         name: `${user.firstName} ${user.lastName}`,
         email: user.emailAddress,
         role: user.userRoleDto?.userRole,
-        deviceId: deviceId,
         domain: window.location.hostname
       });
       console.log('%c 📱 Login device info:', 'color: #2196F3; font-weight: bold;', loginDeviceInfo);

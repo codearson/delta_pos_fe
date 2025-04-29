@@ -12,6 +12,7 @@ export const all_routes = {
   variantyattributes: "/variant-attributes",
   warranty: "/warranty",
   barcode: "/barcode",
+  deviceAuthentication: "/device-authentication",
   alerts: "/ui-alerts",
   accordion: "/ui-accordion",
   avatar: "/ui-avatar",
@@ -196,4 +197,5 @@ export const all_routes = {
   warehouses: "/warehouse",
   coupons:"/coupons",
   adminsettings: "/admin-settings",
+  registerTill: "/register-till",
 };
