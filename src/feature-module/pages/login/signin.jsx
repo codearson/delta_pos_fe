@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 import { getAccessToken, getUserByEmail } from "../../Api/config";
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import { v4 as uuidv4 } from 'uuid';
 
 const Signin = () => {
   const route = all_routes;
@@ -19,83 +20,43 @@ const Signin = () => {
   const [deviceId, setDeviceId] = useState("");
 
   useEffect(() => {
-    // Get device fingerprint and additional device info
-    const getDeviceInfo = async () => {
+    // Device authentication logic with UUID and FingerprintJS
+    const authenticateDevice = async () => {
+      // 1. Persistent UUID
+      let uuid = localStorage.getItem('posDeviceUUID');
+      if (!uuid) {
+        uuid = uuidv4();
+        localStorage.setItem('posDeviceUUID', uuid);
+        console.log('%c 🆕 New Device UUID generated and stored:', 'color: #4CAF50; font-weight: bold;', uuid);
+      } else {
+        console.log('%c 🗂️ Existing Device UUID found in localStorage:', 'color: #2196F3; font-weight: bold;', uuid);
+      }
+
+      // 2. FingerprintJS visitorId
       try {
-        console.log('%c 🔍 Collecting device information...', 'color: #4CAF50; font-weight: bold;');
-        
-        // Get basic device info that's consistent across domains
-        const basicDeviceInfo = {
-          userAgent: navigator.userAgent,
-          platform: navigator.platform,
-          language: navigator.language,
-          screenWidth: window.screen.width,
-          screenHeight: window.screen.height,
-          colorDepth: window.screen.colorDepth,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          deviceMemory: navigator.deviceMemory || 'unknown',
-          hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
-          touchSupport: 'ontouchstart' in window,
-          cookiesEnabled: navigator.cookieEnabled,
-          doNotTrack: navigator.doNotTrack || 'unknown',
-          timestamp: new Date().toISOString()
-        };
-        
-        console.log('%c 📱 Basic device info:', 'color: #2196F3; font-weight: bold;', basicDeviceInfo);
-        
-        // Generate a hash from the basic device info
-        const deviceInfoString = JSON.stringify(basicDeviceInfo);
-        const basicDeviceHash = await hashString(deviceInfoString);
-        console.log('%c 🔑 Basic device hash:', 'color: #2196F3; font-weight: bold;', basicDeviceHash);
-        
-        // Initialize FingerprintJS
         console.log('%c 🔍 FingerprintJS: Initializing...', 'color: #4CAF50; font-weight: bold;');
         const fp = await FingerprintJS.load();
-        console.log('%c ✅ FingerprintJS: Successfully loaded', 'color: #4CAF50; font-weight: bold;');
-        
-        // Get the visitor identifier
-        console.log('%c 🔍 FingerprintJS: Getting visitor ID...', 'color: #4CAF50; font-weight: bold;');
         const result = await fp.get();
         const visitorId = result.visitorId;
-        
-        // Combine both identifiers for a more reliable device ID
-        const combinedDeviceId = `${basicDeviceHash}_${visitorId}`;
-        
-        // Store the device IDs in state
-        setDeviceId(combinedDeviceId);
-        
-        // Store in localStorage for future use
-        localStorage.setItem('deviceId', combinedDeviceId);
-        localStorage.setItem('basicDeviceHash', basicDeviceHash);
-        localStorage.setItem('fingerprintId', visitorId);
-        localStorage.setItem('deviceInfo', JSON.stringify(basicDeviceInfo));
-        
-        // Enhanced console logging
-        console.log('%c 🔑 DEVICE ID DETECTED', 'color: #2196F3; font-size: 16px; font-weight: bold; background: #E3F2FD; padding: 5px; border-radius: 5px;');
-        console.log('%c Combined Device ID:', 'color: #2196F3; font-weight: bold;', combinedDeviceId);
-        console.log('%c Basic Device Hash:', 'color: #2196F3; font-weight: bold;', basicDeviceHash);
-        console.log('%c FingerprintJS ID:', 'color: #2196F3; font-weight: bold;', visitorId);
-        console.log('%c Components used for fingerprint:', 'color: #2196F3; font-weight: bold;', result.components);
-        
-        // Log to localStorage
-        console.log('%c Device ID stored in localStorage:', 'color: #2196F3; font-weight: bold;', localStorage.getItem('deviceId'));
+        console.log('%c 🔑 FingerprintJS visitorId:', 'color: #4CAF50; font-weight: bold;', visitorId);
+
+        // 3. Hybrid ID
+        const hybridId = `${uuid}_${visitorId}`;
+        console.log('%c 🛡️ Hybrid Device ID (UUID_Fingerprint):', 'color: #FF9800; font-weight: bold;', hybridId);
+
+        // Store for later use
+        localStorage.setItem('hybridDeviceId', hybridId);
+        setDeviceId(hybridId);
+
+        // Ready to send to backend
+        console.log('%c ✅ Device authentication data ready to send to backend!', 'color: #4CAF50; font-weight: bold;');
       } catch (error) {
-        console.error('%c ❌ Error getting device information:', 'color: #F44336; font-weight: bold;', error);
+        console.error('%c ❌ Error initializing FingerprintJS:', 'color: #F44336; font-weight: bold;', error);
       }
     };
-    
-    getDeviceInfo();
-  }, []);
 
-  // Simple hash function for device info
-  const hashString = async (str) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return hashHex;
-  };
+    authenticateDevice();
+  }, []);
 
   const validateInputs = () => {
     let isValid = true;
