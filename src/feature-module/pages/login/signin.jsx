@@ -19,12 +19,37 @@ const Signin = () => {
   const [deviceId, setDeviceId] = useState("");
 
   useEffect(() => {
-    // Get device fingerprint on component mount
-    const getDeviceFingerprint = async () => {
+    // Get device fingerprint and additional device info
+    const getDeviceInfo = async () => {
       try {
-        console.log('%c 🔍 FingerprintJS: Initializing...', 'color: #4CAF50; font-weight: bold;');
+        console.log('%c 🔍 Collecting device information...', 'color: #4CAF50; font-weight: bold;');
+        
+        // Get basic device info that's consistent across domains
+        const basicDeviceInfo = {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          language: navigator.language,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          colorDepth: window.screen.colorDepth,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          deviceMemory: navigator.deviceMemory || 'unknown',
+          hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+          touchSupport: 'ontouchstart' in window,
+          cookiesEnabled: navigator.cookieEnabled,
+          doNotTrack: navigator.doNotTrack || 'unknown',
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('%c 📱 Basic device info:', 'color: #2196F3; font-weight: bold;', basicDeviceInfo);
+        
+        // Generate a hash from the basic device info
+        const deviceInfoString = JSON.stringify(basicDeviceInfo);
+        const basicDeviceHash = await hashString(deviceInfoString);
+        console.log('%c 🔑 Basic device hash:', 'color: #2196F3; font-weight: bold;', basicDeviceHash);
         
         // Initialize FingerprintJS
+        console.log('%c 🔍 FingerprintJS: Initializing...', 'color: #4CAF50; font-weight: bold;');
         const fp = await FingerprintJS.load();
         console.log('%c ✅ FingerprintJS: Successfully loaded', 'color: #4CAF50; font-weight: bold;');
         
@@ -33,26 +58,44 @@ const Signin = () => {
         const result = await fp.get();
         const visitorId = result.visitorId;
         
-        // Store the device ID in state
-        setDeviceId(visitorId);
+        // Combine both identifiers for a more reliable device ID
+        const combinedDeviceId = `${basicDeviceHash}_${visitorId}`;
+        
+        // Store the device IDs in state
+        setDeviceId(combinedDeviceId);
         
         // Store in localStorage for future use
-        localStorage.setItem('deviceId', visitorId);
+        localStorage.setItem('deviceId', combinedDeviceId);
+        localStorage.setItem('basicDeviceHash', basicDeviceHash);
+        localStorage.setItem('fingerprintId', visitorId);
+        localStorage.setItem('deviceInfo', JSON.stringify(basicDeviceInfo));
         
         // Enhanced console logging
         console.log('%c 🔑 DEVICE ID DETECTED', 'color: #2196F3; font-size: 16px; font-weight: bold; background: #E3F2FD; padding: 5px; border-radius: 5px;');
-        console.log('%c Device ID:', 'color: #2196F3; font-weight: bold;', visitorId);
+        console.log('%c Combined Device ID:', 'color: #2196F3; font-weight: bold;', combinedDeviceId);
+        console.log('%c Basic Device Hash:', 'color: #2196F3; font-weight: bold;', basicDeviceHash);
+        console.log('%c FingerprintJS ID:', 'color: #2196F3; font-weight: bold;', visitorId);
         console.log('%c Components used for fingerprint:', 'color: #2196F3; font-weight: bold;', result.components);
         
         // Log to localStorage
         console.log('%c Device ID stored in localStorage:', 'color: #2196F3; font-weight: bold;', localStorage.getItem('deviceId'));
       } catch (error) {
-        console.error('%c ❌ Error getting device fingerprint:', 'color: #F44336; font-weight: bold;', error);
+        console.error('%c ❌ Error getting device information:', 'color: #F44336; font-weight: bold;', error);
       }
     };
     
-    getDeviceFingerprint();
+    getDeviceInfo();
   }, []);
+
+  // Simple hash function for device info
+  const hashString = async (str) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+  };
 
   const validateInputs = () => {
     let isValid = true;
@@ -145,13 +188,28 @@ const Signin = () => {
       
       // Store device ID with user session
       localStorage.setItem("userDeviceId", deviceId);
+      
+      // Store additional device info for authentication
+      const loginDeviceInfo = {
+        deviceId: deviceId,
+        basicDeviceHash: localStorage.getItem('basicDeviceHash'),
+        fingerprintId: localStorage.getItem('fingerprintId'),
+        deviceInfo: JSON.parse(localStorage.getItem('deviceInfo') || '{}'),
+        loginTime: new Date().toISOString(),
+        domain: window.location.hostname
+      };
+      
+      localStorage.setItem("loginDeviceInfo", JSON.stringify(loginDeviceInfo));
+      
       console.log('%c ✅ Login successful! Device ID associated with user session:', 'color: #4CAF50; font-weight: bold;', deviceId);
       console.log('%c 🔍 User details:', 'color: #2196F3; font-weight: bold;', {
         name: `${user.firstName} ${user.lastName}`,
         email: user.emailAddress,
         role: user.userRoleDto?.userRole,
-        deviceId: deviceId
+        deviceId: deviceId,
+        domain: window.location.hostname
       });
+      console.log('%c 📱 Login device info:', 'color: #2196F3; font-weight: bold;', loginDeviceInfo);
 
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
