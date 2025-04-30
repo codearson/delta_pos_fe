@@ -466,26 +466,7 @@ const Header = () => {
                     alt="img"
                     className="me-2"
                   />
-                  SignOff
-                </Link>
-                <Link
-                  className="dropdown-item logout pb-0"
-                  to={route.deviceAuthentication}
-                  onClick={() => {
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("firstName");
-                    localStorage.removeItem("lastName");
-                    localStorage.removeItem("userRole");
-                    localStorage.removeItem("deviceId");
-                    console.log("User logged out. Access token and user details removed.");
-                  }}
-                >
-                  <ImageWithBasePath
-                    src="assets/img/icons/log-out.svg"
-                    alt="img"
-                    className="me-2"
-                  />
-                  Logout
+                  Log Out
                 </Link>
               </div>
             </div>
@@ -513,21 +494,7 @@ const Header = () => {
               className="dropdown-item" 
               to={route.signin}
             >
-              SignOff
-            </Link>
-            <Link 
-              className="dropdown-item" 
-              to={route.deviceAuthentication}
-              onClick={() => {
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("firstName");
-                localStorage.removeItem("lastName");
-                localStorage.removeItem("userRole");
-                localStorage.removeItem("deviceId");
-                console.log("User logged out. Access token and user details removed.");
-              }}
-            >
-              Logout
+              Log Out
             </Link>
           </div>
         </div>

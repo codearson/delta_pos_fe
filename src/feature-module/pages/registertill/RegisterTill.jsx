@@ -48,6 +48,8 @@ const RegisterTill = () => {
       
       const response = await registerDevice(deviceData);
       console.log('%c ✅ Registration response:', 'color: #4CAF50; font-weight: bold;', response);
+      // Store the full register device response in localStorage
+      localStorage.setItem('registeredDevice', JSON.stringify(response));
 
       if (response && response.status && response.responseDto) {
         const { tillId, approveStatus } = response.responseDto;
@@ -61,10 +63,10 @@ const RegisterTill = () => {
           console.log('%c ⏳ Device pending approval:', 'color: #FF9800; font-weight: bold;', 'Admin approval required');
           
           // Navigate to device authentication after a delay
-          setTimeout(() => navigate(route.deviceAuthentication), 3000);
+          setTimeout(() => navigate(route.signin), 3000);
         } else if (approveStatus === "Approved") {
           setMessage("Till registered and approved successfully!");
-          setTimeout(() => navigate(route.deviceAuthentication), 1000);
+          setTimeout(() => navigate(route.signin), 1000);
         } else {
           setMessage("Registration failed. Please try again.");
         }
@@ -131,8 +133,8 @@ const RegisterTill = () => {
                 <div className="signinform text-center">
                   <h4>
                     Return to
-                    <Link to={route.deviceAuthentication} className="hover-a">
-                      {" "}Device Authentication{" "}
+                    <Link to={route.signin} className="hover-a">
+                      {" "}Log In Page{" "}
                     </Link>
                   </h4>
                 </div>
