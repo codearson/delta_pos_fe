@@ -35,56 +35,16 @@ const Pos_Sidebar = ({ darkMode }) => {
   }, []);
 
   const handleLogout = () => {
-    const swalOptions = {
-      title: 'Sign Off or Log Out?',
-      text: 'Choose an action:',
-      icon: 'question',
-      showCancelButton: true,
-      showDenyButton: true,
-      confirmButtonText: 'LogOut',
-      denyButtonText: 'SignOff',
-      cancelButtonText: 'Cancel',
-      reverseButtons: false
-    };
-    if (darkMode) {
-      swalOptions.customClass = {
-        popup: 'swal2-dark-popup',
-        title: 'swal2-dark-title',
-        htmlContainer: 'swal2-dark-html',
-        confirmButton: 'swal2-dark-confirm',
-        denyButton: 'swal2-dark-deny',
-        cancelButton: 'swal2-dark-cancel'
-      };
-    }
-    if (userDetails.userRole === "USER") {
-      Swal.fire(swalOptions).then((result) => {
-        if (result.isConfirmed) {
-          // LogOut: clear local storage and go to device authentication
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("userRole");
-          localStorage.removeItem("firstName");
-          localStorage.removeItem("lastName");
-          localStorage.removeItem("userId");
-          localStorage.removeItem("branchId");
-          localStorage.removeItem("deviceId");
-          navigate(route.deviceAuthentication);
-        } else if (result.isDenied) {
-          // SignOff: go to signin without clearing local storage
-          navigate(route.signin);
-        }
-        // If cancelled, do nothing
-      });
-    } else {
-      // Direct logout for other roles
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("userRole");
-      localStorage.removeItem("firstName");
-      localStorage.removeItem("lastName");
-      localStorage.removeItem("userId");
-      localStorage.removeItem("branchId");
-      localStorage.removeItem("deviceId");
-      navigate(route.deviceAuthentication);
-    }
+    // Clear relevant localStorage items
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("firstName");
+    localStorage.removeItem("lastName");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("branchId");
+    localStorage.removeItem("deviceId");
+    // Go directly to signin page
+    navigate(route.signin);
   };
 
   const handleHomeClick = () => {
