@@ -142,3 +142,28 @@ export const getProductByBarcode = async (barcode) => {
     return null;
   }
 };
+
+export const getAllProductsPage = async (pageNumber = 1, pageSize = 10, status = '') => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      console.error("No access token found. Please log in.");
+      return null;
+    }
+
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/product/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=${status}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching products with pagination:", error.response?.status, error.response?.data);
+    return null;
+  }
+};

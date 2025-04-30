@@ -180,7 +180,7 @@ export const SidebarData = [
           // { label: "Employees", link: "/employees-grid", icon:  <Icon.Users />,showSubRoute: false },
           // { label: "Departments", link: "/department-grid", icon:  <Icon.User />,showSubRoute: false },
           // { label: "Designations", link: "/designation", icon:  <Icon.UserCheck />,showSubRoute: false },
-          // { label: "Shifts", link: "/shift", icon: <Icon.Shuffle />,showSubRoute: false },
+          { label: "Shifts", link: "/shift", icon: <Icon.Shuffle />,showSubRoute: false },
         //   { label: "Attendance", link: "#", icon: <Icon.Clock />,showSubRoute: false, submenu: true,
           
         //   submenuItems: [
@@ -232,6 +232,7 @@ export const SidebarData = [
         showSubRoute: false,
         submenuItems: [
           { label: "Manager Settings", link: "/stock-adjustment", icon:  <Icon.Settings />,showSubRoute: false,submenu: false },
+          { label: "Admin Settings", link: "/admin-settings", icon:  <Icon.UserCheck />,showSubRoute: false,submenu: false },
         //  { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
         //  { label: "Employee Discount", link: "/stock-transfer", icon:  <Icon.Truck />,showSubRoute: false,submenu: false }
         ]

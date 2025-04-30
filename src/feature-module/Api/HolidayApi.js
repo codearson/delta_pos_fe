@@ -18,16 +18,25 @@ export const saveHoliday = async (holidayData) => {
   return response.data;
 };
 
-export const fetchHolidays = async () => {
+export const fetchHolidays = async (pageNumber = 1, pageSize = 10, status = true) => {
   const accessToken = localStorage.getItem("accessToken");
-  if (!accessToken) return [];
+  if (!accessToken) return { payload: [], totalRecords: 0 };
 
-  const response = await axios.get(`${BASE_BACKEND_URL}/staffLeave/getAll`, {
+  const params = new URLSearchParams({
+    pageNumber: pageNumber.toString(),
+    pageSize: pageSize.toString(),
+  });
+
+  if (status !== null) {
+    params.append('status', status.toString());
+  }
+
+  const response = await axios.get(`${BASE_BACKEND_URL}/staffLeave/getAllPage?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
   });
-  return response.data.responseDto || [];
+  return response.data.responseDto || { payload: [], totalRecords: 0 };
 };
 
 export const updateHoliday = async (holidayData) => {

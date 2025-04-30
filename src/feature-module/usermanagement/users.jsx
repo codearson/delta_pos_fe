@@ -50,7 +50,7 @@ const Users = () => {
 
     useEffect(() => {
         if (!initialLoading) {
-            loadUsers(false);
+            loadUsers();
         }
     }, [currentPage, pageSize, showActive, selectedRole]);
 
@@ -65,7 +65,7 @@ const Users = () => {
 
     const loadInitialData = async () => {
         setInitialLoading(true);
-        await Promise.all([loadUsers(true), loadUserRoles(), loadBranches()]);
+        await Promise.all([loadUsers(), loadUserRoles(), loadBranches()]);
         setInitialLoading(false);
     };
 
@@ -94,24 +94,37 @@ const Users = () => {
 
     const loadBranches = async () => {
         try {
-            const branches = await fetchBranches();
-            const formattedBranches = branches.map(branch => ({
-                value: branch.branchName,
-                label: branch.branchName
-            }));
-            setBranchOptions(formattedBranches);
+            const response = await fetchBranches(1, 100, true); // Get active branches with pagination
+            console.log('Branch response:', response); // Debug log
+            if (response && Array.isArray(response.payload)) {
+                const formattedBranches = response.payload
+                    .filter(branch => branch && branch.branchName) // Filter out any invalid entries
+                    .map(branch => ({
+                        value: branch.id,
+                        label: branch.branchName
+                    }));
+                console.log('Formatted branches:', formattedBranches); // Debug log
+                setBranchOptions(formattedBranches);
+            } else {
+                setBranchOptions([]);
+                console.error('Invalid branch data received:', response);
+            }
         } catch (error) {
             console.error('Error loading branches:', error);
             setBranchOptions([]);
+            Swal.fire({
+                title: 'Error',
+                text: 'Failed to load branches: ' + error.message,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
         }
     };
 
-    const loadUsers = async (isInitial = false) => {
+    const loadUsers = async () => {
         try {
-            if (isInitial) {
-                setInitialLoading(true);
-            }
-            const result = await fetchUsers(currentPage, pageSize);
+            setInitialLoading(true);
+            const result = await fetchUsers(currentPage, pageSize, showActive);
             const normalizedData = result.payload.map(user => ({
                 ...user,
                 isActive: user.isActive === true || user.isActive === 1
@@ -127,9 +140,7 @@ const Users = () => {
                 confirmButtonText: "OK",
             });
         } finally {
-            if (isInitial) {
-                setInitialLoading(false);
-            }
+            setInitialLoading(false);
         }
     };
 
@@ -152,7 +163,7 @@ const Users = () => {
 
         if (branchFilter && branchFilter.value) {
             filteredData = filteredData.filter(user =>
-                user.branchDto?.branchName === branchFilter.value
+                user.branchDto?.id === branchFilter.value
             );
         }
 
@@ -267,7 +278,7 @@ const Users = () => {
                     const newStatus = !currentStatus;
                     const response = await updateUserStatus(userId, newStatus);
                     if (response) {
-                        await loadUsers(false);
+                        await loadUsers();
                         MySwal.fire({
                             title: "Success!",
                             text: `User status changed to ${newStatusText}.`,
@@ -412,9 +423,14 @@ const Users = () => {
         },
     ];
 
-    const handlePageChange = (page, pageSize) => {
+    const handleTableChange = (page, pageSize) => {
         setCurrentPage(page);
         setPageSize(pageSize);
+    };
+
+    const onShowSizeChange = (current, size) => {
+        setPageSize(size);
+        setCurrentPage(1);
     };
 
     const renderTooltip = (props) => (
@@ -484,7 +500,7 @@ const Users = () => {
                             </li>
                             <li>
                                 <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                                    <Link onClick={() => loadUsers(false)}>
+                                    <Link onClick={() => loadUsers()}>
                                         <RotateCcw />
                                     </Link>
                                 </OverlayTrigger>
@@ -564,8 +580,11 @@ const Users = () => {
                                     pagination={{
                                         current: currentPage,
                                         pageSize: pageSize,
-                                        onChange: handlePageChange,
-                                        total: userData.totalRecords
+                                        total: userData.totalRecords,
+                                        showSizeChanger: true,
+                                        onChange: handleTableChange,
+                                        onShowSizeChange: onShowSizeChange,
+                                        pageSizeOptions: ["10", "20", "50", "100"],
                                     }}
                                 />
                             </div>
@@ -573,16 +592,14 @@ const Users = () => {
                     </div>
                 </div>
             </div>
-            <AddUsers onUpdate={() => {
-                loadUsers(false);
-            }} />
+            <AddUsers onUpdate={() => loadUsers()} />
             <EditUser user={selectedUser} onUpdate={() => {
                 setSelectedUser(null);
-                loadUsers(false);
+                loadUsers();
             }} />
             <ChangePassword user={selectedUserForPassword} onUpdate={() => {
                 setSelectedUserForPassword(null);
-                loadUsers(false);
+                loadUsers();
             }} />
         </div>
     );

@@ -1,31 +1,43 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-export const fetchProductDiscounts = async (pageNumber = 1, pageSize = 10) => {
+export const fetchProductDiscounts = async (pageNumber = 1, pageSize = 10, status = true) => {
   try {
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       throw new Error("Authentication required");
     }
+
+    // Build query parameters dynamically
+    const queryParams = new URLSearchParams({
+      pageNumber: pageNumber.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    // Add status only if it's not null
+    if (status !== null) {
+      queryParams.append("status", status.toString());
+    }
+
     const response = await axios.get(
-      `${BASE_BACKEND_URL}/productDiscount/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}`,
+      `${BASE_BACKEND_URL}/productDiscount/getAllPage?${queryParams.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       }
     );
+
     const data = response.data;
-    console.log("API Response:", data); // Keep for debugging
+
     if (data.responseDto && Array.isArray(data.responseDto.payload)) {
-      return data.responseDto.payload; // Return the payload array
+      return data.responseDto.payload;
     }
-    console.warn("No discount data found in response:", data);
     return [];
   } catch (error) {
     console.error("Error fetching product discounts:", error.response?.status, error.response?.data || error.message);
-    throw error; // Let caller handle errors
+    throw error;
   }
 };
 
@@ -36,14 +48,12 @@ export const saveProductDiscount = async (discountData) => {
       console.error("No access token found. Please log in.");
       return null;
     }
-    console.log("Saving discount:", discountData);
     const response = await axios.post(`${BASE_BACKEND_URL}/productDiscount/save`, discountData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
     });
-    console.log("Save response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error saving product discount:", error.response?.status, error.response?.data);
@@ -58,14 +68,12 @@ export const updateProductDiscount = async (discountData) => {
       console.error("No access token found. Please log in.");
       return null;
     }
-    console.log("Updating discount:", discountData);
     const response = await axios.post(`${BASE_BACKEND_URL}/productDiscount/update`, discountData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
     });
-    console.log("Update response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error updating product discount:", error.response?.status, error.response?.data);

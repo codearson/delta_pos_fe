@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { all_routes } from "../../../Router/all_routes";
 import "../../../style/scss/components/Pos Components/Pos_Sidebar.scss";
@@ -35,12 +35,15 @@ const Pos_Sidebar = ({ darkMode }) => {
   }, []);
 
   const handleLogout = () => {
+    // Clear relevant localStorage items
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userRole");
     localStorage.removeItem("firstName");
     localStorage.removeItem("lastName");
     localStorage.removeItem("userId");
     localStorage.removeItem("branchId");
+    localStorage.removeItem("deviceId");
+    // Go directly to signin page
     navigate(route.signin);
   };
 
@@ -120,13 +123,13 @@ const Pos_Sidebar = ({ darkMode }) => {
             {userDetails.firstName || "User"}
           </span>
         </div>
-        <Link className="logout-button" to={route.signin} onClick={handleLogout}>
+        <button className="logout-button" onClick={handleLogout} type="button">
           <ImageWithBasePath
             src="assets/img/icons/log-out.svg"
             alt="Logout"
             className="logout-icon"
           />
-        </Link>
+        </button>
       </div>
     </aside>
   );

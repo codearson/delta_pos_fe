@@ -205,3 +205,27 @@ $circle-color: #4ECDC4;
     }
   }
 }
+
+// SweetAlert2 dark mode styles
+.swal2-dark-popup {
+  background: #23272f !important;
+  color: #fff !important;
+}
+.swal2-dark-title {
+  color: #fff !important;
+}
+.swal2-dark-html {
+  color: #ddd !important;
+}
+.swal2-dark-confirm,
+.swal2-dark-deny,
+.swal2-dark-cancel {
+  background: #444 !important;
+  color: #fff !important;
+  border: none !important;
+}
+.swal2-dark-confirm:hover,
+.swal2-dark-deny:hover,
+.swal2-dark-cancel:hover {
+  background: #666 !important;
+}

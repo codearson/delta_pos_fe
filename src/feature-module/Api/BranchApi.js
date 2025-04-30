@@ -1,21 +1,26 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-export const fetchBranches = async () => {
+export const fetchBranches = async (pageNumber = 1, pageSize = 10, status = true) => {
   const accessToken = localStorage.getItem("accessToken");
 
   if (!accessToken) {
     throw new Error("No access token found. Please log in.");
   }
 
-  const response = await axios.get(`${BASE_BACKEND_URL}/branch/getAll`, {
+  const response = await axios.get(`${BASE_BACKEND_URL}/branch/getAllPage`, {
+    params: {
+      pageNumber,
+      pageSize,
+      status
+    },
     headers: {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
   });
 
-  return response.data.responseDto || [];
+  return response.data.responseDto || { payload: [], totalRecords: 0 };
 };
 
 // Save Branch API

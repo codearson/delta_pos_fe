@@ -1,23 +1,42 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-export const fetchPurchases = async () => {
+export const fetchPurchases = async (pageNumber = 1, pageSize = 10) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            return [];
+            return {
+                pageNumber: pageNumber,
+                pageSize: pageSize,
+                totalRecords: 0,
+                payload: []
+            };
         }
 
-        const response = await axios.get(`${BASE_BACKEND_URL}/purchaseList/getAll`, {
+        const response = await axios.get(`${BASE_BACKEND_URL}/purchaseList/getAllPage`, {
+            params: {
+                pageNumber,
+                pageSize
+            },
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
         });
 
-        return response.data.responseDto || [];
+        return response.data.responseDto || {
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            totalRecords: 0,
+            payload: []
+        };
     } catch (error) {
-        return [];
+        return {
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+            totalRecords: 0,
+            payload: []
+        };
     }
 };
 

@@ -6,17 +6,18 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import Breadcrumbs from "../../breadcrumbs";
 import BranchModal from "./branchModal";
-import { fetchBranches } from "../../../feature-module/Api/BranchApi";
-import { saveBranch, updateBranch, updateBranchStatus } from "../../../feature-module/Api/BranchApi";
+import { fetchBranches, saveBranch, updateBranch, updateBranchStatus } from "../../../feature-module/Api/BranchApi";
 
 const StoreList = () => {
-  const [branchData, setBranchData] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredBranches, setFilteredBranches] = useState([]);
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   const MySwal = withReactContent(Swal);
 
@@ -26,32 +27,30 @@ const StoreList = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      filterData(branchData, searchTerm);
+      loadBranches();
     }
-  }, [showActive, branchData, searchTerm]);
+  }, [showActive, currentPage, pageSize]);
 
   const loadInitialData = async () => {
     setIsLoading(true);
-    await loadBranches(true);
+    await loadBranches();
     setIsLoading(false);
   };
 
-  const loadBranches = async (isInitial = false) => {
+  const loadBranches = async () => {
     try {
-      if (isInitial) {
-        setIsLoading(true);
-      }
-      const branches = await fetchBranches();
-      if (Array.isArray(branches)) {
-        const normalizedData = branches.map(branch => ({
+      setIsLoading(true);
+      const response = await fetchBranches(currentPage, pageSize, showActive);
+      if (response && response.payload) {
+        const normalizedData = response.payload.map(branch => ({
           ...branch,
           isActive: branch.isActive === 1 || branch.isActive === true
         }));
-        setBranchData(normalizedData);
-        filterData(normalizedData, searchTerm);
+        setFilteredBranches(normalizedData);
+        setTotalRecords(response.totalRecords || 0);
       } else {
-        setBranchData([]);
         setFilteredBranches([]);
+        setTotalRecords(0);
         Swal.fire({
           title: "Warning!",
           text: "No branch data received from the server.",
@@ -67,28 +66,23 @@ const StoreList = () => {
         confirmButtonText: 'OK'
       });
     } finally {
-      if (isInitial) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
-  const filterData = (branchesData, query) => {
-    let filtered = [...branchesData];
+  const handleTableChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
 
-    if (query.trim() !== "") {
-      filtered = filtered.filter(branch =>
-        (branch.branchName && branch.branchName.toLowerCase().includes(query.toLowerCase())) ||
-        (branch.branchCode && branch.branchCode.toLowerCase().includes(query.toLowerCase())) ||
-        (branch.address && branch.address.toLowerCase().includes(query.toLowerCase())) ||
-        (branch.contactNumber && branch.contactNumber.toLowerCase().includes(query.toLowerCase())) ||
-        (branch.emailAddress && branch.emailAddress.toLowerCase().includes(query.toLowerCase()))
-      );
-    } else {
-      filtered = filtered.filter(branch => branch.isActive === showActive);
-    }
+  const onShowSizeChange = (current, size) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
 
-    setFilteredBranches(filtered.reverse());
+  const handleStatusToggle = (status) => {
+    setShowActive(status);
+    setCurrentPage(1);
   };
 
   const handleToggleStatus = (branchId, currentStatus) => {
@@ -110,7 +104,7 @@ const StoreList = () => {
           const newStatus = currentStatus ? 0 : 1;
           const response = await updateBranchStatus(branchId, newStatus);
           if (response) {
-            await loadBranches(false);
+            await loadBranches();
             MySwal.fire({
               title: "Success!",
               text: `Branch status changed to ${newStatusText}.`,
@@ -220,7 +214,7 @@ const StoreList = () => {
       };
 
       await saveBranch(saveData);
-      await loadBranches(false);
+      await loadBranches();
 
       Swal.fire({
         title: 'Success',
@@ -249,7 +243,7 @@ const StoreList = () => {
       };
 
       await updateBranch(updateData);
-      await loadBranches(false);
+      await loadBranches();
       setSelectedBranch(null);
 
       Swal.fire({
@@ -293,12 +287,13 @@ const StoreList = () => {
   };
 
   const handleRefresh = () => {
-    loadBranches(false);
+    loadBranches();
   };
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-    filterData(branchData, value);
+    setCurrentPage(1);
+    loadBranches();
   };
 
   if (isLoading) {
@@ -330,14 +325,14 @@ const StoreList = () => {
                 <button
                   type="button"
                   className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                  onClick={() => setShowActive(true)}
+                  onClick={() => handleStatusToggle(true)}
                 >
                   Active
                 </button>
                 <button
                   type="button"
                   className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                  onClick={() => setShowActive(false)}
+                  onClick={() => handleStatusToggle(false)}
                 >
                   Inactive
                 </button>
@@ -370,6 +365,15 @@ const StoreList = () => {
                 columns={columns}
                 dataSource={filteredBranches}
                 rowKey={(record) => record.id}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: totalRecords,
+                  showSizeChanger: true,
+                  onChange: handleTableChange,
+                  onShowSizeChange: onShowSizeChange,
+                  pageSizeOptions: ["10", "20", "50", "100"],
+                }}
               />
             </div>
           </div>

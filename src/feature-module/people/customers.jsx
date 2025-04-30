@@ -25,6 +25,9 @@ const Customers = () => {
   const [showActive, setShowActive] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   useEffect(() => {
     loadInitialData();
@@ -32,32 +35,33 @@ const Customers = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      fetchCustomersData(false);
+      fetchCustomersData();
     }
-  }, [showActive]);
+  }, [showActive, currentPage, pageSize]);
 
   const loadInitialData = async () => {
     setIsLoading(true);
-    await fetchCustomersData(true);
+    await fetchCustomersData();
     setIsLoading(false);
   };
 
-  const fetchCustomersData = async (isInitial = false) => {
+  const fetchCustomersData = async () => {
     try {
-      if (isInitial) {
-        setIsLoading(true);
-      }
-      const data = await fetchCustomers();
-      if (Array.isArray(data)) {
-        const normalizedData = data.map(customer => ({
+      setIsLoading(true);
+      const status = showActive ? true : false;
+      const data = await fetchCustomers(currentPage, pageSize, status);
+      if (data && data.payload) {
+        const normalizedData = data.payload.map(customer => ({
           ...customer,
           isActive: customer.isActive === 1 || customer.isActive === true
         }));
         setAllCustomers(normalizedData);
-        filterData(normalizedData, searchTerm);
+        setCustomers(normalizedData);
+        setTotalRecords(data.totalRecords);
       } else {
         setAllCustomers([]);
         setCustomers([]);
+        setTotalRecords(0);
         Swal.fire({
           title: "Warning!",
           text: "No customer data received from the server.",
@@ -73,23 +77,20 @@ const Customers = () => {
         confirmButtonText: "OK",
       });
     } finally {
-      if (isInitial) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
   const filterData = (customersData, query) => {
-    let filteredData = customersData.filter(customer => customer.isActive === showActive);
-
     if (query.trim() !== "") {
-      filteredData = filteredData.filter(customer =>
+      const filteredData = customersData.filter(customer =>
         (customer.name && customer.name.toLowerCase().includes(query.toLowerCase())) ||
         (customer.mobileNumber && customer.mobileNumber.toLowerCase().includes(query.toLowerCase()))
       );
+      setCustomers(filteredData);
+    } else {
+      setCustomers(customersData);
     }
-
-    setCustomers(filteredData.reverse());
   };
 
   const handleSaveCustomer = async (customerData) => {
@@ -129,7 +130,7 @@ const Customers = () => {
       const customerDataWithActive = { ...customerData, isActive: 1 };
       const result = await saveCustomer(customerDataWithActive);
       if (result) {
-        await fetchCustomersData(false);
+        await fetchCustomersData();
         setSelectedCustomer(null);
         Swal.fire({
           title: "Success!",
@@ -188,7 +189,7 @@ const Customers = () => {
 
       const result = await updateCustomer(customerData);
       if (result) {
-        await fetchCustomersData(false);
+        await fetchCustomersData();
         setSelectedCustomer(null);
         Swal.fire({
           title: "Success!",
@@ -228,7 +229,7 @@ const Customers = () => {
           const newStatus = currentStatus ? 0 : 1;
           const response = await updateCustomerStatus(customerId, newStatus);
           if (response && response.success !== false) {
-            await fetchCustomersData(false);
+            await fetchCustomersData();
             Swal.fire({
               title: "Success!",
               text: `Customer status changed to ${newStatusText}.`,
@@ -257,6 +258,16 @@ const Customers = () => {
     const value = e.target.value;
     setSearchTerm(value);
     filterData(allCustomers, value);
+  };
+
+  const handleTableChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
+
+  const onShowSizeChange = (current, size) => {
+    setPageSize(size);
+    setCurrentPage(1);
   };
 
   const exportToPDF = () => {
@@ -415,14 +426,20 @@ const Customers = () => {
                 <button
                   type="button"
                   className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                  onClick={() => setShowActive(true)}
+                  onClick={() => {
+                    setShowActive(true);
+                    setCurrentPage(1);
+                  }}
                 >
                   Active
                 </button>
                 <button
                   type="button"
                   className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                  onClick={() => setShowActive(false)}
+                  onClick={() => {
+                    setShowActive(false);
+                    setCurrentPage(1);
+                  }}
                 >
                   Inactive
                 </button>
@@ -446,7 +463,7 @@ const Customers = () => {
             </li>
             <li>
               <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
-                <Link onClick={() => fetchCustomersData(false)}>
+                <Link onClick={() => fetchCustomersData()}>
                   <RotateCcw />
                 </Link>
               </OverlayTrigger>
@@ -503,6 +520,15 @@ const Customers = () => {
                 columns={columns}
                 dataSource={customers}
                 rowKey={(record) => record.id}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: totalRecords,
+                  showSizeChanger: true,
+                  onChange: handleTableChange,
+                  onShowSizeChange: onShowSizeChange,
+                  pageSizeOptions: ["10", "20", "50", "100"],
+                }}
               />
             </div>
           </div>

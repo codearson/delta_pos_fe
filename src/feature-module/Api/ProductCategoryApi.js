@@ -117,3 +117,42 @@ export const getProductCategoryByName = async (categoryName) => {
         return null;
     }
 };
+
+export const fetchProductCategoriesPages = async (pageNumber = 1, pageSize = 10, status = true) => {
+    try {
+        const accessToken = localStorage.getItem("accessToken");
+
+        if (!accessToken) {
+            return {
+                pageNumber: 1,
+                pageSize: pageSize,
+                totalRecords: 0,
+                payload: []
+            };
+        }
+
+        const response = await axios.get(
+            `${BASE_BACKEND_URL}/productCategory/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=${status}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        return response.data.responseDto || {
+            pageNumber: 1,
+            pageSize: pageSize,
+            totalRecords: 0,
+            payload: []
+        };
+    } catch (error) {
+        console.error('Fetch Product Categories Pages Error:', error.response || error);
+        return {
+            pageNumber: 1,
+            pageSize: pageSize,
+            totalRecords: 0,
+            payload: []
+        };
+    }
+};

@@ -1,23 +1,43 @@
 import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
-export const fetchSuppliers = async () => {
+export const fetchSuppliers = async (pageNumber = 1, pageSize = 10, status = true) => {
     try {
         const accessToken = localStorage.getItem("accessToken");
 
         if (!accessToken) {
-            return [];
+            return {
+                status: false,
+                errorCode: 401,
+                errorDescription: "No access token found",
+                responseDto: {
+                    pageNumber: pageNumber,
+                    pageSize: pageSize,
+                    totalRecords: 0,
+                    payload: []
+                }
+            };
         }
 
-        const response = await axios.get(`${BASE_BACKEND_URL}/supplier/getAll`, {
+        const response = await axios.get(`${BASE_BACKEND_URL}/supplier/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=${status}`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
         });
 
-        return response.data.responseDto || [];
+        return response.data;
     } catch (error) {
-        return [];
+        return {
+            status: false,
+            errorCode: error.response?.status || 500,
+            errorDescription: error.message,
+            responseDto: {
+                pageNumber: pageNumber,
+                pageSize: pageSize,
+                totalRecords: 0,
+                payload: []
+            }
+        };
     }
 };
 

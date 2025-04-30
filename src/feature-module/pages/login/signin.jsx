@@ -1,9 +1,12 @@
 // Signin.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 import { getAccessToken, getUserByEmail } from "../../Api/config";
+import { loginDevice } from "../../Api/DeviceAuthApi";
+import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import { v4 as uuidv4 } from 'uuid';
 
 const Signin = () => {
   const route = all_routes;
@@ -15,6 +18,107 @@ const Signin = () => {
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [deviceId, setDeviceId] = useState("");
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    // Check if device is already registered and pending approval
+    const registeredDevice = localStorage.getItem('registeredDevice');
+    if (registeredDevice) {
+      const deviceData = JSON.parse(registeredDevice);
+      if (deviceData.responseDto?.approveStatus === "Pending") {
+        setSuccess("Registration successful! Waiting for admin approval. Please try again later.");
+      }
+    }
+
+    // Device authentication logic with UUID and FingerprintJS
+    const authenticateDevice = async () => {
+      try {
+        // 1. Persistent UUID
+        let uuid = localStorage.getItem('posDeviceUUID');
+        if (!uuid) {
+          uuid = uuidv4();
+          localStorage.setItem('posDeviceUUID', uuid);
+          console.log('%c 🆕 New Device UUID generated:', 'color: #4CAF50; font-weight: bold;', uuid);
+        } else {
+          console.log('%c 🗂️ Existing Device UUID found:', 'color: #2196F3; font-weight: bold;', uuid);
+        }
+
+        // 2. FingerprintJS visitorId
+        console.log('%c 🔍 FingerprintJS: Initializing...', 'color: #4CAF50; font-weight: bold;');
+        const fp = await FingerprintJS.load();
+        const result = await fp.get();
+        const visitorId = result.visitorId;
+        console.log('%c 🔑 FingerprintJS visitorId:', 'color: #4CAF50; font-weight: bold;', visitorId);
+
+        // 3. Hybrid ID
+        const hybridId = `${uuid}_${visitorId}`;
+        console.log('%c 🛡️ Hybrid Device ID:', 'color: #FF9800; font-weight: bold;', hybridId);
+
+        // Store for later use
+        localStorage.setItem('hybridDeviceId', hybridId);
+        // Set the UUID part
+        setDeviceId(uuid);
+        console.log('%c 📝 Device ID stored in state:', 'color: #9C27B0; font-weight: bold;', {
+          deviceId: uuid,
+          hybridId: hybridId,
+          visitorId: visitorId
+        });
+      } catch (error) {
+        console.error('%c ❌ Error initializing FingerprintJS:', 'color: #F44336; font-weight: bold;', error);
+        setError("Failed to initialize device authentication");
+      }
+    };
+
+    authenticateDevice();
+  }, []);
+
+  const handleDeviceVerification = async () => {
+    setError("");
+    setSuccess("");
+
+    try {
+      if (!deviceId) {
+        setError("Device ID not found");
+        return false;
+      }
+      const response = await loginDevice(deviceId);
+      console.log("Login Device API Response:", response);
+
+      // Only update localStorage if response is valid and has responseDto
+      if (response && response.status && response.responseDto) {
+        localStorage.setItem("registeredDevice", JSON.stringify(response));
+        const { approveStatus, loginStatus } = response.responseDto;
+        console.log("Checking approveStatus from API response:", approveStatus);
+
+        if (approveStatus === "Pending") {
+          setSuccess("Registration successful! Waiting for admin approval. Please try again later.");
+          return false;
+        }
+        if (approveStatus === "Approved" && loginStatus === "True") {
+          return true;
+        }
+        setError("Device is not approved for login. Please contact administrator.");
+        return false;
+      } else {
+        // API failed, now check localStorage for last valid registration
+        setError("Failed to verify device. Please try again.");
+
+        const registeredDevice = localStorage.getItem('registeredDevice');
+        if (registeredDevice) {
+          const deviceData = JSON.parse(registeredDevice);
+          if (deviceData.responseDto?.approveStatus === "Pending") {
+            setError(""); // Clear the error
+            setSuccess("Registration successful! Waiting for admin approval. Please try again later.");
+          }
+        }
+        return false;
+      }
+    } catch (error) {
+      setError("An error occurred during device verification. Please try again.");
+      return false;
+    }
+  };
 
   const validateInputs = () => {
     let isValid = true;
@@ -73,6 +177,16 @@ const Signin = () => {
         return;
       }
 
+      // If ADMIN, skip device verification
+      if (user.userRoleDto?.userRole !== "ADMIN") {
+        // First verify device for non-admins
+        const isDeviceVerified = await handleDeviceVerification();
+        if (!isDeviceVerified) {
+          setIsLoading(false);
+          return;
+        }
+      }
+
       localStorage.setItem("firstName", user.firstName || "");
       localStorage.setItem("lastName", user.lastName || "");
       localStorage.setItem("email", user.emailAddress || "");
@@ -84,6 +198,25 @@ const Signin = () => {
       localStorage.setItem("branchAddress", user.branchDto.address);
       localStorage.setItem("branchContact", user.branchDto.contactNumber);
       localStorage.setItem("shopName", user.branchDto.shopDetailsDto.name);
+      
+      // Store additional device info for authentication
+      const loginDeviceInfo = {
+        basicDeviceHash: localStorage.getItem('basicDeviceHash'),
+        fingerprintId: localStorage.getItem('fingerprintId'),
+        deviceInfo: JSON.parse(localStorage.getItem('deviceInfo') || '{}'),
+        loginTime: new Date().toISOString(),
+        domain: window.location.hostname
+      };
+      
+      localStorage.setItem("loginDeviceInfo", JSON.stringify(loginDeviceInfo));
+      
+      console.log('%c 🔍 User details:', 'color: #2196F3; font-weight: bold;', {
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.emailAddress,
+        role: user.userRoleDto?.userRole,
+        domain: window.location.hostname
+      });
+      console.log('%c 📱 Login device info:', 'color: #2196F3; font-weight: bold;', loginDeviceInfo);
 
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
@@ -96,6 +229,7 @@ const Signin = () => {
         setError("Unknown role. Please contact support.");
       }
     } catch (error) {
+      console.error('%c ❌ Login error:', 'color: #F44336; font-weight: bold;', error);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -173,7 +307,23 @@ const Signin = () => {
                 </div>
                 <div className="form-login authentication-check">
                   <div className="row">
-                  {error && <p className="text-danger text-center mb-3">{error}</p>}
+                  {success && (
+                    <div className="alert alert-success text-center mb-3">
+                      {success}
+                    </div>
+                  )}
+                  {error && (
+                    <div className="text-center mb-3">
+                      <p className="text-danger">{error}</p>
+                      {error === "Failed to verify device. Please try again." && (
+                        <div className="text-end">
+                          <Link className="forgot-link" to={route.registerTill}>
+                            Register Till?
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
                     <div className="col-12 d-flex align-items-center justify-content-between">
                       <div className="text-end">
                         <Link className="forgot-link" to={route.forgotPassword}>

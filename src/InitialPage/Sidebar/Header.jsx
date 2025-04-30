@@ -458,22 +458,15 @@ const Header = () => {
                 </div>
                 <hr className="m-0" />
                 <Link
-                  className="dropdown-item logout pb-0"
-                  to="/signIn"
-                  onClick={() => {
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("firstName");
-                    localStorage.removeItem("lastName");
-                    localStorage.removeItem("userRole");
-                    console.log("User logged out. Access token and user details removed.");
-                  }}
+                  className="dropdown-item"
+                  to={route.signin}
                 >
                   <ImageWithBasePath
                     src="assets/img/icons/log-out.svg"
                     alt="img"
                     className="me-2"
                   />
-                  Logout
+                  Log Out
                 </Link>
               </div>
             </div>
@@ -497,8 +490,11 @@ const Header = () => {
             <Link className="dropdown-item" to="generalsettings">
               Settings
             </Link>
-            <Link className="dropdown-item" to="signin">
-              Logout
+            <Link 
+              className="dropdown-item" 
+              to={route.signin}
+            >
+              Log Out
             </Link>
           </div>
         </div>

@@ -55,14 +55,28 @@ const AddUsers = ({ onUpdate }) => {
 
     const loadBranches = async () => {
         try {
-            const branches = await fetchBranches();
-            const formattedBranches = branches.map(branch => ({
-                value: branch.id,
-                label: branch.branchName
-            }));
-            setBranchOptions(formattedBranches);
+            const response = await fetchBranches(1, 100, true); // Get active branches
+            if (response && Array.isArray(response.payload)) {
+                const formattedBranches = response.payload
+                    .filter(branch => branch && branch.branchName)
+                    .map(branch => ({
+                        value: branch.id,
+                        label: branch.branchName
+                    }));
+                setBranchOptions(formattedBranches);
+            } else {
+                setBranchOptions([]);
+                console.error('Invalid branch data received:', response);
+            }
         } catch (error) {
             console.error('Error loading branches:', error);
+            setBranchOptions([]);
+            MySwal.fire({
+                title: 'Error',
+                text: 'Failed to load branches: ' + error.message,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
         }
     };
 
