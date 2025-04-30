@@ -107,3 +107,115 @@ export const loginDevice = async (deviceId) => {
         throw error;
     }
 };
+
+export const getAllPendingDevices = async () => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+        return null;
+    }
+
+    try {
+        console.log('%c 📤 Get All Pending Devices Request:', 'color: #2196F3; font-weight: bold;');
+        
+        const response = await axios.get(
+            `${BASE_BACKEND_URL}/deviceAuth/getAllPending`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log('%c ✅ Get All Pending Devices Response:', 'color: #4CAF50; font-weight: bold;', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('%c ❌ Get All Pending Devices Error:', 'color: #F44336; font-weight: bold;', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const getAllDevices = async () => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+        return null;
+    }
+
+    try {
+        console.log('%c 📤 Get All Devices Request:', 'color: #2196F3; font-weight: bold;');
+        
+        const response = await axios.get(
+            `${BASE_BACKEND_URL}/deviceAuth/getAll`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log('%c ✅ Get All Devices Response:', 'color: #4CAF50; font-weight: bold;', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('%c ❌ Get All Devices Error:', 'color: #F44336; font-weight: bold;', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const getDeviceByTillName = async (tillName) => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+        return null;
+    }
+
+    try {
+        console.log('%c 📤 Get Device By Till Name Request:', 'color: #2196F3; font-weight: bold;', { tillName });
+        
+        const response = await axios.get(
+            `${BASE_BACKEND_URL}/deviceAuth/getByTillName?tillName=${encodeURIComponent(tillName)}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log('%c ✅ Get Device By Till Name Response:', 'color: #4CAF50; font-weight: bold;', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('%c ❌ Get Device By Till Name Error:', 'color: #F44336; font-weight: bold;', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+export const getDeviceByTillId = async (tillId) => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+        return null;
+    }
+
+    try {
+        console.log('%c 📤 Get Device By Till ID Request:', 'color: #2196F3; font-weight: bold;', { tillId });
+        
+        const response = await axios.get(
+            `${BASE_BACKEND_URL}/deviceAuth/getByTillId?tillId=${tillId}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log('%c ✅ Get Device By Till ID Response:', 'color: #4CAF50; font-weight: bold;', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('%c ❌ Get Device By Till ID Error:', 'color: #F44336; font-weight: bold;', error.response?.data || error.message);
+        throw error;
+    }
+};

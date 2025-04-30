@@ -460,6 +460,7 @@ const Header = () => {
                 <Link
                   className="dropdown-item"
                   to={route.signin}
+                  onClick={() => { localStorage.removeItem('registeredDevice'); }}
                 >
                   <ImageWithBasePath
                     src="assets/img/icons/log-out.svg"

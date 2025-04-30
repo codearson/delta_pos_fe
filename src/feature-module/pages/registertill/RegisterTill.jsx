@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
-import { registerDevice } from "../../Api/DeviceAuthApi";
+import { registerDevice, getDeviceByTillName, getDeviceByTillId } from "../../Api/DeviceAuthApi";
 
 const RegisterTill = () => {
   const route = all_routes;
@@ -35,8 +35,34 @@ const RegisterTill = () => {
       }
 
       if (!tillName.trim()) {
-        setMessage("Please enter a Till Name");
+        setMessage("Please type Till Name");
         return;
+      }
+
+      // Check if till name already exists
+      try {
+        const existingTillByName = await getDeviceByTillName(tillName.trim());
+        if (existingTillByName?.status && existingTillByName?.responseDto) {
+          setMessage("Already Exist Try Another Name");
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        // If error occurs, continue with registration
+        console.log("No existing till found with this name");
+      }
+
+      // Check if device ID is already registered
+      try {
+        const existingTillById = await getDeviceByTillId(deviceId);
+        if (existingTillById?.status && existingTillById?.responseDto) {
+          setMessage("This Till Already Register Contact Admin");
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        // If error occurs, continue with registration
+        console.log("No existing till found with this device ID");
       }
 
       const deviceData = {
@@ -112,11 +138,15 @@ const RegisterTill = () => {
                       value={tillName}
                       onChange={(e) => setTillName(e.target.value)}
                       placeholder="Enter Till Name"
-                      required
                     />
                   </div>
+                  {message === "Please type Till Name" && (
+                    <div className="text-danger mt-1">
+                      {message}
+                    </div>
+                  )}
                 </div>
-                {message && (
+                {message && message !== "Please type Till Name" && (
                   <div className={`text-center mb-3 ${message.includes("success") ? "text-success" : "text-danger"}`}>
                     {message}
                   </div>
