@@ -71,7 +71,6 @@ const ProductDiscount = () => {
             : [],
         }));
         setAllDiscounts(normalizedData);
-        filterData(normalizedData, searchTerm);
       } else {
         setAllDiscounts([]);
         setDiscounts([]);
@@ -100,9 +99,13 @@ const ProductDiscount = () => {
     }
   };
 
+  useEffect(() => {
+    filterData(allDiscounts, searchTerm);
+  }, [allDiscounts, activeTab, showActive, searchTerm]);
+
   const filterData = (discountsData, query) => {
     let filteredData = discountsData.filter(discount =>
-      discount.productDiscountTypeDto?.type === activeTab
+      discount.productDiscountTypeDto?.type?.trim().toLowerCase() === activeTab.trim().toLowerCase()
     );
 
     if (activeTab === "Quantity") {
@@ -433,9 +436,11 @@ const ProductDiscount = () => {
             .join(', ');
         }
         if (!record.discount) return "N/A";
-        return record.productDiscountTypeDto?.type === "Percentage"
-          ? `${record.discount}%`
-          : `${priceSymbol} ${parseFloat(record.discount).toFixed(2)}`;
+        if (record.productDiscountTypeDto?.type === "Percentage") {
+          return `${record.discount}%`;
+        }
+        // For Cash
+        return `${priceSymbol} ${parseFloat(record.discount).toFixed(2)}`;
       },
       sorter: (a, b) => {
         if (a.productDiscountTypeDto?.type === "Quantity" && b.productDiscountTypeDto?.type === "Quantity") {
