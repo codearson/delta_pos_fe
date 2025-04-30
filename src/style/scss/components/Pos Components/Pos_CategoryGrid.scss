@@ -374,6 +374,12 @@
     }
   }
 
+  .pagination-center {
+    span {
+      color: #000000;
+    }
+  }
+
   .purchase-popup-overlay {
     position: fixed;
     top: 0;
@@ -939,6 +945,148 @@
           }
         }
       }
+    }
+  }
+}
+
+body.dark-mode {
+  .sales-popup-overlay {
+    background-color: rgba(0, 0, 0, 0.8); // Dark overlay background
+  }
+
+  .sales-popup {
+    background-color: #2d2d2d; // Dark background for the popup
+    color: #ffffff; // White text color
+
+    .sales-popup-title {
+      color: #ffffff; // White title color
+      border-bottom-color: #3b82f6; // Blue border for the title
+    }
+
+    .sales-table-container {
+      background-color: #1e1e1e; // Dark background for the table container
+      box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.1); // Light shadow for contrast
+    }
+
+    .sales-table {
+      th {
+        background-color: #3b82f6; // Blue background for table headers
+        color: #ffffff; // White text for table headers
+      }
+
+      tr {
+        background-color: #2d2d2d; // Dark background for table rows
+
+        &:hover {
+          background-color: #3b82f6; // Blue hover background for rows
+        }
+
+        &.even-row {
+          background-color: #2d2d2d; // Blue background for even rows
+        }
+
+        &.odd-row {
+          background-color: #2d2d2d; // Dark background for odd rows
+        }
+      }
+
+      td {
+        color: #ffffff; // White text for table cells
+        border-bottom-color: #3b82f6; // Blue border for table cells
+      }
+
+      .action-buttons {
+        .action-btn {
+          &.print-btn {
+            background-color: #f59e0b; // Orange background for print button
+            color: #ffffff; // White text for print button
+
+            &:hover {
+              background-color: #d97706; // Darker orange hover background
+            }
+          }
+
+          &.view-btn {
+            background-color: #3b82f6; // Blue background for view button
+            color: #ffffff; // White text for view button
+
+            &:hover {
+              background-color: #2563eb; // Darker blue hover background
+            }
+          }
+        }
+      }
+    }
+
+    .dropdown-details {
+      background-color: #1e1e1e; // Dark background for dropdown details
+      color: #ffffff; // White text for dropdown details
+
+      .details-section {
+        h6 {
+          color: #3b82f6; // Blue color for section headers
+        }
+      }
+
+      .details-table {
+        th {
+          background-color: #3b82f6; // Blue background for table headers
+          color: #ffffff; // White text for table headers
+        }
+
+        td {
+          color: #ffffff; // White text for table cells
+          border-color: #3b82f6; // Blue border for table cells
+        }
+
+        &.items-table {
+          tr:hover {
+            background-color: #3b82f6; // Blue hover background for items table
+          }
+        }
+
+        &.payment-table {
+          tr:hover {
+            background-color: #3b82f6; // Blue hover background for payment table
+          }
+        }
+
+        .no-data {
+          color: #6b7280; // Gray color for no data message
+        }
+      }
+    }
+
+    .sales-pagination {
+
+      .pagination-center {
+        .span {
+          color: #229b34; // Blue background for pagination buttons
+        }
+      
+      .pagination-btn {
+        background-color: #3b82f6; // Blue background for pagination buttons
+        color: #ffffff; // White text for pagination buttons
+
+        &:hover {
+          background-color: #2563eb; // Darker blue hover background
+        }
+
+        &:disabled {
+          background-color: #6b7280; // Gray background for disabled buttons
+          cursor: not-allowed;
+        }
+
+        &.close-btn {
+          background-color: #ef4444;
+          color: #ffffff; // Red background for close button
+
+          &:hover {
+            color: #ffffff; // Darker red hover background
+          }
+        }
+      }
+    }
     }
   }
 }
