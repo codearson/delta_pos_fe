@@ -4,7 +4,7 @@ import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 import { getAccessToken, getUserByEmail } from "../../Api/config";
-import { loginDevice } from "../../Api/DeviceAuthApi";
+import { loginDevice, getDeviceByTillId } from "../../Api/DeviceAuthApi";
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -98,6 +98,10 @@ const Signin = () => {
         if (approveStatus === "Approved" && loginStatus === "True") {
           return true;
         }
+        if (approveStatus === "Declined" && loginStatus === "False") {
+          setError("Your Till Verify is declined contact your Admin");
+          return false;
+        }
         setError("Device is not approved for login. Please contact administrator.");
         return false;
       } else {
@@ -179,6 +183,33 @@ const Signin = () => {
 
       // If ADMIN, skip device verification
       if (user.userRoleDto?.userRole !== "ADMIN") {
+        // Check device subscription status before device verification
+        if (deviceId) {
+          try {
+            const deviceStatus = await getDeviceByTillId(deviceId);
+            if (deviceStatus?.status && deviceStatus?.responseDto) {
+              const { approveStatus, loginStatus } = deviceStatus.responseDto;
+              if (approveStatus === "Approved" && loginStatus === "False") {
+                setError("Your till subscription is over contact your Admin");
+                setIsLoading(false);
+                return;
+              }
+              if (approveStatus === "Pending" && loginStatus === "False") {
+                setSuccess("Registration successful! waiting for admin approval. Please try again later.");
+                setIsLoading(false);
+                return;
+              }
+              if (approveStatus === "Declined" && loginStatus === "False") {
+                setError("Your till verify is declined contact your Admin");
+                setIsLoading(false);
+                return;
+              }
+            }
+          } catch (err) {
+            // If error, allow fallback to device verification
+            console.error('Error checking device subscription status:', err);
+          }
+        }
         // First verify device for non-admins
         const isDeviceVerified = await handleDeviceVerification();
         if (!isDeviceVerified) {
@@ -313,8 +344,8 @@ const Signin = () => {
                     </div>
                   )}
                   {error && (
-                    <div className="text-center mb-3">
-                      <p className="text-danger">{error}</p>
+                    <div className="alert alert-danger text-center mb-3">
+                      {error}
                       {error === "Failed to verify device. Please try again." && (
                         <div className="text-end">
                           <Link className="forgot-link" to={route.registerTill}>

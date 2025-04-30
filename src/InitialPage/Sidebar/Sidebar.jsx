@@ -1,12 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Scrollbars from "react-custom-scrollbars-2";
 import { Link, useLocation } from "react-router-dom";
-import { SidebarData } from "../../core/json/siderbar_data";
+import { getSidebarData } from "../../core/json/siderbar_data";
 import HorizontalSidebar from "./horizontalSidebar";
 import CollapsedSidebar from "./collapsedSidebar";
 
 const Sidebar = () => {
   const Location = useLocation();
+  const [sidebarData, setSidebarData] = useState(getSidebarData());
+
+  useEffect(() => {
+    // Re-render sidebar when user role changes
+    const handleStorageChange = () => {
+      setSidebarData(getSidebarData());
+    };
+
+    // Listen for changes to localStorage
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check for role changes on mount and when location changes
+    handleStorageChange();
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [Location.pathname]);
 
   const [subOpen, setSubopen] = useState("");
   const [subsidebar, setSubsidebar] = useState("");
@@ -34,7 +52,7 @@ const Sidebar = () => {
           <div className="sidebar-inner slimscroll">
             <div id="sidebar-menu" className="sidebar-menu">
               <ul>
-                {SidebarData?.map((mainLabel, index) => (
+                {sidebarData?.map((mainLabel, index) => (
                   <li className="submenu-open" key={index}>
                     <h6 className="submenu-hdr">{mainLabel?.label}</h6>
 

@@ -43,6 +43,7 @@ const Pos_Sidebar = ({ darkMode }) => {
     localStorage.removeItem("userId");
     localStorage.removeItem("branchId");
     localStorage.removeItem("deviceId");
+    localStorage.removeItem("registeredDevice");
     // Go directly to signin page
     navigate(route.signin);
   };
