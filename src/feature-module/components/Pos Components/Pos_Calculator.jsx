@@ -73,7 +73,6 @@ export const Pos_Calculator = ({
     .reduce((sum, method) => sum + method.amount, 0);
   const cardPayments = paymentMethods.filter((method) => method.type === "Card");
 
-  const totalDiscount = selectedItems.reduce((sum, item) => sum + (item.discount || 0), 0);
   const totalTax = isTaxEnabled ? selectedItems.reduce((sum, item) => {
     const itemPrice = item.originalPrice || item.price;
     const itemTotal = itemPrice * item.qty;
@@ -154,7 +153,7 @@ export const Pos_Calculator = ({
   const reversedDisplayItems = [...displayItems].reverse();
   
   // Calculate grand total (after discounts and including tax)
-  const grandTotal = totalValue - totalDiscount - manualDiscount - employeeDiscount + totalTax;
+  const grandTotal = totalValue - manualDiscount - employeeDiscount + totalTax;
   
   // Calculate total payments
   const totalPayments = cashTotal + cardPayments.reduce((sum, method) => sum + method.amount, 0);
@@ -252,7 +251,7 @@ export const Pos_Calculator = ({
         </div>
         <div className="summary-item">
           <span className="label">Discount</span>
-          <span className="value">{priceSymbol}{totalDiscount.toFixed(2)}</span>
+          <span className="value">{priceSymbol}{(manualDiscount + employeeDiscount).toFixed(2)}</span>
         </div>
         {manualDiscount > 0 && (
           <div className="summary-item">

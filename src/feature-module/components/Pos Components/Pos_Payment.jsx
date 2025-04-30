@@ -22,8 +22,9 @@ const Pos_Payment = ({
 
     // Calculate total tax
     const totalTax = selectedItems.reduce((sum, item) => {
-      const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
-      const itemTax = (item.total * itemTaxPercentage) / 100;
+      const itemPrice = item.originalPrice || item.price;
+      const itemTotal = itemPrice * item.qty;
+      const itemTax = (itemTotal * (item.taxDto?.taxPercentage || 0)) / 100;
       return sum + itemTax;
     }, 0);
 
@@ -31,7 +32,8 @@ const Pos_Payment = ({
     const grandTotal = totalValue - manualDiscount - employeeDiscount + totalTax;
 
     // If no amount entered, use the grand total
-    const amount = parseFloat(inputValue) || grandTotal;
+    const parsedInput = parseFloat(inputValue);
+    const amount = (!parsedInput || parsedInput <= 0) ? grandTotal : parsedInput;
 
     const existingPayments = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
     const remainingTotal = grandTotal - existingPayments;

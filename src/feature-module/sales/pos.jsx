@@ -24,6 +24,7 @@ import { getAllManagerToggles } from "../Api/ManagerToggle";
 import { fetchPayoutCategories } from "../Api/PayoutCategoryApi";
 import { savePayout } from "../Api/Payout.Api";
 import Swal from "sweetalert2";
+import { fetchProductDiscounts } from "../Api/productDiscountApi.js";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -106,8 +107,7 @@ const Pos = () => {
     if (isPaymentStarted) {
       const totalPaid = paymentMethods.reduce((sum, method) => sum + method.amount, 0);
       const totalTax = selectedItems.reduce((sum, item) => {
-        const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
-        const itemTax = (item.total * itemTaxPercentage) / 100;
+        const itemTax = ((item.originalPrice || item.price) * item.qty * (item.taxDto?.taxPercentage || 0)) / 100;
         return sum + itemTax;
       }, 0);
       const currentTotal = totalValue - manualDiscount - employeeDiscount + totalTax;
@@ -525,6 +525,7 @@ const Pos = () => {
       let originalPrice = pricePerUnit;
       let discountedPrice = pricePerUnit;
       let discount = 0;
+      let discountType = null;
       // Only set ageRestricted flag if the toggle is enabled
       let ageRestricted = isAgeRestrictionEnabled ? (productCategoryDto && productCategoryDto.agevalidation) : false;
 
@@ -543,6 +544,7 @@ const Pos = () => {
           price: pricePerUnit,
           originalPrice: originalPrice,
           discount: 0,
+          discountType: null,
           total: 0,
           ageRestricted: ageRestricted,
           taxDto: taxDto
@@ -550,6 +552,63 @@ const Pos = () => {
       }
 
       const itemIndex = existingItemIndex !== -1 ? existingItemIndex : newItems.length - 1;
+
+      try {
+        const discounts = await fetchProductDiscounts();
+        const activeDiscounts = discounts.filter(
+          (d) =>
+            d.productDto.id === id &&
+            d.isActive &&
+            (() => {
+              const endDate = new Date(d.endDate);
+              const nextDayMidnight = new Date(endDate);
+              nextDayMidnight.setDate(nextDayMidnight.getDate() + 1);
+              nextDayMidnight.setHours(0, 0, 0, 0);
+              return new Date() < nextDayMidnight;
+            })()
+        );
+
+        if (activeDiscounts.length > 0) {
+          if (activeDiscounts.some((d) => d.productDiscountTypeDto.type === "Quantity")) {
+            const quantityDiscounts = activeDiscounts
+              .filter((d) => d.productDiscountTypeDto.type === "Quantity")
+              .sort((a, b) => b.quantity - a.quantity);
+
+            let remainingQty = newQty;
+            let totalDiscount = 0;
+
+            for (const qd of quantityDiscounts) {
+              const discountQty = parseInt(qd.quantity);
+              const discountAmount = parseFloat(qd.discount);
+              while (remainingQty >= discountQty) {
+                totalDiscount += discountAmount;
+                remainingQty -= discountQty;
+              }
+            }
+
+            if (totalDiscount > 0) {
+              discount = totalDiscount / newQty;
+              discountType = "Quantity";
+              discountedPrice = pricePerUnit - discount;
+            }
+          } else {
+            const discountObj = activeDiscounts[0];
+            if (discountObj.productDiscountTypeDto.type === "Cash") {
+              discount = parseFloat(discountObj.discount);
+              discountType = "Cash";
+              discountedPrice = pricePerUnit - discount;
+            } else if (discountObj.productDiscountTypeDto.type === "Percentage") {
+              discount = (parseFloat(discountObj.discount) / 100) * pricePerUnit;
+              discountType = "Percentage";
+              discountedPrice = pricePerUnit - discount;
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching discounts:", error);
+        showNotification("Failed to fetch discounts.", "error");
+      }
+
       discountedPrice = Math.max(discountedPrice, 0);
       const total = newQty * discountedPrice;
 
@@ -558,7 +617,7 @@ const Pos = () => {
       let taxPercentage = 0;
       if (taxDto && taxDto.taxPercentage) {
         taxPercentage = taxDto.taxPercentage;
-        taxAmount = (total * taxPercentage) / 100;
+        taxAmount = ((newQty * pricePerUnit) * taxPercentage) / 100;
       }
 
       newItems[itemIndex] = {
@@ -566,6 +625,7 @@ const Pos = () => {
         price: discountedPrice,
         originalPrice: originalPrice,
         discount: discount * newQty,
+        discountType: discountType,
         total,
         taxAmount,
         taxPercentage,
@@ -829,7 +889,7 @@ const Pos = () => {
         console.warn("Branch not found with ID:", branchId);
       }
 
-      const usersResponse = await fetchUsers(1, 100, true);
+      const usersResponse = await fetchUsers();
       const user = usersResponse.payload.find((u) => u.id === userId);
       if (user) {
         setUserDetails({
@@ -864,14 +924,16 @@ const Pos = () => {
         combinedPaymentMethods.push({ type: "Card", amount: cardPayments });
       }
 
+      // Calculate total tax for the entire transaction
+      const totalTax = selectedItems.reduce((sum, item) => {
+        const itemTax = ((item.originalPrice || item.price) * item.qty * (item.taxDto?.taxPercentage || 0)) / 100;
+        return sum + itemTax;
+      }, 0);
+
       const transactionData = {
         status: "Completed",
         isActive: 1,
-        totalAmount: totalValue - manualDiscount - employeeDiscount + selectedItems.reduce((sum, item) => {
-          const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
-          const itemTax = (item.total * itemTaxPercentage) / 100;
-          return sum + itemTax;
-        }, 0),
+        totalAmount: totalValue - manualDiscount - employeeDiscount + totalTax,
         manualDiscount: manualDiscount,
         employeeDiscount: employeeDiscount,
         employeeDiscountPercentage: employeeDiscountPercentage,
@@ -881,17 +943,14 @@ const Pos = () => {
         customerDto: { id: customerId },
         userDto: { id: userId },
         balanceAmount: Math.abs(balance),
-        // Calculate total tax for the entire transaction
-        taxAmount: selectedItems.reduce((sum, item) => {
-          const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
-          const itemTax = (item.total * itemTaxPercentage) / 100;
-          return sum + itemTax;
-        }, 0),
+        taxAmount: totalTax,
         transactionDetailsList: selectedItems.map((item) => ({
           productDto: { id: item.id },
           quantity: item.qty,
           unitPrice: item.originalPrice || item.price,
-          discount: item.discount || 0
+          discount: item.discount || 0,
+          discountType: item.discountType,
+          taxDto: item.taxDto
         })),
         transactionPaymentMethod: combinedPaymentMethods.map((method) => ({
           paymentMethodDto: { id: method.type === "Cash" ? 1 : 2 },
@@ -917,13 +976,6 @@ const Pos = () => {
           showNotification("Warning: Transaction ID not found in API response.", "error");
         }
 
-        // Calculate total tax for display
-        const totalTax = selectedItems.reduce((sum, item) => {
-          const itemTaxPercentage = item.taxDto?.taxPercentage || 0;
-          const itemTax = (item.total * itemTaxPercentage) / 100;
-          return sum + itemTax;
-        }, 0);
-
         setLastTransaction({
           id: transactionId,
           transactionDetailsList: selectedItems.map((item) => ({
@@ -931,7 +983,9 @@ const Pos = () => {
             quantity: item.qty,
             unitPrice: item.price,
             discount: item.discount || 0,
+            discountType: item.discountType,
             originalPrice: item.originalPrice || item.price,
+            taxDto: item.taxDto
           })),
           totalAmount: totalValue - manualDiscount - employeeDiscount,
           taxAmount: totalTax,
@@ -1843,10 +1897,13 @@ const Pos = () => {
               <div className="bill-content">
                 <h2>Transaction Receipt</h2>
                 {(() => {
+                  // Calculate subtotal, total tax, and grand total using the same logic as the summary panel
+                  const subtotal = selectedItems.reduce((sum, item) => sum + item.total, 0);
                   const totalTax = selectedItems.reduce((sum, item) => {
-                    const itemTax = (item.total * (item.taxDto?.taxPercentage || 0)) / 100;
+                    const itemTax = ((item.originalPrice || item.price) * item.qty * (item.taxDto?.taxPercentage || 0)) / 100;
                     return sum + itemTax;
                   }, 0);
+                  const grandTotal = subtotal + totalTax - manualDiscount - employeeDiscount;
                   return (
                     <>
                       <p>
@@ -1854,7 +1911,7 @@ const Pos = () => {
                       </p>
                       {customerName && <p>Customer: {customerName}</p>}
                       <div className="bill-summary centered">
-                        <p>Subtotal: {priceSymbol}{totalValue.toFixed(2)}</p>
+                        <p>Subtotal: {priceSymbol}{subtotal.toFixed(2)}</p>
                         {manualDiscount > 0 && <p>Manual Discount: {priceSymbol}{manualDiscount.toFixed(2)}</p>}
                         {employeeDiscount > 0 && (
                           <p>
@@ -1863,7 +1920,7 @@ const Pos = () => {
                           </p>
                         )}
                         {totalTax > 0 && <p>Total Tax: {priceSymbol}{totalTax.toFixed(2)}</p>}
-                        <p>Grand Total: {priceSymbol}{(totalValue - manualDiscount - employeeDiscount + totalTax).toFixed(2)}</p>
+                        <p>Grand Total: {priceSymbol}{grandTotal.toFixed(2)}</p>
                         {paymentMethods.map((method) => (
                           <p key={method.type}>{method.type}: {priceSymbol}{method.amount.toFixed(2)}</p>
                         ))}
