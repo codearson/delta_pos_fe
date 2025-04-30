@@ -312,3 +312,62 @@ $dark-text: white;
     padding: 1rem;
   }
 }
+
+.dark-header {
+  .popup-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .popup {
+    background-color: #2d2d2d;
+    color: #ffffff;
+
+    .popup-title {
+      color: #ffffff;
+      border-bottom-color: #3b82f6;
+    }
+
+    .popup-label {
+      color: #ffffff;
+    }
+
+    .popup-input {
+      background-color: #1e1e1e;
+      color: #ffffff;
+      border-color: #3b82f6;
+
+      &::placeholder {
+        color: #6b7280;
+      }
+
+      &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+      }
+    }
+
+    .popup-error {
+      color: #ef4444;
+    }
+
+    .popup-buttons {
+      .popup-btn-cancel {
+        background-color: #6b7280;
+        color: #ffffff;
+
+        &:hover {
+          background-color: #4b5563;
+        }
+      }
+
+      .popup-btn-save {
+        background-color: #3b82f6;
+        color: #ffffff;
+
+        &:hover {
+          background-color: #2563eb;
+        }
+      }
+    }
+  }
+}

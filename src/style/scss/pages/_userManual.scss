@@ -101,6 +101,9 @@
   color: $dark-text-color; // Apply dark text color globally
   
   .header {
+    background-color: $dark-header-bg;
+    color: $dark-text-color;
+
     .nav.user-menu {
       .nav-item {
         &.has-arrow.main-drop {
@@ -137,6 +140,14 @@
             }
           }
         }
+      }
+    }
+
+    .theme-toggle-btn {
+      color: $dark-text-color;
+
+      &:hover {
+        color: $dark-hover-color;
       }
     }
   }
@@ -215,33 +226,150 @@
     color: $dark-text-color; // Ensure all text elements use the dark text color
   }
   
-  .header {
-    background-color: $dark-header-bg;
+  .page-wrapper {
+    .content {
+      background-color: $dark-bg-color;
+
+      .page-header {
+        background-color: $dark-card-bg;
     color: $dark-text-color;
 
-    .li.nav.user-menu.nav-item.nav-item-box {
-      background-color: $dark-card-bg; // Background for the nav item
-      color: white; // Text color
-      
+        .page-title {
+          h4, h6 {
+            color: $dark-text-color !important;
+          }
+        }
 
-      a {
-        color: $dark-text-color; // Link color
-        transition: all 0.3s ease;
+        .status-toggle-btns {
+          .btn-group {
+            .btn {
+              &.btn-outline-primary {
+                color: $dark-text-color;
+                border-color: $dark-border-color;
+
+                &:hover {
+                  background-color: $dark-border-color;
+                }
+              }
+
+              &.btn-primary.active {
+                background-color: $primary;
+                color: $white;
+              }
+            }
+          }
+        }
+
+        .table-top-head {
+          li {
+            a {
+              background-color: $dark-card-bg;
+              border-color: $dark-border-color;
+              color: $dark-text-color;
+
+              &:hover {
+                background-color: $dark-border-color;
+                color: $white;
+              }
+            }
+          }
+        }
+
+        .page-btn {
+          .btn-added {
+            background-color: $primary;
+            color: $white;
   
         &:hover {
-          color: $dark-hover-color; // Hover color
-          background-color: $dark-border-color; // Optional hover background
+              background-color: darken($primary, 5%);
+            }
+          }
         }
       }
-  }
-  .theme-toggle-btn {
-    color: $dark-text-color;
+
+      .table-list-card {
+        background-color: $dark-card-bg;
+        border-color: $dark-border-color;
+
+        .card-body {
+          background-color: $dark-card-bg;
+
+          .table-top {
+            .search-set {
+              .search-input {
+                input {
+                  background-color: $dark-sidebar-bg !important;
+                  color: $dark-text-color !important;
+                  border-color: $dark-border-color !important;
+
+                  &::placeholder {
+                    color: $dark-muted-text !important;
+                  }
+                }
+
+                .btn-searchset {
+                  background-color: $dark-sidebar-bg !important;
+                  border-color: $dark-border-color !important;
+
+                  i.feather-search {
+                    color: $dark-text-color !important;
+                    stroke: $dark-text-color !important;
+                  }
+                }
+              }
+
+              .select {
+                .css-13cymwt-control {
+                  background-color: $dark-sidebar-bg !important;
+                  border-color: $dark-border-color !important;
+                  color: $dark-text-color !important;
+
+                  .css-1dimb5e-singleValue {
+                    color: $dark-text-color !important;
+                  }
+                }
+
+                .css-1nmdiq5-menu {
+                  background-color: $dark-sidebar-bg !important;
+                  border-color: $dark-border-color !important;
+
+                  .css-1n6sfyn-MenuList {
+                    background-color: $dark-sidebar-bg !important;
+
+                    .css-d7l1ni-option {
+                      background-color: $dark-border-color !important;
+                      color: $dark-text-color !important;
+                    }
+
+                    .css-tr4s17-option {
+                      background-color: $dark-sidebar-bg !important;
+                      color: $dark-text-color !important;
 
     &:hover {
-      color: $dark-hover-color;
+                        background-color: $dark-border-color !important;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          .table-responsive {
+            .table {
+              background-color: $dark-card-bg;
+              color: $dark-text-color;
+
+              th, td {
+                border-color: $dark-border-color;
+              }
+            }
+          }
+        }
+      }
     }
   }
-}
+
 
   
 
@@ -298,21 +426,21 @@
 }
 
 .sidebar {
-  background-color: $dark-sidebar-bg;
-  color: $dark-text-color;
+  background-color: $dark-sidebar-bg !important;
+  color: $dark-text-color !important;
 
   #sidebar-menu {
     ul {
       li {
         &.submenu-open {
           .submenu-hdr {
-            color: $white !important; // Force white color for headers
+            color: $white !important;
           }
         }
 
         .submenu {
           a {
-            color: $white !important; // Force white color for all links
+            color: $white !important;
 
             &:hover {
               color: $dark-hover-color !important;
@@ -323,7 +451,7 @@
             }
 
             span {
-              color: $white !important; // Force white color for icons and text
+              color: $white !important;
             }
           }
         }
@@ -339,7 +467,6 @@
   }
 
   .btn {
-    background-color: $dark-accent-color;
     color: $dark-text-color;
 
     &:hover {
@@ -383,4 +510,446 @@
       color: $dark-text-color;
     }
   }
- }}
+ }
+
+  // Add product card styles
+  .card-body.add-product {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+
+    .accordion-item {
+      background-color: $dark-card-bg;
+      border-color: $dark-border-color;
+    }
+
+    .accordion-header {
+      background-color: $dark-card-bg;
+    }
+
+    .accordion-button {
+      background-color: $dark-card-bg;
+      color: $dark-text-color;
+      border-color: $dark-border-color;
+
+      &:not(.collapsed) {
+        background-color: $dark-card-bg;
+        color: $dark-text-color;
+      }
+
+      &:focus {
+        border-color: $dark-border-color;
+        box-shadow: none;
+      }
+    }
+
+    .accordion-body {
+      background-color: $dark-card-bg;
+      color: $dark-text-color;
+    }
+
+    h5, label, span {
+      color: $dark-text-color;
+    }
+
+    input, select, .form-control, .css-13cymwt-control {
+      background-color: $dark-sidebar-bg;
+      color: $dark-text-color;
+      border-color: $dark-border-color;
+
+      &::placeholder {
+        color: $dark-muted-text;
+      }
+    }
+
+    .css-1dimb5e-singleValue {
+      color: $dark-text-color;
+    }
+
+    .css-166bipr-Input, .css-qbdosj-Input {
+      color: $dark-text-color;
+    }
+
+    .css-1nmdiq5-menu, .css-1fdsijx-ValueContainer {
+      background-color: $dark-sidebar-bg;
+      color: $dark-text-color;
+    }
+
+    .css-1n6sfyn-MenuList {
+      background-color: $dark-sidebar-bg;
+    }
+
+    .css-d7l1ni-option {
+      background-color: $dark-border-color;
+      color: $dark-text-color;
+    }
+
+    .css-tr4s17-option {
+      background-color: $dark-sidebar-bg;
+      color: $dark-text-color;
+
+      &:hover {
+        background-color: $dark-border-color;
+      }
+    }
+
+    .addproduct-icon, .add-list, .add-newplus {
+      a, span {
+        color: $dark-text-color;
+      }
+    }
+  }
+
+  // Add product buttons
+  .btn-addproduct {
+    .btn-cancel {
+      background-color: $dark-border-color;
+      color: $dark-text-color;
+      border-color: $dark-border-color;
+
+      &:hover {
+        background-color: darken($dark-border-color, 5%);
+      }
+    }
+
+    .btn-submit {
+      background-color: $primary;
+      color: $white;
+
+      &:hover {
+        background-color: darken($primary, 5%);
+      }
+    }
+  }
+
+
+
+
+  // Modal styles for dark mode
+  .modal {
+    .modal-content {
+      background-color: $dark-card-bg;
+      border-color: $dark-border-color;
+      color: $dark-text-color;
+    }
+
+    .modal-header, .custom-modal-header {
+      background-color: $dark-card-bg;
+      border-color: $dark-border-color;
+      
+      .modal-title, .page-title h4 {
+        color: $dark-text-color;
+      }
+      
+      .close {
+        color: $dark-text-color;
+        background-color: transparent;
+        
+        span {
+          color: $dark-text-color;
+        }
+      }
+      
+      .btn-close {
+        color: $dark-text-color;
+        background-color: transparent;
+        filter: invert(1) grayscale(100%) brightness(200%);
+      }
+    }
+
+    .modal-body, .custom-modal-body {
+      background-color: $dark-card-bg;
+      color: $dark-text-color;
+      
+      label, .form-label {
+        color: $dark-text-color;
+      }
+      
+      input, select, textarea, .form-control {
+        background-color: $dark-sidebar-bg;
+        color: $dark-text-color;
+        border-color: $dark-border-color;
+        
+        &::placeholder {
+          color: $dark-muted-text;
+        }
+        
+        &:focus {
+          background-color: $dark-sidebar-bg;
+          color: $dark-text-color;
+          border-color: $primary;
+          box-shadow: 0 0 0 0.25rem rgba($primary, 0.25);
+        }
+      }
+      
+      .select2-container {
+        .select2-selection {
+          background-color: $dark-sidebar-bg;
+          border-color: $dark-border-color;
+          
+          .select2-selection__rendered {
+            color: $dark-text-color;
+          }
+        }
+      }
+      
+      .css-13cymwt-control, .css-1s2u09g-control {
+        background-color: $dark-sidebar-bg;
+        border-color: $dark-border-color;
+        
+        &:hover {
+          border-color: $dark-border-color;
+        }
+      }
+      
+      .css-1dimb5e-singleValue, .css-qc6sy-singleValue {
+        color: $dark-text-color;
+      }
+      
+      .css-166bipr-Input, .css-qbdosj-Input, .css-6j8wv5-Input {
+        color: $dark-text-color;
+      }
+      
+      .css-1nmdiq5-menu, .css-26l3qy-menu {
+        background-color: $dark-sidebar-bg;
+        border-color: $dark-border-color;
+        
+        .css-1n6sfyn-MenuList, .css-4ljt47-MenuList {
+          background-color: $dark-sidebar-bg;
+          
+          .css-d7l1ni-option, .css-1n7v3ny-option {
+            background-color: $dark-border-color;
+            color: $dark-text-color;
+          }
+          
+          .css-tr4s17-option, .css-9gakcf-option {
+            background-color: $dark-sidebar-bg;
+            color: $dark-text-color;
+            
+            &:hover {
+              background-color: $dark-border-color;
+            }
+          }
+        }
+      }
+      
+      .invalid-feedback {
+        color: lighten($danger, 20%);
+      }
+    }
+
+    .modal-footer, .modal-footer-btn {
+      background-color: $dark-card-bg;
+      border-color: $dark-border-color;
+      
+      .btn-primary, .btn-submit {
+        background-color: $primary;
+        color: $white;
+        border-color: $primary;
+        
+        &:hover {
+          background-color: darken($primary, 5%);
+          border-color: darken($primary, 5%);
+        }
+      }
+      
+      .btn-secondary, .btn-cancel {
+        background-color: $dark-border-color;
+        color: $dark-text-color;
+        border-color: $dark-border-color;
+        
+        &:hover {
+          background-color: darken($dark-border-color, 5%);
+          border-color: darken($dark-border-color, 5%);
+        }
+      }
+    }
+  }
+  
+  // SweetAlert2 styling for dark mode
+  .swal2-popup {
+    background-color: $dark-card-bg !important;
+    color: $dark-text-color !important;
+    
+    .swal2-title, .swal2-html-container {
+      color: $dark-text-color !important;
+    }
+    
+    .swal2-input, .swal2-textarea, .swal2-select {
+      background-color: $dark-sidebar-bg !important;
+      color: $dark-text-color !important;
+      border-color: $dark-border-color !important;
+    }
+    
+    .swal2-confirm, .swal2-cancel {
+      &.btn-primary {
+        background-color: $primary !important;
+      }
+      
+      &.btn-danger {
+        background-color: $danger !important;
+      }
+      
+      &.btn-success {
+        background-color: $success !important;
+      }
+      
+      &.btn-secondary {
+        background-color: $dark-border-color !important;
+        color: $dark-text-color !important;
+      }
+    }
+  }
+
+  // Custom modal styles for category list
+  .modal-dialog-centered.custom-modal-two {
+    .modal-content {
+      background-color: $dark-card-bg;
+      
+      .page-wrapper-new {
+        background-color: $dark-card-bg;
+        
+        .content {
+          background-color: $dark-card-bg;
+        }
+      }
+    }
+  }
+  
+  // Form toggle switch in dark mode
+  .form-check.form-switch {
+    .form-check-input {
+      background-color: $dark-border-color;
+      border-color: $dark-border-color;
+      
+      &:checked {
+        background-color: $primary;
+        border-color: $primary;
+      }
+      
+      &:focus {
+        box-shadow: 0 0 0 0.25rem rgba($primary, 0.25);
+      }
+    }
+  }
+  
+  // Active/Inactive toggle buttons
+  .status-toggle-btns {
+    .btn-group {
+      .btn {
+        &.btn-outline-primary {
+          color: $primary;
+          border-color: $primary;
+          background-color: transparent;
+          
+          &:hover {
+            background-color: rgba($primary, 0.1);
+          }
+        }
+        
+        &.btn-primary.active {
+          background-color: $primary;
+          border-color: $primary;
+          color: $white;
+        }
+      }
+    }
+  }
+
+  // Ant Design Table styles for dark mode
+  .ant-table-wrapper {
+    .ant-spin-nested-loading {
+      .ant-spin-container {
+        .ant-table {
+          background-color: $dark-card-bg;
+          color: $dark-text-color;
+
+          .ant-table-container {
+            .ant-table-content {
+              background-color: $dark-card-bg;
+
+              .ant-table-thead {
+                .ant-table-cell {
+                  background-color: $dark-card-bg;
+                  color: $dark-text-color;
+                  border-color: $dark-border-color;
+                }
+              }
+
+              .ant-table-tbody {
+                .ant-table-row {
+                  background-color: $dark-card-bg;
+                  color: $dark-text-color;
+
+                  .ant-table-cell {
+                    background-color: $dark-card-bg;
+                    color: $dark-text-color;
+                    border-color: $dark-border-color;
+                  }
+
+                  &:hover {
+                    .ant-table-cell {
+                      background-color: $dark-border-color;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .darkmode.pagination {
+    background-color: $dark-card-bg;
+    .ant-pagination-item,
+    .ant-pagination-prev,
+    .ant-pagination-next,
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      a {
+        color: greenyellow;
+      }
+
+      &:hover {
+        background-color: $dark-border-color;
+      }
+    }
+
+    .ant-pagination-item-active {
+      background-color: $dark-border-color;
+      a {
+        color: $dark-text-color;
+      }
+    }
+  }
+
+  .ant-pagination.ant-table-pagination.ant-table-pagination-right {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+
+    .ant-pagination-item,
+    .ant-pagination-prev,
+    .ant-pagination-next,
+    .ant-pagination-jump-prev,
+    .ant-pagination-jump-next {
+      a {
+        color: $dark-text-color;
+      }
+
+      &:hover {
+        background-color: $dark-border-color;
+        a {
+          color: $dark-text-color;
+        }
+      }
+    }
+
+    .ant-pagination-item-active {
+      background-color: $dark-border-color;
+      a {
+        color: $dark-text-color;
+      }
+    }
+  }
+  }
