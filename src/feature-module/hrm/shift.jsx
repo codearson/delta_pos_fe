@@ -38,10 +38,12 @@ const Shift = () => {
   const [users, setUsers] = useState([]);
   const [holidays, setHolidays] = useState([]);
   const [modal, setModal] = useState({ show: false, date: null, mode: 'add', shift: null });
+  const [emailModal, setEmailModal] = useState({ show: false, startDate: '', endDate: '' });
   const [form, setForm] = useState({ startTime: '', endTime: '', userId: '', status: 'Active' });
   const [loading, setLoading] = useState(false);
-    const dispatch = useDispatch();
-    const data = useSelector((state) => state.toggle_header);
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.toggle_header);
+  const [exportModal, setExportModal] = useState({ show: false, startDate: '', endDate: '', type: '' });
 
   useEffect(() => {
     fetchUsers(1, 100, true).then(res => setUsers(res.payload || []));
@@ -133,106 +135,8 @@ const Shift = () => {
     try {
       if (modal.mode === 'add') {
         await saveShift(payload);
-        const user = users.find(u => u.id === Number(form.userId));
-        if (user && user.emailAddress) {
-          const to = user.emailAddress;
-          const subject = 'New Shift Assigned';
-          const today = dayjs().format('YYYY-MM-DD');
-          const userFutureShifts = [
-            ...shifts.filter(s => s.userDto?.id === user.id && s.date >= today),
-            {
-              date: modal.date,
-              startTime: form.startTime,
-              endTime: form.endTime,
-              status: 'Active',
-            },
-          ];
-          const uniqueShifts = userFutureShifts.filter((shift, idx, arr) =>
-            idx === arr.findIndex(s => s.date === shift.date && s.startTime === shift.startTime && s.endTime === shift.endTime)
-          );
-          const newShiftDetails =
-            `Date:        ${modal.date}\n` +
-            `Start Time:  ${formatTime12(form.startTime)}\n` +
-            `End Time:    ${formatTime12(form.endTime)}\n`;
-          const header = 'Date        Start Time   End Time';
-          const divider = '--------------------------------------------';
-          const tableRows = uniqueShifts
-            .sort((a, b) => a.date.localeCompare(b.date))
-            .map(_shift =>
-              `${_shift.date.padEnd(11)}  ${formatTime12(_shift.startTime).padEnd(10)}  ${formatTime12(_shift.endTime).padEnd(10)}`
-            ).join('\n');
-          let managerName = '';
-          if (payload.managerDto && users.length > 0) {
-            const manager = users.find(u => u.id === payload.managerDto.id);
-            if (manager) managerName = manager.firstName;
-          }
-          const shopName = localStorage.getItem('shopName') || '';
-          const body =
-            `Dear ${user.firstName},\n\n` +
-            `You have been assigned a new shift.\n\n` +
-            newShiftDetails +
-            `\nHere are your upcoming shifts:\n\n` +
-            `${header}\n${divider}\n${tableRows}\n\n` +
-            `If you require any further assistance or would like to discuss any details regarding your shift, please feel free to contact ${managerName ? managerName : 'your manager'} directly.\n\n` +
-            `Warm regards,\n${shopName}`;
-          try {
-            await sendEmail(to, subject, body);
-          } catch (err) {
-            // Optionally alert or log email error
-          }
-        }
       } else if (modal.mode === 'edit') {
         await updateShift({ ...payload, id: modal.shift.id });
-        // Send email to user if any detail changed
-        const user = users.find(u => u.id === Number(form.userId));
-        if (user && user.emailAddress) {
-          let subject = 'Shift Updated';
-          const oldShift = modal.shift;
-          const changes = [];
-          if (oldShift.startTime !== form.startTime) {
-            changes.push(`Start Time: ${formatTime12(oldShift.startTime)} → ${formatTime12(form.startTime)}`);
-          }
-          if (oldShift.endTime !== form.endTime) {
-            changes.push(`End Time: ${formatTime12(oldShift.endTime)} → ${formatTime12(form.endTime)}`);
-          }
-          if (oldShift.status !== form.status) {
-            changes.push(`Status: ${oldShift.status} → ${form.status}`);
-          }
-          let managerName = '';
-          if (payload.managerDto && users.length > 0) {
-            const manager = users.find(u => u.id === payload.managerDto.id);
-            if (manager) managerName = manager.firstName;
-          }
-          const shopName = localStorage.getItem('shopName') || '';
-          let body = '';
-          if (oldShift.status !== form.status && form.status === 'Cancelled') {
-            subject = 'Shift Cancelled';
-            body =
-              `Dear ${user.firstName},\n\n` +
-              `Your shift scheduled for:\n\n` +
-              `Date:        ${modal.date}\n` +
-              `Start Time:  ${formatTime12(form.startTime)}\n` +
-              `End Time:    ${formatTime12(form.endTime)}\n\n` +
-              `has been cancelled.\n\n` +
-              `If you require any further assistance or would like to discuss any details regarding your shift, please feel free to contact ${managerName ? managerName : 'your manager'} directly.\n\n` +
-              `Warm regards,\n${shopName}`;
-          } else if (changes.length > 0) {
-            body =
-              `Dear ${user.firstName},\n\n` +
-              `Your shift has been updated. The following details were changed:\n\n` +
-              changes.join('\n') +
-              `\n\nDate: ${modal.date}\n\n` +
-              `If you require any further assistance or would like to discuss any details regarding your shift, please feel free to contact ${managerName ? managerName : 'your manager'} directly.\n\n` +
-              `Warm regards,\n${shopName}`;
-          }
-          if (body) {
-            try {
-              await sendEmail(user.emailAddress, subject, body);
-            } catch (err) {
-              // Optionally alert or log email error
-            }
-          }
-        }
       }
       closeModal();
     } catch (err) {
@@ -241,140 +145,237 @@ const Shift = () => {
     setLoading(false);
   };
 
-  const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-      doc.text('Shift List', 14, 15);
-      const tableColumn = ['Date', 'Start Time', 'End Time', 'User', 'Status'];
-      const tableRows = shifts.map(shift => [
-        shift.date,
-        shift.startTime,
-        shift.endTime,
-        (shift.userDto?.firstName || '') + ' ' + (shift.userDto?.lastName || ''),
-        shift.status
-      ]);
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 20,
-        theme: 'grid',
-        styles: { fontSize: 10 },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-      });
-      doc.save('shift_list.pdf');
-    } catch (error) {
-      alert('Failed to generate PDF: ' + error.message);
+  const handleEmailSubmit = async () => {
+    if (!emailModal.startDate || !emailModal.endDate) {
+      alert('Please select both start and end dates');
+      return;
     }
-  };
 
-  const exportToExcel = () => {
+    setLoading(true);
     try {
-      if (!shifts || shifts.length === 0) {
-        alert('There are no shifts to export');
-        return;
+      const startDate = dayjs(emailModal.startDate);
+      const endDate = dayjs(emailModal.endDate);
+      // Get all dates in the range
+      const allDates = [];
+      let d = startDate;
+      while (d.isSameOrBefore(endDate, 'day')) {
+        allDates.push(d.format('YYYY-MM-DD'));
+        d = d.add(1, 'day');
       }
-      const worksheetData = shifts.map(shift => ({
-        'Date': shift.date,
-        'Start Time': shift.startTime,
-        'End Time': shift.endTime,
-        'User': (shift.userDto?.firstName || '') + ' ' + (shift.userDto?.lastName || ''),
-        'Status': shift.status
-      }));
-      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Shifts');
-      worksheet['!cols'] = [
-        { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 10 }
-      ];
-      XLSX.writeFile(workbook, 'shift_list.xlsx');
-    } catch (error) {
-      alert('Failed to export to Excel: ' + error.message);
+      // Get shifts for the selected date range
+      const result = await getShiftsByDateRange(emailModal.startDate, emailModal.endDate);
+      // Group shifts by user, filter out cancelled
+      const shiftsByUser = result.filter(s => s.status !== 'Cancelled').reduce((acc, shift) => {
+        const userId = shift.userDto?.id;
+        if (!acc[userId]) acc[userId] = [];
+        acc[userId].push(shift);
+        return acc;
+      }, {});
+      // Get all user IDs with shifts or in users list
+      const userIds = Array.from(new Set([
+        ...Object.keys(shiftsByUser),
+        ...users.map(u => String(u.id))
+      ]));
+      // Send email to each user with their shifts or off days
+      for (const userId of userIds) {
+        const user = users.find(u => u.id === Number(userId));
+        if (user && user.emailAddress) {
+          const userShifts = (shiftsByUser[userId] || []);
+          // Map date to shift for quick lookup
+          const shiftMap = {};
+          userShifts.forEach(shift => { shiftMap[shift.date] = shift; });
+          // Build table rows for all dates
+          const tableRows = allDates.map(date => {
+            const shift = shiftMap[date];
+            if (shift) {
+              return `${date.padEnd(11)}  ${formatTime12(shift.startTime).padEnd(10)}  ${formatTime12(shift.endTime).padEnd(10)}`;
+            } else {
+              return `${date.padEnd(11)}  Off day`;
+            }
+          }).join('\n');
+          let managerName = '';
+          const managerId = localStorage.getItem('userId');
+          if (managerId && users.length > 0) {
+            const manager = users.find(u => u.id === Number(managerId));
+            if (manager) managerName = manager.firstName;
+          }
+          const shopName = localStorage.getItem('shopName') || '';
+          const header = 'Date        Start Time   End Time';
+          const divider = '--------------------------------------------';
+          const subject = `Your Shifts (${startDate.format('MMM D')} - ${endDate.format('MMM D')})`;
+          const body =
+            `Dear ${user.firstName},\n\n` +
+            `Here are your shifts for the period ${startDate.format('MMM D')} - ${endDate.format('MMM D')}:\n\n` +
+            `${header}\n${divider}\n${tableRows}\n\n` +
+            `If you require any further assistance or would like to discuss any details regarding your shifts, please feel free to contact ${managerName ? managerName : 'your manager'} directly.\n\n` +
+            `Warm regards,\n${shopName}`;
+          try {
+            await sendEmail(user.emailAddress, subject, body);
+          } catch (err) {
+            console.error('Error sending email:', err);
+          }
+        }
+      }
+      setEmailModal({ show: false, startDate: '', endDate: '' });
+    } catch (err) {
+      alert('Error sending emails');
     }
+    setLoading(false);
   };
 
-    const renderTooltip = (props) => (
+  function getAllDatesInRange(start, end) {
+    const dates = [];
+    let d = dayjs(start);
+    const endD = dayjs(end);
+    while (d.isSameOrBefore(endD, 'day')) {
+      dates.push(d.format('YYYY-MM-DD'));
+      d = d.add(1, 'day');
+    }
+    return dates;
+  }
+
+  const handleExport = async () => {
+    if (!exportModal.startDate || !exportModal.endDate) {
+      alert('Please select both start and end dates');
+      return;
+    }
+    console.log('Exporting from', exportModal.startDate, 'to', exportModal.endDate);
+    const allDates = getAllDatesInRange(exportModal.startDate, exportModal.endDate);
+    const result = await getShiftsByDateRange(exportModal.startDate, exportModal.endDate);
+    const shiftMap = {};
+    result.filter(s => s.status !== 'Cancelled').forEach(shift => {
+      const userId = shift.userDto?.id;
+      if (!shiftMap[userId]) shiftMap[userId] = {};
+      shiftMap[userId][shift.date] = shift;
+    });
+    const matrixRows = users.map(user => {
+      const row = [user.firstName + ' ' + user.lastName];
+      allDates.forEach(date => {
+        const shift = shiftMap[user.id]?.[date];
+        if (shift) {
+          row.push(`${formatTime12(shift.startTime)} - ${formatTime12(shift.endTime)}`);
+        } else {
+          row.push('Off day');
+        }
+      });
+      return row;
+    });
+    const headerRow = ['User'];
+    allDates.forEach(date => headerRow.push(dayjs(date).format('MMM DD')));
+    if (exportModal.type === 'pdf') {
+      try {
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        doc.text('Shifts', 14, 15);
+        autoTable(doc, {
+          head: [headerRow],
+          body: matrixRows,
+          startY: 20,
+          theme: 'grid',
+          styles: { fontSize: 12, cellPadding: 3, cellWidth: 'auto' },
+          headStyles: { fontSize: 13, fillColor: [41, 128, 185], textColor: 255 },
+          margin: { left: 8, right: 8 },
+          tableWidth: 'wrap',
+        });
+        doc.save('shift.pdf');
+      } catch (error) {
+        alert('Failed to generate PDF: ' + error.message);
+      }
+    } else if (exportModal.type === 'excel') {
+      try {
+        const worksheetData = [headerRow, ...matrixRows];
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Shifts');
+        worksheet['!cols'] = [
+          { wch: 20 },
+          ...allDates.map(() => ({ wch: 18 }))
+        ];
+        XLSX.writeFile(workbook, 'shift.xlsx');
+      } catch (error) {
+        alert('Failed to export to Excel: ' + error.message);
+      }
+    }
+    setExportModal({ show: false, startDate: '', endDate: '', type: '' });
+  };
+
+  const renderTooltip = (props) => (
     <Tooltip id="pdf-tooltip" {...props}>Pdf</Tooltip>
-    );
-    const renderExcelTooltip = (props) => (
+  );
+  const renderExcelTooltip = (props) => (
     <Tooltip id="excel-tooltip" {...props}>Excel</Tooltip>
-    );
-    const renderRefreshTooltip = (props) => (
+  );
+  const renderRefreshTooltip = (props) => (
     <Tooltip id="refresh-tooltip" {...props}>Refresh</Tooltip>
-    );
-    const renderCollapseTooltip = (props) => (
+  );
+  const renderCollapseTooltip = (props) => (
     <Tooltip id="collapse-tooltip" {...props}>Collapse</Tooltip>
   );
 
-  const getAvailableUsersForDate = (date) => {
-    const dateObj = dayjs(date);
-    const approvedHolidays = holidays.filter(h => h.status === 'Approved');
-    return users.filter(user => {
-      const hasLeave = approvedHolidays.some(h =>
-        h.userDto?.id === user.id &&
-        dayjs(h.startDate).isSameOrBefore(dateObj, 'day') &&
-        dayjs(h.endDate).isSameOrAfter(dateObj, 'day')
-      );
-      return !hasLeave;
-        });
-    };
-
-    return (
+  return (
     <div className="page-wrapper" style={{ minHeight: '100vh', background: '#f8f9fa' }}>
       <div className="content" style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
         {/* Page Header */}
-                    <div className="page-header">
-                        <div className="add-item d-flex">
-                            <div className="page-title">
+        <div className="page-header">
+          <div className="add-item d-flex align-items-center">
+            <div className="page-title">
               <h4 className="calendar-title">Shift Calendar</h4>
               <h6 className="calendar-subtitle">Manage Your Shifts</h6>
-                            </div>
-                        </div>
-                        <ul className="table-top-head">
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderTooltip}>
-                <Link to="#" onClick={exportToPDF}>
-                                        <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
-                <Link to="#" onClick={exportToExcel}>
-                                        <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
+            </div>
+            <Button
+              variant="primary"
+              className="ms-4"
+              style={{ minWidth: 140 }}
+              onClick={() => setEmailModal({ show: true, startDate: '', endDate: '' })}
+            >
+              Send Email
+            </Button>
+          </div>
+          <ul className="table-top-head">
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip}>
+                <Link to="#" onClick={() => setExportModal({ show: true, startDate: '', endDate: '', type: 'pdf' })}>
+                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderExcelTooltip}>
+                <Link to="#" onClick={() => setExportModal({ show: true, startDate: '', endDate: '', type: 'excel' })}>
+                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderRefreshTooltip}>
                 <Link to="#" onClick={fetchShiftsData}>
-                    <RotateCcw />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                            <li>
-                                <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
-                                    <Link
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="top"
-                                        id="collapse-header"
-                                        className={data ? "active" : ""}
+                  <RotateCcw />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderCollapseTooltip}>
+                <Link
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  id="collapse-header"
+                  className={data ? "active" : ""}
                   onClick={() => { dispatch(setToogleHeader(!data)) }}
-                                    >
-                                        <ChevronUp />
-                                    </Link>
-                                </OverlayTrigger>
-                            </li>
-                        </ul>
-                        </div>
+                >
+                  <ChevronUp />
+                </Link>
+              </OverlayTrigger>
+            </li>
+          </ul>
+        </div>
         {/* End Page Header */}
         <div className="calendar-header">
           <Button variant="outline-primary" onClick={prevMonth}>{'<'}</Button>
           <h4 style={{ margin: 0 }}>{currentMonth.format('MMMM YYYY')}</h4>
           <Button variant="outline-primary" onClick={nextMonth}>{'>'}</Button>
-                    </div>
+        </div>
         <div className="calendar-weekdays">
           {weekDays.map(d => <div key={d} className="calendar-weekday-label">{d}</div>)}
-                            </div>
+        </div>
         <div className="calendar-grid">
           {days.map((date, idx) => {
             const isThisMonth = date.format('YYYY-MM') === thisMonth;
@@ -399,47 +400,47 @@ const Shift = () => {
                     .slice()
                     .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''))
                     .map(shift => {
-                    // Status logic
-                    let status = shift.status;
-                    let statusLabel = status;
-                    let shiftClass = '';
-                    let statusLabelClass = 'shift-status-label';
-                    if (status === 'Cancelled') {
-                      shiftClass = 'shift-cancelled';
-                      statusLabel = 'Cancelled';
-                      statusLabelClass += ' status-cancelled';
-                    } else if (status === 'Active') {
-                      if (dayjs(shift.date).isBefore(dayjs(), 'day')) {
+                      // Status logic
+                      let status = shift.status;
+                      let statusLabel = status;
+                      let shiftClass = '';
+                      let statusLabelClass = 'shift-status-label';
+                      if (status === 'Cancelled') {
+                        shiftClass = 'shift-cancelled';
+                        statusLabel = 'Cancelled';
+                        statusLabelClass += ' status-cancelled';
+                      } else if (status === 'Active') {
+                        if (dayjs(shift.date).isBefore(dayjs(), 'day')) {
+                          shiftClass = 'shift-completed';
+                          statusLabel = 'Completed';
+                          statusLabelClass += ' status-completed';
+                        } else {
+                          shiftClass = 'shift-active';
+                          statusLabel = 'Active';
+                        }
+                      } else if (status === 'Completed') {
                         shiftClass = 'shift-completed';
                         statusLabel = 'Completed';
                         statusLabelClass += ' status-completed';
-                      } else {
-                        shiftClass = 'shift-active';
-                        statusLabel = 'Active';
                       }
-                    } else if (status === 'Completed') {
-                      shiftClass = 'shift-completed';
-                      statusLabel = 'Completed';
-                      statusLabelClass += ' status-completed';
-                    }
-                    // Prevent update for past days
-                    const shiftIsPast = dayjs(shift.date).isBefore(dayjs(), 'day');
-                    return (
-                      <div
-                        className={`shift-item ${shiftClass}`}
-                        key={shift.id}
-                        onClick={() => !shiftIsPast && openEditModal(shift)}
-                        style={shiftIsPast ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
-                        title={shiftIsPast ? 'Cannot update past shifts' : 'Update shift'}
-                      >
-                        <span className={statusLabelClass}>{statusLabel}</span>
-                        {formatTime12(shift.startTime)} - {formatTime12(shift.endTime)} <br />
-                        {shift.userDto?.firstName || ''}
-                      </div>
-                    );
-                  })}
+                      // Prevent update for past days
+                      const shiftIsPast = dayjs(shift.date).isBefore(dayjs(), 'day');
+                      return (
+                        <div
+                          className={`shift-item ${shiftClass}`}
+                          key={shift.id}
+                          onClick={() => !shiftIsPast && openEditModal(shift)}
+                          style={shiftIsPast ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
+                          title={shiftIsPast ? 'Cannot update past shifts' : 'Update shift'}
+                        >
+                          <span className={statusLabelClass}>{statusLabel}</span>
+                          {formatTime12(shift.startTime)} - {formatTime12(shift.endTime)} <br />
+                          {shift.userDto?.firstName || ''}
+                        </div>
+                      );
+                    })}
                 </div>
-            </div>
+              </div>
             );
           })}
         </div>
@@ -483,9 +484,28 @@ const Shift = () => {
                   disabled={modal.mode === 'edit'}
                 >
                   <option value="">Select User</option>
-                  {getAvailableUsersForDate(modal.date).map(u => (
-                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-                  ))}
+                  {users.map(u => {
+                    const dateObj = dayjs(modal.date);
+                    const leave = holidays.find(h =>
+                      h.userDto?.id === u.id &&
+                      h.status === 'Approved' &&
+                      dayjs(h.startDate).isSameOrBefore(dateObj, 'day') &&
+                      dayjs(h.endDate).isSameOrAfter(dateObj, 'day')
+                    );
+                    if (leave) {
+                      return (
+                        <option key={u.id} value={u.id} disabled>
+                          {u.firstName} {u.lastName} (On Leave: {leave.startDate} to {leave.endDate})
+                        </option>
+                      );
+                    } else {
+                      return (
+                        <option key={u.id} value={u.id}>
+                          {u.firstName} {u.lastName}
+                        </option>
+                      );
+                    }
+                  })}
                 </Form.Select>
               </Form.Group>
               {/* Status dropdown only for update */}
@@ -509,9 +529,82 @@ const Shift = () => {
             </Modal.Footer>
           </Form>
         </Modal>
+        {/* Email Modal */}
+        <Modal show={emailModal.show} onHide={() => setEmailModal({ show: false, startDate: '', endDate: '' })} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Send Shift Emails</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label>Start Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={emailModal.startDate}
+                  onChange={(e) => setEmailModal(prev => ({ ...prev, startDate: e.target.value }))}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>End Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={emailModal.endDate}
+                  onChange={(e) => setEmailModal(prev => ({ ...prev, endDate: e.target.value }))}
+                  required
+                />
+              </Form.Group>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setEmailModal({ show: false, startDate: '', endDate: '' })}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleEmailSubmit} disabled={loading}>
+              Send Emails
+            </Button>
+          </Modal.Footer>
+        </Modal>
+        {/* Export Modal */}
+        <Modal show={exportModal.show} onHide={() => setExportModal({ show: false, startDate: '', endDate: '', type: '' })} centered>
+          <Modal.Header closeButton>
+            <Modal.Title>Export Shifts ({exportModal.type === 'pdf' ? 'PDF' : 'Excel'})</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form>
+              <Form.Group className="mb-3">
+                <Form.Label>Start Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={exportModal.startDate}
+                  onChange={e => setExportModal(prev => ({ ...prev, startDate: e.target.value }))}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>End Date</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={exportModal.endDate}
+                  onChange={e => setExportModal(prev => ({ ...prev, endDate: e.target.value }))}
+                  required
+                />
+              </Form.Group>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setExportModal({ show: false, startDate: '', endDate: '', type: '' })}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleExport} disabled={!exportModal.startDate || !exportModal.endDate}>
+              Export
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </div>
     </div>
   );
 };
 
 export default Shift;
+
