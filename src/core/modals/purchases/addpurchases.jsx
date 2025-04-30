@@ -27,7 +27,27 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
       }
     };
     loadProducts();
+    
+    // Add event listener for modal hidden event to reset form
+    const modalElement = document.getElementById('add-units');
+    if (modalElement) {
+      modalElement.addEventListener('hidden.bs.modal', resetForm);
+    }
+    
+    // Clean up event listener on component unmount
+    return () => {
+      if (modalElement) {
+        modalElement.removeEventListener('hidden.bs.modal', resetForm);
+      }
+    };
   }, []);
+  
+  const resetForm = () => {
+    setFormData(initialFormState);
+    setErrors({});
+    setProductName("");
+    setProductStatus("");
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -77,11 +97,10 @@ const AddPurchases = ({ onSave, purchases = [] }) => {
   const handleAddSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onSave(formData);
-      setFormData(initialFormState);
-      setErrors({});
-      setProductName("");
-      setProductStatus("");
+      onSave({
+        ...formData,
+        productName: productName !== "Product not found or inactive" ? productName : null
+      });
       document.querySelector("#add-units .close").click();
     }
   };

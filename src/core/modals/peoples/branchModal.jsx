@@ -232,6 +232,8 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
     try {
       if (selectedBranch) {
         await onUpdate(formData);
+        // Close modal before showing success message
+        document.getElementById('edit-branch').querySelector('[data-bs-dismiss="modal"]').click();
         MySwal.fire({
           title: 'Success!',
           text: 'Branch updated successfully',
@@ -240,6 +242,8 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
         });
       } else {
         await onSave(formData);
+        // Close modal before showing success message
+        document.getElementById('add-branch').querySelector('[data-bs-dismiss="modal"]').click();
         MySwal.fire({
           title: 'Success!',
           text: 'Branch created successfully',
@@ -248,8 +252,16 @@ const BranchModal = ({ onSave, onUpdate, selectedBranch }) => {
         });
       }
 
-      // Close modal logic...
-      // Reset form logic...
+      // Reset form
+      setFormData({
+        branchName: '',
+        branchCode: '',
+        address: '',
+        contactNumber: '',
+        emailAddress: '',
+        countryDto: null,
+        shopDetailsDto: null
+      });
       
     } catch (error) {
       MySwal.fire({
