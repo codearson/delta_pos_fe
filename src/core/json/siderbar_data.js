@@ -180,7 +180,7 @@ export const SidebarData = [
           // { label: "Employees", link: "/employees-grid", icon:  <Icon.Users />,showSubRoute: false },
           // { label: "Departments", link: "/department-grid", icon:  <Icon.User />,showSubRoute: false },
           // { label: "Designations", link: "/designation", icon:  <Icon.UserCheck />,showSubRoute: false },
-          // { label: "Shifts", link: "/shift", icon: <Icon.Shuffle />,showSubRoute: false },
+          { label: "Shifts", link: "/shift", icon: <Icon.Shuffle />,showSubRoute: false },
         //   { label: "Attendance", link: "#", icon: <Icon.Clock />,showSubRoute: false, submenu: true,
           
         //   submenuItems: [

@@ -806,7 +806,8 @@ const Pos = () => {
     let shopDetailsId = 1;
 
     try {
-      const branches = await fetchBranches();
+      const branchesResponse = await fetchBranches();
+      const branches = branchesResponse.responseDto?.payload || [];
       const branch = branches.find((b) => b.id === branchId);
       if (branch) {
         setBranchDetails({
