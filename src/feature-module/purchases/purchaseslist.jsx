@@ -14,6 +14,8 @@ import { fetchPurchases, savePurchase, deleteAllPurchases } from "../Api/purchas
 import AddPurchases from "../../core/modals/purchases/addpurchases";
 import "../../style/scss/pages/_categorylist.scss";
 
+const tillName = localStorage.getItem("tillName");
+
 const PurchasesList = () => {
     const dispatch = useDispatch();
     const data = useSelector((state) => state.toggle_header);
@@ -226,6 +228,7 @@ const PurchasesList = () => {
               </div>
               <div class="receipt-details">
                 <p>Date: ${formattedDate}</p>
+                <p>Till Name: ${tillName}</p>
                 <p>Purchase List</p>
               </div>
               <div class="divider"></div>

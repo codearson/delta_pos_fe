@@ -93,6 +93,17 @@ const Pos = () => {
   const [ageVerifiedForTransaction, setAgeVerifiedForTransaction] = useState(false);
   const [isAgeRestrictionEnabled, setIsAgeRestrictionEnabled] = useState(false);
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
+  const tillName = localStorage.getItem("tillName");
+  const firstName = localStorage.getItem("firstName");
+  const lastName = localStorage.getItem("lastName");
+  // const email = localStorage.getItem("email");
+  // const userId = localStorage.getItem("userId");
+  // const branchId = localStorage.getItem("branchId");
+  const branchName = localStorage.getItem("branchName");
+  const branchCode = localStorage.getItem("branchCode");
+  const branchAddress = localStorage.getItem("branchAddress");
+  const branchContact = localStorage.getItem("branchContact");
+  const shopName = localStorage.getItem("shopName");
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -867,7 +878,7 @@ const Pos = () => {
 
     try {
       const branchesResponse = await fetchBranches();
-      const branches = branchesResponse.responseDto?.payload || [];
+      const branches = branchesResponse.payload || [];
       const branch = branches.find((b) => b.id === branchId);
       if (branch) {
         setBranchDetails({
@@ -1089,15 +1100,16 @@ const Pos = () => {
         </head>
         <body>
           <div class="receipt-header">
-            <h2>${branchDetails.shopName}</h2>
-            <p>${branchDetails.branchName}</p>
-            <p>Branch Code: ${branchDetails.branchCode}</p>
-            <p>Address: ${branchDetails.address}</p>
-            <p>Contact: ${branchDetails.contactNumber || 'N/A'}</p>
+            <h2>${shopName}</h2>
+            <p>${branchName}</p>
+            <p>Branch Code: ${branchCode}</p>
+            <p>Address: ${branchAddress}</p>
+            <p>Contact: ${branchContact || 'N/A'}</p>
           </div>
           <div class="receipt-details">
             <p>Date: ${formattedDate}</p>
-            <p>Cashier: ${userDetails.firstName} ${userDetails.lastName || ""}</p>
+            <p>Till Name: ${tillName}</p>
+            <p>Cashier: ${firstName} ${lastName || ""}</p>
             ${customerName ? `<p>Customer: ${customerName}</p>` : "<p>Customer: Local Customer</p>"}
             <p>Transaction ID: ${formattedTransactionId}</p>
           </div>
@@ -1274,6 +1286,7 @@ const Pos = () => {
             </div>
             <div class="receipt-details">
               <p>Date: ${formattedDate}</p>
+              <p>Till Name: ${tillName}</p>
               <p>Cashier: ${firstName} ${lastName}</p>
               ${lastTransaction.customerDto?.name ? `<p>Customer: ${lastTransaction.customerDto.name}</p>` : ""}
               <p>Transaction ID: ${formattedTransactionId}</p>
@@ -1741,6 +1754,7 @@ const Pos = () => {
           </div>
           <div class="receipt-details">
             <p>Date: ${payoutDate}</p>
+            <p>Till Name: ${tillName}</p>
             <p>Cashier: ${cashierName}</p>
           </div>
           <div class="divider"></div>
