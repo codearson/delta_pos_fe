@@ -24,6 +24,7 @@ const LowStock = () => {
   const [searchQueryOut, setSearchQueryOut] = useState("");
   const [activeTab, setActiveTab] = useState("low");
   const [isLoading, setIsLoading] = useState(true);
+  const tillName = localStorage.getItem("tillName");
 
   const MySwal = withReactContent(Swal);
 
@@ -351,6 +352,7 @@ const LowStock = () => {
             </div>
             <div class="receipt-details">
               <p>Date: ${currentDate}</p>
+              <p>Till Name: ${tillName}</p>
               <p>${title}</p>
             </div>
             <div class="divider"></div>
