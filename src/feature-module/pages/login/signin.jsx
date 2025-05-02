@@ -1,4 +1,3 @@
-// Signin.js
 import React, { useState, useEffect } from "react";
 import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link, useNavigate } from "react-router-dom";
@@ -207,41 +206,50 @@ const Signin = () => {
         }
       }
 
+      // Check device authentication status
+      const deviceAuthStatus = await getManagerToggleByName("Device Authentication");
+      const isDeviceAuthEnabled = deviceAuthStatus?.status && 
+                                deviceAuthStatus?.responseDto?.length > 0 && 
+                                deviceAuthStatus.responseDto[0].adminActive;
+
       // If ADMIN, skip device verification
       if (user.userRoleDto?.userRole !== "ADMIN") {
-        // Check device subscription status before device verification
-        if (deviceId) {
-          try {
-            const deviceStatus = await getDeviceByTillId(deviceId);
-            if (deviceStatus?.status && deviceStatus?.responseDto) {
-              const { approveStatus, loginStatus, tillName } = deviceStatus.responseDto;
-              localStorage.setItem('tillName', tillName || '');
-              if (approveStatus === "Approved" && loginStatus === "False") {
-                setError("Your till subscription is over contact your Admin");
-                setIsLoading(false);
-                return;
+        // Only proceed with device verification if device authentication is enabled
+        if (isDeviceAuthEnabled) {
+          // Check device subscription status before device verification
+          if (deviceId) {
+            try {
+              const deviceStatus = await getDeviceByTillId(deviceId);
+              if (deviceStatus?.status && deviceStatus?.responseDto) {
+                const { approveStatus, loginStatus, tillName } = deviceStatus.responseDto;
+                localStorage.setItem('tillName', tillName || '');
+                if (approveStatus === "Approved" && loginStatus === "False") {
+                  setError("Your till subscription is over contact your Admin");
+                  setIsLoading(false);
+                  return;
+                }
+                if (approveStatus === "Pending" && loginStatus === "False") {
+                  setSuccess("Registration successful! waiting for admin approval. Please try again later.");
+                  setIsLoading(false);
+                  return;
+                }
+                if (approveStatus === "Declined" && loginStatus === "False") {
+                  setError("Your till verify is declined contact your Admin");
+                  setIsLoading(false);
+                  return;
+                }
               }
-              if (approveStatus === "Pending" && loginStatus === "False") {
-                setSuccess("Registration successful! waiting for admin approval. Please try again later.");
-                setIsLoading(false);
-                return;
-              }
-              if (approveStatus === "Declined" && loginStatus === "False") {
-                setError("Your till verify is declined contact your Admin");
-                setIsLoading(false);
-                return;
-              }
+            } catch (err) {
+              // If error, allow fallback to device verification
+              console.error('Error checking device subscription status:', err);
             }
-          } catch (err) {
-            // If error, allow fallback to device verification
-            console.error('Error checking device subscription status:', err);
           }
-        }
-        // First verify device for non-admins
-        const isDeviceVerified = await handleDeviceVerification();
-        if (!isDeviceVerified) {
-          setIsLoading(false);
-          return;
+          // First verify device for non-admins
+          const isDeviceVerified = await handleDeviceVerification();
+          if (!isDeviceVerified) {
+            setIsLoading(false);
+            return;
+          }
         }
       }
 
