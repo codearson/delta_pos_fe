@@ -167,3 +167,53 @@ export const getAllProductsPage = async (pageNumber = 1, pageSize = 10, status =
     return null;
   }
 };
+
+export const getProductsByCategoryName = async (pageNumber = 1, pageSize = 10, categoryName, status = '') => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      console.error("No access token found. Please log in.");
+      return null;
+    }
+
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/product/getByProductCategoryName?pageNumber=${pageNumber}&pageSize=${pageSize}&categoryName=${categoryName}&status=${status}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching products by category:", error.response?.status, error.response?.data);
+    return null;
+  }
+};
+
+export const getProductsByTaxPercentage = async (pageNumber = 1, pageSize = 10, taxPercentage, status = '') => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+      console.error("No access token found. Please log in.");
+      return null;
+    }
+
+    const response = await axios.get(
+      `${BASE_BACKEND_URL}/product/getByTaxPercentage?pageNumber=${pageNumber}&pageSize=${pageSize}&taxPercentage=${taxPercentage}&status=${status}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching products by tax percentage:", error.response?.status, error.response?.data);
+    return null;
+  }
+};

@@ -8,7 +8,7 @@ import { all_routes } from "../../Router/all_routes";
 import Select from "react-select";
 import { Link } from "react-router-dom";
 import Table from "../../core/pagination/datatable";
-import { getAllProductsPage, updateProductStatus } from '../Api/productApi';
+import { getAllProductsPage, updateProductStatus, getProductsByCategoryName, getProductsByTaxPercentage } from '../Api/productApi';
 import { fetchProductCategories } from '../Api/ProductCategoryApi';
 import { fetchTaxes } from '../Api/TaxApi';
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
@@ -99,10 +99,19 @@ const ProductList = () => {
       fetchTaxes()
     ]);
 
+    // Get all products to determine which categories and taxes are in use
+    const allProductsResponse = await getAllProductsPage(1, 1000, showActive ? 'true' : 'false');
+    const allProducts = allProductsResponse?.responseDto?.payload || [];
+
+    // Create sets of used category IDs and tax percentages
+    const usedCategoryIds = new Set(allProducts.map(p => p.productCategoryDto?.id));
+    const usedTaxPercentages = new Set(allProducts.map(p => p.taxDto?.taxPercentage));
+
     const formattedCategories = categoriesData
       .filter(category => 
         category.productCategoryName?.toLowerCase() !== 'custom' &&
-        category.productCategoryName?.toLowerCase() !== 'non scan'
+        category.productCategoryName?.toLowerCase() !== 'non scan' &&
+        usedCategoryIds.has(category.id)
       )
       .map(category => ({
         value: category.id,
@@ -111,9 +120,9 @@ const ProductList = () => {
     setCategories(formattedCategories);
 
     const formattedTaxes = taxesData
-      .filter(tax => tax.isActive === true)
+      .filter(tax => tax.isActive === true && usedTaxPercentages.has(tax.taxPercentage))
       .map(tax => ({
-        value: tax.id,
+        value: tax.taxPercentage,
         label: `${tax.taxPercentage}%`
       }));
     setTaxes(formattedTaxes);
@@ -211,17 +220,46 @@ const ProductList = () => {
     }
   };
 
-  const handleFilterChange = (selected, filterType) => {
-    if (filterType === 'category') {
-      setSelectedCategory(selected);
-    } else {
-      setSelectedTax(selected);
+  const handleFilterChange = async (selected, filterType) => {
+    try {
+      setIsLoading(true);
+      if (filterType === 'category') {
+        setSelectedCategory(selected);
+        if (selected) {
+          const response = await getProductsByCategoryName(currentPage, pageSize, selected.label, showActive ? 'true' : 'false');
+          if (response?.responseDto) {
+            setProducts(response.responseDto.payload);
+            setTotalRecords(response.responseDto.totalRecords);
+          }
+        } else {
+          await loadProductsData();
+        }
+      } else {
+        setSelectedTax(selected);
+        if (selected) {
+          const response = await getProductsByTaxPercentage(currentPage, pageSize, selected.value, showActive ? 'true' : 'false');
+          if (response?.responseDto) {
+            setProducts(response.responseDto.payload);
+            setTotalRecords(response.responseDto.totalRecords);
+          }
+        } else {
+          await loadProductsData();
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching filtered data:', error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to fetch filtered products",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    filterData(searchQuery, filterType === 'category' ? selected : selectedCategory,
-      filterType === 'tax' ? selected : selectedTax);
   };
 
-  const filterData = (query, categoryFilter, taxFilter) => {
+  const filterData = (query) => {
     let filteredData = [...allProducts];
     
     if (query.trim() !== '') {
@@ -235,25 +273,13 @@ const ProductList = () => {
         );
     }
 
-    if (categoryFilter) {
-        filteredData = filteredData.filter(product =>
-            product.productCategoryDto?.id === categoryFilter.value
-        );
-    }
-
-    if (taxFilter) {
-        filteredData = filteredData.filter(product =>
-            product.taxDto?.id === taxFilter.value
-        );
-    }
-
     setProducts(filteredData);
   };
 
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    filterData(query, selectedCategory, selectedTax);
+    filterData(query);
   };
 
   const handlePageChange = (page) => {
