@@ -348,11 +348,11 @@ const AdminSettings = () => {
     }
   };
 
-  const handleCloseModal = (e) => {
+  const handleCloseAddToggleModal = (e) => {
     e.preventDefault();
-    setShowUpdateToggleModal(false);
-    setEditingToggle(null);
-    setEditedAction('');
+    setShowAddToggleModal(false);
+    setNewToggleAction('');
+    setToggleActionError('');
   };
 
   const handleEditTillName = () => {
@@ -669,6 +669,13 @@ const AdminSettings = () => {
     return 'default-card';
   };
 
+  const handleCloseUpdateModal = (e) => {
+    e.preventDefault();
+    setShowUpdateToggleModal(false);
+    setEditingToggle(null);
+    setEditedAction('');
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content">
@@ -962,7 +969,13 @@ const AdminSettings = () => {
               <div className="custom-modal">
                 <div className="custom-modal-header">
                   <h4>Add New Toggle</h4>
-                  <button className="custom-modal-close" onClick={handleCloseModal}>&times;</button>
+                  <button 
+                    type="button"
+                    className="custom-modal-close" 
+                    onClick={handleCloseAddToggleModal}
+                  >
+                    &times;
+                  </button>
                 </div>
                 <div className="custom-modal-body">
                   <div className="mb-3">
@@ -997,13 +1010,18 @@ const AdminSettings = () => {
                 </div>
                 <div className="custom-modal-footer">
                   <button 
+                    type="button"
                     className="custom-save-btn" 
                     onClick={handleAddToggle}
                     disabled={!!toggleActionError}
                   >
                     Save
                   </button>
-                  <button className="custom-cancel-btn" onClick={handleCloseModal}>
+                  <button 
+                    type="button"
+                    className="custom-cancel-btn" 
+                    onClick={handleCloseAddToggleModal}
+                  >
                     Cancel
                   </button>
                 </div>
@@ -1022,7 +1040,7 @@ const AdminSettings = () => {
                   <button 
                     type="button"
                     className="custom-modal-close" 
-                    onClick={handleCloseModal}
+                    onClick={handleCloseUpdateModal}
                   >
                     &times;
                   </button>
@@ -1078,7 +1096,7 @@ const AdminSettings = () => {
                   <button 
                     type="button"
                     className="custom-cancel-btn" 
-                    onClick={handleCloseModal}
+                    onClick={handleCloseUpdateModal}
                   >
                     Close
                   </button>
