@@ -655,7 +655,7 @@ const AdminSettings = () => {
     if (['manual discount', 'employee discount'].includes(normalizedAction)) return 'discount';
     if (normalizedAction === 'add customer') return 'customer';
     if (normalizedAction === 'non scan product') return 'non-scan';
-    if (normalizedAction === 'minimam banking') return 'banking';
+    if (normalizedAction === 'minimum banking') return 'banking';
     if (normalizedAction === 'tax') return 'tax';
     if (normalizedAction === 'under maintenance') return 'maintenance';
 
@@ -778,12 +778,15 @@ const AdminSettings = () => {
               {/* Other Toggles - Now showing all toggles without pagination */}
               {managerToggles
                 .sort((a, b) => {
-                  // Always put "Minimam Banking" first
-                  if (a.action === "Minimam Banking") return -1;
-                  if (b.action === "Minimam Banking") return 1;
+                  // Always put "Minimum Banking" first
+                  if (a.action === "Minimum Banking") return -1;
+                  if (b.action === "Minimum Banking") return 1;
                   // Then put "Under Maintenance" second
                   if (a.action === "Under Maintenance") return -1;
                   if (b.action === "Under Maintenance") return 1;
+                  // Then put "Device Authentication" third
+                  if (a.action === "Device Authentication") return -1;
+                  if (b.action === "Device Authentication") return 1;
                   return 0;
                 })
                 .map((toggle) => (
@@ -794,7 +797,7 @@ const AdminSettings = () => {
                         <div>
                           <h6 className="card-title mb-0">{toggle.action}</h6>
                           <p className="card-description">
-                            {toggle.action?.toLowerCase().includes('minimam banking')
+                            {toggle.action?.toLowerCase().includes('minimum banking')
                               ? 'Set minimum banking amount for transactions'
                               : toggle.action?.toLowerCase().includes('age validation') 
                               ? 'Enable age verification for age-restricted products'
@@ -812,7 +815,7 @@ const AdminSettings = () => {
                           </p>
                         </div>
                         <div className="d-flex align-items-center gap-4">
-                          {toggle.action !== "Under Maintenance" && toggle.action !== "Minimam Banking" && (
+                          {toggle.action !== "Under Maintenance" && toggle.action !== "Minimum Banking" && toggle.action !== "Device Authentication" && (
                             <div className="toggle-wrapper">
                               <span className="toggle-label">Manager</span>
                               <label className="toggle-switch">
@@ -825,7 +828,20 @@ const AdminSettings = () => {
                               </label>
                             </div>
                           )}
-                          {toggle.action !== "Minimam Banking" && (
+                          {toggle.action !== "Minimum Banking" && toggle.action !== "Device Authentication" && (
+                            <div className="toggle-wrapper">
+                              <span className="toggle-label">Admin</span>
+                              <label className="toggle-switch">
+                                <input
+                                  type="checkbox"
+                                  checked={toggle.adminActive}
+                                  onChange={() => handleToggleChange(toggle.id, toggle.adminActive)}
+                                />
+                                <span className="toggle-slider"></span>
+                              </label>
+                            </div>
+                          )}
+                          {toggle.action === "Device Authentication" && (
                             <div className="toggle-wrapper">
                               <span className="toggle-label">Admin</span>
                               <label className="toggle-switch">
