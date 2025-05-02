@@ -952,4 +952,216 @@
       }
     }
   }
+
+  // Admin Settings specific styles
+  .admin-settings-modal-root {
+    .custom-modal-overlay {
+      background: rgba(18, 24, 36, 0.4);
+    }
+
+    .custom-modal {
+      background: $dark-card-bg;
+      border-color: $dark-border-color;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+      .custom-modal-header {
+        background: darken($dark-card-bg, 3%);
+        border-color: $dark-border-color;
+
+        h4 {
+          color: $dark-text-color;
+        }
+
+        .custom-modal-close {
+          color: $dark-text-color;
+          &:hover {
+            color: $danger;
+          }
+        }
+      }
+
+      .custom-modal-body {
+        label {
+          color: $dark-text-color;
+        }
+
+        .custom-select {
+          background: $dark-sidebar-bg;
+          border-color: $dark-border-color;
+          color: $dark-text-color;
+
+          &:focus {
+            border-color: $primary;
+            background: darken($dark-sidebar-bg, 3%);
+          }
+
+          option {
+            background: $dark-sidebar-bg;
+            color: $dark-text-color;
+          }
+        }
+
+        .form-control {
+          &.is-invalid {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: #dc3545;
+            color: #dc3545;
+
+            &::placeholder {
+              color: rgba(220, 53, 69, 0.6);
+            }
+
+            &:focus {
+              box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+              border-color: #dc3545;
+            }
+          }
+        }
+
+        .invalid-feedback {
+          color: #dc3545;
+          font-size: 0.875rem;
+          margin-top: 0.25rem;
+          display: block;
+        }
+      }
+
+      .custom-modal-footer {
+        background: darken($dark-card-bg, 3%);
+        border-color: $dark-border-color;
+      }
+    }
+  }
+
+  // Toggle Card Styles in Dark Mode
+  .card {
+    &.age-validation,
+    &.discount,
+    &.customer,
+    &.non-scan,
+    &.banking,
+    &.tax,
+    &.maintenance,
+    &.default-card {
+      background: $dark-card-bg;
+      border-color: $dark-border-color;
+
+      .card-body {
+        background: $dark-card-bg;
+
+        .card-title {
+          color: $dark-text-color;
+        }
+
+        .card-description {
+          color: darken($dark-text-color, 15%);
+        }
+      }
+    }
+  }
+
+  // Toggle Switch Styles in Dark Mode
+  .toggle-wrapper {
+    .toggle-label {
+      color: $dark-text-color;
+    }
+
+    .toggle-switch {
+      .toggle-slider {
+        background-color: #dc3545;
+
+        &:before {
+          background-color: $white;
+        }
+      }
+
+      input:checked + .toggle-slider {
+        background-color: #28a745;
+      }
+    }
+  }
+
+  // Status Badge Styles in Dark Mode
+  .admin-status-badge {
+    &.pending {
+      background: rgba(255, 193, 7, 0.15);
+      color: #ffc107;
+      border-color: rgba(255, 193, 7, 0.3);
+    }
+    &.approved {
+      background: rgba(40, 167, 69, 0.15);
+      color: #28a745;
+      border-color: rgba(40, 167, 69, 0.3);
+    }
+    &.declined {
+      background: rgba(220, 53, 69, 0.15);
+      color: #dc3545;
+      border-color: rgba(220, 53, 69, 0.3);
+    }
+  }
+
+  // Table Styles in Dark Mode
+  .responsive-table-wrapper {
+    .ant-table {
+      background: $dark-card-bg;
+
+      .ant-table-thead > tr > th {
+        background: darken($dark-card-bg, 3%);
+        color: $dark-text-color;
+        border-color: $dark-border-color;
+      }
+
+      .ant-table-tbody > tr > td {
+        background: $dark-card-bg;
+        color: $dark-text-color;
+        border-color: $dark-border-color;
+      }
+
+      .ant-table-tbody > tr:hover > td {
+        background: darken($dark-card-bg, 5%);
+      }
+    }
+  }
+
+  // Pagination in Dark Mode
+  .ant-pagination {
+    .ant-pagination-item {
+      background: $dark-card-bg;
+      border-color: $dark-border-color;
+
+      a {
+        color: $dark-text-color;
+      }
+
+      &:hover {
+        border-color: $primary;
+        a {
+          color: $primary;
+        }
+      }
+
+      &.ant-pagination-item-active {
+        background: $primary;
+        border-color: $primary;
+        
+        a {
+          color: $white;
+        }
+      }
+    }
+
+    .ant-pagination-prev,
+    .ant-pagination-next {
+      button {
+        background: $dark-card-bg;
+        border-color: $dark-border-color;
+        color: $dark-text-color;
+
+        &:hover {
+          border-color: $primary;
+          color: $primary;
+        }
+      }
+    }
+  }
   }

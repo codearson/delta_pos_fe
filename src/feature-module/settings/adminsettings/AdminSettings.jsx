@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { getAllPendingDevices, approveDevice, declineDevice, getAllDevices, blockDevice } from '../../Api/DeviceAuthApi';
+import { getAllPendingDevices, approveDevice, declineDevice, getAllDevices, blockDevice, updateTillName } from '../../Api/DeviceAuthApi';
+import { getAllManagerToggles, updateManagerToggleAdminStatus, saveManagerToggle, updateManagerToggleStatus, updateManagerToggle } from '../../Api/ManagerToggle';
 import Table from "../../../core/pagination/datatable";
-import { Edit, RotateCcw, ChevronUp } from "feather-icons-react/build/IconComponents";
+import { Edit, RotateCcw, ChevronUp, PlusCircle } from "feather-icons-react/build/IconComponents";
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import { Link } from 'react-router-dom';
@@ -9,9 +10,14 @@ import ImageWithBasePath from '../../../core/img/imagewithbasebath';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import Swal from 'sweetalert2';
 import './AdminSetting.scss';
+import { useDispatch, useSelector } from "react-redux";
+import { setToogleHeader } from "../../../core/redux/action";
 
 const AdminSettings = () => {
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.toggle_header);
   const [pendingDevices, setPendingDevices] = useState([]);
   const [allDevices, setAllDevices] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -23,11 +29,150 @@ const AdminSettings = () => {
   const [pendingDevicesError, setPendingDevicesError] = useState(false);
   const [allDevicesError, setAllDevicesError] = useState(false);
   const [isPendingEdit, setIsPendingEdit] = useState(false);
+  const [managerToggles, setManagerToggles] = useState([]);
+  const [showAddToggleModal, setShowAddToggleModal] = useState(false);
+  const [newToggleAction, setNewToggleAction] = useState('');
+  const [toggleActionError, setToggleActionError] = useState('');
+  const [isEditingTillName, setIsEditingTillName] = useState(false);
+  const [editedTillName, setEditedTillName] = useState('');
+  const [showUpdateToggleModal, setShowUpdateToggleModal] = useState(false);
+  const [editingToggle, setEditingToggle] = useState(null);
+  const [editedAction, setEditedAction] = useState('');
 
   useEffect(() => {
     fetchPendingDevices();
     fetchAllDevices();
+    fetchManagerToggles();
   }, []);
+
+  const fetchManagerToggles = async () => {
+    try {
+      const response = await getAllManagerToggles();
+      if (response && response.status) {
+        setManagerToggles([...response.responseDto].reverse());
+      }
+    } catch (error) {
+      console.error('Error fetching manager toggles:', error);
+    }
+  };
+
+  const handleToggleChange = async (id, currentStatus) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to change this admin toggle status?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!',
+        cancelButtonText: 'No, cancel',
+        customClass: {
+          container: 'swal-container-class',
+          popup: 'swal-popup-class',
+          header: 'swal-header-class',
+          title: 'swal-title-class',
+          closeButton: 'swal-close-button-class',
+          icon: 'swal-icon-class',
+          image: 'swal-image-class',
+          content: 'swal-content-class',
+          input: 'swal-input-class',
+          actions: 'swal-actions-class',
+          confirmButton: 'swal-confirm-button-class',
+          cancelButton: 'swal-cancel-button-class',
+          footer: 'swal-footer-class'
+        },
+        backdrop: true,
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+        allowEnterKey: true,
+        focusConfirm: false
+      });
+
+      if (result.isConfirmed) {
+        const newStatus = !currentStatus;
+        await updateManagerToggleAdminStatus(id, newStatus);
+        setManagerToggles(prevToggles => 
+          prevToggles.map(toggle => 
+            toggle.id === id ? { ...toggle, adminActive: newStatus } : toggle
+          )
+        );
+        Swal.fire({
+          title: "Success!",
+          text: "Admin toggle status has been updated successfully.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Error updating toggle status:', error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update admin toggle status: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+    }
+  };
+
+  const handleToggleStatusChange = async (id, currentStatus) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to change this manager toggle status?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!',
+        cancelButtonText: 'No, cancel',
+        customClass: {
+          container: 'swal-container-class',
+          popup: 'swal-popup-class',
+          header: 'swal-header-class',
+          title: 'swal-title-class',
+          closeButton: 'swal-close-button-class',
+          icon: 'swal-icon-class',
+          image: 'swal-image-class',
+          content: 'swal-content-class',
+          input: 'swal-input-class',
+          actions: 'swal-actions-class',
+          confirmButton: 'swal-confirm-button-class',
+          cancelButton: 'swal-cancel-button-class',
+          footer: 'swal-footer-class'
+        },
+        backdrop: true,
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+        allowEnterKey: true,
+        focusConfirm: false
+      });
+
+      if (result.isConfirmed) {
+        const newStatus = !currentStatus;
+        await updateManagerToggleStatus(id, newStatus);
+        fetchManagerToggles(); // Refresh the data
+        Swal.fire({
+          title: "Success!",
+          text: "Manager toggle status has been updated successfully.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Error updating manager toggle status:', error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update manager toggle status: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+    }
+  };
 
   const fetchPendingDevices = async () => {
     try {
@@ -56,7 +201,8 @@ const AdminSettings = () => {
     }
   };
 
-  const handleEditClick = (device, fromPending = false) => {
+  const handleEditClick = (device, fromPending = false, e) => {
+    e.preventDefault(); // Prevent default anchor behavior
     setSelectedDevice(device);
     setAccess('');
     setModalVisible(true);
@@ -71,29 +217,249 @@ const AdminSettings = () => {
     setModalVisible(false);
     setSelectedDevice(null);
     setAccess('');
+    setIsEditingTillName(false);
+    setEditedTillName('');
   };
 
   const handleSave = async () => {
     if (!selectedDevice || !access) return;
-    setSaving(true);
+
     try {
-      if (access === 'Approved') {
-        await approveDevice(selectedDevice.id);
-      } else if (access === 'Declined') {
-        await declineDevice(selectedDevice.id);
-      } else if (access === 'Block') {
-        await blockDevice(selectedDevice.id);
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to change this device's access to ${access}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!',
+        cancelButtonText: 'No, cancel',
+        customClass: {
+          container: 'swal-container-class',
+          popup: 'swal-popup-class',
+          header: 'swal-header-class',
+          title: 'swal-title-class',
+          closeButton: 'swal-close-button-class',
+          icon: 'swal-icon-class',
+          image: 'swal-image-class',
+          content: 'swal-content-class',
+          input: 'swal-input-class',
+          actions: 'swal-actions-class',
+          confirmButton: 'swal-confirm-button-class',
+          cancelButton: 'swal-cancel-button-class',
+          footer: 'swal-footer-class'
+        },
+        backdrop: true,
+        allowOutsideClick: false,
+        allowEscapeKey: true,
+        allowEnterKey: true,
+        focusConfirm: false
+      });
+
+      if (result.isConfirmed) {
+        setSaving(true);
+        try {
+          if (access === 'Approved') {
+            await approveDevice(selectedDevice.id);
+          } else if (access === 'Declined') {
+            await declineDevice(selectedDevice.id);
+          } else if (access === 'Block') {
+            await blockDevice(selectedDevice.id);
+          }
+          setPendingDevices(prev => prev.filter(d => d.id !== selectedDevice.id));
+          await Promise.all([
+            fetchPendingDevices(),
+            fetchAllDevices()
+          ]);
+          handleModalClose();
+          Swal.fire({
+            title: "Success!",
+            text: "Device access has been updated successfully.",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false
+          });
+        } catch (error) {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to update device access: " + error.message,
+            icon: "error",
+            confirmButtonText: "OK",
+            customClass: { confirmButton: "btn btn-danger" },
+          });
+        }
       }
-      await Promise.all([
-        fetchPendingDevices(),
-        fetchAllDevices()
-      ]);
-      handleModalClose();
     } catch (error) {
-      console.error('Error updating device:', error);
+      console.error('Error in handleSave:', error);
     } finally {
       setSaving(false);
     }
+  };
+
+  const validateToggleAction = (action) => {
+    if (!action.trim()) {
+      return 'Please type the action name';
+    }
+
+    // Check for duplicate action (case-insensitive)
+    const normalizedInput = action.trim().toLowerCase();
+    const isDuplicate = managerToggles.some(
+      toggle => toggle.action.toLowerCase() === normalizedInput
+    );
+
+    if (isDuplicate) {
+      return 'This action already exists';
+    }
+
+    // Check for similar actions (fuzzy match)
+    const similarActions = managerToggles.filter(
+      toggle => {
+        const normalizedToggle = toggle.action.toLowerCase();
+        return (
+          normalizedToggle.includes(normalizedInput) ||
+          normalizedInput.includes(normalizedToggle)
+        );
+      }
+    );
+
+    if (similarActions.length > 0) {
+      return `Similar actions exist: ${similarActions.map(t => t.action).join(', ')}`;
+    }
+
+    return '';
+  };
+
+  const handleAddToggle = async () => {
+    const error = validateToggleAction(newToggleAction);
+    if (error) {
+      setToggleActionError(error);
+      return;
+    }
+
+    try {
+      await saveManagerToggle(newToggleAction.trim());
+      setNewToggleAction('');
+      setToggleActionError('');
+      setShowAddToggleModal(false);
+      fetchManagerToggles(); // Refresh the toggles list
+    } catch (error) {
+      console.error('Error adding new toggle:', error);
+      setToggleActionError('Failed to add new toggle');
+    }
+  };
+
+  const handleCloseModal = (e) => {
+    e.preventDefault();
+    setShowUpdateToggleModal(false);
+    setEditingToggle(null);
+    setEditedAction('');
+  };
+
+  const handleEditTillName = () => {
+    setIsEditingTillName(true);
+    setEditedTillName(selectedDevice.tillName);
+  };
+
+  const handleSaveTillName = async () => {
+    // Check for duplicate till name
+    const isDuplicate = allDevices.some(device => 
+      device.id !== selectedDevice.id && 
+      device.tillName.toLowerCase() === editedTillName.toLowerCase()
+    );
+
+    if (isDuplicate) {
+      Swal.fire({
+        title: "Error!",
+        text: "This till name already exists. Please choose a different name.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+      return;
+    }
+
+    try {
+      await updateTillName(selectedDevice.id, editedTillName);
+      await Promise.all([fetchAllDevices(), fetchPendingDevices()]);
+      setIsEditingTillName(false);
+      Swal.fire({
+        title: "Success!",
+        text: "Till name has been updated successfully.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update till name: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+    }
+  };
+
+  const handleCancelTillNameEdit = () => {
+    setIsEditingTillName(false);
+    setEditedTillName('');
+  };
+
+  const handleEditToggle = (toggle) => {
+    setEditingToggle(toggle);
+    setEditedAction(toggle.action);
+  };
+
+  const handleSaveToggle = async (e) => {
+    e.preventDefault();
+    
+    // Check for duplicate action (case-insensitive)
+    const normalizedInput = editedAction.trim().toLowerCase();
+    const isDuplicate = managerToggles.some(
+      toggle => 
+        toggle.id !== editingToggle.id && 
+        toggle.action.toLowerCase() === normalizedInput
+    );
+
+    if (isDuplicate) {
+      Swal.fire({
+        title: "Error!",
+        text: "This action name already exists. Please choose a different name.",
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+      return;
+    }
+
+    try {
+      await updateManagerToggle(editingToggle.id, editedAction, editingToggle.isActive, editingToggle.adminActive);
+      await fetchManagerToggles();
+      setEditingToggle(null);
+      setEditedAction('');
+      Swal.fire({
+        title: "Success!",
+        text: "Toggle has been updated successfully.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error updating toggle:', error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update toggle: " + error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-danger" },
+      });
+    }
+  };
+
+  const handleCancelEdit = (e) => {
+    e.preventDefault();
+    setEditingToggle(null);
+    setEditedAction('');
   };
 
   const columns = [
@@ -102,6 +468,12 @@ const AdminSettings = () => {
       dataIndex: 'tillName',
       key: 'tillName',
       sorter: (a, b) => a.tillName.localeCompare(b.tillName),
+    },
+    {
+      title: 'Till ID',
+      dataIndex: 'tillId',
+      key: 'tillId',
+      sorter: (a, b) => a.tillId.localeCompare(b.tillId),
     },
     {
       title: 'Approve Status',
@@ -124,7 +496,11 @@ const AdminSettings = () => {
       render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <a className="me-2 p-2" href="#" onClick={() => handleEditClick(record, true)}>
+            <a 
+              className="me-2 p-2" 
+              href="#" 
+              onClick={(e) => handleEditClick(record, true, e)}
+            >
               <Edit className="feather-edit" />
             </a>
           </div>
@@ -139,6 +515,12 @@ const AdminSettings = () => {
       dataIndex: 'tillName',
       key: 'tillName',
       sorter: (a, b) => a.tillName.localeCompare(b.tillName),
+    },
+    {
+      title: 'Till ID',
+      dataIndex: 'tillId',
+      key: 'tillId',
+      sorter: (a, b) => a.tillId.localeCompare(b.tillId),
     },
     {
       title: 'Approve Status',
@@ -170,7 +552,11 @@ const AdminSettings = () => {
       render: (_, record) => (
         <td className="action-table-data">
           <div className="edit-delete-action">
-            <a className="me-2 p-2" href="#" onClick={() => handleEditClick(record, false)}>
+            <a 
+              className="me-2 p-2" 
+              href="#" 
+              onClick={(e) => handleEditClick(record, false, e)}
+            >
               <Edit className="feather-edit" />
             </a>
           </div>
@@ -254,14 +640,34 @@ const AdminSettings = () => {
     setRefreshing(false);
   };
 
-  const handleCollapse = () => {
-    // TODO: Implement collapse logic if needed
-    alert('Collapse not implemented yet.');
-  };
-
   const renderTooltip = (msg) => (
     <Tooltip>{msg}</Tooltip>
   );
+
+  const getCardClass = (action) => {
+    if (!action) return 'default-card';
+    
+    const normalizedAction = action.toLowerCase().trim();
+    const firstWord = normalizedAction.split(' ')[0];
+
+    // Direct matches
+    if (normalizedAction === 'age validation') return 'age-validation';
+    if (['manual discount', 'employee discount'].includes(normalizedAction)) return 'discount';
+    if (normalizedAction === 'add customer') return 'customer';
+    if (normalizedAction === 'non scan product') return 'non-scan';
+    if (normalizedAction === 'minimam banking') return 'banking';
+    if (normalizedAction === 'tax') return 'tax';
+    if (normalizedAction === 'under maintenance') return 'maintenance';
+
+    // Fallback to first word matching
+    if (['manual', 'discount'].includes(firstWord)) return 'discount';
+    if (firstWord === 'customer') return 'customer';
+    if (firstWord === 'tax') return 'tax';
+    if (firstWord === 'banking') return 'banking';
+    if (firstWord === 'age') return 'age-validation';
+
+    return 'default-card';
+  };
 
   return (
     <div className="page-wrapper">
@@ -272,65 +678,66 @@ const AdminSettings = () => {
               <h4>Admin Settings</h4>
               <h6>Manage your admin settings</h6>
             </div>
-            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-              <div className="status-toggle-btns">
-                <div className="btn-group" role="group">
-                  <button
-                    type="button"
-                    className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                    onClick={() => setShowActive(true)}
-                  >
-                    Active
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                    onClick={() => setShowActive(false)}
-                  >
-                    Inactive
-                  </button>
-                </div>
-              </div>
-              <div className="export-icons-row">
-                <ul className="table-top-head d-flex gap-2 mb-0">
-                  <li>
-                    <OverlayTrigger placement="top" overlay={renderTooltip('Pdf')}>
-                      <Link to="#" onClick={exportToPDF}>
-                        <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
-                      </Link>
-                    </OverlayTrigger>
-                  </li>
-                  <li>
-                    <OverlayTrigger placement="top" overlay={renderTooltip('Excel')}>
-                      <Link to="#" onClick={exportToExcel}>
-                        <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
-                      </Link>
-                    </OverlayTrigger>
-                  </li>
-                  <li>
-                    <OverlayTrigger placement="top" overlay={renderTooltip('Refresh')}>
-                      <Link to="#" onClick={handleRefresh} disabled={refreshing}>
-                        <RotateCcw className={refreshing ? "refresh-rotating" : ""} />
-                      </Link>
-                    </OverlayTrigger>
-                  </li>
-                  <li>
-                    <OverlayTrigger placement="top" overlay={renderTooltip('Collapse')}>
-                      <Link to="#" id="collapse-header" onClick={handleCollapse}>
-                        <ChevronUp />
-                      </Link>
-                    </OverlayTrigger>
-                  </li>
-                </ul>
-              </div>
-            </div>
+          </div>
+          <ul className="table-top-head">
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip('Pdf')}>
+                <Link to="#" onClick={exportToPDF}>
+                  <ImageWithBasePath src="assets/img/icons/pdf.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip('Excel')}>
+                <Link to="#" onClick={exportToExcel}>
+                  <ImageWithBasePath src="assets/img/icons/excel.svg" alt="img" />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip('Refresh')}>
+                <Link to="#" onClick={handleRefresh} disabled={refreshing}>
+                  <RotateCcw className={refreshing ? "refresh-rotating" : ""} />
+                </Link>
+              </OverlayTrigger>
+            </li>
+            <li>
+              <OverlayTrigger placement="top" overlay={renderTooltip('Collapse')}>
+                <Link
+                  id="collapse-header"
+                  className={data ? "active" : ""}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    dispatch(setToogleHeader(!data));
+                  }}
+                >
+                  <ChevronUp />
+                </Link>
+              </OverlayTrigger>
+            </li>
+          </ul>
+          <div className="page-btn">
+            <Link
+              to="#"
+              className="btn btn-added"
+              onClick={() => setShowAddToggleModal(true)}
+            >
+              <PlusCircle className="me-2 iconsize" />
+              Add Toggle
+            </Link>
           </div>
         </div>
-        {/* Pending Till Table - only show if there is data and no error */}
+
+        {/* Pending Till Card - Always at top */}
         {!pendingDevicesError && pendingDevices && pendingDevices.length > 0 && (
           <div className="card mb-4">
             <div className="card-body">
-              <h5 className="mb-3">Pending Till</h5>
+              <div className="pending-till-header">
+                <div className="header-content">
+                  <h5 className="section-title">Pending Till</h5>
+                  <p className="section-description">Review and manage pending till approvals</p>
+                </div>
+              </div>
               <div className="responsive-table-wrapper">
                 <Table
                   columns={columns}
@@ -341,11 +748,129 @@ const AdminSettings = () => {
             </div>
           </div>
         )}
-        {/* All Devices Table - only show if there is data */}
+
+        {/* Manager Toggles Section */}
+        <div className="card mb-4">
+          <div className="card-body">
+            <div className="admin-toggles-header">
+              <div className="header-content">
+                <h5 className="section-title">Admin Toggles</h5>
+                <p className="section-description">Manage and update your admin toggle settings</p>
+              </div>
+              <div className="header-actions">
+                <button 
+                  className="btn btn-primary btn-update"
+                  onClick={() => setShowUpdateToggleModal(true)}
+                >
+                  <Edit className="me-2" size={16} />
+                  Update Toggles
+                </button>
+              </div>
+            </div>
+            <div className="row">
+              {/* Other Toggles - Now showing all toggles without pagination */}
+              {managerToggles
+                .sort((a, b) => {
+                  // Always put "Minimam Banking" first
+                  if (a.action === "Minimam Banking") return -1;
+                  if (b.action === "Minimam Banking") return 1;
+                  // Then put "Under Maintenance" second
+                  if (a.action === "Under Maintenance") return -1;
+                  if (b.action === "Under Maintenance") return 1;
+                  return 0;
+                })
+                .map((toggle) => (
+                <div key={toggle.id} className="col-12 mb-3">
+                  <div className={`card ${getCardClass(toggle.action)}`}>
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="card-title mb-0">{toggle.action}</h6>
+                          <p className="card-description">
+                            {toggle.action?.toLowerCase().includes('minimam banking')
+                              ? 'Set minimum banking amount for transactions'
+                              : toggle.action?.toLowerCase().includes('age validation') 
+                              ? 'Enable age verification for age-restricted products'
+                              : toggle.action?.toLowerCase().includes('employee discount')
+                              ? 'Enable employee discount functionality'
+                              : toggle.action?.toLowerCase().includes('add customer')
+                              ? 'Enable add customer button in POS'
+                              : toggle.action?.toLowerCase().includes('non scan product')
+                              ? 'Show non-scan products in POS'
+                              : toggle.action?.toLowerCase().includes('tax')
+                              ? 'Enable tax calculation in POS'
+                              : toggle.action?.toLowerCase().includes('under maintenance')
+                              ? 'Enable maintenance mode for non-admin users'
+                              : 'Toggle functionality for this action'}
+                          </p>
+                        </div>
+                        <div className="d-flex align-items-center gap-4">
+                          {toggle.action !== "Under Maintenance" && toggle.action !== "Minimam Banking" && (
+                            <div className="toggle-wrapper">
+                              <span className="toggle-label">Manager</span>
+                              <label className="toggle-switch">
+                                <input
+                                  type="checkbox"
+                                  checked={toggle.isActive}
+                                  onChange={() => handleToggleStatusChange(toggle.id, toggle.isActive)}
+                                />
+                                <span className="toggle-slider"></span>
+                              </label>
+                            </div>
+                          )}
+                          {toggle.action !== "Minimam Banking" && (
+                            <div className="toggle-wrapper">
+                              <span className="toggle-label">Admin</span>
+                              <label className="toggle-switch">
+                                <input
+                                  type="checkbox"
+                                  checked={toggle.adminActive}
+                                  onChange={() => handleToggleChange(toggle.id, toggle.adminActive)}
+                                />
+                                <span className="toggle-slider"></span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* All Devices Table */}
         {!allDevicesError && filteredDevices && filteredDevices.length > 0 && (
           <div className="card">
             <div className="card-body">
-              <h5 className="mb-3">All Devices</h5>
+              <div className="devices-header">
+                <div className="header-content">
+                  <h5 className="section-title">All Devices</h5>
+                  <p className="section-description">Manage your device settings and access</p>
+                </div>
+                <div className="status-toggle-btns">
+                  <div className="btn-group" role="group">
+                    <button
+                      type="button"
+                      className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                      onClick={() => setShowActive(true)}
+                    >
+                      <span className="status-indicator active"></span>
+                      Active
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                      onClick={() => setShowActive(false)}
+                    >
+                      <span className="status-indicator inactive"></span>
+                      Inactive
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div className="responsive-table-wrapper">
                 <Table
                   columns={allDevicesColumns}
@@ -368,8 +893,42 @@ const AdminSettings = () => {
                   {selectedDevice && (
                     <>
                       <div className="mb-3">
-                        <label>Till Name:</label>
-                        <div>{selectedDevice.tillName}</div>
+                        <div className="d-flex justify-content-between align-items-center">
+                          <label>Till Name:</label>
+                          {!isEditingTillName ? (
+                            <button 
+                              className="btn btn-sm btn-edit-green"
+                              onClick={handleEditTillName}
+                            >
+                              Edit
+                            </button>
+                          ) : (
+                            <div className="d-flex gap-2">
+                              <button 
+                                className="btn btn-sm btn-primary"
+                                onClick={handleSaveTillName}
+                              >
+                                Save
+                              </button>
+                              <button 
+                                className="btn btn-sm btn-outline-secondary"
+                                onClick={handleCancelTillNameEdit}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {isEditingTillName ? (
+                          <input
+                            type="text"
+                            className="form-control"
+                            value={editedTillName}
+                            onChange={(e) => setEditedTillName(e.target.value)}
+                          />
+                        ) : (
+                          <div>{selectedDevice.tillName}</div>
+                        )}
                       </div>
                       <div className="mb-3">
                         <label>Access:</label>
@@ -389,6 +948,139 @@ const AdminSettings = () => {
                   </button>
                   <button className="custom-cancel-btn" onClick={handleModalClose}>
                     Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Toggle Modal */}
+        {showAddToggleModal && (
+          <div className="admin-settings-modal-root">
+            <div className="custom-modal-overlay">
+              <div className="custom-modal">
+                <div className="custom-modal-header">
+                  <h4>Add New Toggle</h4>
+                  <button className="custom-modal-close" onClick={handleCloseModal}>&times;</button>
+                </div>
+                <div className="custom-modal-body">
+                  <div className="mb-3">
+                    <label>Action Name:</label>
+                    <input
+                      type="text"
+                      className={`form-control ${toggleActionError ? 'is-invalid' : ''}`}
+                      value={newToggleAction}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setNewToggleAction(value);
+                        // Validate on change but don't show error until blur or submit
+                        if (value.trim()) {
+                          const error = validateToggleAction(value);
+                          setToggleActionError(error);
+                        } else {
+                          setToggleActionError('');
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const error = validateToggleAction(e.target.value);
+                        setToggleActionError(error);
+                      }}
+                      placeholder="Enter action name"
+                    />
+                    {toggleActionError && (
+                      <div className="invalid-feedback">
+                        {toggleActionError}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="custom-modal-footer">
+                  <button 
+                    className="custom-save-btn" 
+                    onClick={handleAddToggle}
+                    disabled={!!toggleActionError}
+                  >
+                    Save
+                  </button>
+                  <button className="custom-cancel-btn" onClick={handleCloseModal}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Update Toggle Modal */}
+        {showUpdateToggleModal && (
+          <div className="admin-settings-modal-root">
+            <div className="custom-modal-overlay">
+              <div className="custom-modal update-toggles-modal">
+                <div className="custom-modal-header">
+                  <h4>Update Toggles</h4>
+                  <button 
+                    type="button"
+                    className="custom-modal-close" 
+                    onClick={handleCloseModal}
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div className="custom-modal-body">
+                  <div className="update-toggles-grid">
+                    {managerToggles.map((toggle) => (
+                      <div key={toggle.id} className={`update-toggle-card ${editingToggle?.id === toggle.id ? 'editing' : ''}`}>
+                        <div className="card-content">
+                          {editingToggle?.id === toggle.id ? (
+                            <div className="edit-mode">
+                              <input
+                                type="text"
+                                className="form-control"
+                                value={editedAction}
+                                onChange={(e) => setEditedAction(e.target.value)}
+                              />
+                              <div className="edit-actions">
+                                <button 
+                                  type="button"
+                                  className="btn btn-sm btn-primary"
+                                  onClick={handleSaveToggle}
+                                >
+                                  Save
+                                </button>
+                                <button 
+                                  type="button"
+                                  className="btn btn-sm btn-outline-secondary"
+                                  onClick={handleCancelEdit}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="view-mode">
+                              <span className="toggle-name">{toggle.action}</span>
+                              <button 
+                                type="button"
+                                className="btn btn-sm btn-edit-green"
+                                onClick={() => handleEditToggle(toggle)}
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="custom-modal-footer">
+                  <button 
+                    type="button"
+                    className="custom-cancel-btn" 
+                    onClick={handleCloseModal}
+                  >
+                    Close
                   </button>
                 </div>
               </div>

@@ -187,6 +187,7 @@ const Header = () => {
   const firstName = localStorage.getItem("firstName") || "Guest";
   const lastName = localStorage.getItem("lastName") || "";
   const userRole = localStorage.getItem("userRole") || "Unknown Role";
+  const tillName = localStorage.getItem("tillName") || "";
   const fullName = `${firstName} ${lastName}`.trim();
 
   return (
@@ -437,7 +438,10 @@ const Header = () => {
                 </span> */}
                 <span className="user-detail">
                   <span className="user-name">{fullName}</span>
-                  <span className="user-role">{userRole}</span>
+                  <span className="user-role">
+                    {userRole}
+                    {tillName && <> | <span className="till-name">{tillName}</span></>}
+                  </span>
                 </span>
               </span>
             </Link>
@@ -453,14 +457,22 @@ const Header = () => {
                   </span> */}
                   <div className="profilesets">
                     <h6>{fullName}</h6>
-                    <h5>{userRole}</h5>
+                    <h5>
+                      {userRole}
+                      {tillName && <> | <span className="till-name">{tillName}</span></>}
+                    </h5>
                   </div>
                 </div>
                 <hr className="m-0" />
                 <Link
                   className="dropdown-item"
                   to={route.signin}
-                  onClick={() => { localStorage.removeItem('registeredDevice'); }}
+                  onClick={() => {
+                    localStorage.removeItem('registeredDevice');
+                    localStorage.removeItem('tillName');
+                    localStorage.removeItem('tillId');
+                    localStorage.removeItem('deviceId');
+                  }}
                 >
                   <ImageWithBasePath
                     src="assets/img/icons/log-out.svg"

@@ -20,8 +20,8 @@ const Undermaintainence = () => {
           Sorry for any inconvenience caused, we have almost done Will get back
           soon!
         </p>
-        <Link to={route.dashboard} className="btn btn-primary">
-          Back to Dashboard
+        <Link to={route.signin} className="btn btn-primary">
+          Back to Signin
         </Link>
       </div>
     </div>

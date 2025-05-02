@@ -219,3 +219,32 @@ export const getDeviceByTillId = async (tillId) => {
         throw error;
     }
 };
+
+export const updateTillName = async (deviceId, tillName) => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (!accessToken) {
+        return null;
+    }
+
+    try {
+        console.log('%c 📤 Update Till Name Request:', 'color: #2196F3; font-weight: bold;', { deviceId, tillName });
+        
+        const response = await axios.put(
+            `${BASE_BACKEND_URL}/deviceAuth/updateTillName?id=${deviceId}&tillName=${encodeURIComponent(tillName)}`,
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log('%c ✅ Update Till Name Response:', 'color: #4CAF50; font-weight: bold;', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('%c ❌ Update Till Name Error:', 'color: #F44336; font-weight: bold;', error.response?.data || error.message);
+        throw error;
+    }
+};

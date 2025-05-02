@@ -758,3 +758,36 @@ body.mini-sidebar{
         }
     }
 }
+
+.sidebar-menu > ul > li > a.active {
+  background: #6C2EB7 !important;
+  color: #fff !important;
+  font-weight: bold !important;
+  border-radius: 8px !important;
+  border-left: 5px solid #FE9F43 !important;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(108, 46, 183, 0.15);
+}
+
+.sidebar-menu ul li ul li a.active {
+  background: #E0D7FF !important;
+  color: #6C2EB7 !important;
+  font-weight: bold !important;
+  border-radius: 6px !important;
+  border-left: 4px solid #FE9F43 !important;
+  position: relative;
+}
+
+.sidebar-menu a.active {
+  background: #f5f7fa !important;
+  color: #2d2d2d !important;
+  font-weight: bold !important;
+  border-left: 5px solid #4F8CFF !important;
+  border-bottom: 3px solid #4F8CFF !important;
+  text-decoration: none !important;
+  border-radius: 8px !important;
+}
+
+.sidebar-menu a.active svg {
+  color: #4F8CFF !important;
+}

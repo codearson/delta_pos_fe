@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 import { getAccessToken, getUserByEmail } from "../../Api/config";
 import { loginDevice, getDeviceByTillId } from "../../Api/DeviceAuthApi";
+import { getManagerToggleByName } from "../../Api/ManagerToggle";
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -88,7 +89,8 @@ const Signin = () => {
       // Only update localStorage if response is valid and has responseDto
       if (response && response.status && response.responseDto) {
         localStorage.setItem("registeredDevice", JSON.stringify(response));
-        const { approveStatus, loginStatus } = response.responseDto;
+        const { approveStatus, loginStatus, tillName } = response.responseDto;
+        localStorage.setItem('tillName', tillName || '');
         console.log("Checking approveStatus from API response:", approveStatus);
 
         if (approveStatus === "Pending") {
@@ -120,6 +122,20 @@ const Signin = () => {
       }
     } catch (error) {
       setError("An error occurred during device verification. Please try again.");
+      return false;
+    }
+  };
+
+  const checkMaintenanceStatus = async () => {
+    try {
+      const response = await getManagerToggleByName("Under Maintenance");
+      if (response?.status && response?.responseDto?.length > 0) {
+        const maintenanceToggle = response.responseDto[0];
+        return maintenanceToggle.adminActive;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking maintenance status:", error);
       return false;
     }
   };
@@ -181,6 +197,16 @@ const Signin = () => {
         return;
       }
 
+      // Check maintenance status for non-admin users
+      if (user.userRoleDto?.userRole !== "ADMIN") {
+        const isMaintenanceActive = await checkMaintenanceStatus();
+        if (isMaintenanceActive) {
+          navigate(all_routes.undermaintenance);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // If ADMIN, skip device verification
       if (user.userRoleDto?.userRole !== "ADMIN") {
         // Check device subscription status before device verification
@@ -188,7 +214,8 @@ const Signin = () => {
           try {
             const deviceStatus = await getDeviceByTillId(deviceId);
             if (deviceStatus?.status && deviceStatus?.responseDto) {
-              const { approveStatus, loginStatus } = deviceStatus.responseDto;
+              const { approveStatus, loginStatus, tillName } = deviceStatus.responseDto;
+              localStorage.setItem('tillName', tillName || '');
               if (approveStatus === "Approved" && loginStatus === "False") {
                 setError("Your till subscription is over contact your Admin");
                 setIsLoading(false);
