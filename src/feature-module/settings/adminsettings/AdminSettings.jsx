@@ -849,35 +849,35 @@ const AdminSettings = () => {
         </div>
 
         {/* All Devices Table */}
-        {!allDevicesError && filteredDevices && filteredDevices.length > 0 && (
-          <div className="card">
-            <div className="card-body">
-              <div className="devices-header">
-                <div className="header-content">
-                  <h5 className="section-title">All Devices</h5>
-                  <p className="section-description">Manage your device settings and access</p>
-                </div>
-                <div className="status-toggle-btns">
-                  <div className="btn-group" role="group">
-                    <button
-                      type="button"
-                      className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                      onClick={() => setShowActive(true)}
-                    >
-                      <span className="status-indicator active"></span>
-                      Active
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
-                      onClick={() => setShowActive(false)}
-                    >
-                      <span className="status-indicator inactive"></span>
-                      Inactive
-                    </button>
-                  </div>
+        <div className="card">
+          <div className="card-body">
+            <div className="devices-header">
+              <div className="header-content">
+                <h5 className="section-title">All Devices</h5>
+                <p className="section-description">Manage your device settings and access</p>
+              </div>
+              <div className="status-toggle-btns">
+                <div className="btn-group" role="group">
+                  <button
+                    type="button"
+                    className={`btn ${showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                    onClick={() => setShowActive(true)}
+                  >
+                    <span className="status-indicator active"></span>
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${!showActive ? 'btn-primary active' : 'btn-outline-primary'}`}
+                    onClick={() => setShowActive(false)}
+                  >
+                    <span className="status-indicator inactive"></span>
+                    Inactive
+                  </button>
                 </div>
               </div>
+            </div>
+            {!allDevicesError && filteredDevices && filteredDevices.length > 0 ? (
               <div className="responsive-table-wrapper">
                 <Table
                   columns={allDevicesColumns}
@@ -885,9 +885,20 @@ const AdminSettings = () => {
                   pagination={{ pageSize: 10 }}
                 />
               </div>
-            </div>
+            ) : (
+              <div className="no-data-message">
+                <div className="no-data-content">
+                  <ImageWithBasePath
+                    src="assets/img/icons/no-data.png"
+                    alt="img"
+                    style={{ width: '24px', height: '24px' }}
+                  />
+                  <p>No devices found</p>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
         {modalVisible && (
           <div className="admin-settings-modal-root">
             <div className="custom-modal-overlay">
