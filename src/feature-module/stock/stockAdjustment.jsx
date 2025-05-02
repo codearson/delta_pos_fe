@@ -347,12 +347,14 @@ const StockAdjustment = () => {
       try {
         const toggles = await getAllManagerToggles();
         // Filter to get discount-related toggles, Age Validation toggle, Add Customer toggle, Non Scan Product toggle, and Tax toggle
+        // Also filter to only show toggles where adminActive is true
         const relevantToggles = toggles.responseDto.filter(
-          toggle => toggle.action.includes("Discount") || 
+          toggle => (toggle.action.includes("Discount") || 
                     toggle.action === "Age Validation" ||
                     toggle.action === "Add Customer" ||
                     toggle.action === "Non Scan Product" ||
-                    toggle.action === "Tax"
+                    toggle.action === "Tax") &&
+                    toggle.adminActive === true
         );
         
         setToggles(relevantToggles);

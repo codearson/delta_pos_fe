@@ -1472,7 +1472,7 @@ export const pagesRoute = [
   },
   {
     id: 3,
-    path: routes.signin,
+    path: routes.signin, // Should be "/signin"
     name: "signin",
     element: <Signin />,
     route: Route,

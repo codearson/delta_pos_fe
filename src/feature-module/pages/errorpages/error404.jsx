@@ -20,8 +20,8 @@ const Error404 = () => {
           Error 404 Page not found. Sorry the page you looking for doesn’t exist
           or has been moved
         </p>
-        <Link to={route.dashboard} className="btn btn-primary">
-          Back to Dashboard
+        <Link to={route.signin} className="btn btn-primary">
+          Back to Signin
         </Link>
       </div>
     </div>

@@ -14,7 +14,7 @@ export const getSidebarData = () => {
       submenuItems: [
         {
           label: "Dashboard",
-          link: "/",
+          link: "/dashboard",
           icon: <Icon.Grid />,
           showSubRoute: false,
           submenu: false

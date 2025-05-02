@@ -419,7 +419,9 @@ const Dashboard = () => {
       try {
         setHolidayLoading(true);
         setUpcomingHolidayLoading(true);
-        const holidays = await fetchHolidays();
+        const response = await fetchHolidays(1, 100, true); // Fetch first 100 active holidays
+        const holidays = response?.payload || [];
+        
         if (Array.isArray(holidays)) {
           // Filter pending holidays - only active and pending status
           const pending = holidays.filter(holiday => 

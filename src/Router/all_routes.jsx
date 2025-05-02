@@ -1,5 +1,5 @@
 export const all_routes = {
-  dashboard: "/",
+  dashboard: "/dashboard",
   productlist: "/product-list",
   ProductDiscount: "/productDiscount",
   UserManual: "/userManual",

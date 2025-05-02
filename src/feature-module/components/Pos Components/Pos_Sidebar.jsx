@@ -14,6 +14,7 @@ const Pos_Sidebar = ({ darkMode }) => {
     firstName: "",
     lastName: "",
     userRole: "",
+    tillName: ""
   });
 
   const circleColor = "#4ECDC4";
@@ -23,11 +24,13 @@ const Pos_Sidebar = ({ darkMode }) => {
       const firstName = localStorage.getItem("firstName") || "Unknown";
       const lastName = localStorage.getItem("lastName") || "";
       const userRole = localStorage.getItem("userRole") || "";
+      const tillName = localStorage.getItem("tillName") || "";
 
       setUserDetails({
         firstName,
         lastName,
         userRole,
+        tillName
       });
     };
 
@@ -119,9 +122,12 @@ const Pos_Sidebar = ({ darkMode }) => {
           </div>
           <span
             className="user-role"
-            style={{ color: darkMode ? "#ffffff" : "#666" }} // Inline style for color
+            style={{ color: darkMode ? "#ffffff" : "#666" }}
           >
             {userDetails.firstName || "User"}
+            {userDetails.tillName && (
+              <> <span className="till-name">{userDetails.tillName}</span></>
+            )}
           </span>
         </div>
         <button className="logout-button" onClick={handleLogout} type="button">
