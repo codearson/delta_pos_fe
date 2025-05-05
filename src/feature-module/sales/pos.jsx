@@ -25,6 +25,7 @@ import { fetchPayoutCategories } from "../Api/PayoutCategoryApi";
 import { savePayout } from "../Api/Payout.Api";
 import Swal from "sweetalert2";
 import { fetchProductDiscounts } from "../Api/productDiscountApi.js";
+import { saveVoidHistory } from "../Api/VoidHistoryApi";
 
 const Pos = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -671,7 +672,7 @@ const Pos = () => {
     }
   };
 
-  const handleVoidLine = () => {
+  const handleVoidLine = async () => {
     if (selectedRowIndex === null) {
       showNotification("Please select a row to void.", "error");
       return;
@@ -759,66 +760,147 @@ const Pos = () => {
       return;
     }
 
-    if (selectedItem.type === "Discount") {
-      const discountIndex = parseInt(selectedItem.id.split("-").pop());
-      if (!isNaN(discountIndex) && discountIndex >= 0 && discountIndex < manualDiscounts.length) {
-        const newManualDiscounts = [...manualDiscounts];
-        const removedDiscount = newManualDiscounts.splice(discountIndex, 1)[0];
-        setManualDiscounts(newManualDiscounts);
-        setManualDiscount((prevDiscount) => prevDiscount - removedDiscount);
+    try {
+      const voidData = {
+        itemName: selectedItem.name,
+        quantity: selectedItem.qty,
+        price: Math.abs(selectedItem.price),
+        total: Math.abs(selectedItem.total)
+      };
+
+      await saveVoidHistory(voidData);
+
+      if (selectedItem.type === "Discount") {
+        const discountIndex = parseInt(selectedItem.id.split("-").pop());
+        if (!isNaN(discountIndex) && discountIndex >= 0 && discountIndex < manualDiscounts.length) {
+          const newManualDiscounts = [...manualDiscounts];
+          const removedDiscount = newManualDiscounts.splice(discountIndex, 1)[0];
+          setManualDiscounts(newManualDiscounts);
+          setManualDiscount((prevDiscount) => prevDiscount - removedDiscount);
+          setSelectedRowIndex(null);
+          showNotification("Manual discount voided.", "success");
+          return;
+        }
+      }
+
+      if (selectedItem.type === "EmployeeDiscount") {
+        setEmployeeDiscount(0);
+        setEmployeeId(null);
+        setEmployeeDiscountPercentage(0);
         setSelectedRowIndex(null);
-        showNotification("Manual discount voided.", "success");
+        showNotification("Employee discount voided.", "success");
         return;
       }
-    }
 
-    if (selectedItem.type === "EmployeeDiscount") {
+      if (isPaymentStarted && selectedItem.type) {
+        if (selectedItem.type === "Card") {
+          showNotification("Card payments cannot be voided with Void Line.", "error");
+          return;
+        }
+        if (selectedItem.type === "Cash") {
+          const newPaymentMethods = paymentMethods.filter((method) => method.type !== "Cash");
+          setPaymentMethods(newPaymentMethods);
+          setSelectedRowIndex(null);
+          if (newPaymentMethods.length === 0) {
+            setIsPaymentStarted(false);
+          }
+          showNotification("Cash payment voided.", "success");
+          return;
+        }
+      }
+
+      const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
+      setSelectedItems(newItems);
+      setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
+      setSelectedRowIndex(null);
+      showNotification("Item voided.", "success");
+    } catch (error) {
+      console.error("Error saving void history:", error);
+      showNotification("Error saving void history.", "error");
+    }
+  };
+
+  const handleVoidAll = async () => {
+    try {
+      const voidPromises = selectedItems.map(item => 
+        saveVoidHistory({
+          itemName: item.name,
+          quantity: item.qty,
+          price: Math.abs(item.price),
+          total: Math.abs(item.total)
+        })
+      );
+
+      if (manualDiscounts.length > 0) {
+        manualDiscounts.forEach(discount => {
+          voidPromises.push(
+            saveVoidHistory({
+              itemName: "Manual Discount",
+              quantity: 1,
+              price: Math.abs(discount),
+              total: Math.abs(discount)
+            })
+          );
+        });
+      }
+
+      if (employeeDiscount > 0) {
+        voidPromises.push(
+          saveVoidHistory({
+            itemName: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
+            quantity: 1,
+            price: Math.abs(employeeDiscount),
+            total: Math.abs(employeeDiscount)
+          })
+        );
+      }
+
+      const cashTotal = paymentMethods
+        .filter((method) => method.type === "Cash")
+        .reduce((sum, method) => sum + method.amount, 0);
+      if (cashTotal > 0) {
+        voidPromises.push(
+          saveVoidHistory({
+            itemName: "Cash Payment",
+            quantity: 1,
+            price: Math.abs(cashTotal),
+            total: Math.abs(cashTotal)
+          })
+        );
+      }
+
+      paymentMethods
+        .filter((method) => method.type === "Card")
+        .forEach(method => {
+          voidPromises.push(
+            saveVoidHistory({
+              itemName: `${method.type} Payment`,
+              quantity: 1,
+              price: Math.abs(method.amount),
+              total: Math.abs(method.amount)
+            })
+          );
+        });
+
+      await Promise.all(voidPromises);
+
+      setSelectedItems([]);
+      setTotalValue(0);
+      setPaymentMethods([]);
+      setBalance(0);
+      setIsPaymentStarted(false);
+      setSelectedRowIndex(null);
+      setManualDiscount(0);
+      setManualDiscounts([]);
       setEmployeeDiscount(0);
       setEmployeeId(null);
       setEmployeeDiscountPercentage(0);
-      setSelectedRowIndex(null);
-      showNotification("Employee discount voided.", "success");
-      return;
+      setAgeVerifiedForTransaction(false);
+      showNotification("All items and payments voided.", "success");
+    } catch (error) {
+      console.error("Error saving void history:", error);
+      showNotification("Error saving void history.", "error");
     }
-
-    if (isPaymentStarted && selectedItem.type) {
-      if (selectedItem.type === "Card") {
-        showNotification("Card payments cannot be voided with Void Line.", "error");
-        return;
-      }
-      if (selectedItem.type === "Cash") {
-        const newPaymentMethods = paymentMethods.filter((method) => method.type !== "Cash");
-        setPaymentMethods(newPaymentMethods);
-        setSelectedRowIndex(null);
-        if (newPaymentMethods.length === 0) {
-          setIsPaymentStarted(false);
-        }
-        showNotification("Cash payment voided.", "success");
-        return;
-      }
-    }
-
-    const newItems = selectedItems.filter((_, index) => index !== selectedRowIndex);
-    setSelectedItems(newItems);
-    setTotalValue(newItems.reduce((sum, item) => sum + item.total, 0));
-    setSelectedRowIndex(null);
-    showNotification("Item voided.", "success");
-  };
-
-  const handleVoidAll = () => {
-    setSelectedItems([]);
-    setTotalValue(0);
-    setPaymentMethods([]);
-    setBalance(0);
-    setIsPaymentStarted(false);
-    setSelectedRowIndex(null);
-    setManualDiscount(0);
-    setManualDiscounts([]);
-    setEmployeeDiscount(0);
-    setEmployeeId(null);
-    setEmployeeDiscountPercentage(0);
-    setAgeVerifiedForTransaction(false); // Reset age verification status
-    showNotification("All items and payments voided.", "success");
   };
 
   const handleCustomerAdded = (name) => setCustomerName(name);
