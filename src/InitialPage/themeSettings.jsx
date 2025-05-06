@@ -4,14 +4,13 @@ import { useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { setLayoutChange } from "../core/redux/action";
 import ImageWithBasePath from "../core/img/imagewithbasebath";
+import { ThemeManager } from "../core/utils/themeManager";
 
 const ThemeSettings = () => {
   const dispatch = useDispatch();
 
   const [show, setShow] = useState(false);
-  const [layoutColor, setlayoutColor] = useState(
-    localStorage.getItem("colorschema")
-  );
+  const [layoutColor, setLayoutColor] = useState(ThemeManager.getCurrentTheme());
 
   const [layoutView, setLayoutView] = useState(
     localStorage.getItem("layoutStyling")
@@ -26,16 +25,13 @@ const ThemeSettings = () => {
   };
 
   const DarkThemes = () => {
-    localStorage.setItem("colorschema", "dark_mode");
-    console.log("check dark mode");
-    setlayoutColor("dark_mode");
-    document.documentElement.setAttribute("data-layout-mode", "dark_mode");
+    ThemeManager.applyTheme("dark");
+    setLayoutColor("dark");
   };
 
   const LightThemes = () => {
-    localStorage.setItem("colorschema", "light_mode");
-    setlayoutColor("light_mode");
-    document.documentElement.setAttribute("data-layout-mode", "light_mode");
+    ThemeManager.applyTheme("light");
+    setLayoutColor("light");
   };
 
   const DefaultStyle = () => {
@@ -92,7 +88,7 @@ const ThemeSettings = () => {
     localStorage.setItem("layoutStyling", "default");
     localStorage.setItem("layoutThemeColors", "light");
 
-    setlayoutColor("light_mode");
+    setLayoutColor("light_mode");
     setLayoutView("default");
     setLayoutTheme("light");
 
@@ -171,7 +167,7 @@ const ThemeSettings = () => {
                               id="light_mode"
                               className="check color-check stylemode lmode"
                               defaultValue="light_mode"
-                              defaultChecked
+                              defaultChecked={layoutColor === "light"}
                             />
                             <label
                               htmlFor="light_mode"
@@ -197,6 +193,7 @@ const ThemeSettings = () => {
                               id="dark_mode"
                               className="check color-check stylemode"
                               defaultValue="dark_mode"
+                              defaultChecked={layoutColor === "dark"}
                             />
                             <label htmlFor="dark_mode" className="checktoggles">
                               <div onClick={DarkThemes}>
@@ -205,7 +202,6 @@ const ThemeSettings = () => {
                                   alt="img"
                                 />
                               </div>
-
                               <span className="theme-name">Dark Mode</span>
                             </label>
                           </div>

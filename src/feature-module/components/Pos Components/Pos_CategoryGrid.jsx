@@ -1628,7 +1628,7 @@ const Pos_CategoryGrid = forwardRef(({
             <div className="purchase-popup-header">
               <h2 className="purchase-popup-title">Add Purchase List</h2>
               <button
-                onClick={() => {
+                onClick={() => { 
                   setShowAddPurchasePopup(false);
                   setBarcode("");
                   setProductStatus("");

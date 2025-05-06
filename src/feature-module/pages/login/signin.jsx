@@ -7,6 +7,7 @@ import { loginDevice, getDeviceByTillId } from "../../Api/DeviceAuthApi";
 import { getManagerToggleByName } from "../../Api/ManagerToggle";
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { v4 as uuidv4 } from 'uuid';
+import { ThemeManager } from "../../../core/utils/themeManager";
 
 const Signin = () => {
   const route = all_routes;
@@ -20,6 +21,11 @@ const Signin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [deviceId, setDeviceId] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Ensure light mode on sign-in page
+  useEffect(() => {
+    ThemeManager.applyTheme("light");
+  }, []);
 
   useEffect(() => {
     // Check if device is already registered and pending approval

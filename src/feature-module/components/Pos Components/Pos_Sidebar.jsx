@@ -47,6 +47,16 @@ const Pos_Sidebar = ({ darkMode }) => {
     localStorage.removeItem("branchId");
     localStorage.removeItem("deviceId");
     localStorage.removeItem("registeredDevice");
+    // Clear theme settings
+    localStorage.removeItem("colorschema");
+    localStorage.removeItem("layoutStyling");
+    localStorage.removeItem("layoutThemeColors");
+    localStorage.removeItem("themeMode");
+    // Reset theme to light mode
+    document.documentElement.setAttribute("data-layout-mode", "light_mode");
+    document.documentElement.setAttribute("data-layout-style", "default");
+    document.documentElement.setAttribute("data-nav-color", "light");
+    document.body.classList.remove("dark-mode");
     // Go directly to signin page
     navigate(route.signin);
   };
