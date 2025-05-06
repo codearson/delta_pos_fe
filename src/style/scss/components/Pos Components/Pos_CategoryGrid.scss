@@ -1,3 +1,5 @@
+@import "../../utils/variables";
+
 .pos-category-grid-container {
   // Define SCSS variables
   $pos-blue: #2EB6E8;
@@ -1087,6 +1089,312 @@ body.dark-mode {
         }
       }
     }
+    }
+  }
+  
+  .barcode-popup-overlay {
+    background: rgba(20, 20, 40, 0.85) !important;
+    z-index: 9999;
+  }
+  .barcode-popup {
+    background: $dark-card-bg !important;
+    border: 1px solid $dark-border-color !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5) !important;
+    color: $dark-text-color !important;
+  }
+  .barcode-popup-content {
+    background: transparent !important;
+    color: $dark-text-color !important;
+  }
+  .barcode-popup-title {
+    color: $dark-text-color !important;
+    border-bottom: 1px solid $dark-border-color !important;
+  }
+  .barcode-popup-input-container {
+    .barcode-popup-input {
+      background: $dark-card-bg2 !important;
+      color: $dark-card-bg2 !important;
+      
+      &::placeholder {
+        color: $dark-muted-text !important;
+      }
+    }
+    .barcode-popup-button.submit {
+      background: $dark-card-bg2 !important;
+      color: $white !important;
+      border: none !important;
+      &:hover {
+      background: darken($primary, 10%);
+      }
+    }
+    .barcode-popup-status {
+      color: $dark-muted-text !important;
+    }
+  }
+  .barcode-popup-barcode {
+    background: $dark-card-bg;
+    border-radius: 6px;
+    padding: 10px;
+  }
+  .barcode-popup-actions {
+    .barcode-popup-button.print {
+      background: $dark-success-color !important;
+      color: $white !important;
+      border: none !important;
+      &:hover {
+        background: darken($dark-success-color, 10%) !important;
+      }
+      &:disabled {
+        background: $dark-border-color !important;
+        color: $dark-muted-text !important;
+      }
+    }
+    .barcode-popup-button.close {
+      background: $dark-danger-color !important;
+      color: $white !important;
+      border: none !important;
+      &:hover {
+        background: darken($dark-danger-color, 10%) !important;
+      }
+    }
+  }
+  .purchase-popup-overlay {
+    background: rgba(20, 20, 40, 0.85) !important;
+    z-index: 9999;
+  }
+  .purchase-popup {
+    background: $dark-card-bg !important;
+    color: $dark-text-color !important;
+    border: 1px solid $dark-border-color !important;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5) !important;
+
+    &.simple-popup {
+      background: $dark-card-bg !important;
+      color: $dark-text-color !important;
+      border: 1px solid $dark-border-color !important;
+
+      .card {
+        background: $dark-card-bg2 !important;
+        color: $dark-text-color !important;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        .card-body {
+          background: transparent !important;
+        }
+      }
+      h4, h2, .purchase-popup-title {
+        color: $dark-text-color !important;
+      }
+      p, strong {
+        color: $dark-muted-text !important;
+      }
+      .table {
+        background: $dark-card-bg2 !important;
+        color: $dark-text-color !important;
+        th, td {
+          background: $dark-card-bg2 !important;
+          color: $dark-text-color !important;
+          border-color: $dark-border-color !important;
+        }
+        th {
+          font-weight: 600;
+        }
+        tr {
+          background: $dark-card-bg2 !important;
+        }
+        .no-data {
+          color: $dark-muted-text !important;
+        }
+      }
+    }
+    .purchase-popup-header {
+      h2, .purchase-popup-title {
+        color: $dark-text-color !important;
+      }
+      .purchase-popup-close {
+        background: $dark-danger-color !important;
+        color: $white !important;
+        border: none !important;
+        &:hover {
+          background: darken($dark-danger-color, 10%) !important;
+        }
+      }
+    }
+    .purchase-popup-input-container {
+      .purchase-popup-input {
+        background: $dark-card-bg2 !important;
+        color: $dark-text-color !important;
+        border: 1px solid $dark-border-color !important;
+        &::placeholder {
+          color: $dark-muted-text !important;
+        }
+      }
+      .purchase-popup-status {
+        color: $dark-muted-text !important;
+      }
+    }
+    .purchase-popup-actions {
+      .purchase-popup-button {
+        background: $primary !important;
+        color: $white !important;
+
+        &:hover {
+          background: darken($primary, 10%) !important;
+        }
+        &.clear {
+          background: $dark-danger-color !important;
+          &:hover {
+            background: darken($dark-danger-color, 10%) !important;
+          }
+        }
+        &.add {
+          background: $dark-success-color !important;
+          &:hover {
+            background: darken($dark-success-color, 10%) !important;
+          }
+        }
+        &.print {
+          background: $primary !important;
+          &:hover {
+            background: darken($primary, 10%) !important;
+          }
+        }
+      }
+    }
+    .purchase-popup-table-container {
+      background: $dark-card-bg2 !important;
+      .purchase-popup-table {
+        background: $dark-card-bg2 !important;
+        color: $dark-text-color !important;
+        th, td {
+          background: $dark-card-bg2 !important;
+          color: $dark-text-color !important;
+          border-color: $dark-border-color !important;
+        }
+        .no-data {
+          color: $dark-muted-text !important;
+        }
+      }
+    }
+  }
+  .request-leave-popup-overlay {
+    background: rgba(20, 20, 40, 0.85) !important;
+    z-index: 9999;
+  }
+  .request-leave-popup {
+    background: $dark-card-bg !important;
+    color: $dark-text-color !important;
+    border: 1px solid $dark-border-color !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5) !important;
+    padding: 2rem !important;
+    max-width: 500px;
+    margin: auto;
+    
+  }
+  .request-leave-popup {
+    .request-leave-header {
+      h2 {
+        color: $dark-text-color !important;
+      }
+    }
+  }
+  .request-leave-popup-title {
+    color: $dark-text-color !important;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .request-leave-popup-form {
+    .form-group {
+      label {
+        color: $dark-text-color !important;
+        border: none !important;
+      }
+      input,
+      textarea,
+      select {
+        background: $dark-card-bg2 !important;
+        color: $dark-text-color !important;
+        border: 1px solid $dark-border-color !important;
+        &::placeholder {
+          color: $dark-muted-text !important;
+        }
+      }
+    }
+  }
+  .request-leave-popup-status,
+  .request-leave-popup-error {
+    color: $dark-muted-text !important;
+    margin-top: 0.5rem;
+  }
+  .request-leave-popup .form-actions .btn.btn-submit {
+    background: #007bff !important;
+    color: $white !important;
+    border: none !important;
+    &:hover {
+      background: darken(#007bff, 10%) !important;
+    }
+  }
+  .request-leave-popup .form-actions .btn.btn-cancel {
+    background: #dc3545 !important;
+    color: $white !important;
+    border: none !important;
+    &:hover {
+      background: darken(#dc3545, 10%) !important;
+    }
+  }
+  .request-leave-popup .form-group label {
+    color: $dark-text-color !important;
+  }
+
+  .pos-category-grid-container .pagination-center span {
+    color: $white !important;
+  }
+
+  .card-body.add-product {
+    label {
+      border: none !important;
+      background: transparent !important;
+      color: $dark-text-color !important;
+    }
+  }
+
+  .admin-cards-container {
+    background: $dark-card-bg !important;
+    color: $dark-text-color !important;
+    
+    .admin-card {
+      background: $dark-card-bg !important;
+      border: 1px solid $dark-border-color !important;
+      
+      .card-header {
+        background: $dark-card-bg !important;
+        border-bottom: 1px solid $dark-border-color !important;
+        
+        h5, h6 {
+          color: $dark-text-color !important;
+        }
+      }
+      
+      .card-body {
+        background: $dark-card-bg !important;
+        
+        p, span, label {
+          color: $dark-text-color !important;
+        }
+        
+        .form-control, input, select, textarea {
+          background: $dark-sidebar-bg !important;
+          color: $dark-text-color !important;
+          border-color: $dark-border-color !important;
+          
+          &::placeholder {
+            color: $dark-muted-text !important;
+          }
+        }
+      }
     }
   }
 }
