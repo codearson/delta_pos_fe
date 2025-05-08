@@ -72,7 +72,7 @@ const Sidebar = () => {
                                   : ""
                               }`}
                             >
-                              <span style={{ color: isPOS ? "blue" : "inherit" }}>
+                              <span className="icon-wrapper" style={{ display: 'flex', alignItems: 'center' }}>
                                 {title?.icon}
                               </span>
                               <span
