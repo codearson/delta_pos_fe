@@ -33,7 +33,7 @@ function getCalendarGrid(year, month) {
 }
 
 const Shift = () => {
-  const [currentMonth, setCurrentMonth] = useState(dayjs('2025-04-01').startOf('month'));
+  const [currentMonth, setCurrentMonth] = useState(dayjs('2025-05-01').startOf('month'));
   const [shifts, setShifts] = useState([]);
   const [users, setUsers] = useState([]);
   const [holidays, setHolidays] = useState([]);

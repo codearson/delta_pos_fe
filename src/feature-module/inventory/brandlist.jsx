@@ -90,7 +90,7 @@ const BrandList = () => {
                 try {
                     const newStatus = currentStatus ? 0 : 1;
                     const response = await updatePayoutCategoryStatus(categoryId, newStatus);
-                    
+
                     if (response?.responseDto) {
                         await handleActivityComplete(); // Use the new refresh handler
                         Swal.fire({
@@ -143,7 +143,7 @@ const BrandList = () => {
         XLSX.writeFile(workbook, `payout_categories_${showActive ? 'active' : 'inactive'}.xlsx`);
     };
 
-    
+
     const brandOptions = [
         { value: 'choose', label: 'Choose Brand' },
         { value: 'lenevo', label: 'Lenevo' },
@@ -155,8 +155,8 @@ const BrandList = () => {
         { value: 'Active', label: 'Active' },
         { value: 'InActive', label: 'InActive' },
     ];
-    
-    
+
+
     const [selectedDate, setSelectedDate] = useState(new Date());
     const handleDateChange = (date) => {
         setSelectedDate(date);
@@ -213,17 +213,17 @@ const BrandList = () => {
             dataIndex: 'actions',
             render: (_, record) => (
                 <td className="action-table-data">
-                  <div className="edit-delete-action">
-                    <Link
-                      className="me-2 p-2"
-                      to="#"
-                      data-bs-toggle="modal"
-                      data-bs-target="#edit-brand"
-                      onClick={() => setSelectedCategory(record)}
-                    >
-                      <Edit className="feather-edit" />
-                    </Link>
-                  </div>
+                    <div className="edit-delete-action">
+                        <Link
+                            className="me-2 p-2"
+                            to="#"
+                            data-bs-toggle="modal"
+                            data-bs-target="#edit-brand"
+                            onClick={() => setSelectedCategory(record)}
+                        >
+                            <Edit className="feather-edit" />
+                        </Link>
+                    </div>
                 </td>
             ),
         },
@@ -232,6 +232,10 @@ const BrandList = () => {
     const handleCategoryAdded = (newCategory) => {
         setPayoutCategories(prev => [newCategory, ...prev]);
     };
+
+    if (isLoading) {
+        return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
+    }
 
     return (
         <div>
@@ -314,7 +318,7 @@ const BrandList = () => {
                                 data-bs-target="#add-brand"
                             >
                                 <PlusCircle className="me-2" />
-                                Add New 
+                                Add New
                             </Link>
                         </div>
                     </div>
@@ -334,7 +338,7 @@ const BrandList = () => {
                                         </Link>
                                     </div>
                                 </div>
-                                
+
                             </div>
                             {/* /Filter */}
 
@@ -406,11 +410,11 @@ const BrandList = () => {
                     </div>
                 </div>
             </div>
-            <AddBrand 
+            <AddBrand
                 refreshCategories={handleActivityComplete}
                 onCategoryAdded={handleCategoryAdded}
             />
-            <EditBrand 
+            <EditBrand
                 selectedCategory={selectedCategory}
                 refreshCategories={handleActivityComplete}
             />

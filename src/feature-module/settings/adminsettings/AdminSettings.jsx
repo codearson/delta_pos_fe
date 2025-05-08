@@ -38,21 +38,37 @@ const AdminSettings = () => {
   const [showUpdateToggleModal, setShowUpdateToggleModal] = useState(false);
   const [editingToggle, setEditingToggle] = useState(null);
   const [editedAction, setEditedAction] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchPendingDevices();
-    fetchAllDevices();
-    fetchManagerToggles();
+    const loadInitialData = async () => {
+      try {
+        setIsLoading(true);
+        await Promise.all([
+          fetchPendingDevices(),
+          fetchAllDevices(),
+          fetchManagerToggles()
+        ]);
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadInitialData();
   }, []);
 
   const fetchManagerToggles = async () => {
     try {
+      setIsLoading(true);
       const response = await getAllManagerToggles();
       if (response && response.status) {
         setManagerToggles([...response.responseDto].reverse());
       }
     } catch (error) {
       console.error('Error fetching manager toggles:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -176,6 +192,7 @@ const AdminSettings = () => {
 
   const fetchPendingDevices = async () => {
     try {
+      setIsLoading(true);
       const response = await getAllPendingDevices();
       setPendingDevicesError(false);
       if (response && response.status) {
@@ -185,11 +202,14 @@ const AdminSettings = () => {
       setPendingDevicesError(true);
       setPendingDevices([]);
       console.error('Error fetching pending devices:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchAllDevices = async () => {
     try {
+      setIsLoading(true);
       const response = await getAllDevices();
       setAllDevicesError(false);
       if (response && response.status) {
@@ -198,6 +218,8 @@ const AdminSettings = () => {
     } catch (error) {
       setAllDevicesError(true);
       console.error('Error fetching all devices:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -675,6 +697,10 @@ const AdminSettings = () => {
     setEditingToggle(null);
     setEditedAction('');
   };
+
+  if (isLoading) {
+    return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
+  }
 
   return (
     <div className="page-wrapper">
