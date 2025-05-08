@@ -12,8 +12,8 @@ const UserManual = () => {
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = '/user_manual.pdf';
-    link.download = 'user_manual.pdf';
+    link.href = '/User_Manual.pdf';
+    link.download = 'User_Manual.pdf';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -32,7 +32,7 @@ const UserManual = () => {
       <div className="content">
         <div className="page-header">
           <div className="page-title">
-            <h4>User Manual</h4>
+            <h4>User Manual V 1.0</h4>
             <h6>View and download user manual</h6>
           </div>
           <ul className="table-top-head">
@@ -60,7 +60,7 @@ const UserManual = () => {
           <div className="card-body p-0">
             <div className={`pdf-container ${data ? 'header-collapsed' : ''}`}>
               <iframe
-                src="/user_manual.pdf"
+                src="/User_Manual.pdf"
                 title="User Manual PDF"
               />
             </div>

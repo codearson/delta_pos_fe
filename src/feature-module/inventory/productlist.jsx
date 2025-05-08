@@ -437,17 +437,7 @@ const ProductList = () => {
   ];
 
   if (isLoading) {
-    return (
-      <div className="page-wrapper">
-        <div className="content">
-          <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
   }
 
   return (

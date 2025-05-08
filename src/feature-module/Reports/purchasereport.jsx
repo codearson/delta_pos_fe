@@ -10,9 +10,11 @@ const tillName = localStorage.getItem("tillName");
 const PurchaseReport = () => {
   const [latestReport, setLatestReport] = useState(null);
   const [activeDetailTab, setActiveDetailTab] = useState("summary");
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchReportData = async () => {
     try {
+      setIsLoading(true);
       const response = await fetchXReport();
       if (response.success && response.data && response.data.responseDto) {
         console.log('X Report Data:', response.data.responseDto);
@@ -60,6 +62,8 @@ const PurchaseReport = () => {
       }
     } catch (error) {
       console.error("Error fetching X-Report:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -287,6 +291,10 @@ const PurchaseReport = () => {
       }, 1000);
     };
   };
+
+  if (isLoading) {
+    return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
+  }
 
   return (
     <div className="pos-category-grid-container">

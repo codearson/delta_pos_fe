@@ -16,6 +16,7 @@ const StockAdjustment = () => {
   const [employeeDiscountEnabled, setEmployeeDiscountEnabled] = useState(false);
   const [isAddingDiscount, setIsAddingDiscount] = useState(false);
   const [newDiscountValue, setNewDiscountValue] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   
   // Minimum Banking states
   const [minimamBanking, setMinimamBanking] = useState(null);
@@ -27,6 +28,7 @@ const StockAdjustment = () => {
   useEffect(() => {
     const fetchToggles = async () => {
       try {
+        setIsLoading(true);
         const toggles = await getAllManagerToggles();
         // Filter to get discount-related toggles, Age Validation toggle, Add Customer toggle, Non Scan Product toggle, and Tax toggle
         // Also filter to only show toggles where adminActive is true
@@ -50,6 +52,8 @@ const StockAdjustment = () => {
         }
       } catch (error) {
         console.error('Error fetching toggles:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -59,10 +63,13 @@ const StockAdjustment = () => {
   useEffect(() => {
     const loadEmployeeDiscounts = async () => {
       try {
+        setIsLoading(true);
         const data = await fetchEmployeeDiscounts(true);
         setEmployeeDiscounts(data);
       } catch (error) {
         console.error("Error loading employee discounts:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -76,12 +83,15 @@ const StockAdjustment = () => {
   useEffect(() => {
     const loadMinimamBanking = async () => {
       try {
+        setIsLoading(true);
         const data = await fetchMinimamBanking();
         // Filter to get only active banking data
         const activeBanking = data.find(item => item.isActive === true);
         setMinimamBanking(activeBanking || null);
       } catch (error) {
         console.error("Error loading minimam banking:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -472,6 +482,10 @@ const StockAdjustment = () => {
     setIsAddingBanking(false);
     setNewBankingValue("");
   };
+
+  if (isLoading) {
+    return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
+  }
 
   return (
     <div className="stock-adjustment">
