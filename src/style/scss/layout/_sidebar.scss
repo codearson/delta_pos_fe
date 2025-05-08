@@ -41,11 +41,17 @@
                         color: #FE9F43
                     }
                 }
-                svg {
+                .icon-wrapper {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                     min-width: 16px;
-                    width:  16px;
-                    height:  16px;
                     margin-right: 10px;
+                    
+                    svg {
+                        width: 16px;
+                        height: 16px;
+                    }
                 }
                 > a{
                     display: -webkit-box;
@@ -571,7 +577,11 @@
         &.active svg {
             transform: rotate(0) !important;
         }
-      
+        &.active {
+            .icon-wrapper {
+                display: flex !important;
+            }
+        }
 }
 
 @include respond-above(custom991) {
