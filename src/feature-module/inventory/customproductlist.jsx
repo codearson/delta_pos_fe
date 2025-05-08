@@ -4,7 +4,7 @@ import { Edit } from "feather-icons-react/build/IconComponents";
 import Table from "../../core/pagination/datatable";
 import Swal from "sweetalert2";
 import AddCustomProductModal from "../../core/modals/inventory/customproductlistmodal";
-import { fetchProducts, updateProductStatus } from "../Api/productApi";
+import { updateProductStatus, getProductsByCategoryName } from "../Api/productApi";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { setToogleHeader } from "../../core/redux/action";
@@ -45,19 +45,18 @@ const CustomProductList = () => {
   const fetchProductsData = async (isInitial = false) => {
     try {
       if (isInitial) setIsLoading(true);
-      const data = await fetchProducts();
-      if (Array.isArray(data)) {
-        const customProducts = data
-          .filter((product) => product.productCategoryDto?.productCategoryName?.toLowerCase() === "custom")
-          .map((product) => {
-            const [name, icon] = product.name.split("-");
-            return {
-              ...product,
-              name: name.trim(),
-              icon: icon?.trim() || "📦",
-              isActive: product.isActive === 1 || product.isActive === true,
-            };
-          });
+      const status = showActive ? 'True' : 'False';
+      const data = await getProductsByCategoryName(1, 100, 'Custom', status);
+      if (data && data.responseDto && data.responseDto.payload) {
+        const customProducts = data.responseDto.payload.map((product) => {
+          const [name, icon] = product.name.split("-");
+          return {
+            ...product,
+            name: name.trim(),
+            icon: icon?.trim() || "📦",
+            isActive: product.isActive === 1 || product.isActive === true,
+          };
+        });
         setAllProducts(customProducts);
         filterData(customProducts, searchTerm);
       } else {
@@ -85,7 +84,7 @@ const CustomProductList = () => {
   };
 
   const filterData = (productsData, query) => {
-    let filteredData = productsData.filter((product) => product.isActive === showActive);
+    let filteredData = [...productsData];
     if (query.trim() !== "") {
       filteredData = filteredData.filter((product) =>
         product.name.toLowerCase().includes(query.toLowerCase())
