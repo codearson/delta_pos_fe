@@ -1567,15 +1567,15 @@ const Pos = () => {
     showNotification("Transaction recalled successfully.", "success");
   };
 
-  const handleDeleteSuspendedTransaction = (id) => {
-    const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== id);
-    setSuspendedTransactions(updatedSuspendedTransactions);
-    localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
-    showNotification("Suspended transaction deleted successfully.", "success");
-    if (updatedSuspendedTransactions.length === 0) {
-      setShowSuspendedTransactions(false);
-    }
-  };
+  // const handleDeleteSuspendedTransaction = (id) => {
+  //   const updatedSuspendedTransactions = suspendedTransactions.filter((t) => t.id !== id);
+  //   setSuspendedTransactions(updatedSuspendedTransactions);
+  //   localStorage.setItem("suspendedTransactions", JSON.stringify(updatedSuspendedTransactions));
+  //   showNotification("Suspended transaction deleted successfully.", "success");
+  //   if (updatedSuspendedTransactions.length === 0) {
+  //     setShowSuspendedTransactions(false);
+  //   }
+  // };
 
   const toggleTransactionDetails = (id) => {
     setExpandedTransactionId(expandedTransactionId === id ? null : id);
@@ -2077,12 +2077,12 @@ const Pos = () => {
                         >
                           Recall
                         </button>
-                        <button
+                        {/* <button
                           className="delete-btn"
                           onClick={() => handleDeleteSuspendedTransaction(transaction.id)}
                         >
                           <i className="feather-trash-2" />
-                        </button>
+                        </button> */}
                       </div>
                       {expandedTransactionId === transaction.id && (
                         <div className="details-container">
