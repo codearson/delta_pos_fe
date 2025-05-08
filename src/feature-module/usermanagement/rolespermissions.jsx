@@ -4,6 +4,7 @@ import { fetchAdmins } from "../Api/UserApi";
 const RolesPermissions = () => {
   const [usersData, setUsersData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 12,
@@ -13,6 +14,7 @@ const RolesPermissions = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
+      setIsLoading(true);
       const response = await fetchAdmins(pagination.current, pagination.pageSize);
       const userData = response.payload || [];
       const adminUsers = userData.filter(user =>
@@ -39,12 +41,17 @@ const RolesPermissions = () => {
       console.error('Error loading users:', error);
     } finally {
       setLoading(false);
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     loadUsers();
   }, [pagination.current, pagination.pageSize]);
+
+  if (isLoading) {
+    return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
+  }
 
   return (
     <div>

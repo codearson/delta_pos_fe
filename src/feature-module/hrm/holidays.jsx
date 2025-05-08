@@ -313,8 +313,8 @@ const Holidays = () => {
     const renderCollapseTooltip = (props) => <Tooltip id="refresh-tooltip" {...props}>Collapse</Tooltip>;
 
     if (isLoading) {
-        return <div className="page-wrapper">Loading...</div>;
-    }
+        return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
+      }
 
     return (
         <div className="page-wrapper">

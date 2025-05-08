@@ -340,17 +340,7 @@ const Banking = () => {
   const totalAmount = filteredBankingRecords.reduce((sum, banking) => sum + (banking.amount || 0), 0);
 
   if (isLoading) {
-    return (
-      <div className="page-wrapper">
-        <div className="content">
-          <div className="card table-list-card">
-            <div className="card-body">
-              <p>Loading...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
   }
 
   const zReportTimeToUse = selectedZReportTime === "All" ? latestZReportTime : selectedZReportTime;

@@ -438,11 +438,7 @@ const SalesReport = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="page-wrapper">
-        <div>Loading...</div>
-      </div>
-    );
+    return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
   }
 
   return (
