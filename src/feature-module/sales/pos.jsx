@@ -761,11 +761,15 @@ const Pos = () => {
     }
 
     try {
+      const userId = parseInt(localStorage.getItem("userId") || "1");
       const voidData = {
         itemName: selectedItem.name,
-        quantity: selectedItem.qty,
         price: Math.abs(selectedItem.price),
-        total: Math.abs(selectedItem.total)
+        quantity: selectedItem.qty,
+        total: Math.abs(selectedItem.total),
+        userDto: {
+          id: userId
+        }
       };
 
       await saveVoidHistory(voidData);
@@ -822,12 +826,16 @@ const Pos = () => {
 
   const handleVoidAll = async () => {
     try {
+      const userId = parseInt(localStorage.getItem("userId") || "1");
       const voidPromises = selectedItems.map(item => 
         saveVoidHistory({
           itemName: item.name,
-          quantity: item.qty,
           price: Math.abs(item.price),
-          total: Math.abs(item.total)
+          quantity: item.qty,
+          total: Math.abs(item.total),
+          userDto: {
+            id: userId
+          }
         })
       );
 
@@ -836,9 +844,12 @@ const Pos = () => {
           voidPromises.push(
             saveVoidHistory({
               itemName: "Manual Discount",
-              quantity: 1,
               price: Math.abs(discount),
-              total: Math.abs(discount)
+              quantity: 1,
+              total: Math.abs(discount),
+              userDto: {
+                id: userId
+              }
             })
           );
         });
@@ -848,9 +859,12 @@ const Pos = () => {
         voidPromises.push(
           saveVoidHistory({
             itemName: `Employee Discount (${employeeDiscountPercentage.toFixed(1)}%)`,
-            quantity: 1,
             price: Math.abs(employeeDiscount),
-            total: Math.abs(employeeDiscount)
+            quantity: 1,
+            total: Math.abs(employeeDiscount),
+            userDto: {
+              id: userId
+            }
           })
         );
       }
@@ -862,9 +876,12 @@ const Pos = () => {
         voidPromises.push(
           saveVoidHistory({
             itemName: "Cash Payment",
-            quantity: 1,
             price: Math.abs(cashTotal),
-            total: Math.abs(cashTotal)
+            quantity: 1,
+            total: Math.abs(cashTotal),
+            userDto: {
+              id: userId
+            }
           })
         );
       }
@@ -875,9 +892,12 @@ const Pos = () => {
           voidPromises.push(
             saveVoidHistory({
               itemName: `${method.type} Payment`,
-              quantity: 1,
               price: Math.abs(method.amount),
-              total: Math.abs(method.amount)
+              quantity: 1,
+              total: Math.abs(method.amount),
+              userDto: {
+                id: userId
+              }
             })
           );
         });
