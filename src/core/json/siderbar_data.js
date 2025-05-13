@@ -63,6 +63,7 @@ export const getSidebarData = () => {
         { label: "Transaction", link: "/invoice-report", icon:  <Icon.FileText />,showSubRoute: false,submenu: false },
         { label: "Banking", link: "/banking", icon: <Icon.CreditCard />, showSubRoute: false},
         { label: "Payout ", link: "/sales-returns", icon:  <Icon.Copy />,showSubRoute: false,submenu: false },
+        { label: "Void History ", link: "/void-history", icon:  <Icon.Delete />,showSubRoute: false,submenu: false },
       ]
     },
     {

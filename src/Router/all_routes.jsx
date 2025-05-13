@@ -1,6 +1,7 @@
 export const all_routes = {
   dashboard: "/dashboard",
   productlist: "/product-list",
+  VoidHistory: "/void-history",
   ProductDiscount: "/productDiscount",
   UserManual: "/userManual",
   customproductlist: "/custom-products",
