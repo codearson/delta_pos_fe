@@ -17,6 +17,7 @@ import Media from "../feature-module/uiinterface/media";
 import Modals from "../feature-module/uiinterface/modals";
 import Offcanvas from "../feature-module/uiinterface/offcanvas";
 import Pagination from "../feature-module/uiinterface/pagination";
+import VoidHistory from "../feature-module/sales/voidHistory";
 
 import Alert from "../feature-module/uiinterface/alert";
 import Accordion from "../feature-module/uiinterface/accordion";
@@ -216,6 +217,13 @@ export const publicRoutes = [
     path: routes.ProductDiscount,
     name: "discount",
     element: <ProductDiscount />,
+    route: Route,
+  },
+  {
+    id: 108,
+    path: routes.VoidHistory,
+    name: "voidHistory",
+    element: <VoidHistory />,
     route: Route,
   },
   {
