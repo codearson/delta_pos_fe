@@ -86,3 +86,71 @@ body.dark-mode option {
   margin-top: 4px;
   margin-bottom: 4px;
 } 
+/* ===== RESPONSIVE: Shifts Calendar ===== */
+@media (max-width: 1024px) {
+  .calendar-grid {
+    gap: 6px;
+  }
+  .calendar-day {
+    min-height: 160px;
+    height: 160px;
+    padding: 6px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+  }
+  .calendar-weekdays {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .calendar-day {
+    min-height: 120px;
+    height: 120px;
+    padding: 5px;
+  }
+  .calendar-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 575px) {
+  .calendar-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+  .calendar-weekdays {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .calendar-day {
+    min-height: 90px;
+    height: 90px;
+    padding: 4px;
+    font-size: 11px;
+  }
+  .shift-item {
+    font-size: 10px;
+    padding: 2px 5px;
+  }
+  .add-btn {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (max-width: 375px) {
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+  .calendar-weekdays {
+    display: none;
+  }
+  .calendar-day {
+    min-height: 80px;
+    height: auto;
+  }
+}

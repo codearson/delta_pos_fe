@@ -1,8 +1,7 @@
 .page-wrapper {
-    @include transition(all 0.5s ease);
     @include margin-padding( 0 0 0 260px, 66px 0 0);
     @include position(relative,null,null,null,0);
-    @include transition(all 0.2s ease);
+    @include transition(all 0.5s ease);
     @include respond-below(custom991) {
         @include margin-padding( 0 , 60px 0 0);
     }

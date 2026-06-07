@@ -173,6 +173,21 @@
     .user-info .user-name {
         color: $theme-title;
     }
+    .user-info-item {
+        .user-detail {
+            .user-name { color: #ffffff !important; }
+            .user-role  { color: #cccccc !important; }
+        }
+    }
+    .logout-btn {
+        color: #ff4d4d !important;
+        svg { stroke: #ff4d4d; }
+        &:hover {
+            color: #ff1a1a !important;
+            background: rgba(220, 53, 69, 0.15) !important;
+            svg { stroke: #ff1a1a; }
+        }
+    }
     .user-menu {
         .nav-item-box {
             > a{

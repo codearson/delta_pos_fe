@@ -518,7 +518,8 @@ $light-text: #000000;
 
 @media (max-width: 768px) {
   .calculator-container {
-    grid-column: span 6;
+    grid-column: span 1;
+    order: 2;
   }
 
   .search-input {
@@ -571,7 +572,7 @@ $light-text: #000000;
 
 @media (max-width: 480px) {
   .calculator-container {
-    grid-column: span 12;
+    grid-column: span 1;
     padding: 0.75rem;
   }
 

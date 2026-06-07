@@ -74,3 +74,45 @@
         }
     }
 }
+/* ===== RESPONSIVE: Email ===== */
+@media (max-width: 991px) {
+  .inbox-menu {
+    margin-bottom: 10px;
+  }
+  .email-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 767px) {
+  .compose-btn {
+    margin-bottom: 12px;
+    .btn {
+      width: 100%;
+    }
+  }
+  .top-action-left {
+    .btn-group {
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+  }
+  .table-inbox {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+  .email-header .btn-white {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 575px) {
+  .inbox-menu li a {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
