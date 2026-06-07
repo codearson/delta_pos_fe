@@ -1,18 +1,27 @@
 import React from 'react';
-import { Download, ChevronUp } from 'react-feather';
+import { Download, ChevronUp, FileText, ExternalLink } from 'react-feather';
 import { Link } from 'react-router-dom';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { setToogleHeader } from '../../core/redux/action';
 import '../../style/scss/pages/_userManual.scss';
 
+// iOS Safari does not support inline PDF rendering in <iframe> or <embed>.
+// Detect iOS/iPadOS to show a tap-to-open fallback instead.
+const isIOS = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+const PDF_URL = '/User_Manual.pdf';
+
 const UserManual = () => {
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
+  const iosDevice = isIOS();
 
   const handleDownload = () => {
     const link = document.createElement('a');
-    link.href = '/User_Manual.pdf';
+    link.href = PDF_URL;
     link.download = 'User_Manual.pdf';
     document.body.appendChild(link);
     link.click();
@@ -59,10 +68,30 @@ const UserManual = () => {
         <div className="card table-list-card">
           <div className="card-body p-0">
             <div className={`pdf-container ${data ? 'header-collapsed' : ''}`}>
-              <iframe
-                src="/User_Manual.pdf"
-                title="User Manual PDF"
-              />
+              {iosDevice ? (
+                /* iOS Safari cannot render PDFs inside iframes/embeds.
+                   Show a full-height tap-to-open card instead. */
+                <div className="pdf-ios-fallback">
+                  <FileText size={56} strokeWidth={1.2} />
+                  <h5>User Manual PDF</h5>
+                  <p>Safari on iPad &amp; iPhone cannot display PDFs inline.<br />Tap a button below to continue.</p>
+                  <div className="pdf-ios-actions">
+                    <a href={PDF_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                      <ExternalLink size={16} className="me-2" />
+                      Open PDF
+                    </a>
+                    <button onClick={handleDownload} className="btn btn-outline-secondary">
+                      <Download size={16} className="me-2" />
+                      Download
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <iframe
+                  src={PDF_URL}
+                  title="User Manual PDF"
+                />
+              )}
             </div>
           </div>
         </div>

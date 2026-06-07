@@ -75,7 +75,7 @@ const CollapsedSidebar = () => {
                   role="tab"
                   aria-selected="false"
                 >
-                  <ImageWithBasePath src="assets/img/icons/sales1.svg" alt />
+                  <ImageWithBasePath src="assets/img/icons/sales1.svg" alt="img" />
                 </Link>
               </li>
               <li className="nav-item" role="presentation">
@@ -88,7 +88,7 @@ const CollapsedSidebar = () => {
                   role="tab"
                   aria-selected="true"
                 >
-                  <ImageWithBasePath src="assets/img/icons/purchase1.svg" alt />
+                  <ImageWithBasePath src="assets/img/icons/purchase1.svg" alt="img" />
                 </Link>
               </li>
               <li className="nav-item" role="presentation">
@@ -101,7 +101,7 @@ const CollapsedSidebar = () => {
                   role="tab"
                   aria-selected="true"
                 >
-                  <ImageWithBasePath src="assets/img/icons/users1.svg" alt />
+                  <ImageWithBasePath src="assets/img/icons/users1.svg" alt="img" />
                 </Link>
               </li>
               <li className="nav-item" role="presentation">
@@ -114,7 +114,7 @@ const CollapsedSidebar = () => {
                   role="tab"
                   aria-selected="true"
                 >
-                  <ImageWithBasePath src="assets/img/icons/calendars.svg" alt />
+                  <ImageWithBasePath src="assets/img/icons/calendars.svg" alt="img" />
                 </Link>
               </li>
               <li className="nav-item" role="presentation">

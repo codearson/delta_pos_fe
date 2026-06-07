@@ -62,3 +62,52 @@ margin-bottom: 0;
     margin-top: 0;
     margin-bottom: 15px;
 }
+/* ===== RESPONSIVE: Product List ===== */
+@media (max-width: 991px) {
+  .modal.show .modal-dialog.purchase {
+    max-width: 95%;
+    margin: 10px auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .page-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    .add-item {
+      width: 100%;
+    }
+    .table-top-head {
+      margin-left: auto;
+    }
+    .page-btn {
+      width: 100%;
+      .btn-added {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  }
+  .input-blocks.download {
+    float: none;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  .import-btn {
+    float: none;
+    width: 100%;
+    .btn {
+      width: 100%;
+    }
+  }
+}
+
+@media (max-width: 575px) {
+  .modal.show .modal-dialog.purchase {
+    max-width: 100%;
+    margin: 0;
+  }
+  .image-upload.download {
+    min-height: 100px;
+  }
+}

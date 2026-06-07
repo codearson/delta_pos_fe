@@ -38,7 +38,7 @@ export const getSidebarData = () => {
         { label: "Custom Categories", link: "/custom-products", icon:<Icon.Tool />,showSubRoute: false,submenu: false },
         { label: "Non Scan Products", link: "/nonsaleproduct", icon:  <Icon.BarChart2 />,showSubRoute: false,submenu: false },
         { label: "Low Stocks", link: "/low-stocks", icon: <Icon.TrendingDown  />,showSubRoute: false,submenu: false },
-        { label: "Category", link: "/category-list", icon:  <Icon.Codepen />,showSubRoute: false,submenu: false },
+        { label: "Category", link: "/category-list", icon:  <Icon.Grid />,showSubRoute: false,submenu: false },
         { label: "Tax", link: "/sub-categories", icon:  <Icon.Speaker  />,showSubRoute: false,submenu: false },
         { label: "Payout Category", link: "/brand-list", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
       ]
@@ -50,7 +50,7 @@ export const getSidebarData = () => {
       submenu: true,
       showSubRoute: false,
       submenuItems: [
-        { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Tag />,showSubRoute: false,submenu: false },
+        { label: "Product Discount", link: "/productDiscount", icon:  <Icon.Percent />,showSubRoute: false,submenu: false },
       ]
     },
     {

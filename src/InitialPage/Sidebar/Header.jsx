@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import FeatherIcon from "feather-icons-react";
+import { LogOut } from "react-feather";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
 //import { Search, XCircle } from "react-feather";
 import { all_routes } from "../../Router/all_routes";
@@ -35,37 +36,7 @@ const Header = () => {
     }
   };
 
-  useEffect(() => {
-    const handleMouseover = (e) => {
-      e.stopPropagation();
-
-      const body = document.body;
-      const toggleBtn = document.getElementById("toggle_btn");
-
-      if (
-        body.classList.contains("mini-sidebar") &&
-        isElementVisible(toggleBtn)
-      ) {
-        const target = e.target.closest(".sidebar, .header-left");
-
-        if (target) {
-          body.classList.add("expand-menu");
-          slideDownSubmenu();
-        } else {
-          body.classList.remove("expand-menu");
-          slideUpSubmenu();
-        }
-
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener("mouseover", handleMouseover);
-
-    return () => {
-      document.removeEventListener("mouseover", handleMouseover);
-    };
-  }, []);
+  // Hover-to-expand removed: sidebar stays collapsed until toggle button is clicked
 
   const handlesidebar = () => {
     document.body.classList.toggle("mini-sidebar");
@@ -196,11 +167,14 @@ const Header = () => {
         {/* Logo */}
         <div
           className={`header-left ${toggle ? "" : "active"}`}
-          onMouseLeave={expandMenu}
-          onMouseOver={expandMenuOpen}
         >
-          <Link to="/dashboard" className="logo logo-normal">
+          {/* Light mode logo */}
+          <Link to="/dashboard" className="logo logo-normal logo-light">
             <ImageWithBasePath src="assets/img/logo.png" alt="img" />
+          </Link>
+          {/* Dark mode logo — same layout, white text, purple D preserved */}
+          <Link to="/dashboard" className="logo logo-normal logo-dark-mode">
+            <ImageWithBasePath src="assets/img/logo-dark.png" alt="img" />
           </Link>
           <Link to="/dashboard" className="logo logo-white">
             <ImageWithBasePath src="assets/img/logo-white.png" alt="img" />
@@ -422,67 +396,32 @@ const Header = () => {
             </Link>
           </li>
 
-          <li className="nav-item dropdown has-arrow main-drop">
-            <Link
-              to="#"
-              className="dropdown-toggle nav-link userset"
-              data-bs-toggle="dropdown"
-            >
-              <span className="user-info">
-                {/* <span className="user-letter">
-                  <ImageWithBasePath
-                    src="assets/img/profiles/avator1.jpg"
-                    alt="img"
-                    className="img-fluid"
-                  />
-                </span> */}
-                <span className="user-detail">
-                  <span className="user-name">{fullName}</span>
-                  <span className="user-role">
-                    {userRole}
-                    {tillName && <> | <span className="till-name">{tillName}</span></>}
-                  </span>
-                </span>
+          {/* User name & role — plain display, no dropdown */}
+          <li className="nav-item user-info-item">
+            <span className="user-detail">
+              <span className="user-name">{fullName}</span>
+              <span className="user-role">
+                {userRole}
+                {tillName && <> | <span className="till-name">{tillName}</span></>}
               </span>
+            </span>
+          </li>
+
+          {/* Logout icon — directly visible in header */}
+          <li className="nav-item nav-item-box">
+            <Link
+              to={route.signin}
+              className="logout-btn"
+              title="Log Out"
+              onClick={() => {
+                localStorage.removeItem('registeredDevice');
+                localStorage.removeItem('tillName');
+                localStorage.removeItem('tillId');
+                localStorage.removeItem('deviceId');
+              }}
+            >
+              <LogOut />
             </Link>
-            <div className="dropdown-menu menu-drop-user">
-              <div className="profilename">
-                <div className="profileset">
-                  {/* <span className="user-img">
-                    <ImageWithBasePath
-                      src="assets/img/profiles/avator1.jpg"
-                      alt="img"
-                    />
-                    <span className="status online" />
-                  </span> */}
-                  <div className="profilesets">
-                    <h6>{fullName}</h6>
-                    <h5>
-                      {userRole}
-                      {tillName && <> | <span className="till-name">{tillName}</span></>}
-                    </h5>
-                  </div>
-                </div>
-                <hr className="m-0" />
-                <Link
-                  className="dropdown-item"
-                  to={route.signin}
-                  onClick={() => {
-                    localStorage.removeItem('registeredDevice');
-                    localStorage.removeItem('tillName');
-                    localStorage.removeItem('tillId');
-                    localStorage.removeItem('deviceId');
-                  }}
-                >
-                  <ImageWithBasePath
-                    src="assets/img/icons/log-out.svg"
-                    alt="img"
-                    className="me-2"
-                  />
-                  Log Out
-                </Link>
-              </div>
-            </div>
           </li>
         </ul>
         {/* /Header Menu */}
@@ -503,9 +442,15 @@ const Header = () => {
             <Link className="dropdown-item" to="generalsettings">
               Settings
             </Link>
-            <Link 
-              className="dropdown-item" 
+            <Link
+              className="dropdown-item"
               to={route.signin}
+              onClick={() => {
+                localStorage.removeItem('registeredDevice');
+                localStorage.removeItem('tillName');
+                localStorage.removeItem('tillId');
+                localStorage.removeItem('deviceId');
+              }}
             >
               Log Out
             </Link>

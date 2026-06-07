@@ -334,7 +334,7 @@ const Signin = () => {
                   <ImageWithBasePath src="assets/img/logo.png" alt="img" />
                 </div>
                 <Link to={route.dashboard} className="login-logo logo-white">
-                  <ImageWithBasePath src="assets/img/logo-white.png" alt />
+                  <ImageWithBasePath src="assets/img/logo-white.png" alt="img" />
                 </Link>
                 <div className="login-userheading">
                   <h3>Sign In</h3>
