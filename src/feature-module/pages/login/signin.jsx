@@ -45,33 +45,21 @@ const Signin = () => {
         if (!uuid) {
           uuid = uuidv4();
           localStorage.setItem('posDeviceUUID', uuid);
-          console.log('%c 🆕 New Device UUID generated:', 'color: #4CAF50; font-weight: bold;', uuid);
-        } else {
-          console.log('%c 🗂️ Existing Device UUID found:', 'color: #2196F3; font-weight: bold;', uuid);
         }
 
         // 2. FingerprintJS visitorId
-        console.log('%c 🔍 FingerprintJS: Initializing...', 'color: #4CAF50; font-weight: bold;');
         const fp = await FingerprintJS.load();
         const result = await fp.get();
         const visitorId = result.visitorId;
-        console.log('%c 🔑 FingerprintJS visitorId:', 'color: #4CAF50; font-weight: bold;', visitorId);
 
         // 3. Hybrid ID
         const hybridId = `${uuid}_${visitorId}`;
-        console.log('%c 🛡️ Hybrid Device ID:', 'color: #FF9800; font-weight: bold;', hybridId);
 
         // Store for later use
         localStorage.setItem('hybridDeviceId', hybridId);
         // Set the UUID part
         setDeviceId(uuid);
-        console.log('%c 📝 Device ID stored in state:', 'color: #9C27B0; font-weight: bold;', {
-          deviceId: uuid,
-          hybridId: hybridId,
-          visitorId: visitorId
-        });
       } catch (error) {
-        console.error('%c ❌ Error initializing FingerprintJS:', 'color: #F44336; font-weight: bold;', error);
         setError("Failed to initialize device authentication");
       }
     };
@@ -89,14 +77,12 @@ const Signin = () => {
         return false;
       }
       const response = await loginDevice(deviceId);
-      console.log("Login Device API Response:", response);
 
       // Only update localStorage if response is valid and has responseDto
       if (response && response.status && response.responseDto) {
         localStorage.setItem("registeredDevice", JSON.stringify(response));
         const { approveStatus, loginStatus, tillName } = response.responseDto;
         localStorage.setItem('tillName', tillName || '');
-        console.log("Checking approveStatus from API response:", approveStatus);
 
         if (approveStatus === "Pending") {
           setSuccess("Registration successful! Waiting for admin approval. Please try again later.");
@@ -281,14 +267,6 @@ const Signin = () => {
       };
       
       localStorage.setItem("loginDeviceInfo", JSON.stringify(loginDeviceInfo));
-      
-      console.log('%c 🔍 User details:', 'color: #2196F3; font-weight: bold;', {
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.emailAddress,
-        role: user.userRoleDto?.userRole,
-        domain: window.location.hostname
-      });
-      console.log('%c 📱 Login device info:', 'color: #2196F3; font-weight: bold;', loginDeviceInfo);
 
       if (user.userRoleDto?.userRole === "ADMIN") {
         navigate(route.dashboard);
@@ -301,7 +279,6 @@ const Signin = () => {
         setError("Unknown role. Please contact support.");
       }
     } catch (error) {
-      console.error('%c ❌ Login error:', 'color: #F44336; font-weight: bold;', error);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
