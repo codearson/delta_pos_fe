@@ -168,13 +168,8 @@ const Header = () => {
         <div
           className={`header-left ${toggle ? "" : "active"}`}
         >
-          {/* Light mode logo */}
-          <Link to="/dashboard" className="logo logo-normal logo-light">
+          <Link to="/dashboard" className="logo logo-normal">
             <ImageWithBasePath src="assets/img/logo.png" alt="img" />
-          </Link>
-          {/* Dark mode logo — same layout, white text, purple D preserved */}
-          <Link to="/dashboard" className="logo logo-normal logo-dark-mode">
-            <ImageWithBasePath src="assets/img/logo-dark.png" alt="img" />
           </Link>
           <Link to="/dashboard" className="logo logo-white">
             <ImageWithBasePath src="assets/img/logo-white.png" alt="img" />
