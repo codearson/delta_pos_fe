@@ -1225,75 +1225,81 @@ body.dark-mode {
                     .user-letter {
                         width: 20px;
                         height: 20px;
-                        margin-right: 6px;
-                        border: 0;
+border: 0;
                         img {
                             @include rounded(100%);
                         }
                     }
                     .user-name {
                         font-size: $font-size-13;
-                        font-weight:  $font-weight-medium;
-                        color:  $secondary;
-                    }
-                    &:after {
-                        top: 33%;
-                        @include transform(translateY(-33%));
-                        transform: rotate(45deg);
-                        border-color: $text-color;
-                        right: 6px;
+                        font-weight: $font-weight-medium;
+                        color: $secondary;
                     }
                 }
             }
         }
     }
 }
-.select-store-dropdown {
-    .dropdown-menu {
-        .dropdown-item {
-            display: -webkit-box;
-            display: -ms-flexbox;
-            display: flex;
-            align-items: center;
-            -webkit-box-align: center;
-            -ms-flex-align: center;
-            img {
-                margin-right: 8px;
-                width: 20px;
-                height: 20px;
-                @include rounded(100%);
-                border:  1px solid $gray-100;
-            }
-        }
-    }
 
+// Dark mode logo swap
+.logo-dark-mode { display: none; }
+.header-left .logo-dark-mode { display: none !important; }
+
+body.dark-mode {
+    .header-left {
+        .logo-light { display: none !important; }
+        .logo-dark-mode { display: block !important; }
+    }
 }
-.header-collapse {
-    .user-menu {
-        height:  0;
+
+// User info & logout in header
+.user-info-item {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    @include respond-below(custom767) {
         display: none;
     }
-    .page-wrapper {
-        padding-top:  0;
-    }
-    .header {
-        border-bottom: none;
-        background: transparent;
-        width: 260px;
-        .header-left {
-            background: $white;
+    .user-detail {
+        display: flex;
+        flex-direction: column;
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1B2950;
+            line-height: 1.2;
+        }
+        .user-role {
+            font-size: 11px;
+            color: #67748E;
+            line-height: 1.2;
         }
     }
-    .welcome {
-        #collapse-header {
-            &.active {
-                background: $primary;
-                border-color: $primary;
-                svg {
-                    @include transform(rotate(180deg));
-                    color: $white;
-                }
-            }
-        }
+}
+
+.logout-btn {
+    color: #dc3545 !important;
+    svg { color: #dc3545 !important; stroke: #dc3545 !important; }
+    &:hover {
+        color: #b02a37 !important;
+        svg { color: #b02a37 !important; stroke: #b02a37 !important; }
     }
+}
+
+body.dark-mode {
+    .user-info-item .user-detail {
+        .user-name { color: #ffffff !important; }
+        .user-role { color: #cccccc !important; }
+    }
+    .logout-btn {
+        color: #ff4d4d !important;
+        svg { color: #ff4d4d !important; stroke: #ff4d4d !important; }
+    }
+}
+
+/* === Subtle purple-pink gradient for logo section in dark mode === */
+body.dark-mode .header .header-left,
+[data-layout-mode="dark_mode"] .header .header-left,
+[data-layout-mode="dark"] .header .header-left {
+    background: linear-gradient(135deg, #3a2d5e, #4a2d4a) !important;
 }
