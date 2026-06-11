@@ -162,55 +162,40 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
 
       const response = await updateHoliday(holidayData);
       if (response) {
-        if (formData.status === 'Approved' || formData.status === 'Declined') {
-          try {
-            const approverFirstName = localStorage.getItem("firstName") || "Unknown";
-            const approverLastName = localStorage.getItem("lastName") || "";
-            const approverEmail = localStorage.getItem("email");
-            const shopName = localStorage.getItem("shopName") || "KFC";
-            const user = users.find(u => u.value === formData.userDto.id);
-            console.log("user:", user);
-            const userName = user ? user.label : "Staff Member";
-            const userEmail = user ? user.email : null;
-            console.log("userEmail:", userEmail);
-            const subject = `Leave Request ${formData.status}`;
-            const actionDate = formatReadableDate(new Date());
-            const leavePeriod = `${formatReadableDate(formData.startDate)} – ${formatReadableDate(formData.endDate)}`;
-            const dateLabel = formData.status === 'Approved' ? 'Approval Date' : 'Declined Date';
-
-            const userBody = `Dear ${userName},\n\nYour leave request has been "${formData.status.toLowerCase()}" by Mr. ${approverFirstName} ${approverLastName}.\n\nLeave Type: ${formData.description}\nLeave Period: ${leavePeriod}\n${dateLabel}: ${actionDate}\n\nIf you require any further assistance or would like to discuss any details regarding your leave, please feel free to contact Mr. ${approverFirstName} ${approverLastName} directly.\n\nWarm regards,\n${shopName}`;
-
-            if (!userEmail) {
-              throw new Error("User email not found");
-            }
-            await sendEmail(userEmail, subject, userBody);
-            console.log("Email sent successfully to user:", userEmail);
-
-            if (!approverEmail) {
-              console.warn("Approver email not found in localStorage");
-            } else {
-              const approverSubject = formData.status === 'Approved' ? "Leave Approval Notification" : "Leave Decline Notification";
-              const approverBody = `Dear ${approverFirstName} ${approverLastName},\n\nThis is a confirmation email that you have "${formData.status.toLowerCase()}" a leave request for ${userName}.\n\nReason for leave: ${formData.description}\nPeriod: ${leavePeriod.replace('–', 'to')}\n${dateLabel}: ${actionDate}\n\nKind regards,\n${shopName}`;
-              await sendEmail(approverEmail, approverSubject, approverBody);
-              console.log("Email sent successfully to approver:", approverEmail);
-            }
-          } catch (emailError) {
-            console.error("Failed to send email:", emailError);
-            Swal.fire({
-              title: "Warning!",
-              text: "Leave updated successfully, but failed to send email notification.",
-              icon: "warning",
-            });
-          }
-        }
-
+        // Close modal and refresh table immediately — don't wait for emails
         onUpdate();
+        const closeBtn = document.querySelector("#edit-department [data-bs-dismiss='modal']");
+        if (closeBtn) closeBtn.click();
         Swal.fire({
           title: "Success!",
           text: "Staff Leave has been updated successfully.",
           icon: "success",
         });
-        document.querySelector("#edit-department .close").click();
+
+        // Send emails in background — won't block the UI
+        if (formData.status === 'Approved' || formData.status === 'Declined') {
+          const approverFirstName = localStorage.getItem("firstName") || "Unknown";
+          const approverLastName = localStorage.getItem("lastName") || "";
+          const approverEmail = localStorage.getItem("email");
+          const shopName = localStorage.getItem("shopName") || "KFC";
+          const user = users.find(u => u.value === formData.userDto.id);
+          const userName = user ? user.label : "Staff Member";
+          const userEmail = user ? user.email : null;
+          const subject = `Leave Request ${formData.status}`;
+          const actionDate = formatReadableDate(new Date());
+          const leavePeriod = `${formatReadableDate(formData.startDate)} – ${formatReadableDate(formData.endDate)}`;
+          const dateLabel = formData.status === 'Approved' ? 'Approval Date' : 'Declined Date';
+
+          if (userEmail) {
+            const userBody = `Dear ${userName},\n\nYour leave request has been "${formData.status.toLowerCase()}" by Mr. ${approverFirstName} ${approverLastName}.\n\nLeave Type: ${formData.description}\nLeave Period: ${leavePeriod}\n${dateLabel}: ${actionDate}\n\nWarm regards,\n${shopName}`;
+            sendEmail(userEmail, subject, userBody).catch(e => console.error("User email failed:", e));
+          }
+          if (approverEmail) {
+            const approverSubject = formData.status === 'Approved' ? "Leave Approval Notification" : "Leave Decline Notification";
+            const approverBody = `Dear ${approverFirstName} ${approverLastName},\n\nYou have "${formData.status.toLowerCase()}" a leave request for ${userName}.\n\nReason: ${formData.description}\nPeriod: ${leavePeriod.replace('–', 'to')}\n${dateLabel}: ${actionDate}\n\nKind regards,\n${shopName}`;
+            sendEmail(approverEmail, approverSubject, approverBody).catch(e => console.error("Approver email failed:", e));
+          }
+        }
       }
     } catch (error) {
       console.error("Update error:", error.response?.data || error.message);
