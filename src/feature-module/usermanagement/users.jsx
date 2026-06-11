@@ -336,11 +336,19 @@ const Users = () => {
         {
             title: "Role",
             dataIndex: ["userRoleDto", "userRole"],
-            render: (text) => (
-                <span className="badge badge-primary">
-                    {text}
-                </span>
-            ),
+            render: (text) => {
+                const colors = {
+                    ADMIN:   { background: '#9D00FF', color: '#fff' },
+                    MANAGER: { background: '#28C76F', color: '#fff' },
+                    USER:    { background: '#EDC001', color: '#fff' },
+                };
+                const style = colors[text] || { background: '#6c757d', color: '#fff' };
+                return (
+                    <span style={{ ...style, display: 'inline-block', width: '90px', textAlign: 'center', padding: '4px 0', borderRadius: '20px', fontWeight: 700, fontSize: '12px', letterSpacing: '0.5px' }}>
+                        {text}
+                    </span>
+                );
+            },
             sorter: (a, b) => a.userRoleDto.userRole.length - b.userRoleDto.userRole.length,
         },
         {

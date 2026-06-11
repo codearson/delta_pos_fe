@@ -7,6 +7,12 @@ import { Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Loader from "../feature-module/loader/loader";
 
+// Redirects to signin if no token is present
+const PrivateRoute = () => {
+  const token = localStorage.getItem("accessToken");
+  return token ? <Outlet /> : <Navigate to="/signin" replace />;
+};
+
 const AllRoutes = () => {
   const data = useSelector((state) => state.toggle_header);
   const HeaderLayout = () => (
@@ -64,18 +70,22 @@ return (
       {/* Redirect root to sign-in */}
       <Route path="/" element={<Navigate to="/signin" replace />} />
       
-      {/* POS Routes */}
-      <Route path="/pos" element={<Pospages />}>
-        {posRoutes.map((route, id) => (
-          <Route path={route.path} element={route.element} key={id} />
-        ))}
+      {/* POS Routes — protected */}
+      <Route element={<PrivateRoute />}>
+        <Route path="/pos" element={<Pospages />}>
+          {posRoutes.map((route, id) => (
+            <Route path={route.path} element={route.element} key={id} />
+          ))}
+        </Route>
       </Route>
-      
+
       {/* Protected Routes (Dashboard and others) */}
-      <Route path={"/"} element={<HeaderLayout />}>
-        {publicRoutes.map((route, id) => (
-          <Route path={route.path} element={route.element} key={id} />
-        ))}
+      <Route element={<PrivateRoute />}>
+        <Route path={"/"} element={<HeaderLayout />}>
+          {publicRoutes.map((route, id) => (
+            <Route path={route.path} element={route.element} key={id} />
+          ))}
+        </Route>
       </Route>
       
       {/* Authentication Routes (Sign-in, Register, etc.) */}
