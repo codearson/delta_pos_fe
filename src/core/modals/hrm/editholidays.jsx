@@ -190,11 +190,6 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
             const userBody = `Dear ${userName},\n\nYour leave request has been "${formData.status.toLowerCase()}" by Mr. ${approverFirstName} ${approverLastName}.\n\nLeave Type: ${formData.description}\nLeave Period: ${leavePeriod}\n${dateLabel}: ${actionDate}\n\nWarm regards,\n${shopName}`;
             sendEmail(userEmail, subject, userBody).catch(e => console.error("User email failed:", e));
           }
-          if (approverEmail) {
-            const approverSubject = formData.status === 'Approved' ? "Leave Approval Notification" : "Leave Decline Notification";
-            const approverBody = `Dear ${approverFirstName} ${approverLastName},\n\nYou have "${formData.status.toLowerCase()}" a leave request for ${userName}.\n\nReason: ${formData.description}\nPeriod: ${leavePeriod.replace('–', 'to')}\n${dateLabel}: ${actionDate}\n\nKind regards,\n${shopName}`;
-            sendEmail(approverEmail, approverSubject, approverBody).catch(e => console.error("Approver email failed:", e));
-          }
         }
       }
     } catch (error) {
