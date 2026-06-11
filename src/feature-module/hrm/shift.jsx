@@ -1,4 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
+import Swal from 'sweetalert2';
+import Select from 'react-select';
 import { saveShift, updateShift, getShiftsByDateRange } from '../Api/ShiftApi';
 import { fetchUsers } from '../Api/UserApi';
 import dayjs from 'dayjs';
@@ -32,14 +35,136 @@ function getCalendarGrid(year, month) {
   return days;
 }
 
+function to12h(time24) {
+  if (!time24) return { hours: '12', minutes: '00', ampm: 'AM' };
+  const [h, m] = time24.split(':');
+  let hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return { hours: String(hour).padStart(2, '0'), minutes: m || '00', ampm };
+}
+
+function to24h(hours12, minutes, ampm) {
+  let h = parseInt(hours12, 10) || 12;
+  if (ampm === 'AM') {
+    if (h === 12) h = 0;
+  } else {
+    if (h !== 12) h += 12;
+  }
+  return `${String(h).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function TimeInput({ value, onChange, timeFormat }) {
+  TimeInput.propTypes = {
+    value: PropTypes.string,
+    onChange: PropTypes.func.isRequired,
+    timeFormat: PropTypes.string,
+  };
+
+  const [hRaw, mRaw] = (value || '00:00').split(':');
+  const hour24 = parseInt(hRaw, 10) || 0;
+  const minuteVal = parseInt(mRaw, 10) || 0;
+  const { hours: hours12, minutes, ampm } = to12h(value);
+
+  if (timeFormat === '24h') {
+    return (
+      <div className="d-flex align-items-center gap-2">
+        <input
+          type="number"
+          min="0"
+          max="23"
+          value={hour24}
+          onChange={(e) => {
+            let h = parseInt(e.target.value, 10);
+            if (isNaN(h) || h < 0) h = 0;
+            if (h > 23) h = 23;
+            onChange(`${String(h).padStart(2, '0')}:${String(minuteVal).padStart(2, '0')}`);
+          }}
+          className="form-control"
+          style={{ width: 68, textAlign: 'center' }}
+        />
+        <span style={{ fontWeight: 'bold', fontSize: 18 }}>:</span>
+        <input
+          type="number"
+          min="0"
+          max="59"
+          value={minuteVal}
+          onChange={(e) => {
+            let m = parseInt(e.target.value, 10);
+            if (isNaN(m) || m < 0) m = 0;
+            if (m > 59) m = 59;
+            onChange(`${String(hour24).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+          }}
+          className="form-control"
+          style={{ width: 68, textAlign: 'center' }}
+        />
+      </div>
+    );
+  }
+
+  // 12h mode
+  const handleHours = (e) => {
+    let h = parseInt(e.target.value, 10);
+    if (isNaN(h) || h < 1) h = 1;
+    if (h > 12) h = 12;
+    onChange(to24h(h, minutes, ampm));
+  };
+
+  const handleMinutes = (e) => {
+    let m = parseInt(e.target.value, 10);
+    if (isNaN(m) || m < 0) m = 0;
+    if (m > 59) m = 59;
+    onChange(to24h(hours12, String(m).padStart(2, '0'), ampm));
+  };
+
+  return (
+    <div className="d-flex align-items-center gap-2">
+      <input
+        type="number"
+        min="1"
+        max="12"
+        value={parseInt(hours12, 10)}
+        onChange={handleHours}
+        className="form-control"
+        style={{ width: 68, textAlign: 'center' }}
+      />
+      <span style={{ fontWeight: 'bold', fontSize: 18 }}>:</span>
+      <input
+        type="number"
+        min="0"
+        max="59"
+        value={parseInt(minutes, 10)}
+        onChange={handleMinutes}
+        className="form-control"
+        style={{ width: 68, textAlign: 'center' }}
+      />
+      <div className="btn-group ms-1">
+        <button
+          type="button"
+          className={`btn btn-sm ${ampm === 'AM' ? 'btn-success' : 'btn-outline-secondary'}`}
+          onClick={() => onChange(to24h(hours12, minutes, 'AM'))}
+        >AM</button>
+        <button
+          type="button"
+          className={`btn btn-sm ${ampm === 'PM' ? 'btn-success' : 'btn-outline-secondary'}`}
+          onClick={() => onChange(to24h(hours12, minutes, 'PM'))}
+        >PM</button>
+      </div>
+    </div>
+  );
+}
+
 const Shift = () => {
-  const [currentMonth, setCurrentMonth] = useState(dayjs('2025-05-01').startOf('month'));
+  const [currentMonth, setCurrentMonth] = useState(dayjs().startOf('month'));
   const [shifts, setShifts] = useState([]);
   const [users, setUsers] = useState([]);
   const [holidays, setHolidays] = useState([]);
   const [modal, setModal] = useState({ show: false, date: null, mode: 'add', shift: null });
-  const [emailModal, setEmailModal] = useState({ show: false, startDate: '', endDate: '' });
+  const [emailModal, setEmailModal] = useState({ show: false, startDate: '', endDate: '', sendToAll: true, selectedUsers: [] });
   const [form, setForm] = useState({ startTime: '', endTime: '', userId: '', status: 'Active' });
+  const [timeError, setTimeError] = useState('');
+  const [timeFormat, setTimeFormat] = useState('12h');
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
@@ -84,33 +209,55 @@ const Shift = () => {
   const nextMonth = () => setCurrentMonth(currentMonth.add(1, 'month'));
 
   const openAddModal = (date) => {
-    setForm({ startTime: '', endTime: '', userId: '', status: 'Active' });
+    setForm({ startTime: '06:00', endTime: '14:00', userId: '', status: 'Active' });
+    setTimeError('');
     setModal({ show: true, date, mode: 'add', shift: null });
   };
   const openEditModal = (shift) => {
     setForm({ startTime: shift.startTime, endTime: shift.endTime, userId: shift.userDto?.id, status: shift.status });
+    setTimeError('');
     setModal({ show: true, date: shift.date, mode: 'edit', shift });
   };
-  const closeModal = () => setModal({ show: false, date: null, mode: 'add', shift: null });
+  const closeModal = () => {
+    setTimeError('');
+    setModal({ show: false, date: null, mode: 'add', shift: null });
+  };
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
   };
 
-  function formatTime12(timeStr) {
+  function isOnLeave(userId, date) {
+    return holidays.some(h =>
+      h.userDto?.id === Number(userId) &&
+      h.status === 'Approved' &&
+      dayjs(h.startDate).isSameOrBefore(dayjs(date), 'day') &&
+      dayjs(h.endDate).isSameOrAfter(dayjs(date), 'day')
+    );
+  }
+
+  function formatTime(timeStr, fmt) {
     if (!timeStr) return '';
     const [h, m] = timeStr.split(':');
-    let hour = parseInt(h, 10);
+    const hour = parseInt(h, 10);
     const min = m || '00';
+    if (fmt === '24h') {
+      return `${String(hour).padStart(2, '0')}:${min}`;
+    }
     const ampm = hour >= 12 ? 'PM' : 'AM';
-    hour = hour % 12;
-    if (hour === 0) hour = 12;
-    return `${hour.toString().padStart(2, '0')}:${min} ${ampm}`;
+    let h12 = hour % 12;
+    if (h12 === 0) h12 = 12;
+    return `${h12.toString().padStart(2, '0')}:${min} ${ampm}`;
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.startTime && form.endTime && form.endTime <= form.startTime) {
+      setTimeError('End time must be after start time.');
+      return;
+    }
+    setTimeError('');
     setLoading(true);
     const managerId = localStorage.getItem('userId');
     if (modal.mode === 'add' && dayjs(modal.date).isBefore(dayjs(), 'day')) {
@@ -171,11 +318,11 @@ const Shift = () => {
         acc[userId].push(shift);
         return acc;
       }, {});
-      // Get all user IDs with shifts or in users list
-      const userIds = Array.from(new Set([
-        ...Object.keys(shiftsByUser),
-        ...users.map(u => String(u.id))
-      ]));
+      // Get user IDs — all users or selected subset
+      const targetUserIds = emailModal.sendToAll
+        ? Array.from(new Set([...Object.keys(shiftsByUser), ...users.map(u => String(u.id))]))
+        : emailModal.selectedUsers.map(u => String(u.value));
+      const userIds = targetUserIds;
       // Send email to each user with their shifts or off days
       for (const userId of userIds) {
         const user = users.find(u => u.id === Number(userId));
@@ -188,7 +335,9 @@ const Shift = () => {
           const tableRows = allDates.map(date => {
             const shift = shiftMap[date];
             if (shift) {
-              return `${date.padEnd(11)}  ${formatTime12(shift.startTime).padEnd(10)}  ${formatTime12(shift.endTime).padEnd(10)}`;
+              return `${date.padEnd(11)}  ${formatTime(shift.startTime, timeFormat).padEnd(10)}  ${formatTime(shift.endTime, timeFormat).padEnd(10)}`;
+            } else if (isOnLeave(user.id, date)) {
+              return `${date.padEnd(11)}  On Leave`;
             } else {
               return `${date.padEnd(11)}  Off day`;
             }
@@ -216,7 +365,12 @@ const Shift = () => {
           }
         }
       }
-      setEmailModal({ show: false, startDate: '', endDate: '' });
+      setEmailModal({ show: false, startDate: '', endDate: '', sendToAll: true, selectedUsers: [] });
+      Swal.fire({
+        title: 'Success!',
+        text: 'Shifts sent via email successfully.',
+        icon: 'success',
+      });
     } catch (err) {
       alert('Error sending emails');
     }
@@ -253,7 +407,9 @@ const Shift = () => {
       allDates.forEach(date => {
         const shift = shiftMap[user.id]?.[date];
         if (shift) {
-          row.push(`${formatTime12(shift.startTime)} - ${formatTime12(shift.endTime)}`);
+          row.push(`${formatTime(shift.startTime, timeFormat)} - ${formatTime(shift.endTime, timeFormat)}`);
+        } else if (isOnLeave(user.id, date)) {
+          row.push('On Leave');
         } else {
           row.push('Off day');
         }
@@ -325,7 +481,7 @@ const Shift = () => {
               variant="primary"
               className="ms-4"
               style={{ minWidth: 140 }}
-              onClick={() => setEmailModal({ show: true, startDate: '', endDate: '' })}
+              onClick={() => setEmailModal({ show: true, startDate: '', endDate: '', sendToAll: true, selectedUsers: [] })}
             >
               Send Email
             </Button>
@@ -371,6 +527,18 @@ const Shift = () => {
         <div className="calendar-header">
           <Button variant="outline-primary" onClick={prevMonth}>{'<'}</Button>
           <h4 style={{ margin: 0 }}>{currentMonth.format('MMMM YYYY')}</h4>
+          <div className="btn-group btn-group-sm" style={{ margin: '0 12px' }}>
+            <button
+              type="button"
+              className={`btn btn-sm ${timeFormat === '12h' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              onClick={() => setTimeFormat('12h')}
+            >12h</button>
+            <button
+              type="button"
+              className={`btn btn-sm ${timeFormat === '24h' ? 'btn-primary' : 'btn-outline-secondary'}`}
+              onClick={() => setTimeFormat('24h')}
+            >24h</button>
+          </div>
           <Button variant="outline-primary" onClick={nextMonth}>{'>'}</Button>
         </div>
         <div className="calendar-weekdays">
@@ -434,7 +602,7 @@ const Shift = () => {
                           title={shiftIsPast ? 'Cannot update past shifts' : 'Update shift'}
                         >
                           <span className={statusLabelClass}>{statusLabel}</span>
-                          {formatTime12(shift.startTime)} - {formatTime12(shift.endTime)} <br />
+                          {formatTime(shift.startTime, timeFormat)} - {formatTime(shift.endTime, timeFormat)} <br />
                           {shift.userDto?.firstName || ''}
                         </div>
                       );
@@ -456,23 +624,31 @@ const Shift = () => {
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Start Time</Form.Label>
-                <Form.Control
-                  type="time"
-                  name="startTime"
+                <TimeInput
                   value={form.startTime}
-                  onChange={handleFormChange}
-                  required
+                  onChange={(val) => setForm(f => ({ ...f, startTime: val }))}
+                  timeFormat={timeFormat}
                 />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>End Time</Form.Label>
-                <Form.Control
-                  type="time"
-                  name="endTime"
+                <TimeInput
                   value={form.endTime}
-                  onChange={handleFormChange}
-                  required
+                  timeFormat={timeFormat}
+                  onChange={(val) => {
+                    setForm(f => ({ ...f, endTime: val }));
+                    if (form.startTime && val <= form.startTime) {
+                      setTimeError('End time must be after start time.');
+                    } else {
+                      setTimeError('');
+                    }
+                  }}
                 />
+                {timeError && (
+                  <div style={{ color: '#dc3545', fontSize: 13, marginTop: 6 }}>
+                    ⚠️ {timeError}
+                  </div>
+                )}
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>User</Form.Label>
@@ -494,8 +670,13 @@ const Shift = () => {
                     );
                     if (leave) {
                       return (
-                        <option key={u.id} value={u.id} disabled>
-                          {u.firstName} {u.lastName} (On Leave: {leave.startDate} to {leave.endDate})
+                        <option
+                          key={u.id}
+                          value={u.id}
+                          disabled
+                          style={{ backgroundColor: '#EDC001', color: '#3d2e00', fontStyle: 'italic' }}
+                        >
+                          ⚠ {u.firstName} {u.lastName} (On Leave: {leave.startDate} to {leave.endDate})
                         </option>
                       );
                     } else {
@@ -525,12 +706,12 @@ const Shift = () => {
             </Modal.Body>
             <Modal.Footer className="d-flex justify-content-between align-items-center">
               <div><Button variant="secondary" onClick={closeModal}>Cancel</Button></div>
-              <div><Button type="submit" variant="primary" disabled={loading}>{modal.mode === 'add' ? 'Add' : 'Update'}</Button></div>
+              <div><Button type="submit" variant="primary" disabled={loading || !!timeError}>{modal.mode === 'add' ? 'Add' : 'Update'}</Button></div>
             </Modal.Footer>
           </Form>
         </Modal>
         {/* Email Modal */}
-        <Modal show={emailModal.show} onHide={() => setEmailModal({ show: false, startDate: '', endDate: '' })} centered>
+        <Modal show={emailModal.show} onHide={() => setEmailModal({ show: false, startDate: '', endDate: '', sendToAll: true, selectedUsers: [] })} centered>
           <Modal.Header closeButton>
             <Modal.Title>Send Shift Emails</Modal.Title>
           </Modal.Header>
@@ -554,14 +735,39 @@ const Shift = () => {
                   required
                 />
               </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Send To</Form.Label>
+                <div className="mb-2">
+                  <Form.Check
+                    type="checkbox"
+                    label="All Users"
+                    checked={emailModal.sendToAll}
+                    onChange={(e) => setEmailModal(prev => ({ ...prev, sendToAll: e.target.checked, selectedUsers: [] }))}
+                  />
+                </div>
+                {!emailModal.sendToAll && (
+                  <Select
+                    isMulti
+                    options={users.map(u => ({ value: u.id, label: `${u.firstName} ${u.lastName}` }))}
+                    value={emailModal.selectedUsers}
+                    onChange={(selected) => setEmailModal(prev => ({ ...prev, selectedUsers: selected || [] }))}
+                    placeholder="Select user(s)..."
+                    classNamePrefix="react-select"
+                  />
+                )}
+              </Form.Group>
             </Form>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={() => setEmailModal({ show: false, startDate: '', endDate: '' })}>
+            <Button variant="secondary" onClick={() => setEmailModal({ show: false, startDate: '', endDate: '', sendToAll: true, selectedUsers: [] })}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleEmailSubmit} disabled={loading}>
-              Send Emails
+            <Button
+              variant="primary"
+              onClick={handleEmailSubmit}
+              disabled={loading || (!emailModal.sendToAll && emailModal.selectedUsers.length === 0)}
+            >
+              {loading ? 'Sending...' : 'Send Emails'}
             </Button>
           </Modal.Footer>
         </Modal>
