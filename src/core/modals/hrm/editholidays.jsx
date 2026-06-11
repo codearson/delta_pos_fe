@@ -176,7 +176,6 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
         if (formData.status === 'Approved' || formData.status === 'Declined') {
           const approverFirstName = localStorage.getItem("firstName") || "Unknown";
           const approverLastName = localStorage.getItem("lastName") || "";
-          const approverEmail = localStorage.getItem("email");
           const shopName = localStorage.getItem("shopName") || "KFC";
           const user = users.find(u => u.value === formData.userDto.id);
           const userName = user ? user.label : "Staff Member";
