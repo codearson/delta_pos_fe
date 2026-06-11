@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import FeatherIcon from "feather-icons-react";
 import { LogOut } from "react-feather";
 import ImageWithBasePath from "../../core/img/imagewithbasebath";
@@ -10,7 +10,18 @@ import { all_routes } from "../../Router/all_routes";
 
 const Header = () => {
   const route = all_routes;
+  const navigate = useNavigate();
   const [toggle, SetToggle] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('registeredDevice');
+    localStorage.removeItem('tillName');
+    localStorage.removeItem('tillId');
+    localStorage.removeItem('deviceId');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userRole');
+    navigate(route.signin, { replace: true });
+  };
 
   const isElementVisible = (element) => {
     return element.offsetWidth > 0 || element.offsetHeight > 0;
@@ -404,19 +415,14 @@ const Header = () => {
 
           {/* Logout icon — directly visible in header */}
           <li className="nav-item nav-item-box">
-            <Link
-              to={route.signin}
+            <button
               className="logout-btn"
               title="Log Out"
-              onClick={() => {
-                localStorage.removeItem('registeredDevice');
-                localStorage.removeItem('tillName');
-                localStorage.removeItem('tillId');
-                localStorage.removeItem('deviceId');
-              }}
+              onClick={handleLogout}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
             >
               <LogOut />
-            </Link>
+            </button>
           </li>
         </ul>
         {/* /Header Menu */}

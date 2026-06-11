@@ -57,8 +57,8 @@ const Pos_Sidebar = ({ darkMode }) => {
     document.documentElement.setAttribute("data-layout-style", "default");
     document.documentElement.setAttribute("data-nav-color", "light");
     document.body.classList.remove("dark-mode");
-    // Go directly to signin page
-    navigate(route.signin);
+    // Replace history so back button can't return to authenticated pages
+    navigate(route.signin, { replace: true });
   };
 
   const handleHomeClick = () => {
