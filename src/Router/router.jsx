@@ -7,9 +7,31 @@ import { Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Loader from "../feature-module/loader/loader";
 
-// Redirects to signin if no token is present
+// Redirects to signin if no token is present.
+// Also prevents BFCache from restoring authenticated pages after logout.
 const PrivateRoute = () => {
   const token = localStorage.getItem("accessToken");
+
+  React.useEffect(() => {
+    // An empty beforeunload listener opts this page out of BFCache in most browsers,
+    // so the browser can't restore a stale authenticated view after logout.
+    const noop = () => {};
+    window.addEventListener("beforeunload", noop);
+
+    // If BFCache does restore the page (e.g. Safari), re-check the token.
+    const handlePageShow = (e) => {
+      if (e.persisted && !localStorage.getItem("accessToken")) {
+        window.location.replace("/signin");
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+
+    return () => {
+      window.removeEventListener("beforeunload", noop);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, []);
+
   return token ? <Outlet /> : <Navigate to="/signin" replace />;
 };
 
