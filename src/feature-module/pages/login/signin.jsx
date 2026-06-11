@@ -27,6 +27,18 @@ const Signin = () => {
     ThemeManager.applyTheme("light");
   }, []);
 
+  // If already authenticated, skip the signin page entirely
+  useEffect(() => {
+    if (localStorage.getItem("accessToken")) {
+      const role = localStorage.getItem("userRole");
+      if (role === "USER") {
+        navigate(route.pos, { replace: true });
+      } else {
+        navigate(route.dashboard, { replace: true });
+      }
+    }
+  }, [navigate, route.dashboard, route.pos]);
+
   useEffect(() => {
     // Check if device is already registered and pending approval
     const registeredDevice = localStorage.getItem('registeredDevice');
