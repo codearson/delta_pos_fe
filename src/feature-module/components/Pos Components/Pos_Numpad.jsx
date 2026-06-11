@@ -19,7 +19,7 @@ const Pos_Numpad = ({ darkMode, onNumpadClick }) => {
   const checkBankingStatus = async () => {
     try {
       // Check if user is authenticated
-      const accessToken = localStorage.getItem("accessToken");
+      const accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
         return;
       }

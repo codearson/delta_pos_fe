@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchProducts = async () => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -25,7 +25,7 @@ export const fetchProducts = async () => {
 
 export const saveProduct = async (productData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -47,7 +47,7 @@ export const saveProduct = async (productData) => {
 
 export const updateProduct = async (productData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -70,7 +70,7 @@ export const updateProduct = async (productData) => {
 
 export const updateProductStatus = async (productId, status = 0) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       return null;
@@ -95,7 +95,7 @@ export const updateProductStatus = async (productId, status = 0) => {
 
 export const getProductByName = async (name) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -120,7 +120,7 @@ export const getProductByName = async (name) => {
 
 export const getProductByBarcode = async (barcode) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -145,7 +145,7 @@ export const getProductByBarcode = async (barcode) => {
 
 export const getAllProductsPage = async (pageNumber = 1, pageSize = 10, status = '') => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -170,7 +170,7 @@ export const getAllProductsPage = async (pageNumber = 1, pageSize = 10, status =
 
 export const getProductsByCategoryName = async (pageNumber = 1, pageSize = 10, categoryName, status = '') => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -195,7 +195,7 @@ export const getProductsByCategoryName = async (pageNumber = 1, pageSize = 10, c
 
 export const getProductsByTaxPercentage = async (pageNumber = 1, pageSize = 10, taxPercentage, status = '') => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");

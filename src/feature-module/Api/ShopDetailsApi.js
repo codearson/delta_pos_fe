@@ -4,7 +4,7 @@ import axios from "axios";
 // Save Shop Details Api
 export const saveShopDetails = async (shopData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -26,7 +26,7 @@ export const saveShopDetails = async (shopData) => {
 // Get All Shop Details Api
 export const fetchShopDetails = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return [];
@@ -47,7 +47,7 @@ export const fetchShopDetails = async () => {
 // Update Shop Details Api
 export const updateShopDetails = async (shopId, updatedData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -72,7 +72,7 @@ export const updateShopDetails = async (shopId, updatedData) => {
 // Update Shop Details Status Api
 export const updateShopDetailsStatus = async (shopId, status = 0) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -97,7 +97,7 @@ export const updateShopDetailsStatus = async (shopId, status = 0) => {
 // Get Shop Details By Name Api
 export const getShopDetailsByName = async (shopName) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;

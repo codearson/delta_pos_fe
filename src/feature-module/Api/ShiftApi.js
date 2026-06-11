@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchShifts = async (pageNumber = 1, pageSize = 100, status = true) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) return { payload: [], totalRecords: 0 };
         const response = await axios.get(
             `${BASE_BACKEND_URL}/shifts/getAllPage?pageNumber=${pageNumber}&pageSize=${pageSize}&status=${status}`,
@@ -21,7 +21,7 @@ export const fetchShifts = async (pageNumber = 1, pageSize = 100, status = true)
 
 export const saveShift = async (shiftData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) throw new Error("Authentication required");
         const response = await axios.post(
             `${BASE_BACKEND_URL}/shifts/save`,
@@ -37,7 +37,7 @@ export const saveShift = async (shiftData) => {
 
 export const updateShift = async (shiftData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) throw new Error("Authentication required");
         const response = await axios.post(
             `${BASE_BACKEND_URL}/shifts/update`,
@@ -53,7 +53,7 @@ export const updateShift = async (shiftData) => {
 
 export const getShiftsByDateRange = async (startDate, endDate) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) return [];
         const response = await axios.get(
             `${BASE_BACKEND_URL}/shifts/getAllByDateRange?startDate=${startDate}&endDate=${endDate}`,

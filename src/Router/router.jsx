@@ -8,19 +8,26 @@ import { useSelector } from "react-redux";
 import Loader from "../feature-module/loader/loader";
 
 // Redirects to signin if no token is present.
-// Also prevents BFCache from restoring authenticated pages after logout.
+// Uses window.location.replace for a hard redirect that bypasses BFCache.
 const PrivateRoute = () => {
-  const token = localStorage.getItem("accessToken");
+  const token = sessionStorage.getItem("accessToken");
 
   React.useEffect(() => {
-    // An empty beforeunload listener opts this page out of BFCache in most browsers,
-    // so the browser can't restore a stale authenticated view after logout.
+    // Empty beforeunload listener opts this page out of BFCache in most browsers.
     const noop = () => {};
     window.addEventListener("beforeunload", noop);
 
-    // If BFCache does restore the page (e.g. Safari), re-check the token.
+    // Handle browser back/forward buttons — fires before React re-renders.
+    const handlePopState = () => {
+      if (!sessionStorage.getItem("accessToken")) {
+        window.location.replace("/signin");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+
+    // Handle BFCache restoration (Safari / older Chrome).
     const handlePageShow = (e) => {
-      if (e.persisted && !localStorage.getItem("accessToken")) {
+      if (e.persisted && !sessionStorage.getItem("accessToken")) {
         window.location.replace("/signin");
       }
     };
@@ -28,15 +35,22 @@ const PrivateRoute = () => {
 
     return () => {
       window.removeEventListener("beforeunload", noop);
+      window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("pageshow", handlePageShow);
     };
   }, []);
 
-  return token ? <Outlet /> : <Navigate to="/signin" replace />;
+  if (!token) {
+    window.location.replace("/signin");
+    return null;
+  }
+
+  return <Outlet />;
 };
 
 const AllRoutes = () => {
   const data = useSelector((state) => state.toggle_header);
+
   const HeaderLayout = () => (
     <div className={`main-wrapper ${data ? "header-collapse" : ""}`}>
       <Header />
@@ -60,65 +74,39 @@ const AllRoutes = () => {
     </div>
   );
 
-  console.log(publicRoutes, "dashboard");
+  return (
+    <div>
+      <Routes>
+        {/* Redirect root to sign-in */}
+        <Route path="/" element={<Navigate to="/signin" replace />} />
 
-  // return (
-  //   <div>
-  //     <Routes>
-  //       <Route path="/pos" element={<Pospages />}>
-  //         {posRoutes.map((route, id) => (
-  //           <Route path={route.path} element={route.element} key={id} />
-  //         ))}
-  //       </Route>
-  //       <Route path={"/"} element={<HeaderLayout />}>
-  //         {publicRoutes.map((route, id) => (
-  //           <Route path={route.path} element={route.element} key={id} />
-  //         ))}
-  //       </Route>
+        {/* POS Routes — protected */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/pos" element={<Pospages />}>
+            {posRoutes.map((route, id) => (
+              <Route path={route.path} element={route.element} key={id} />
+            ))}
+          </Route>
+        </Route>
 
-  //       <Route path={"/"} element={<Authpages />}>
-  //         {pagesRoute.map((route, id) => (
-  //           <Route path={route.path} element={route.element} key={id} />
-  //         ))}
-  //       </Route>
-  //     </Routes>
-  //   </div>
-  // );
+        {/* Protected Routes (Dashboard and others) */}
+        <Route element={<PrivateRoute />}>
+          <Route path={"/"} element={<HeaderLayout />}>
+            {publicRoutes.map((route, id) => (
+              <Route path={route.path} element={route.element} key={id} />
+            ))}
+          </Route>
+        </Route>
 
-// Inside the AllRoutes component's return statement
-return (
-  <div>
-    <Routes>
-      {/* Redirect root to sign-in */}
-      <Route path="/" element={<Navigate to="/signin" replace />} />
-      
-      {/* POS Routes — protected */}
-      <Route element={<PrivateRoute />}>
-        <Route path="/pos" element={<Pospages />}>
-          {posRoutes.map((route, id) => (
+        {/* Authentication Routes (Sign-in, Register, etc.) */}
+        <Route path={"/"} element={<Authpages />}>
+          {pagesRoute.map((route, id) => (
             <Route path={route.path} element={route.element} key={id} />
           ))}
         </Route>
-      </Route>
-
-      {/* Protected Routes (Dashboard and others) */}
-      <Route element={<PrivateRoute />}>
-        <Route path={"/"} element={<HeaderLayout />}>
-          {publicRoutes.map((route, id) => (
-            <Route path={route.path} element={route.element} key={id} />
-          ))}
-        </Route>
-      </Route>
-      
-      {/* Authentication Routes (Sign-in, Register, etc.) */}
-      <Route path={"/"} element={<Authpages />}>
-        {pagesRoute.map((route, id) => (
-          <Route path={route.path} element={route.element} key={id} />
-        ))}
-      </Route>
-    </Routes>
-  </div>
-);
-
+      </Routes>
+    </div>
+  );
 };
+
 export default AllRoutes;

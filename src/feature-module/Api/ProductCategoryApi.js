@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const saveProductCategory = async (categoryData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -25,7 +25,7 @@ export const saveProductCategory = async (categoryData) => {
 
 export const fetchProductCategories = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return [];
@@ -46,7 +46,7 @@ export const fetchProductCategories = async () => {
 
 export const updateProductCategory = async (categoryId, updatedData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -71,7 +71,7 @@ export const updateProductCategory = async (categoryId, updatedData) => {
 
 export const updateProductCategoryStatus = async (categoryId, status = 0) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -96,7 +96,7 @@ export const updateProductCategoryStatus = async (categoryId, status = 0) => {
 
 export const getProductCategoryByName = async (categoryName) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -120,7 +120,7 @@ export const getProductCategoryByName = async (categoryName) => {
 
 export const fetchProductCategoriesPages = async (pageNumber = 1, pageSize = 10, status = true) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return {

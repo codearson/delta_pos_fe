@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const saveTransaction = async (transactionData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return { success: false, error: "No access token" };
     }
@@ -27,7 +27,7 @@ export const saveTransaction = async (transactionData) => {
 
 export const getAllTransactions = async () => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return { success: false, error: "No access token" };
     }
@@ -56,7 +56,7 @@ export const getAllTransactions = async () => {
 
 export const fetchTransactions = async (pageNumber = 1, pageSize = 10) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return { content: [], totalElements: 0 };
     }
@@ -87,7 +87,7 @@ export const fetchTransactions = async (pageNumber = 1, pageSize = 10) => {
 
 export const fetchZReport = async () => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return { success: false, error: "No access token" };
     }
@@ -109,7 +109,7 @@ export const fetchZReport = async () => {
 
 export const fetchXReport = async () => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return { success: false, error: "No access token" };
     }
@@ -131,7 +131,7 @@ export const fetchXReport = async () => {
 
 export const fetchCashTotal = async (userId = 1) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return { success: false, error: "No access token" };
     }

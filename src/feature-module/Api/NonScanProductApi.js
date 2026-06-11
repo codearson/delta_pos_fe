@@ -4,7 +4,7 @@ import axios from "axios";
 // Save Api
 export const saveNonScanProduct = async (productData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -26,7 +26,7 @@ export const saveNonScanProduct = async (productData) => {
 // Update Api
 export const updateNonScanProduct = async (productId, updatedData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -51,7 +51,7 @@ export const updateNonScanProduct = async (productId, updatedData) => {
 // Update Status Api
 export const updateNonScanProductStatus = async (productId, status = 0) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -76,7 +76,7 @@ export const updateNonScanProductStatus = async (productId, status = 0) => {
 // Get Non-Scan Product By Name Api
 export const getNonScanProductByName = async (productName) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -100,7 +100,7 @@ export const getNonScanProductByName = async (productName) => {
 // Get All Non-Scan Products with Pagination Api
 export const getAllNonScanProductsPage = async (pageNumber = 0, pageSize = 10) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;

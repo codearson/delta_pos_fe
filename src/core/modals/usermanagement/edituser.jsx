@@ -77,7 +77,7 @@ const EditUser = ({ user, onUpdate }) => {
     };
 
     useEffect(() => {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (accessToken) {
             const decodedToken = decodeJwt(accessToken);
             const userRole = decodedToken?.roles[0]?.authority;

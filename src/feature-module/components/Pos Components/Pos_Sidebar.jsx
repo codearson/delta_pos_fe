@@ -39,7 +39,7 @@ const Pos_Sidebar = ({ darkMode }) => {
 
   const handleLogout = () => {
     // Clear relevant localStorage items
-    localStorage.removeItem("accessToken");
+    sessionStorage.removeItem("accessToken");
     localStorage.removeItem("userRole");
     localStorage.removeItem("firstName");
     localStorage.removeItem("lastName");

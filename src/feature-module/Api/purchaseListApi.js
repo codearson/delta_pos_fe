@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchPurchases = async (pageNumber = 1, pageSize = 10) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return {
@@ -41,7 +41,7 @@ export const fetchPurchases = async (pageNumber = 1, pageSize = 10) => {
 };
 
 export const savePurchase = async (purchaseData) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         throw new Error("Authentication required: No access token found");
@@ -69,7 +69,7 @@ export const savePurchase = async (purchaseData) => {
 
 export const deleteAllPurchases = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;

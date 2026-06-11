@@ -4,7 +4,7 @@ import axios from "axios";
 // Save Api
 export const saveMinimamBanking = async (amount) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             return null;
         }
@@ -29,7 +29,7 @@ export const saveMinimamBanking = async (amount) => {
 // Get All Api
 export const fetchMinimamBanking = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return [];
@@ -50,7 +50,7 @@ export const fetchMinimamBanking = async () => {
 // Update Api
 export const updateMinimamBanking = async (bankingId, updatedData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             return null;
         }

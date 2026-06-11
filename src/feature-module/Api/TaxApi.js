@@ -4,7 +4,7 @@ import axios from "axios";
 // Save Api
 export const saveTax = async (tax) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             //console.error("No access token found. Please log in.");
             return null;
@@ -33,7 +33,7 @@ export const saveTax = async (tax) => {
 // Get All Api
 export const fetchTaxes = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             //console.error("No access token found. Please log in.");
@@ -56,7 +56,7 @@ export const fetchTaxes = async () => {
 // Get Tax By Name Api
 export const getTaxByName = async (taxPercentage) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             //console.error("No access token found. Please log in.");
             return null;
@@ -81,7 +81,7 @@ export const getTaxByName = async (taxPercentage) => {
 // Update Tax Api
 export const updateTax = async (taxId, updatedData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             console.error("No access token found. Please log in.");
             return null;
@@ -109,7 +109,7 @@ export const updateTax = async (taxId, updatedData) => {
 // Update Tax Status Api
 export const updateTaxStatus = async (taxId, status = 0) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             //console.error("No access token found. Please log in.");
             return null;
@@ -135,7 +135,7 @@ export const updateTaxStatus = async (taxId, status = 0) => {
 // Get All Taxes with Pagination Api
 export const fetchTaxesPages = async (pageNumber = 1, pageSize = 10, status = true) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             return null;
         }

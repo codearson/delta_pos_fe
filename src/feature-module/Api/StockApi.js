@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchStocks = async () => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -25,7 +25,7 @@ export const fetchStocks = async () => {
 
 export const saveStock = async (stockData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -47,7 +47,7 @@ export const saveStock = async (stockData) => {
 
 export const updateStock = async (stockData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       throw new Error("No access token found. Please log in.");
@@ -72,7 +72,7 @@ export const updateStock = async (stockData) => {
 
 export const updateStockStatus = async (stockId, status = 0) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       return null;
@@ -97,7 +97,7 @@ export const updateStockStatus = async (stockId, status = 0) => {
 
 export const getStockByName = async (name) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");
@@ -122,7 +122,7 @@ export const getStockByName = async (name) => {
 
 export const getStockByBarcode = async (barcode) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       console.error("No access token found. Please log in.");

@@ -13,7 +13,7 @@ export const getAccessToken = async (username, password) => {
 
     if (response.data.responseDto?.accessToken) {
       const accessToken = response.data.responseDto.accessToken;
-      localStorage.setItem("accessToken", accessToken);
+      sessionStorage.setItem("accessToken", accessToken);
       return { success: true, token: accessToken };
     }
 
@@ -34,7 +34,7 @@ export const getAccessToken = async (username, password) => {
 };
 
 export const getUserByEmail = async (email) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
   if (!accessToken) {
     return null;
   }

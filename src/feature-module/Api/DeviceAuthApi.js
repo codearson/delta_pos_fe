@@ -24,7 +24,7 @@ export const registerDevice = async (deviceData) => {
 };
 
 export const approveDevice = async (deviceId) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -45,7 +45,7 @@ export const approveDevice = async (deviceId) => {
 };
 
 export const declineDevice = async (deviceId) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -66,7 +66,7 @@ export const declineDevice = async (deviceId) => {
 };
 
 export const blockDevice = async (deviceId) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -109,7 +109,7 @@ export const loginDevice = async (deviceId) => {
 };
 
 export const getAllPendingDevices = async () => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -137,7 +137,7 @@ export const getAllPendingDevices = async () => {
 };
 
 export const getAllDevices = async () => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -165,7 +165,7 @@ export const getAllDevices = async () => {
 };
 
 export const getDeviceByTillName = async (tillName) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -193,7 +193,7 @@ export const getDeviceByTillName = async (tillName) => {
 };
 
 export const getDeviceByTillId = async (tillId) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -221,7 +221,7 @@ export const getDeviceByTillId = async (tillId) => {
 };
 
 export const updateTillName = async (deviceId, tillName) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;

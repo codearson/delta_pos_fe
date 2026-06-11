@@ -4,7 +4,7 @@ import axios from "axios";
 // Get All Transaction Details Api
 export const fetchTransactionDetails = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
             console.error("No access token found. Please log in.");
             return [];
