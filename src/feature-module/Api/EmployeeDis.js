@@ -2,7 +2,7 @@ import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
 export const saveEmployeeDiscount = async (discountData) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -19,7 +19,7 @@ export const saveEmployeeDiscount = async (discountData) => {
 };
 
 export const updateEmployeeDiscount = async (discountData) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return null;
@@ -36,7 +36,7 @@ export const updateEmployeeDiscount = async (discountData) => {
 };
 
 export const fetchEmployeeDiscounts = async (isActive = true) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         return [];

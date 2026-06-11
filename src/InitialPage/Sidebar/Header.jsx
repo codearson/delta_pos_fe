@@ -18,7 +18,7 @@ const Header = () => {
     localStorage.removeItem('tillName');
     localStorage.removeItem('tillId');
     localStorage.removeItem('deviceId');
-    localStorage.removeItem('accessToken');
+    sessionStorage.removeItem('accessToken');
     localStorage.removeItem('userRole');
     navigate(route.signin, { replace: true });
   };

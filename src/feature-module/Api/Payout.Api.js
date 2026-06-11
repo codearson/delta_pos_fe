@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchPayouts = async (pageNumber = 1, pageSize = 10) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return { content: [], totalElements: 0 };
@@ -35,7 +35,7 @@ export const fetchPayouts = async (pageNumber = 1, pageSize = 10) => {
 
 export const savePayout = async (payoutData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;
@@ -55,7 +55,7 @@ export const savePayout = async (payoutData) => {
 
 export const updatePayout = async (payoutData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;
@@ -76,7 +76,7 @@ export const updatePayout = async (payoutData) => {
 
 export const updatePayoutStatus = async (payoutId, status = 0) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return null;
     }

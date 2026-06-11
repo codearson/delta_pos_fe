@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchUserRoles = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return [];

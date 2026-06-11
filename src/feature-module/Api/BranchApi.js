@@ -2,7 +2,7 @@ import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
 export const fetchBranches = async (pageNumber = 1, pageSize = 10, status = true) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
 
   if (!accessToken) {
     throw new Error("No access token found. Please log in.");
@@ -25,7 +25,7 @@ export const fetchBranches = async (pageNumber = 1, pageSize = 10, status = true
 
 // Save Branch API
 export const saveBranch = async (branchData) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         throw new Error("No access token found. Please log in.");
@@ -43,7 +43,7 @@ export const saveBranch = async (branchData) => {
 
 // Update Branch API
 export const updateBranch = async (branchData) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         throw new Error("No access token found. Please log in.");
@@ -60,7 +60,7 @@ export const updateBranch = async (branchData) => {
 };
 
 export const updateBranchStatus = async (branchId, status = 0) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         throw new Error("No access token found. Please log in.");
@@ -85,7 +85,7 @@ export const updateBranchStatus = async (branchId, status = 0) => {
 };
 
 export const getBranchByName = async (branchName) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
         throw new Error("No access token found. Please log in.");

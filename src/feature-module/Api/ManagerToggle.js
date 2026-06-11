@@ -3,7 +3,7 @@ import { BASE_BACKEND_URL } from "./config";
 
 export const getAllManagerToggles = async () => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     const response = await axios.get(`${BASE_BACKEND_URL}/managerToggle/getAll`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -18,7 +18,7 @@ export const getAllManagerToggles = async () => {
 
 export const updateManagerToggleStatus = async (id, status) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     const response = await axios.put(
       `${BASE_BACKEND_URL}/managerToggle/updateStatus?id=${id}&status=${status}`,
       {},
@@ -37,7 +37,7 @@ export const updateManagerToggleStatus = async (id, status) => {
 
 export const updateManagerToggleAdminStatus = async (id, status) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     const response = await axios.put(
       `${BASE_BACKEND_URL}/managerToggle/updateAdminStatus?id=${id}&status=${status}`,
       {},
@@ -56,7 +56,7 @@ export const updateManagerToggleAdminStatus = async (id, status) => {
 
 export const saveManagerToggle = async (action) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     const response = await axios.post(
       `${BASE_BACKEND_URL}/managerToggle/save`,
       {
@@ -79,7 +79,7 @@ export const saveManagerToggle = async (action) => {
 
 export const getManagerToggleByName = async (action) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     const response = await axios.get(
       `${BASE_BACKEND_URL}/managerToggle/getByName?action=${action}`,
       {
@@ -97,7 +97,7 @@ export const getManagerToggleByName = async (action) => {
 
 export const updateManagerToggle = async (id, action, isActive, adminActive) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     const response = await axios.put(
       `${BASE_BACKEND_URL}/managerToggle/update`,
       {

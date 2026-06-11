@@ -4,7 +4,7 @@ import axios from "axios";
 // Save Country Api
 export const saveCountry = async (countryData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -26,7 +26,7 @@ export const saveCountry = async (countryData) => {
 // Get All Countries Api
 export const fetchCountries = async () => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return [];
@@ -47,7 +47,7 @@ export const fetchCountries = async () => {
 // Update Country Api
 export const updateCountry = async (countryId, updatedData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -72,7 +72,7 @@ export const updateCountry = async (countryId, updatedData) => {
 // Update Country Status Api
 export const updateCountryStatus = async (countryId, status = 0) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -97,7 +97,7 @@ export const updateCountryStatus = async (countryId, status = 0) => {
 // Get Country By Name Api
 export const getCountryByName = async (countryName) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;

@@ -55,7 +55,7 @@ const Users = () => {
     }, [currentPage, pageSize, showActive, selectedRole]);
 
     const checkUserRole = () => {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (accessToken) {
             const decodedToken = decodeJwt(accessToken);
             const userRole = decodedToken?.roles[0]?.authority;
@@ -373,7 +373,7 @@ const Users = () => {
                 const isManager = record.userRoleDto?.userRole === "MANAGER";
                 
                 // Get current user's role
-                const currentUserRole = decodeJwt(localStorage.getItem("accessToken"))?.roles[0]?.authority;
+                const currentUserRole = decodeJwt(sessionStorage.getItem("accessToken"))?.roles[0]?.authority;
                 
                 // Determine if toggle should be disabled
                 let shouldDisableToggle = false;

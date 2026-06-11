@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const saveVoidHistory = async (voidData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) throw new Error("Authentication required");
         const response = await axios.post(
             `${BASE_BACKEND_URL}/voidHistory/save`,
@@ -19,7 +19,7 @@ export const saveVoidHistory = async (voidData) => {
 
 export const getAllVoidHistory = async (pageNumber, pageSize) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) throw new Error("Authentication required");
         const response = await axios.get(
             `${BASE_BACKEND_URL}/voidHistory/getAllPage?pageSize=${pageSize}&pageNumber=${pageNumber}`,
@@ -34,7 +34,7 @@ export const getAllVoidHistory = async (pageNumber, pageSize) => {
 
 export const getVoidHistoryByDate = async (pageNumber, pageSize, date) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) throw new Error("Authentication required");
         const response = await axios.get(
             `${BASE_BACKEND_URL}/voidHistory/getAllPageByDate?pageSize=${pageSize}&pageNumber=${pageNumber}&date=${date}`,
@@ -49,7 +49,7 @@ export const getVoidHistoryByDate = async (pageNumber, pageSize, date) => {
 
 export const getVoidHistoryByUserId = async (pageNumber, pageSize, userId) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) throw new Error("Authentication required");
         const response = await axios.get(
             `${BASE_BACKEND_URL}/voidHistory/getAllPageByUserId?pageSize=${pageSize}&pageNumber=${pageNumber}&userId=${userId}`,

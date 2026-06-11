@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const getAllByZReports = async () => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return [];
     }
@@ -26,7 +26,7 @@ export const getAllByZReports = async () => {
 
 export const getAllByZReportsPages = async (pageNumber = 1, pageSize = 10) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.log('No access token found');
       return { content: [], totalElements: 0 };

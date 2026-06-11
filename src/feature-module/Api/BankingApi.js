@@ -2,7 +2,7 @@ import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
 export const saveBanking = async (bankingData) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
 
   if (!accessToken) {
     return { success: false, error: "No access token" };
@@ -28,7 +28,7 @@ export const saveBanking = async (bankingData) => {
 
 export const fetchBanking = async (pageNumber = 1, pageSize = 10) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       return { content: [], totalElements: 0 };
     }

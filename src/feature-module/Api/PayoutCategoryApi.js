@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchPayoutCategories = async (pageNumber = 1, pageSize = 10, status = true) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return [];
@@ -35,7 +35,7 @@ export const fetchPayoutCategories = async (pageNumber = 1, pageSize = 10, statu
 
 export const savePayoutCategory = async (categoryData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;
@@ -59,7 +59,7 @@ export const savePayoutCategory = async (categoryData) => {
 
 export const updatePayoutCategory = async (categoryData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;
@@ -80,7 +80,7 @@ export const updatePayoutCategory = async (categoryData) => {
 
 export const updatePayoutCategoryStatus = async (categoryId, status = 0) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;
@@ -109,7 +109,7 @@ export const updatePayoutCategoryStatus = async (categoryId, status = 0) => {
 
 export const getPayoutCategoryByName = async (categoryName) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;

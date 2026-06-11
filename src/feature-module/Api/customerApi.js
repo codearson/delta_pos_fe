@@ -2,7 +2,7 @@ import { BASE_BACKEND_URL } from "./config";
 import axios from "axios";
 
 export const saveCustomer = async (customerData) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       return null;
@@ -20,7 +20,7 @@ export const saveCustomer = async (customerData) => {
 };
 
 export const fetchCustomers = async (pageNumber = 1, pageSize = 10, status = true) => {
-    const accessToken = localStorage.getItem("accessToken")
+    const accessToken = sessionStorage.getItem("accessToken")
 
     if (!accessToken) {
       return [];
@@ -37,7 +37,7 @@ export const fetchCustomers = async (pageNumber = 1, pageSize = 10, status = tru
 };
 
 export const updateCustomer = async (customerData) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       return null;
@@ -55,7 +55,7 @@ export const updateCustomer = async (customerData) => {
 };
 
 export const updateCustomerStatus = async (customerId, status) => {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
 
     if (!accessToken) {
       return null;

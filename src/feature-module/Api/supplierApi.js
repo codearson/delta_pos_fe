@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchSuppliers = async (pageNumber = 1, pageSize = 10, status = true) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return {
@@ -43,7 +43,7 @@ export const fetchSuppliers = async (pageNumber = 1, pageSize = 10, status = tru
 
 export const saveSupplier = async (supplierData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -64,7 +64,7 @@ export const saveSupplier = async (supplierData) => {
 
 export const updateSupplier = async (supplierData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -90,7 +90,7 @@ export const updateSupplier = async (supplierData) => {
 
 export const updateSupplierStatus = async (supplierId, status) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;

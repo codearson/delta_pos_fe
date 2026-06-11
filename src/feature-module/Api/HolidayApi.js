@@ -2,7 +2,7 @@ import axios from "axios";
 import { BASE_BACKEND_URL } from "./config";
 
 export const saveHoliday = async (holidayData) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
   if (!accessToken) return null;
 
   const response = await axios.post(
@@ -19,7 +19,7 @@ export const saveHoliday = async (holidayData) => {
 };
 
 export const fetchHolidays = async (pageNumber = 1, pageSize = 10, status = true) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
   if (!accessToken) return { payload: [], totalRecords: 0 };
 
   const params = new URLSearchParams({
@@ -40,7 +40,7 @@ export const fetchHolidays = async (pageNumber = 1, pageSize = 10, status = true
 };
 
 export const updateHoliday = async (holidayData) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
   if (!accessToken) return null;
 
   const response = await axios.put(
@@ -57,7 +57,7 @@ export const updateHoliday = async (holidayData) => {
 };
 
 export const updateHolidayStatus = async (holidayId, status) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
   if (!accessToken) return null;
 
   const response = await axios.put(
@@ -74,7 +74,7 @@ export const updateHolidayStatus = async (holidayId, status) => {
 };
 
 export const sendEmail = async (to, subject, body) => {
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = sessionStorage.getItem("accessToken");
   if (!accessToken) return null;
 
   const response = await axios.post(

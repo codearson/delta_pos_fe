@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchProductDiscounts = async (pageNumber = 1, pageSize = 10, status = true) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       throw new Error("Authentication required");
@@ -43,7 +43,7 @@ export const fetchProductDiscounts = async (pageNumber = 1, pageSize = 10, statu
 
 export const saveProductDiscount = async (discountData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;
@@ -63,7 +63,7 @@ export const saveProductDiscount = async (discountData) => {
 
 export const updateProductDiscount = async (discountData) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;
@@ -83,7 +83,7 @@ export const updateProductDiscount = async (discountData) => {
 
 export const updateProductDiscountStatus = async (discountId, status = 0) => {
   try {
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       console.error("No access token found. Please log in.");
       return null;

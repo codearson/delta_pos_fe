@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const fetchUsers = async (pageNumber = 1, pageSize = 10, status = true) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return { payload: [], totalRecords: 0 };
@@ -66,7 +66,7 @@ export const fetchUsers = async (pageNumber = 1, pageSize = 10, status = true) =
 
 export const fetchAdmins = async (pageNumber = 1, pageSize = 10) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return { payload: [], totalRecords: 0 };
@@ -93,7 +93,7 @@ export const fetchAdmins = async (pageNumber = 1, pageSize = 10) => {
 
 export const saveUser = async (userData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return {
@@ -138,7 +138,7 @@ export const saveUser = async (userData) => {
 
 export const updateUser = async (userData) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -171,7 +171,7 @@ export const updateUser = async (userData) => {
 
 export const updateUserStatus = async (userId, status) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;
@@ -203,7 +203,7 @@ export const updateUserStatus = async (userId, status) => {
 
 export const updatePassword = async (userId, password, changedByUserId) => {
     try {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
 
         if (!accessToken) {
             return null;

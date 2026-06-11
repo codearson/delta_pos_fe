@@ -81,7 +81,7 @@ const AddUsers = ({ onUpdate }) => {
     };
 
     const setDefaultRoleForManager = (roles) => {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (accessToken) {
             const decodedToken = decodeJwt(accessToken);
             const userRole = decodedToken?.roles[0]?.authority;
@@ -291,7 +291,7 @@ const AddUsers = ({ onUpdate }) => {
     };
 
     const isManagerLoggedIn = () => {
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         if (accessToken) {
             const decodedToken = decodeJwt(accessToken);
             return decodedToken?.roles[0]?.authority === "ROLE_MANAGER";

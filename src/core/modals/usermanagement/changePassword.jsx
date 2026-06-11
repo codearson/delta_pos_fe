@@ -119,7 +119,7 @@ const ChangePassword = ({ user, onUpdate }) => {
         }
 
         try {
-            const accessToken = localStorage.getItem("accessToken");
+            const accessToken = sessionStorage.getItem("accessToken");
             const decodedToken = decodeJwt(accessToken);
             
             const loggedInUserEmail = decodedToken.sub;

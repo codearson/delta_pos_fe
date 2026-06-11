@@ -29,7 +29,7 @@ const Signin = () => {
 
   // If already authenticated, skip the signin page entirely
   useEffect(() => {
-    if (localStorage.getItem("accessToken")) {
+    if (sessionStorage.getItem("accessToken")) {
       const role = localStorage.getItem("userRole");
       if (role === "USER") {
         navigate(route.pos, { replace: true });
