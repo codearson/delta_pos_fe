@@ -66,7 +66,7 @@ export const forgotPassword = async (email) => {
       headers: {
         "Content-Type": "application/json",
       },
-      timeout: 10000,
+      timeout: 60000,
     }
   );
   return response.data;
@@ -80,7 +80,7 @@ export const resetPassword = async (token, newPassword) => {
       headers: {
         "Content-Type": "application/json",
       },
-      timeout: 10000,
+      timeout: 60000,
     }
   );
   return response.data;

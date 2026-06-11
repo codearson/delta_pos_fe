@@ -16,19 +16,24 @@ const Forgotpassword = () => {
     setMessage("");
     setLoading(true);
 
+    setMessage("Sending reset email, please wait...");
+
     try {
       const response = await forgotPassword(email);
       if (response == "Password reset email sent successfully") {
-        setMessage(response);
+        setMessage("Password reset email sent successfully");
         setLoading(false);
-        setTimeout(() => navigate(route.resetpassword), 1000);
+        setTimeout(() => navigate(route.resetpassword), 1500);
       } else {
         throw new Error(response);
       }
     } catch (error) {
       let errorMessage = "Failed to connect to the server";
-      
-      if (error.response?.data?.message) {
+
+      if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+        // Request timed out — but the email may still have been sent
+        errorMessage = "Request timed out. The email may still be on its way — please check your inbox in a minute.";
+      } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
@@ -93,7 +98,7 @@ const Forgotpassword = () => {
                     className="btn btn-login"
                     disabled={loading}
                   >
-                    {loading ? "Loading..." : "Continue"}
+                    {loading ? "Sending email..." : "Continue"}
                   </button>
                 </div>
                 <div className="signinform text-center">
