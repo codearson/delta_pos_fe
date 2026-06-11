@@ -6,18 +6,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setToogleHeader } from '../../core/redux/action';
 import '../../style/scss/pages/_userManual.scss';
 
-// iOS Safari does not support inline PDF rendering in <iframe> or <embed>.
-// Detect iOS/iPadOS to show a tap-to-open fallback instead.
-const isIOS = () =>
-  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// On mobile/tablet, inline PDF rendering is unreliable — show buttons instead.
+const isMobileOrTablet = () =>
+  /iPad|iPhone|iPod|Android|Mobile|Tablet/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+  window.innerWidth < 1024;
 
 const PDF_URL = '/User_Manual.pdf';
 
 const UserManual = () => {
   const dispatch = useDispatch();
   const data = useSelector((state) => state.toggle_header);
-  const iosDevice = isIOS();
+  const iosDevice = isMobileOrTablet();
 
   const handleDownload = () => {
     const link = document.createElement('a');
@@ -74,7 +74,7 @@ const UserManual = () => {
                 <div className="pdf-ios-fallback">
                   <FileText size={56} strokeWidth={1.2} />
                   <h5>User Manual PDF</h5>
-                  <p>Safari on iPad &amp; iPhone cannot display PDFs inline.<br />Tap a button below to continue.</p>
+                  <p>PDF preview is not available on mobile &amp; tablet.<br />Use a button below to continue.</p>
                   <div className="pdf-ios-actions">
                     <a href={PDF_URL} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
                       <ExternalLink size={16} className="me-2" />
