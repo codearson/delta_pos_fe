@@ -340,4 +340,9 @@ Pos_Calculator.propTypes = {
   manualDiscount: PropTypes.number.isRequired,
   manualDiscounts: PropTypes.arrayOf(PropTypes.number).isRequired,
   employeeDiscount: PropTypes.number.isRequired,
-  employeeDiscountPercentage: PropTypes.num
+  employeeDiscountPercentage: PropTypes.number.isRequired,
+  employeeName: PropTypes.string,
+  isAgeRestrictionEnabled: PropTypes.bool,
+};
+
+export default Pos_Calculator;

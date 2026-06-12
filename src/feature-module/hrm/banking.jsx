@@ -442,4 +442,29 @@ const Banking = () => {
               {bankingRecords.length === 0 ? (
                 <div className="text-center">
                   <p>
-         
+                    No banking records found between {periodStartDisplay} and {periodEndDisplay}.
+                  </p>
+                </div>
+              ) : (
+                <Table
+                  className="table datanew"
+                  columns={columns}
+                  dataSource={bankingRecords}
+                  rowKey={(record) => record.id}
+                  pagination={{
+                    current: currentPage,
+                    pageSize: pageSize,
+                    total: filteredBankingRecords.length,
+                    onChange: (page) => setCurrentPage(page),
+                  }}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Banking;

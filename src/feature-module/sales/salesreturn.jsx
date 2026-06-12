@@ -470,4 +470,14 @@ const SalesReturn = () => {
                     total: filteredPayoutRecords.length,
                     onChange: (page) => setCurrentPage(page),
                   }}
-               
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default SalesReturn

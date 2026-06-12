@@ -2473,4 +2473,73 @@ const Pos = () => {
                         ...base,
                         backgroundColor: darkMode ? "#444" : "#fff",
                         border: `1px solid ${darkMode ? "#666" : "#ddd"}`,
-           
+                        borderRadius: "8px"
+                      }),
+                      option: (base, state) => ({
+                        ...base,
+                        backgroundColor: state.isSelected
+                          ? darkMode ? "#2EB6E8" : "#e3f2fd"
+                          : state.isFocused
+                            ? darkMode ? "#555" : "#f8f9fa"
+                            : "transparent",
+                        color: "#000", // always black
+                        "&:active": {
+                          backgroundColor: darkMode ? "#2EB6E8" : "#e3f2fd"
+                        }
+                      })
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="payout-actions">
+                <button
+                  className="confirm-btn"
+                  onClick={handleSavePayout}
+                  disabled={!selectedPayoutCategory}
+                >
+                  Confirm Payout
+                </button>
+                <button
+                  className="cancel-btn"
+                  onClick={() => {
+                    setShowPayoutPopup(false);
+                    setSelectedPayoutCategory(null);
+                    setInputValue("0");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {notification && (
+          <NotificationPopup
+            message={notification.message}
+            type={notification.type}
+            onClose={closeNotification}
+          />
+        )}
+
+        <audio preload="auto" style={{ display: "none" }}>
+          <source src="/error-sound.wav" type="audio/wav" />
+        </audio>
+
+        <div style={{ position: "absolute", left: "-9999px" }}>
+          <div ref={barcodeRef}>
+            <Barcode
+              value={(lastTransaction?.id || 0).toString().padStart(10, "0")}
+              format="CODE128"
+              width={1}
+              height={30}
+              displayValue={false}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Pos;

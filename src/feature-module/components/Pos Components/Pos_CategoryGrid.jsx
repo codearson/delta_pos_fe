@@ -2623,4 +2623,13 @@ Pos_CategoryGrid.propTypes = {
       id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
       name: PropTypes.string.isRequired,
       qty: PropTypes.number.isRequired,
-      price: PropTypes.n
+      price: PropTypes.number.isRequired,
+      total: PropTypes.number.isRequired,
+    })
+  ).isRequired,
+  manualDiscount: PropTypes.number,
+};
+
+Pos_CategoryGrid.displayName = "Pos_CategoryGrid";
+
+export default Pos_CategoryGrid;

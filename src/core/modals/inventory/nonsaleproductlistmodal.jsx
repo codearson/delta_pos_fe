@@ -344,4 +344,34 @@ const AddNonSaleProductModal = ({ onSave, onUpdate, selectedProduct }) => {
                                                 onChange={handleChange}
                                                 className="form-control"
                                                 placeholder="Enter price"
-                         
+                                                min="0"
+                                                step="0.01"
+                                            />
+                                            {errors.price && <span className="text-danger">{errors.price}</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="modal-footer-btn">
+                                    <button type="button" className="btn btn-cancel me-2" data-bs-dismiss="modal" onClick={handleModalClose}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn btn-submit">
+                                        Submit
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+AddNonSaleProductModal.propTypes = {
+    onSave: PropTypes.func.isRequired,
+    onUpdate: PropTypes.func,
+    selectedProduct: PropTypes.object,
+};
+
+export default AddNonSaleProductModal; 
