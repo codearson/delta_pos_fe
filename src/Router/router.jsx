@@ -3,9 +3,25 @@ import { Route, Routes, Navigate } from "react-router-dom";
 import Header from "../InitialPage/Sidebar/Header";
 import Sidebar from "../InitialPage/Sidebar/Sidebar";
 import { pagesRoute, posRoutes, publicRoutes } from "./router.link";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Loader from "../feature-module/loader/loader";
+import AccessDenied from "../feature-module/pages/AccessDenied";
+
+// Routes USER role can access (only POS + profile)
+const USER_ALLOWED_PATHS = ["/pos", "/profile"];
+
+// Blocks USER role from non-POS pages and shows Access Denied.
+const RoleRoute = () => {
+  const role = (localStorage.getItem("userRole") || "").toUpperCase();
+  const location = useLocation();
+  const isUser = role === "USER" || role === "ROLE_USER";
+  if (isUser) {
+    const allowed = USER_ALLOWED_PATHS.some(p => location.pathname.startsWith(p));
+    if (!allowed) return <AccessDenied />;
+  }
+  return <Outlet />;
+};
 
 // Redirects to signin if no token is present.
 // Uses window.location.replace for a hard redirect that bypasses BFCache.
@@ -91,10 +107,12 @@ const AllRoutes = () => {
 
         {/* Protected Routes (Dashboard and others) */}
         <Route element={<PrivateRoute />}>
-          <Route path={"/"} element={<HeaderLayout />}>
-            {publicRoutes.map((route, id) => (
-              <Route path={route.path} element={route.element} key={id} />
-            ))}
+          <Route element={<RoleRoute />}>
+            <Route path={"/"} element={<HeaderLayout />}>
+              {publicRoutes.map((route, id) => (
+                <Route path={route.path} element={route.element} key={id} />
+              ))}
+            </Route>
           </Route>
         </Route>
 

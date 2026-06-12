@@ -125,27 +125,12 @@ const SalesReturn = () => {
 
     if (zReportTimeToUse) {
       if (selectedZReportTime === "All") {
+        // Show only records not yet covered by any Z-Report AND created after the last Z-Report
         const startDate = new Date(zReportTimeToUse);
-        const endDate = new Date();
-
         filteredData = filteredData.filter((payout) => {
+          if (payout.generatedDateTime !== null) return false;
           const payoutDateTime = new Date(payout.dateTime);
-          if (isNaN(payoutDateTime) || isNaN(startDate) || isNaN(endDate)) {
-            console.warn("Invalid date format:", payout.dateTime, zReportTimeToUse);
-            return false;
-          }
-          const shouldInclude = payoutDateTime >= startDate && payoutDateTime <= endDate;
-          console.log(
-            "Filtering payout (All):",
-            payout.dateTime,
-            "Period:",
-            zReportTimeToUse,
-            "to",
-            "Now",
-            "Include:",
-            shouldInclude
-          );
-          return shouldInclude;
+          return !isNaN(payoutDateTime) && payoutDateTime > startDate;
         });
       } else {
         const zReportIndex = zReportDates.indexOf(zReportTimeToUse);
@@ -352,6 +337,13 @@ const SalesReturn = () => {
   const totalCount = filteredPayoutRecords.length;
   const totalAmount = filteredPayoutRecords.reduce((sum, payout) => sum + (payout.amount || 0), 0);
 
+  // Total payout amount that was included in the last Z-Report
+  const lastZReportPayoutTotal = latestZReportTime
+    ? allPayoutRecords
+        .filter((p) => p.generatedDateTime === latestZReportTime)
+        .reduce((sum, p) => sum + (p.amount || 0), 0)
+    : 0;
+
   if (isLoading) {
     return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
   }
@@ -375,6 +367,11 @@ const SalesReturn = () => {
               <p>
                 <strong>Last Z-Report:</strong>{" "}
                 {latestZReportTime ? formatDateTime(latestZReportTime) : "N/A"}
+                {latestZReportTime && (
+                  <span style={{ marginLeft: "16px", color: "#555" }}>
+                    <strong>Total Payout (Last Z-Report):</strong> {lastZReportPayoutTotal}
+                  </span>
+                )}
               </p>
               <p>
                 <strong>Total Count:</strong> {totalCount}
@@ -473,14 +470,4 @@ const SalesReturn = () => {
                     total: filteredPayoutRecords.length,
                     onChange: (page) => setCurrentPage(page),
                   }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export default SalesReturn
+               

@@ -231,10 +231,6 @@ const SalesReport = () => {
               <span>Difference:</span>
               <span>${formatCurrency(selectedReport.difference)}</span>
             </div>
-            <div class="info-row">
-              <span>After Balance Cash:</span>
-              <span>${formatCurrency(selectedReport.salesDateDetails[0].overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash')?.paymentTotal - selectedReport.difference)}</span>
-            </div>
           </div>
           
           ${selectedReport.salesDateDetails.map(dateDetail => `
@@ -587,7 +583,6 @@ const SalesReport = () => {
                     <p><strong>Total Transactions:</strong> {selectedReport.salesDateDetails[0].totalTransactions}</p>
                     <p><strong>Total Sales:</strong> {formatCurrency(selectedReport.fullyTotalSales)}</p>
                     <p><strong>Difference:</strong> <span className={selectedReport.difference >= 0 ? "text-success" : "text-danger"}>{formatCurrency(selectedReport.difference)}</span></p>
-                    <p><strong>After Balance Cash:</strong> <span className="text-primary">{formatCurrency(selectedReport.salesDateDetails[0].overallPaymentTotals.find(payment => payment.paymentMethod.toLowerCase() === 'cash')?.paymentTotal - selectedReport.difference)}</span></p>
                   </div>
                   <div className="col-md-6">
                     <h5>Report Period</h5>
@@ -685,18 +680,6 @@ const SalesReport = () => {
                                       <td>{formatCurrency(payment.paymentTotal)}</td>
                                     </tr>
                                   ))}
-                                  {dateDetail.overallPaymentTotals.some(payment => payment.paymentMethod.toLowerCase() === 'cash') && (
-                                    <tr className="font-weight-bold">
-                                      <td>After Balance Cash</td>
-                                      <td>
-                                        {formatCurrency(
-                                          dateDetail.overallPaymentTotals
-                                            .find(payment => payment.paymentMethod.toLowerCase() === 'cash')
-                                            ?.paymentTotal - selectedReport.difference
-                                        )}
-                                      </td>
-                                    </tr>
-                                  )}
                                 </tbody>
                               </table>
                             </div>

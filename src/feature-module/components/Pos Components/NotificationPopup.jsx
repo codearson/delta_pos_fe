@@ -24,7 +24,7 @@ const NotificationPopup = ({ message, type = "error", onClose }) => {
 
 NotificationPopup.propTypes = {
   message: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(["success", "error"]),
+  type: PropTypes.oneOf(["success", "error", "warning"]),
   onClose: PropTypes.func.isRequired,
 };
 

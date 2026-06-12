@@ -127,27 +127,12 @@ const Banking = () => {
 
     if (zReportTimeToUse) {
       if (selectedZReportTime === "All") {
+        // Show only records not yet covered by any Z-Report AND created after the last Z-Report
         const startDate = new Date(zReportTimeToUse);
-        const endDate = new Date();
-
         filteredData = filteredData.filter((banking) => {
+          if (banking.generatedDateTime !== null) return false;
           const bankingDateTime = new Date(banking.dateTime);
-          if (isNaN(bankingDateTime) || isNaN(startDate) || isNaN(endDate)) {
-            console.warn("Invalid date format:", banking.dateTime, zReportTimeToUse);
-            return false;
-          }
-          const shouldInclude = bankingDateTime >= startDate && bankingDateTime <= endDate;
-          console.log(
-            "Filtering banking (All):",
-            banking.dateTime,
-            "Period:",
-            zReportTimeToUse,
-            "to",
-            "Now",
-            "Include:",
-            shouldInclude
-          );
-          return shouldInclude;
+          return !isNaN(bankingDateTime) && bankingDateTime > startDate;
         });
       } else {
         const zReportIndex = zReportDates.indexOf(zReportTimeToUse);
@@ -339,6 +324,13 @@ const Banking = () => {
   const totalCount = filteredBankingRecords.length;
   const totalAmount = filteredBankingRecords.reduce((sum, banking) => sum + (banking.amount || 0), 0);
 
+  // Total banking amount that was included in the last Z-Report
+  const lastZReportBankingTotal = latestZReportTime
+    ? allBankingRecords
+        .filter((b) => b.generatedDateTime === latestZReportTime)
+        .reduce((sum, b) => sum + (b.amount || 0), 0)
+    : 0;
+
   if (isLoading) {
     return <div className="page-wrapper">{/* Add loading spinner or message here if desired */}</div>;
   }
@@ -362,6 +354,11 @@ const Banking = () => {
               <p>
                 <strong>Last Z-Report:</strong>{" "}
                 {latestZReportTime ? formatDateTime(latestZReportTime) : "N/A"}
+                {latestZReportTime && (
+                  <span style={{ marginLeft: "16px", color: "#555" }}>
+                    <strong>Total Banking (Last Z-Report):</strong> {lastZReportBankingTotal}
+                  </span>
+                )}
               </p>
               <p>
                 <strong>Total Count:</strong> {totalCount}
@@ -445,29 +442,4 @@ const Banking = () => {
               {bankingRecords.length === 0 ? (
                 <div className="text-center">
                   <p>
-                    No banking records found between {periodStartDisplay} and {periodEndDisplay}.
-                  </p>
-                </div>
-              ) : (
-                <Table
-                  className="table datanew"
-                  columns={columns}
-                  dataSource={bankingRecords}
-                  rowKey={(record) => record.id}
-                  pagination={{
-                    current: currentPage,
-                    pageSize: pageSize,
-                    total: filteredBankingRecords.length,
-                    onChange: (page) => setCurrentPage(page),
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Banking;
+         

@@ -316,14 +316,15 @@
     -ms-flex-align: center;
     .search-input{
         position: relative;
-        margin-right: 15px;    
-        input[type="search"] {
+        margin-right: 15px;
+        input[type="search"],
+        input[type="text"].formsearch {
             height: 38px;
             border: 1px solid var(--Stroke, rgba(145, 158, 171, 0.30));
             background: var(--White, #FFF);
             width: 298px;
             @include rounded(8px);
-            padding: 10px;
+            padding: 10px 40px 10px 10px;
             &::placeholder {
                 color: $black;
             }
