@@ -24,6 +24,7 @@ $light-text: #000000;
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
 
   &.dark-mode {
@@ -37,9 +38,17 @@ $light-text: #000000;
   }
 }
 
+.search-top-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  align-items: stretch;
+}
+
 .search-bar {
   position: relative;
-  margin-bottom: 1rem;
+  flex: 1;
+  min-width: 0;
 
   .search-input {
     width: 100%;
@@ -66,35 +75,39 @@ $light-text: #000000;
 }
 
 .input-screen-box {
-  background-color: $text-white;
+  background-color: #b3e5fc;
   color: $text-black;
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 500;
   text-align: right;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
-  min-height: 47px;
+  min-width: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .display-box {
   background-color: $text-white;
   color: $text-black;
-  padding: 1rem;
+  padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .table-container {
   flex: 1;
   overflow-y: auto;
-  max-height: 340px;
+  min-height: 0;
 }
 
 .result-table {
@@ -140,11 +153,11 @@ $light-text: #000000;
   }
 
   &.cash-row {
-    background-color: rgba(40, 167, 69, 0.1);
+    background-color: rgba(40, 167, 69, 0.45);
   }
 
   &.card-row {
-    background-color: rgba(23, 162, 184, 0.1);
+    background-color: rgba(37, 99, 235, 0.35);
   }
 
   &.discount-row {
@@ -190,7 +203,7 @@ $light-text: #000000;
 .summary-box {
   background-color: $text-white;
   color: $text-black;
-  padding: 1rem;
+  padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
@@ -198,7 +211,7 @@ $light-text: #000000;
   .summary-item {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.4rem;
     font-size: 1rem;
 
     .label {
@@ -216,7 +229,7 @@ $light-text: #000000;
 
   .divider {
     border-top: 1px solid $bg-gray-600;
-    margin: 0.75rem 0;
+    margin: 0.4rem 0;
   }
 
   .total-summary {
@@ -224,8 +237,8 @@ $light-text: #000000;
     justify-content: space-between;
     font-size: 1.25rem;
     font-weight: 700;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
   }
 }
 
@@ -527,12 +540,12 @@ $light-text: #000000;
   }
 
   .input-screen-box {
-    font-size: 1rem;
-    min-height: 36px;
+    font-size: 0.9rem;
+    min-width: 70px;
   }
 
   .table-container {
-    max-height: 215px;
+    min-height: 0;
   }
 
   .result-header,
@@ -591,13 +604,13 @@ $light-text: #000000;
   }
 
   .input-screen-box {
-    font-size: 0.875rem;
-    min-height: 32px;
-    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    min-width: 60px;
+    padding: 0.25rem 0.5rem;
   }
 
   .table-container {
-    max-height: 215px;
+    min-height: 0;
   }
 
   .result-header,

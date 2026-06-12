@@ -54,6 +54,14 @@ export const Pos_Calculator = ({
     }
   };
 
+  const handleSearchBlur = (e) => {
+    const next = e.relatedTarget;
+    // Only refocus if the next focused element doesn't need keyboard input
+    if (!next || !["INPUT", "TEXTAREA"].includes(next.tagName)) {
+      setTimeout(() => barcodeInputRef.current?.focus(), 150);
+    }
+  };
+
   useEffect(() => {
     barcodeInputRef.current?.focus();
   }, [barcodeInputRef]);
@@ -164,23 +172,25 @@ export const Pos_Calculator = ({
 
   return (
     <div className={`calculator-container ${darkMode ? "dark-mode" : "light-mode"}`}>
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Scan barcode"
-          className="search-input"
-          value={barcodeInput}
-          onChange={handleBarcodeChange}
-          onKeyPress={handleKeyPress}
-          ref={barcodeInputRef}
-        />
-        <span className="search-icon">
-          <i className="feather-search" />
-        </span>
-      </div>
-
-      <div className="input-screen-box">
-        <div className="input-screen-text">{inputScreenText || ""}</div>
+      <div className="search-top-row">
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Scan barcode"
+            className="search-input"
+            value={barcodeInput}
+            onChange={handleBarcodeChange}
+            onKeyPress={handleKeyPress}
+            onBlur={handleSearchBlur}
+            ref={barcodeInputRef}
+          />
+          <span className="search-icon">
+            <i className="feather-search" />
+          </span>
+        </div>
+        <div className="input-screen-box">
+          <div className="input-screen-text">{inputScreenText || ""}</div>
+        </div>
       </div>
 
       <div className="display-box">
@@ -214,18 +224,18 @@ export const Pos_Calculator = ({
                     )}
                   </span>
                   <span className="price-column">
-                    {priceSymbol}{(item.originalPrice || item.price).toFixed(2)}
+                    {(item.originalPrice || item.price).toFixed(2)}
                   </span>
                   <span className="total-column">
                     {item.originalPrice && item.originalPrice !== item.price ? (
                       <>
                         <span className="original-price" style={{ textDecoration: "line-through", color: "#999" }}>
-                          {priceSymbol}{(item.originalPrice * item.qty).toFixed(2)}
+                          {(item.originalPrice * item.qty).toFixed(2)}
                         </span>{" "}
-                        <span className="discounted-price">{priceSymbol}{item.total.toFixed(2)}</span>
+                        <span className="discounted-price">{item.total.toFixed(2)}</span>
                       </>
                     ) : (
-                      `${priceSymbol}${item.total.toFixed(2)}`
+                      item.total.toFixed(2)
                     )}
                   </span>
                 </div>
@@ -246,53 +256,49 @@ export const Pos_Calculator = ({
           <span className="value">{selectedItems.reduce((sum, item) => sum + item.qty, 0)}</span>
         </div>
         <div className="summary-item">
-          <span className="label">Cash Back</span>
-          <span className="value">{priceSymbol}0.00</span>
-        </div>
-        <div className="summary-item">
           <span className="label">Discount</span>
-          <span className="value">{priceSymbol}{(manualDiscount + employeeDiscount).toFixed(2)}</span>
+          <span className="value">{(manualDiscount + employeeDiscount).toFixed(2)}</span>
         </div>
         {manualDiscount > 0 && (
           <div className="summary-item">
             <span className="label">Manual Discount</span>
-            <span className="value">{priceSymbol}{manualDiscount.toFixed(2)}</span>
+            <span className="value">{manualDiscount.toFixed(2)}</span>
           </div>
         )}
         {employeeDiscount > 0 && (
           <div className="summary-item">
             <span className="label">Employee Discount ({employeeDiscountPercentage.toFixed(1)}%)</span>
             <span className="value">{employeeName ? `(${employeeName})` : ""}</span>
-            <span className="value">{priceSymbol}{employeeDiscount.toFixed(2)}</span>
+            <span className="value">{employeeDiscount.toFixed(2)}</span>
           </div>
         )}
         {isTaxEnabled && (
           <div className="summary-item">
             <span className="label">Total Tax</span>
-            <span className="value">{priceSymbol}{totalTax.toFixed(2)}</span>
+            <span className="value">{totalTax.toFixed(2)}</span>
           </div>
         )}
         <div className="summary-item">
           <span className="label">Balance</span>
           <span className={`value ${isOverpaid ? "green-text" : "red-text"}`}>
-            {isOverpaid ? "- " : ""}{priceSymbol}{Math.abs(displayBalance).toFixed(2)}
+            {isOverpaid ? "- " : ""}{Math.abs(displayBalance).toFixed(2)}
           </span>
         </div>
         <div className="divider" />
         <div className="total-summary">
           <span className="label">Grand Total</span>
-          <span className="value">{priceSymbol}{grandTotal.toFixed(2)}</span>
+          <span className="value">{priceSymbol} {grandTotal.toFixed(2)}</span>
         </div>
         {cashTotal > 0 && (
           <div className="summary-item">
             <span className="label">Cash</span>
-            <span className="value">{priceSymbol}{cashTotal.toFixed(2)}</span>
+            <span className="value">{priceSymbol} {cashTotal.toFixed(2)}</span>
           </div>
         )}
         {cardPayments.length > 0 && cardPayments.map((method, index) => (
           <div key={index} className="summary-item">
             <span className="label">Card</span>
-            <span className="value">{priceSymbol}{method.amount.toFixed(2)}</span>
+            <span className="value">{priceSymbol} {method.amount.toFixed(2)}</span>
           </div>
         ))}
       </div>

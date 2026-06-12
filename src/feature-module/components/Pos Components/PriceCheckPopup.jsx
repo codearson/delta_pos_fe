@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import PropTypes from "prop-types";
 import "../../../style/scss/components/Pos Components/PriceCheckPopup.scss";
 import { getProductByBarcode } from "../../Api/productApi";
@@ -19,13 +19,7 @@ const PriceCheckPopup = ({ onClose, darkMode }) => {
     setBarcode(value);
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter" && barcode) {
-      handlePriceCheck();
-    }
-  };
-
-  const handlePriceCheck = async () => {
+  const handlePriceCheck = useCallback(async () => {
     if (barcode.length < 3) {
       setError("Barcode must be at least 3 characters long.");
       setItemDetails(null);
@@ -51,9 +45,15 @@ const PriceCheckPopup = ({ onClose, darkMode }) => {
       setItemDetails({ name, price: pricePerUnit, stock: quantity });
       setError("");
       setBarcode("");
-    } catch (error) {
-      setError("Error fetching price: " + error.message);
+    } catch (err) {
+      setError("Error fetching price: " + err.message);
       setItemDetails(null);
+    }
+  }, [barcode]);
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && barcode) {
+      handlePriceCheck();
     }
   };
 
@@ -64,7 +64,7 @@ const PriceCheckPopup = ({ onClose, darkMode }) => {
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [barcode]);
+  }, [barcode, handlePriceCheck]);
 
   return (
     <div className={`price-check-content ${darkMode ? "dark-mode" : ""}`}>

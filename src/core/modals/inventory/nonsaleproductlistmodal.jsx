@@ -112,37 +112,59 @@ const AddNonSaleProductModal = ({ onSave, onUpdate, selectedProduct }) => {
         }
     };
 
+    const closeModal = (modalId) => {
+        const el = document.getElementById(modalId);
+        if (!el) return;
+        const instance = window.bootstrap?.Modal?.getInstance(el);
+        if (instance) {
+            instance.hide();
+        } else {
+            // fallback: remove modal manually
+            el.classList.remove("show");
+            el.style.display = "none";
+            document.body.classList.remove("modal-open");
+            const backdrop = document.querySelector(".modal-backdrop");
+            backdrop?.parentNode?.removeChild(backdrop);
+        }
+    };
+
     const handleAddSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) return;
 
         if (!nonScanCategoryId) {
+            alert("Non-Scan category not found. Please create a 'Non Scan' product category first.");
             return;
         }
 
-        const products = await fetchProducts();
-        const nonScanProducts = products.filter(
-            (p) => p.productCategoryDto?.productCategoryName?.toLowerCase() === "non scan"
-        );
-        const barcode = String(nonScanProducts.length + 1);
+        try {
+            const products = await fetchProducts();
+            const nonScanProducts = products.filter(
+                (p) => p.productCategoryDto?.productCategoryName?.toLowerCase() === "non scan"
+            );
+            const barcode = String(nonScanProducts.length + 1);
 
-        const productData = {
-            name: `${formData.name}-${formData.icon}`,
-            barcode,
-            pricePerUnit: parseFloat(formData.price),
-            purchasePrice: parseFloat(formData.price),
-            productCategoryDto: { id: nonScanCategoryId },
-            taxDto: { id: 1 },
-            quantity: 100,
-            lowStock: 10,
-            isActive: 1,
-        };
+            const productData = {
+                name: `${formData.name}-${formData.icon}`,
+                barcode,
+                pricePerUnit: parseFloat(formData.price),
+                purchasePrice: parseFloat(formData.price),
+                productCategoryDto: { id: nonScanCategoryId },
+                taxDto: { id: 1 },
+                quantity: 100,
+                lowStock: 10,
+                isActive: 1,
+            };
 
-        await saveProduct(productData);
-        onSave();
-        setFormData(initialFormState);
-        setErrors({});
-        document.querySelector("#add-units .close").click();
+            await saveProduct(productData);
+            onSave();
+            setFormData(initialFormState);
+            setErrors({});
+            closeModal("add-units");
+        } catch (err) {
+            console.error("Failed to save non-scan product:", err);
+            alert("Failed to save product. Please try again.");
+        }
     };
 
     const handleEditSubmit = async (e) => {
@@ -150,28 +172,34 @@ const AddNonSaleProductModal = ({ onSave, onUpdate, selectedProduct }) => {
         if (!validateForm()) return;
 
         if (!nonScanCategoryId) {
+            alert("Non-Scan category not found. Please create a 'Non Scan' product category first.");
             return;
         }
 
-        const updatedProductData = {
-            id: formData.id,
-            name: `${formData.name}-${formData.icon}`,
-            barcode: selectedProduct.barcode,
-            createdDate: selectedProduct.createdDate,
-            pricePerUnit: parseFloat(formData.price),
-            purchasePrice: parseFloat(formData.price),
-            productCategoryDto: { id: nonScanCategoryId },
-            taxDto: selectedProduct.taxDto || { id: 1 },
-            quantity: 100,
-            lowStock: 10,
-            isActive: selectedProduct.isActive || 1,
-        };
+        try {
+            const updatedProductData = {
+                id: formData.id,
+                name: `${formData.name}-${formData.icon}`,
+                barcode: selectedProduct.barcode,
+                createdDate: selectedProduct.createdDate,
+                pricePerUnit: parseFloat(formData.price),
+                purchasePrice: parseFloat(formData.price),
+                productCategoryDto: { id: nonScanCategoryId },
+                taxDto: selectedProduct.taxDto || { id: 1 },
+                quantity: 100,
+                lowStock: 10,
+                isActive: selectedProduct.isActive || 1,
+            };
 
-        await updateProduct(updatedProductData);
-        onUpdate();
-        setFormData(initialFormState);
-        setErrors({});
-        document.querySelector("#edit-units .close").click();
+            await updateProduct(updatedProductData);
+            onUpdate();
+            setFormData(initialFormState);
+            setErrors({});
+            closeModal("edit-units");
+        } catch (err) {
+            console.error("Failed to update non-scan product:", err);
+            alert("Failed to update product. Please try again.");
+        }
     };
 
     // Function to handle modal close

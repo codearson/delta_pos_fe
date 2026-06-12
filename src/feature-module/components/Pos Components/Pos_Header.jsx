@@ -109,7 +109,7 @@ export const Pos_Header = ({ currentTime, darkMode, toggleDarkMode, onCustomerAd
       });
       window.dispatchEvent(event);
     } catch (error) {
-      // Error handling without console.error
+      console.error("checkBankingStatus error:", error);
     }
   };
 

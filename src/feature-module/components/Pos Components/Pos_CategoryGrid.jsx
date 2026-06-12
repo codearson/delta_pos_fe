@@ -366,50 +366,121 @@ const Pos_CategoryGrid = forwardRef(({
         });
 
         if (result.isConfirmed) {
-          // Stop "Banking Required!" message by setting bankingRequired to false in localStorage
-          localStorage.setItem('bankingRequired', JSON.stringify({
-            isRequired: false,
-            timestamp: new Date().toISOString()
-          }));
-          
-          // Dispatch a custom event to notify other components
-          const event = new CustomEvent('bankingStatusChanged', { 
-            detail: { isRequired: false } 
-          });
-          window.dispatchEvent(event);
-          
+          // Step 2: Check if there are new transactions BEFORE asking for banking amount
           const xReportResponse = await fetchXReport();
-          if (!xReportResponse.success || !xReportResponse.data) {
-            Swal.fire({
-              icon: 'warning',
-              title: 'X-Report Required',
-              text: 'Please generate an X-Report before getting Z-Report',
-              confirmButtonColor: '#3085d6',
-            });
+          if (!xReportResponse.success || !xReportResponse.data || !xReportResponse.data.responseDto) {
+            Swal.fire({ icon: 'info', title: 'No New Transactions', text: 'There are no new transactions since the last Z-Report.', confirmButtonColor: '#3085d6' });
             return;
           }
 
+          // Step 3: Ask for final banking amount
+          const bankingResult = await Swal.fire({
+            title: 'Final Banking Amount',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Save & Generate',
+            cancelButtonText: 'Cancel',
+            html: `
+              <div id="banking-display" style="
+                font-size:28px;font-weight:bold;text-align:right;
+                border:2px solid #3085d6;border-radius:8px;
+                padding:10px 14px;margin-bottom:12px;
+                background:#f9f9f9;min-height:50px;letter-spacing:1px;
+                color:#222;
+              ">0</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                ${['7','8','9','4','5','6','1','2','3'].map(n => `
+                  <button class="swal2-numpad-btn" data-val="${n}" style="
+                    padding:14px 0;font-size:20px;font-weight:bold;
+                    border:1px solid #ddd;border-radius:8px;
+                    background:#fff;cursor:pointer;
+                  ">${n}</button>
+                `).join('')}
+                <button class="swal2-numpad-btn" data-val="." style="
+                  padding:14px 0;font-size:20px;font-weight:bold;
+                  border:1px solid #ddd;border-radius:8px;
+                  background:#fff;cursor:pointer;
+                ">.</button>
+                <button class="swal2-numpad-btn" data-val="0" style="
+                  padding:14px 0;font-size:20px;font-weight:bold;
+                  border:1px solid #ddd;border-radius:8px;
+                  background:#fff;cursor:pointer;
+                ">0</button>
+                <button id="swal2-numpad-back" style="
+                  padding:14px 0;font-size:20px;font-weight:bold;
+                  border:1px solid #ddd;border-radius:8px;
+                  background:#ffe0e0;cursor:pointer;color:#d33;
+                ">⌫</button>
+              </div>
+            `,
+            didOpen: () => {
+              const display = document.getElementById('banking-display');
+              document.querySelectorAll('.swal2-numpad-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const val = btn.getAttribute('data-val');
+                  let cur = display.textContent === '0' ? '' : display.textContent;
+                  if (val === '.' && cur.includes('.')) return;
+                  if (val === '.' && cur === '') cur = '0';
+                  display.textContent = cur + val;
+                });
+              });
+              document.getElementById('swal2-numpad-back').addEventListener('click', () => {
+                const cur = display.textContent;
+                display.textContent = cur.length <= 1 ? '0' : cur.slice(0, -1);
+              });
+            },
+            preConfirm: () => {
+              const val = document.getElementById('banking-display').textContent;
+              const num = parseFloat(val);
+              if (isNaN(num) || num < 0) {
+                Swal.showValidationMessage('Please enter a valid banking amount (0 or more)');
+                return false;
+              }
+              return val;
+            }
+          });
+
+          if (!bankingResult.isConfirmed) return;
+
+          const finalBankingAmount = parseFloat(bankingResult.value) || 0;
+
+          // Step 4: Save banking amount if > 0
+          if (finalBankingAmount > 0) {
+            const bankingSaved = await saveBanking({
+              amount: finalBankingAmount,
+              userDto: { id: parseInt(localStorage.getItem("userId") || "1") }
+            });
+            if (!bankingSaved) {
+              Swal.fire({ icon: 'error', title: 'Banking Save Failed', text: 'Could not save banking amount.', confirmButtonColor: '#3085d6' });
+              return;
+            }
+          }
+
+          // Step 5: Print banking receipt
+          await handlePrintBankingBill(finalBankingAmount);
+
+          // Stop "Banking Required!" message
+          localStorage.setItem('bankingRequired', JSON.stringify({ isRequired: false, timestamp: new Date().toISOString() }));
+          window.dispatchEvent(new CustomEvent('bankingStatusChanged', { detail: { isRequired: false } }));
+
+          // Step 6: Generate Z-Report
           const response = await fetchZReport();
           if (response.success && response.data && response.data.responseDto) {
             setZReportData(response.data);
 
-            if (userRole === "USER") {
-              await Swal.fire({
-                icon: 'success',
-                title: 'Z-Report Generated Successfully',
-                text: 'The Z-Report has been generated.',
-                confirmButtonColor: '#3085d6',
-              });
-            } else if (userRole === "ADMIN" || userRole === "MANAGER") {
+            // Step 7: Print Z-Report receipt immediately
+            await handlePrintZReportDirect(response.data.responseDto);
+
+            // Reset category grid back to first page
+            setPageIndex(0);
+
+            if (userRole === "ADMIN" || userRole === "MANAGER") {
               setShowZReportPopup(true);
             }
           } else {
-            Swal.fire({
-              icon: 'info',
-              title: 'No New Transactions',
-              text: 'Already got the Z-Report for current session',
-              confirmButtonColor: '#3085d6',
-            });
+            Swal.fire({ icon: 'error', title: 'Z-Report Failed', text: 'Failed to generate Z-Report. Please try again.', confirmButtonColor: '#3085d6' });
             console.error("Failed to fetch Z-Report:", response.error);
           }
         }
@@ -474,6 +545,8 @@ const Pos_CategoryGrid = forwardRef(({
             title: 'Banking Saved',
             text: 'Amount has been successfully saved to banking',
             confirmButtonColor: '#3085d6',
+            timer: 5000,
+            timerProgressBar: true,
           });
 
           await handlePrintBankingBill(bankingAmount);
@@ -1586,6 +1659,234 @@ const Pos_CategoryGrid = forwardRef(({
         })
         .join('')}
   
+          <div class="footer">
+            <div>*** End of Z Report ***</div>
+            <div>Printed on ${new Date().toLocaleString()}</div>
+          </div>
+        </body>
+      </html>
+    `);
+
+    printFrame.contentWindow.document.close();
+
+    printFrame.onload = () => {
+      try {
+        printFrame.contentWindow.print();
+      } catch (error) {
+        console.error('Error during printing:', error);
+        showNotification('Failed to print Z-Report. Please try again.', 'error');
+      } finally {
+        setTimeout(() => {
+          if (printFrame && document.body.contains(printFrame)) {
+            document.body.removeChild(printFrame);
+          }
+        }, 2000);
+      }
+    };
+  };
+
+  const handlePrintZReportDirect = (reportData) => {
+    if (!reportData) {
+      showNotification("No Z-Report data available to print", "error");
+      return;
+    }
+
+    const printFrame = document.createElement('iframe');
+    printFrame.style.display = 'none';
+    document.body.appendChild(printFrame);
+
+    const paperWidth = '80mm';
+
+    const startDate = reportData.startDate
+      ? new Date(reportData.startDate).toLocaleDateString()
+      : 'N/A';
+    const endDate = reportData.endDate
+      ? new Date(reportData.endDate).toLocaleDateString()
+      : 'N/A';
+    const generatedBy = reportData.reportGeneratedBy || 'Unknown';
+    const tillName = reportData.tillName || localStorage.getItem('tillName') || 'N/A';
+    const fullyTotalSales = reportData.fullyTotalSales
+      ? parseFloat(reportData.fullyTotalSales).toFixed(2)
+      : '0.00';
+    const bankingCount = reportData.bankingCount || 0;
+    const bankingTotal = reportData.bankingTotal
+      ? parseFloat(reportData.bankingTotal).toFixed(2)
+      : '0.00';
+    const payoutCount = reportData.payoutCount || 0;
+    const payoutTotal = reportData.payoutTotal
+      ? parseFloat(reportData.payoutTotal).toFixed(2)
+      : '0.00';
+    const difference = reportData.difference
+      ? parseFloat(reportData.difference).toFixed(2)
+      : '0.00';
+    const dateWiseTotals = reportData.dateWiseTotals || {};
+
+    printFrame.contentWindow.document.write(`
+      <html>
+        <head>
+          <title>Z Report - ${generatedBy}</title>
+          <style>
+            @media print {
+              @page {
+                size: ${paperWidth} auto;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 5px;
+                width: ${paperWidth};
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 12px;
+                font-weight: bold;
+                color: #000;
+                box-sizing: border-box;
+              }
+            }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              width: ${paperWidth};
+              margin: 0 auto;
+              padding: 5px;
+              font-size: 12px;
+              line-height: 1.2;
+              font-weight: bold;
+              color: #000;
+              text-align: center;
+            }
+            .receipt-header { text-align: center; margin-bottom: 10px; }
+            .receipt-title { font-size: 16px; font-weight: bold; margin: 5px 0; letter-spacing: 1px; }
+            .info-row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 12px; }
+            .info-row span:last-child { font-weight: bold; }
+            .section { margin: 10px 0; padding-bottom: 5px; }
+            .section-title { font-size: 12px; font-weight: bold; text-align: center; margin: 8px 0; text-transform: uppercase; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 3px 0; letter-spacing: 1px; }
+            table { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 12px; }
+            th, td { padding: 2px 0; text-align: left; font-weight: bold; }
+            th { text-transform: uppercase; font-size: 12px; }
+            .amount { text-align: right; }
+            .footer { text-align: center; margin-top: 10px; font-size: 12px; border-top: 1px dashed #000; padding-top: 5px; }
+            .divider { border-top: 1px dashed #000; margin: 5px 0; }
+            .date-header { font-size: 12px; font-weight: bold; text-align: center; margin: 8px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 3px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt-header">
+            <div class="receipt-title">Z REPORT</div>
+            <div>${startDate}</div>
+            <div>Generated by: ${generatedBy}</div>
+            <p>Till Name: ${tillName}</p>
+            <div>Front Office</div>
+          </div>
+
+          <div class="section">
+            <div class="info-row">
+              <span>Period:</span>
+              <span>${startDate} - ${endDate}</span>
+            </div>
+            <div class="info-row">
+              <span>Total Sales:</span>
+              <span>${fullyTotalSales}</span>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">BANKING & PAYOUT DETAILS</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>TYPE</th>
+                  <th>COUNT</th>
+                  <th class="amount">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Banking</td>
+                  <td>${bankingCount}</td>
+                  <td class="amount">${priceSymbol}${bankingTotal}</td>
+                </tr>
+                <tr>
+                  <td>Payout</td>
+                  <td>${payoutCount}</td>
+                  <td class="amount">${priceSymbol}${payoutTotal}</td>
+                </tr>
+                <tr>
+                  <td colspan="2">Difference</td>
+                  <td class="amount">${priceSymbol}${difference}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          ${Object.entries(dateWiseTotals)
+      .map(([date, data]) => {
+        const categoryTotals = data.categoryTotals || {};
+        const overallPaymentTotals = data.overallPaymentTotals || {};
+        const userPaymentDetails = data.userPaymentDetails || {};
+
+        return `
+              <div class="section">
+                <div class="date-header">Date: ${new Date(date).toLocaleDateString()}</div>
+
+                <div class="section">
+                  <div class="section-title">CATEGORIES BREAKDOWN</div>
+                  <table>
+                    ${Object.keys(categoryTotals).length > 0
+            ? Object.entries(categoryTotals)
+              .map(([category, amount]) => `
+                            <tr>
+                              <td>${category}</td>
+                              <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                            </tr>
+                          `)
+              .join('')
+            : '<tr><td colspan="2">No categories found</td></tr>'
+          }
+                  </table>
+                </div>
+
+                <div class="section">
+                  <div class="section-title">PAYMENT METHODS</div>
+                  <table>
+                    ${Object.keys(overallPaymentTotals).length > 0
+            ? Object.entries(overallPaymentTotals)
+              .map(([method, amount]) => `
+                            <tr>
+                              <td>${method}</td>
+                              <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                            </tr>
+                          `)
+              .join('')
+            : '<tr><td colspan="2">No payment methods found</td></tr>'
+          }
+                  </table>
+                </div>
+
+                <div class="section">
+                  <div class="section-title">USER PAYMENT DETAILS</div>
+                  <table>
+                    ${Object.keys(userPaymentDetails).length > 0
+            ? Object.entries(userPaymentDetails)
+              .map(([userName, payments]) =>
+                Object.entries(payments)
+                  .map(([method, amount]) => `
+                                <tr>
+                                  <td>${userName}</td>
+                                  <td>${method}</td>
+                                  <td class="amount">${parseFloat(amount).toFixed(2)}</td>
+                                </tr>
+                              `)
+                  .join('')
+              )
+              .join('')
+            : '<tr><td colspan="3">No user payments found</td></tr>'
+          }
+                  </table>
+                </div>
+              </div>
+            `;
+      })
+      .join('')}
+
           <div class="footer">
             <div>*** End of Z Report ***</div>
             <div>Printed on ${new Date().toLocaleString()}</div>

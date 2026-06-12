@@ -35,8 +35,8 @@
 }
 
 .text-base {
-  font-size: 2rem;
-  line-height: 1.5rem; 
+  font-size: 1.5rem;
+  line-height: 1.5rem;
 }
 
 .font-bold {
@@ -166,12 +166,12 @@
 
 @media (max-width: 1300px){
   .text-base {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
   }
 }
 
 @media (max-width: 1100px){
   .text-base {
-    font-size: 1.2rem;
+    font-size: 1rem;
   }
 }

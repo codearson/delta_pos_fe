@@ -1,6 +1,12 @@
 @import "../../utils/variables";
 
 .pos-category-grid-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
   // Define SCSS variables
   $pos-blue: #2EB6E8;
   $blue-500: #0095ff;
@@ -39,13 +45,15 @@
   }
 
   .size {
-    height: 40vh;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .category-btn {
     padding: 1rem;
     min-width: 6rem;
-    min-height: 13vh;
+    min-height: 80px;
     border-radius: $radius;
     text-align: center;
     background-color: $pos-blue;
@@ -81,7 +89,7 @@
   .quick-access-btn {
     padding: 1rem;
     min-width: 6rem;
-    min-height: 13vh;
+    min-height: 80px;
     border-radius: $radius;
     text-align: center;
     background-color: $pos-teal;

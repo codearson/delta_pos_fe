@@ -25,7 +25,7 @@ const Pos_Numpad = ({ darkMode, onNumpadClick }) => {
       }
       
       // Get userId from localStorage, default to 1 if not available
-      const userId = localStorage.getItem("userId") || 1;
+      const userId = parseInt(localStorage.getItem("userId")) || 1;
       if (!userId) {
         return;
       }
