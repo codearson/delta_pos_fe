@@ -892,6 +892,25 @@ body.dark-mode {
             svg { stroke: #ff1a1a; }
         }
     }
+    /* Profile dropdown dark mode */
+    .main-drop .dropdown-menu {
+        background: #1e2130 !important;
+        border: 1px solid #2e3349 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+
+        .dropdown-item {
+            color: #e0e0e0 !important;
+            svg, i { color: #aaa !important; stroke: #aaa !important; }
+            &:hover, &:focus {
+                background: #2b3050 !important;
+                color: #fff !important;
+                svg, i { color: #fff !important; stroke: #fff !important; }
+            }
+        }
+        .dropdown-divider {
+            border-color: #2e3349 !important;
+        }
+    }
 }
 
 /* Logout icon button */

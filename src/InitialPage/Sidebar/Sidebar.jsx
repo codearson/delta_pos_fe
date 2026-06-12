@@ -45,6 +45,12 @@ const Sidebar = () => {
     }
   };
 
+  const closeMobileSidebar = () => {
+    document?.querySelector(".main-wrapper")?.classList?.remove("slide-nav");
+    document?.querySelector(".sidebar-overlay")?.classList?.remove("opened");
+    document?.querySelector("html")?.classList?.remove("menu-opened");
+  };
+
   return (
     <div>
       <div className="sidebar" id="sidebar">
@@ -63,7 +69,10 @@ const Sidebar = () => {
                           <li className="submenu" key={i}>
                             <Link
                               to={title?.link}
-                              onClick={() => toggleSidebar(title?.label)}
+                              onClick={() => {
+                                toggleSidebar(title?.label);
+                                if (!title?.submenu) closeMobileSidebar();
+                              }}
                               className={`${
                                 subOpen === title?.label ? "subdrop" : ""
                               } ${
@@ -105,6 +114,7 @@ const Sidebar = () => {
                                       }
                                       onClick={() => {
                                         toggleSubsidebar(item?.label);
+                                        closeMobileSidebar();
                                       }}
                                     >
                                       {item?.label}

@@ -239,6 +239,7 @@ export const updatePassword = async (userId, password, changedByUserId) => {
     }
 };
 
+
 export function decodeJwt(token) {
     try {
         return JSON.parse(atob(token.split('.')[1]));
