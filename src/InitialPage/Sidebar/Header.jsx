@@ -15,8 +15,8 @@ const Header = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('registeredDevice');
-    localStorage.removeItem('tillName');
-    localStorage.removeItem('tillId');
+    // Keep tillId, tillName, posDeviceUUID — device-specific, not user-specific.
+    // Removing them breaks device auth for the next user on the same PC.
     localStorage.removeItem('deviceId');
     sessionStorage.removeItem('accessToken');
     localStorage.removeItem('userRole');
@@ -171,6 +171,8 @@ const Header = () => {
   const userRole = localStorage.getItem("userRole") || "Unknown Role";
   const tillName = localStorage.getItem("tillName") || "";
   const fullName = `${firstName} ${lastName}`.trim();
+  const userId = localStorage.getItem("userId");
+  const profilePhoto = userId ? localStorage.getItem(`adminPhoto_${userId}`) : null;
 
   return (
     <>
@@ -218,8 +220,18 @@ const Header = () => {
         </Link>
         {/* Header Menu */}
         <ul className="nav user-menu">
-          {/* Placeholder to maintain layout */}
+          {/* Spacer — pushes everything to the right */}
           <li className="nav-item" style={{ flexGrow: 1 }}></li>
+
+          {/* Name & role */}
+          <li className="nav-item user-info-item">
+            <span className="user-detail">
+              <span className="user-name">{fullName}</span>
+              <span className="user-role">
+                {userRole}{tillName && <> | <span className="till-name">{tillName}</span></>}
+              </span>
+            </span>
+          </li>
 
           {/* Search */}
           {/* <li className="nav-item nav-searchinputs">
@@ -402,18 +414,28 @@ const Header = () => {
             </Link>
           </li>
 
-          {/* User name & role — plain display, no dropdown */}
-          <li className="nav-item user-info-item">
-            <span className="user-detail">
-              <span className="user-name">{fullName}</span>
-              <span className="user-role">
-                {userRole}
-                {tillName && <> | <span className="till-name">{tillName}</span></>}
-              </span>
-            </span>
+          {/* Profile icon — same box style, dropdown with My Profile only */}
+          <li className="nav-item nav-item-box dropdown has-arrow main-drop">
+            <Link
+              to="#"
+              className="dropdown-toggle"
+              data-bs-toggle="dropdown"
+              title={fullName}
+            >
+              {profilePhoto
+                ? <img src={profilePhoto} alt="profile" style={{ width: '20px', height: '20px', objectFit: 'cover', borderRadius: '50%' }} />
+                : <FeatherIcon icon="user" />
+              }
+            </Link>
+            <div className="dropdown-menu dropdown-menu-right" style={{ minWidth: '180px' }}>
+              <Link className="dropdown-item" to={route.profile} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <FeatherIcon icon="user" style={{ width: 15, height: 15 }} />
+                My Profile
+              </Link>
+            </div>
           </li>
 
-          {/* Logout icon — directly visible in header */}
+          {/* Logout icon */}
           <li className="nav-item nav-item-box">
             <button
               className="logout-btn"
@@ -437,24 +459,20 @@ const Header = () => {
             <i className="fa fa-ellipsis-v" />
           </Link>
           <div className="dropdown-menu dropdown-menu-right">
-            <Link className="dropdown-item" to="profile">
+            <div className="dropdown-item" style={{ pointerEvents: 'none', borderBottom: '1px solid #eee', paddingBottom: '8px', marginBottom: '4px' }}>
+              <div style={{ fontWeight: 700, fontSize: '14px', color: '#333' }}>{fullName}</div>
+              <div style={{ fontSize: '12px', color: '#888' }}>{userRole}{tillName && ` | ${tillName}`}</div>
+            </div>
+            <Link className="dropdown-item" to={route.profile}>
               My Profile
             </Link>
-            <Link className="dropdown-item" to="generalsettings">
-              Settings
-            </Link>
-            <Link
+            <button
               className="dropdown-item"
-              to={route.signin}
-              onClick={() => {
-                localStorage.removeItem('registeredDevice');
-                localStorage.removeItem('tillName');
-                localStorage.removeItem('tillId');
-                localStorage.removeItem('deviceId');
-              }}
+              style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}
+              onClick={handleLogout}
             >
               Log Out
-            </Link>
+            </button>
           </div>
         </div>
         {/* /Mobile Menu */}

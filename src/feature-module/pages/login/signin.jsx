@@ -3,7 +3,7 @@ import ImageWithBasePath from "../../../core/img/imagewithbasebath";
 import { Link, useNavigate } from "react-router-dom";
 import { all_routes } from "../../../Router/all_routes";
 import { getAccessToken, getUserByEmail } from "../../Api/config";
-import { loginDevice, getDeviceByTillId } from "../../Api/DeviceAuthApi";
+import { loginDevice, getDeviceByTillId, getDeviceByTillName } from "../../Api/DeviceAuthApi";
 import { getManagerToggleByName } from "../../Api/ManagerToggle";
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import { v4 as uuidv4 } from 'uuid';
@@ -84,11 +84,14 @@ const Signin = () => {
     setSuccess("");
 
     try {
-      if (!deviceId) {
+      // Prefer the stored tillId (set during registration) over the raw UUID.
+      // This survives logout/login cycles and browser data partial resets.
+      const effectiveTillId = localStorage.getItem('tillId') || deviceId;
+      if (!effectiveTillId) {
         setError("Device ID not found");
         return false;
       }
-      const response = await loginDevice(deviceId);
+      const response = await loginDevice(effectiveTillId);
 
       // Only update localStorage if response is valid and has responseDto
       if (response && response.status && response.responseDto) {
@@ -220,39 +223,75 @@ const Signin = () => {
       if (user.userRoleDto?.userRole !== "ADMIN") {
         // Only proceed with device verification if device authentication is enabled
         if (isDeviceAuthEnabled) {
-          // Check device subscription status before device verification
-          if (deviceId) {
+          // Helper: process a device status response and set approval flag
+          const processDeviceStatus = (responseDto) => {
+            const { approveStatus, loginStatus, tillName: dTillName, tillId: backendTillId } = responseDto;
+            if (dTillName) localStorage.setItem('tillName', dTillName);
+            if (backendTillId) localStorage.setItem('tillId', backendTillId);
+            return { approveStatus, loginStatus };
+          };
+
+          // Lookup chain: stored tillId → posDeviceUUID → tillName
+          // Whichever finds an approved device first wins.
+          let deviceAlreadyApproved = false;
+          const effectiveTillId = localStorage.getItem('tillId') || deviceId;
+          const storedTillName   = localStorage.getItem('tillName');
+
+          // 1. Try lookup by tillId / UUID
+          if (effectiveTillId && !deviceAlreadyApproved) {
             try {
-              const deviceStatus = await getDeviceByTillId(deviceId);
+              const deviceStatus = await getDeviceByTillId(effectiveTillId);
               if (deviceStatus?.status && deviceStatus?.responseDto) {
-                const { approveStatus, loginStatus, tillName } = deviceStatus.responseDto;
-                localStorage.setItem('tillName', tillName || '');
-                if (approveStatus === "Approved" && loginStatus === "False") {
+                const { approveStatus, loginStatus } = processDeviceStatus(deviceStatus.responseDto);
+                if (approveStatus === "Approved" && loginStatus === "True") {
+                  deviceAlreadyApproved = true;
+                } else if (approveStatus === "Approved" && loginStatus === "False") {
                   setError("Your till subscription is over contact your Admin");
-                  setIsLoading(false);
-                  return;
-                }
-                if (approveStatus === "Pending" && loginStatus === "False") {
+                  setIsLoading(false); return;
+                } else if (approveStatus === "Pending") {
                   setSuccess("Registration successful! waiting for admin approval. Please try again later.");
-                  setIsLoading(false);
-                  return;
-                }
-                if (approveStatus === "Declined" && loginStatus === "False") {
+                  setIsLoading(false); return;
+                } else if (approveStatus === "Declined") {
                   setError("Your till verify is declined contact your Admin");
-                  setIsLoading(false);
-                  return;
+                  setIsLoading(false); return;
                 }
               }
             } catch (err) {
-              // If error, allow fallback to device verification
-              console.error('Error checking device subscription status:', err);
+              console.error('getDeviceByTillId error:', err);
             }
           }
-          // First verify device for non-admins
-          const isDeviceVerified = await handleDeviceVerification();
-          if (!isDeviceVerified) {
-            setIsLoading(false);
-            return;
+
+          // 2. Fallback: lookup by tillName (covers UUID mismatch after browser data reset)
+          if (!deviceAlreadyApproved && storedTillName) {
+            try {
+              const deviceStatus = await getDeviceByTillName(storedTillName);
+              if (deviceStatus?.status && deviceStatus?.responseDto) {
+                const { approveStatus, loginStatus } = processDeviceStatus(deviceStatus.responseDto);
+                if (approveStatus === "Approved" && loginStatus === "True") {
+                  deviceAlreadyApproved = true;
+                } else if (approveStatus === "Approved" && loginStatus === "False") {
+                  setError("Your till subscription is over contact your Admin");
+                  setIsLoading(false); return;
+                } else if (approveStatus === "Pending") {
+                  setSuccess("Registration successful! waiting for admin approval. Please try again later.");
+                  setIsLoading(false); return;
+                } else if (approveStatus === "Declined") {
+                  setError("Your till verify is declined contact your Admin");
+                  setIsLoading(false); return;
+                }
+              }
+            } catch (err) {
+              console.error('getDeviceByTillName error:', err);
+            }
+          }
+
+          if (!deviceAlreadyApproved) {
+            // No registered device found — go through full verification
+            const isDeviceVerified = await handleDeviceVerification();
+            if (!isDeviceVerified) {
+              setIsLoading(false);
+              return;
+            }
           }
         }
       }

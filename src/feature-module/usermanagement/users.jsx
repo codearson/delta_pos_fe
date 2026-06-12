@@ -259,6 +259,7 @@ const Users = () => {
         }
     };
 
+
     const handleToggleStatus = (userId, currentStatus) => {
         setTogglingId(userId);
         const newStatusText = currentStatus ? 'Inactive' : 'Active';
