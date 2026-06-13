@@ -65,8 +65,8 @@ $dark-text: #ffffff;
   overflow: hidden;
 }
 
-/* Large tablet / small laptop (1025px–1280px) */
-@media (max-width: 1280px) {
+/* Large laptop (1201px–1280px) — calculator reverts to span 4, category stays span 8 */
+@media (min-width: 1201px) and (max-width: 1280px) {
   .content {
     padding: 1rem 0.5rem;
   }
@@ -75,8 +75,8 @@ $dark-text: #ffffff;
   }
 }
 
-/* iPad landscape / medium tablet (769px–1024px) */
-@media (min-width: 769px) and (max-width: 1024px) {
+/* iPad Air / medium tablet (769px–1200px) — matches Pos_Calculator.scss span 5 breakpoint */
+@media (min-width: 769px) and (max-width: 1200px) {
   .content {
     padding: 0.5rem 0.4rem;
   }
@@ -84,7 +84,7 @@ $dark-text: #ffffff;
     gap: 0.3rem;
   }
   .category-section {
-    grid-column: span 7;
+    grid-column: span 7; /* calculator uses span 5 → 5+7=12 ✓ */
   }
   .action-buttons {
     grid-template-columns: 4fr 1fr 2.5fr 4fr;

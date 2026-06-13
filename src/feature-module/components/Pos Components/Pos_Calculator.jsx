@@ -54,12 +54,18 @@ export const Pos_Calculator = ({
     }
   };
 
-  const handleSearchBlur = (e) => {
-    const next = e.relatedTarget;
-    // Only refocus if the next focused element doesn't need keyboard input
-    if (!next || !["INPUT", "TEXTAREA"].includes(next.tagName)) {
-      setTimeout(() => barcodeInputRef.current?.focus(), 150);
-    }
+  const handleSearchBlur = () => {
+    setTimeout(() => {
+      const active = document.activeElement;
+      // Don't steal focus if it's inside a popup overlay or modal
+      if (active && active !== document.body) {
+        const inPopup = active.closest?.(
+          '.barcode-popup-overlay, .purchase-popup-overlay, .request-leave-popup-overlay, .price-check-popup-overlay, .modal.show, [role="dialog"], .popup-overlay'
+        );
+        if (inPopup) return;
+      }
+      barcodeInputRef.current?.focus();
+    }, 200);
   };
 
   useEffect(() => {
@@ -183,6 +189,7 @@ export const Pos_Calculator = ({
             onKeyPress={handleKeyPress}
             onBlur={handleSearchBlur}
             ref={barcodeInputRef}
+            inputMode="none"
           />
           <span className="search-icon">
             <i className="feather-search" />

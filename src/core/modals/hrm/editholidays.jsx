@@ -75,7 +75,7 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
   const formatDate = (date) => {
     if (!date) return '';
     const d = new Date(date);
-    return d.toISOString().split('T')[0];
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
   const formatReadableDate = (date) => {
@@ -243,7 +243,7 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
                           placeholderText="Select start date"
                           disabled={isSubmitting || isLoadingUsers}
                           minDate={new Date()}
-                          maxDate={formData.endDate ? new Date(formData.endDate) : null}
+
                           popperPlacement="bottom-start"
                           weekStartsOn={1}
                         />
@@ -262,6 +262,21 @@ const EditHolidays = ({ selectedHoliday, onUpdate }) => {
                           minDate={formData.startDate ? new Date(formData.startDate) : new Date()}
                           popperPlacement="bottom-start"
                           weekStartsOn={1}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-lg-12">
+                      <div className="input-blocks mb-3">
+                        <label>Total Days</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          readOnly
+                          value={
+                            formData.startDate && formData.endDate
+                              ? Math.floor((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1
+                              : 0
+                          }
                         />
                       </div>
                     </div>
