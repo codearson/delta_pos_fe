@@ -30,7 +30,7 @@ $dark-text: #ffffff;
 .content {
   flex: 1;
   min-height: 0;
-  padding: 1.5rem;
+  padding: 1.5rem 0.5rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -59,19 +59,37 @@ $dark-text: #ffffff;
 
 .action-buttons {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1rem;
-  flex-shrink: 0;
+  grid-template-columns: 4fr 1.2fr 2.8fr 4fr;
+  gap: 0.4rem;
+  flex: 0 0 38%;
   overflow: hidden;
 }
 
-/* Tablet: keep side-by-side but tighten proportions */
-@media (max-width: 1024px) {
+/* Large tablet / small laptop (1025px–1280px) */
+@media (max-width: 1280px) {
   .content {
-    padding: 1rem;
+    padding: 1rem 0.5rem;
   }
   .grid-container {
     gap: 0.4rem;
+  }
+}
+
+/* iPad landscape / medium tablet (769px–1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .content {
+    padding: 0.5rem 0.4rem;
+  }
+  .grid-container {
+    gap: 0.3rem;
+  }
+  .category-section {
+    grid-column: span 7;
+  }
+  .action-buttons {
+    grid-template-columns: 4fr 1fr 2.5fr 4fr;
+    gap: 0.3rem;
+    flex: 0 0 40%;
   }
 }
 
