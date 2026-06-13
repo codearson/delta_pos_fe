@@ -190,6 +190,7 @@ const Pos_RequestLeave = ({ onClose, darkMode }) => {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Enter leave reason"
                 disabled={isLoading}
+                inputMode="none"
               />
             </div>
 
