@@ -64,7 +64,9 @@ const AddHolidays = ({ onSave }) => {
   const handleDateChange = (date, field) => {
     setFormData(prev => ({
       ...prev,
-      [field]: date ? date.toISOString().split('T')[0] : null
+      [field]: date
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+        : null
     }));
   };
 
@@ -81,7 +83,7 @@ const AddHolidays = ({ onSave }) => {
     }
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
-    return start < end;
+    return start <= end;
   };
 
   const handleSubmit = async (e) => {
@@ -188,8 +190,7 @@ const AddHolidays = ({ onSave }) => {
                           placeholderText="Select start date"
                           disabled={isSubmitting || isLoadingUsers}
                           minDate={new Date()}
-                          maxDate={formData.endDate ? new Date(formData.endDate) : null}
-                          popperPlacement="bottom-start"
+                                          popperPlacement="bottom-start"
                           weekStartsOn={1}
                         />
                       </div>
@@ -207,6 +208,21 @@ const AddHolidays = ({ onSave }) => {
                           minDate={formData.startDate ? new Date(formData.startDate) : new Date()}
                           popperPlacement="bottom-start"
                           weekStartsOn={1}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-lg-12">
+                      <div className="input-blocks mb-3">
+                        <label>Total Days</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          readOnly
+                          value={
+                            formData.startDate && formData.endDate
+                              ? Math.floor((new Date(formData.endDate) - new Date(formData.startDate)) / (1000 * 60 * 60 * 24)) + 1
+                              : 0
+                          }
                         />
                       </div>
                     </div>

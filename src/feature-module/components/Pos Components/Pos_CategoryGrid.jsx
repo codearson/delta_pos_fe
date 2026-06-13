@@ -30,7 +30,8 @@ const Pos_CategoryGrid = forwardRef(({
   showNotification,
   inputValue,
   selectedItems,
-  manualDiscount = 0
+  manualDiscount = 0,
+  onRestoreFocus,
 }, ref) => {
   const [pageIndex, setPageIndex] = useState(0);
   const [showBarcodePopup, setShowBarcodePopup] = useState(false);
@@ -48,6 +49,7 @@ const Pos_CategoryGrid = forwardRef(({
   const [purchases, setPurchases] = useState([]);
   const [xReportData, setXReportData] = useState(null);
   const popupRef = useRef(null);
+  const addPurchaseInputRef = useRef(null);
   const [transactions, setTransactions] = useState([]);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [salesPageIndex, setSalesPageIndex] = useState(0);
@@ -86,6 +88,27 @@ const Pos_CategoryGrid = forwardRef(({
     refreshNonScanData,
     resetPageIndex: () => setPageIndex(0)
   }));
+
+  // Restore focus to barcode input when all popups close
+  const wasPopupOpenRef = useRef(false);
+  const isAnyPopupOpen =
+    showBarcodePopup || showAddPurchasePopup || showViewPurchasePopup ||
+    showXReportPopup || showSalesListPopup || showRequestLeavePopup ||
+    showZReportPopup || showEmployeeDiscountPopup;
+
+  useEffect(() => {
+    if (!isAnyPopupOpen && wasPopupOpenRef.current) {
+      setTimeout(() => onRestoreFocus?.(), 50);
+    }
+    wasPopupOpenRef.current = isAnyPopupOpen;
+  }, [isAnyPopupOpen, onRestoreFocus]);
+
+  // Auto-focus add purchase input when popup opens
+  useEffect(() => {
+    if (showAddPurchasePopup) {
+      setTimeout(() => addPurchaseInputRef.current?.focus(), 50);
+    }
+  }, [showAddPurchasePopup]);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -1921,7 +1944,10 @@ const Pos_CategoryGrid = forwardRef(({
         {paginatedItems.map(renderCategoryButton)}
       </div>
       {showBarcodePopup && (
-        <Pos_BarcodeCreation onClose={() => setShowBarcodePopup(false)} />
+        <Pos_BarcodeCreation
+          onClose={() => setShowBarcodePopup(false)}
+          darkMode={localStorage.getItem('theme') === 'dark'}
+        />
       )}
       {showAddPurchasePopup && (
         <div className="purchase-popup-overlay">
@@ -1943,12 +1969,14 @@ const Pos_CategoryGrid = forwardRef(({
             </div>
             <div className="purchase-popup-input-container">
               <input
+                ref={addPurchaseInputRef}
                 type="text"
                 value={barcode}
                 onChange={handleBarcodeChange}
                 onKeyDown={handleBarcodeKeyDown}
                 placeholder="Enter barcode number"
                 className="purchase-popup-input"
+                inputMode="none"
               />
               <p className="purchase-popup-status">
                 {productStatus || "Scan barcode"}
@@ -2568,7 +2596,10 @@ const Pos_CategoryGrid = forwardRef(({
       )}
 
       {showRequestLeavePopup && (
-        <Pos_RequestLeave onClose={() => setShowRequestLeavePopup(false)} />
+        <Pos_RequestLeave
+          onClose={() => setShowRequestLeavePopup(false)}
+          darkMode={localStorage.getItem('theme') === 'dark'}
+        />
       )}
       {showEmployeeDiscountPopup && (
         <div className="popup-overlay">
@@ -2628,6 +2659,7 @@ Pos_CategoryGrid.propTypes = {
     })
   ).isRequired,
   manualDiscount: PropTypes.number,
+  onRestoreFocus: PropTypes.func,
 };
 
 Pos_CategoryGrid.displayName = "Pos_CategoryGrid";

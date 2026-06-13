@@ -1,5 +1,5 @@
 .dashboard-stats .dashboard-card {
-  width: 20%;
+  width: 14.28%;
 }
 
 .dashboard-card .dash-count,
@@ -185,6 +185,13 @@
 }
 
 /* Responsive styles */
+@media (max-width: 1400px) {
+  .dashboard-stats .dashboard-card {
+    width: 20%;
+    margin-bottom: 15px;
+  }
+}
+
 @media (max-width: 1199px) {
   .dashboard-stats .dashboard-card {
     width: 33.333%;

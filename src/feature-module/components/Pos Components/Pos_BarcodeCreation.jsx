@@ -1,15 +1,21 @@
 import React, { useState, useRef } from "react";
+import ReactDOM from "react-dom";
 import PropTypes from "prop-types";
 import Barcode from "react-barcode";
 import { getProductByBarcode } from "../../Api/productApi";
 import "../../../style/scss/components/Pos Components/Pos_BarcodeCreation.scss";
 
-const Pos_BarcodeCreation = ({ onClose }) => {
+const Pos_BarcodeCreation = ({ onClose, darkMode }) => {
   const [input, setInput] = useState("");
   const [barcodeValue, setBarcodeValue] = useState("");
   const [productStatus, setProductStatus] = useState("");
   const [productDetails, setProductDetails] = useState(null); // Store name and price
   const barcodeRef = useRef(null);
+  const inputRef = useRef(null);
+
+  React.useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
   const priceSymbol = localStorage.getItem("priceSymbol") || "$";
 
   // Handle input change without triggering barcode check
@@ -114,19 +120,22 @@ const Pos_BarcodeCreation = ({ onClose }) => {
     printWindow.document.close();
   };
 
-  return (
+  return ReactDOM.createPortal(
     <div className="barcode-popup-overlay">
-      <div className="barcode-popup">
+      <div className={`barcode-popup ${darkMode ? 'dark-mode' : ''}`}>
         <div className="barcode-popup-content">
           <h2 className="barcode-popup-title">Create Barcode Label</h2>
           <div className="barcode-popup-input-container">
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder="Enter barcode"
               className="barcode-popup-input"
+              inputMode="none"
+              style={darkMode ? { color: '#ffffff', caretColor: '#ffffff' } : {}}
             />
             <button
               onClick={handleBarcodeSubmit}
@@ -167,12 +176,14 @@ const Pos_BarcodeCreation = ({ onClose }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
 Pos_BarcodeCreation.propTypes = {
   onClose: PropTypes.func.isRequired,
+  darkMode: PropTypes.bool,
 };
 
 export default Pos_BarcodeCreation;

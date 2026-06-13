@@ -228,7 +228,7 @@ const VoidHistory = () => {
       title: "Date",
       dataIndex: "dateTime",
       render: (dateTime) => dateTime ? new Date(dateTime).toLocaleString() : '',
-      sorter: (a, b) => new Date(a.dateTime) - new Date(b.dateTime)
+      sorter: (a, b) => new Date(b.dateTime) - new Date(a.dateTime)
     }
   ];
 

@@ -78,6 +78,7 @@ const PriceCheckPopup = ({ onClose, darkMode }) => {
           onKeyPress={handleKeyPress}
           ref={barcodeInputRef}
           className="barcode-field"
+          inputMode="none"
         />
       </div>
 

@@ -57,10 +57,15 @@
     border-radius: $radius;
     text-align: center;
     background-color: $pos-blue;
+    color: #000000 !important;
     border: none;
     outline: none;
     box-shadow: none;
     transition: transform 0.2s ease, background-color 0.2s ease;
+
+    * {
+      color: #000000 !important;
+    }
 
     &:hover {
       transform: scale(1.02);
@@ -93,10 +98,15 @@
     border-radius: $radius;
     text-align: center;
     background-color: $pos-teal;
+    color: #000000 !important;
     border: none;
     outline: none;
     box-shadow: none;
     transition: transform 0.2s ease, background-color 0.2s ease;
+
+    * {
+      color: #000000 !important;
+    }
 
     &:hover {
       transform: scale(1.02);
@@ -431,6 +441,8 @@
       }
 
       .purchase-popup-status {
+        font-size: 1.2rem;
+        font-weight: 600;
         color: $text-gray-600;
       }
     }
@@ -602,10 +614,12 @@
       }
 
       .purchase-popup-status {
-        font-size: 0.9rem;
+        font-size: 1.2rem;
+        font-weight: 600;
         color: $text-gray-600;
-        margin-top: 0.5rem;
+        margin-top: 0.4rem;
         text-align: center;
+        line-height: 1.3;
       }
     }
 
@@ -1250,6 +1264,8 @@ body.dark-mode {
         }
       }
       .purchase-popup-status {
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
         color: $dark-muted-text !important;
       }
     }
@@ -1308,9 +1324,6 @@ body.dark-mode {
     border-radius: 12px !important;
     box-shadow: 0 4px 32px rgba(0,0,0,0.5) !important;
     padding: 2rem !important;
-    max-width: 500px;
-    margin: auto;
-    
   }
   .request-leave-popup {
     .request-leave-header {

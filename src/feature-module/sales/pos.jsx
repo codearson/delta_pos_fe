@@ -66,6 +66,7 @@ const Pos = () => {
   const barcodeInputRef = useRef(null);
   const barcodeRef = useRef(null);
   const categoryGridRef = useRef(null);
+  const pendingVoidRef = useRef({}); // { itemId: netQtyReduced }
   const [manualDiscount, setManualDiscount] = useState(0);
   const [manualDiscounts, setManualDiscounts] = useState([]);
   const [showAddProductPrompt, setShowAddProductPrompt] = useState(false);
@@ -111,6 +112,29 @@ const Pos = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Keep screen awake while POS is open (works on iPad, tablet, touch PC)
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) return;
+    let wakeLock = null;
+    const requestWakeLock = async () => {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+      } catch (err) {
+        // Wake lock request failed (e.g. battery saver mode) — silently ignore
+      }
+    };
+    requestWakeLock();
+    // Re-acquire when tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      wakeLock?.release();
+    };
+  }, []);
+
   useEffect(() => {
     document.body.classList.toggle("dark-mode", darkMode);
   }, [darkMode]);
@@ -136,11 +160,33 @@ const Pos = () => {
       timer = setTimeout(() => {
         handleClosePopup();
       }, 5000);
+    } else {
+      // Restore focus when bill popup closes
+      setTimeout(() => barcodeInputRef.current?.focus(), 50);
     }
     return () => {
       if (timer) clearTimeout(timer);
     };
   }, [showBillPopup]);
+
+  // Restore focus when pos.jsx-managed popups close
+  useEffect(() => {
+    if (!showPayoutPopup) {
+      setTimeout(() => barcodeInputRef.current?.focus(), 50);
+    }
+  }, [showPayoutPopup]);
+
+  useEffect(() => {
+    if (!showAddProductForm && !showAddProductPrompt) {
+      setTimeout(() => barcodeInputRef.current?.focus(), 50);
+    }
+  }, [showAddProductForm, showAddProductPrompt]);
+
+  useEffect(() => {
+    if (!showPriceCheckPopup) {
+      setTimeout(() => barcodeInputRef.current?.focus(), 50);
+    }
+  }, [showPriceCheckPopup]);
 
   useEffect(() => {
     if (notification) {
@@ -429,6 +475,11 @@ const Pos = () => {
     }
 
     if (type === "clear") {
+      // Flush any pending voids before clearing selection
+      if (selectedRowIndex !== null) {
+        const item = selectedItems[selectedRowIndex];
+        flushPendingVoid(item);
+      }
       setInputScreenText("");
       setInputValue("0");
       setInputStage("qty");
@@ -674,10 +725,38 @@ const Pos = () => {
     barcodeInputRef.current?.focus();
   };
 
+  // Flush accumulated pending voids for an item to void history
+  const flushPendingVoid = async (item) => {
+    if (!item) return;
+    const pending = pendingVoidRef.current[item.id] || 0;
+    if (pending <= 0) return;
+    delete pendingVoidRef.current[item.id];
+    try {
+      const userId = parseInt(localStorage.getItem("userId") || "1");
+      await saveVoidHistory({
+        itemName: item.name,
+        price: Math.abs(item.price),
+        quantity: pending,
+        total: Math.abs(item.price) * pending,
+        userDto: { id: userId }
+      });
+    } catch (error) {
+      console.error("Error saving void history:", error);
+    }
+  };
+
   const handleRowSelect = (index) => {
     if (selectedRowIndex === index) {
+      // Deselecting — flush pending voids for this item
+      const item = selectedItems[selectedRowIndex];
+      flushPendingVoid(item);
       setSelectedRowIndex(null);
     } else {
+      // Switching row — flush pending voids for previous row
+      if (selectedRowIndex !== null) {
+        const prevItem = selectedItems[selectedRowIndex];
+        flushPendingVoid(prevItem);
+      }
       setSelectedRowIndex(index);
     }
   };
@@ -689,6 +768,12 @@ const Pos = () => {
     }
     const item = selectedItems[selectedRowIndex];
     if (!item || item.type) return; // skip payment rows
+
+    // Cancel one pending void if exists (user added back what they removed)
+    if (pendingVoidRef.current[item.id] > 0) {
+      pendingVoidRef.current[item.id] -= 1;
+    }
+
     const newItems = [...selectedItems];
     const newQty = item.qty + 1;
     newItems[selectedRowIndex] = { ...item, qty: newQty, total: newQty * item.price };
@@ -702,11 +787,16 @@ const Pos = () => {
     }
     const item = selectedItems[selectedRowIndex];
     if (!item || item.type) return; // skip payment rows
+
     if (item.qty <= 1) {
-      // Remove item when qty reaches 0
+      // Item fully removed — flush immediately then remove
+      pendingVoidRef.current[item.id] = (pendingVoidRef.current[item.id] || 0) + 1;
+      flushPendingVoid(item);
       setSelectedItems(selectedItems.filter((_, i) => i !== selectedRowIndex));
       setSelectedRowIndex(null);
     } else {
+      // Accumulate pending void — only committed when row changes
+      pendingVoidRef.current[item.id] = (pendingVoidRef.current[item.id] || 0) + 1;
       const newItems = [...selectedItems];
       const newQty = item.qty - 1;
       newItems[selectedRowIndex] = { ...item, qty: newQty, total: newQty * item.price };
@@ -2020,6 +2110,7 @@ const Pos = () => {
                 onEmployeeDiscount={handleEmployeeDiscount}
                 selectedItems={selectedItems}
                 manualDiscount={manualDiscount}
+                onRestoreFocus={() => barcodeInputRef.current?.focus()}
               />
               <div className="action-buttons">
                 <Numpad darkMode={darkMode} onNumpadClick={handleNumpadClick} />

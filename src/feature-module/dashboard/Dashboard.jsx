@@ -6,6 +6,8 @@ import {
   Send,
   CreditCard,
   ShoppingBag,
+  Sliders,
+  Briefcase,
 } from "feather-icons-react/build/IconComponents";
 import Chart from "react-apexcharts";
 import { Link } from "react-router-dom";
@@ -328,14 +330,18 @@ const Dashboard = () => {
     totalTransactions: 0,
     bankingTotal: 0,
     payoutTotal: 0,
-    difference: 0
+    difference: 0,
+    cashSales: 0,
+    cardSales: 0,
   });
   const [zReportData, setZReportData] = useState({
     totalTransactions: 0,
     fullyTotalSales: 0,
     banking: 0,
     payout: 0,
-    difference: 0
+    difference: 0,
+    cashSales: 0,
+    cardSales: 0,
   });
   const [loading, setLoading] = useState(true);
   const [lowStockProducts, setLowStockProducts] = useState([]);
@@ -353,26 +359,40 @@ const Dashboard = () => {
         // Fetch X Report data
         const xReportResponse = await fetchXReport();
         if (xReportResponse.success && xReportResponse.data && xReportResponse.data.responseDto) {
+          const xDto = xReportResponse.data.responseDto;
+          const xPayments = xDto.overallPaymentTotals || {};
+          const xCash = xPayments["Cash"] || xPayments["cash"] || 0;
+          const xCard = xPayments["Card"] || xPayments["card"] || 0;
           setXReportData({
-            totalSales: xReportResponse.data.responseDto.totalSales || 0,
-            totalTransactions: xReportResponse.data.responseDto.totalTransactions || 0,
-            bankingTotal: xReportResponse.data.responseDto.bankingTotal || 0,
-            payoutTotal: xReportResponse.data.responseDto.payoutTotal || 0,
-            difference: xReportResponse.data.responseDto.difference || 0
+            totalSales: xDto.totalSales || 0,
+            totalTransactions: xDto.totalTransactions || 0,
+            bankingTotal: xDto.bankingTotal || 0,
+            payoutTotal: xDto.payoutTotal || 0,
+            difference: xDto.difference || 0,
+            cashSales: xCash,
+            cardSales: xCard,
           });
         }
 
         // Fetch Z Report data
         const zReportResponse = await getAllByZReports();
         if (zReportResponse && zReportResponse.length > 0) {
-          // Get the last record (most recent)
           const lastRecord = zReportResponse[zReportResponse.length - 1];
+          let zCash = 0, zCard = 0;
+          (lastRecord.salesDateDetails || []).forEach(detail => {
+            (detail.overallPaymentTotals || []).forEach(p => {
+              if (p.paymentMethod === 'Cash') zCash += p.paymentTotal || 0;
+              if (p.paymentMethod === 'Card') zCard += p.paymentTotal || 0;
+            });
+          });
           setZReportData({
             totalTransactions: lastRecord.salesDateDetails?.[0]?.totalTransactions || 0,
             fullyTotalSales: lastRecord.fullyTotalSales || 0,
             banking: lastRecord.banking || 0,
             payout: lastRecord.payout || 0,
-            difference: lastRecord.difference || 0
+            difference: lastRecord.difference || 0,
+            cashSales: zCash,
+            cardSales: zCard,
           });
         }
       } catch (error) {
@@ -507,24 +527,39 @@ const Dashboard = () => {
               <div className="dash-count das1 w-100">
                 <div className="dash-counts">
                   <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
-                    {loading ? (
-                      <span>Loading...</span>
-                    ) : (
-                      <CountUp
-                        start={0}
-                        end={zReportData.fullyTotalSales}
-                        duration={3}
-                        separator=","
-                        decimal="."
-                        decimals={2}
-                      />
+                    {loading ? <span>Loading...</span> : (
+                      <CountUp start={0} end={zReportData.fullyTotalSales} duration={3} separator="," decimal="." decimals={2} />
                     )}
                   </h4>
                   <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Total Sales</h5>
                 </div>
-                <div className="dash-imgs">
-                  <TrendingUp size={14} />
+                <div className="dash-imgs"><TrendingUp size={14} /></div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-count w-100" style={{ backgroundColor: '#28a745' }}>
+                <div className="dash-counts">
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? <span>Loading...</span> : (
+                      <CountUp start={0} end={zReportData.cashSales} duration={3} separator="," decimal="." decimals={2} />
+                    )}
+                  </h4>
+                  <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Cash Sales</h5>
                 </div>
+                <div className="dash-imgs"><DollarSign size={14} /></div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-count w-100" style={{ backgroundColor: '#007bff' }}>
+                <div className="dash-counts">
+                  <h4 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? <span>Loading...</span> : (
+                      <CountUp start={0} end={zReportData.cardSales} duration={3} separator="," decimal="." decimals={2} />
+                    )}
+                  </h4>
+                  <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Card Sales</h5>
+                </div>
+                <div className="dash-imgs"><CreditCard size={14} /></div>
               </div>
             </div>
             <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
@@ -546,7 +581,7 @@ const Dashboard = () => {
                   <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Banking</h5>
                 </div>
                 <div className="dash-imgs">
-                  <CreditCard size={14} />
+                  <Briefcase size={14} />
                 </div>
               </div>
             </div>
@@ -592,7 +627,7 @@ const Dashboard = () => {
                   <h5 style={{ fontSize: '12px', marginBottom: '0' }}>Difference</h5>
                 </div>
                 <div className="dash-imgs">
-                  <DollarSign size={14} />
+                  <Sliders size={14} />
                 </div>
               </div>
             </div>
@@ -628,30 +663,49 @@ const Dashboard = () => {
             <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
               <div className="dash-widget w-100">
                 <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
-                  <span>
-                    <ImageWithBasePath
-                      src="assets/img/icons/dash2.svg"
-                      alt="img"
-                      style={{ width: '24px', height: '24px' }}
-                    />
+                  <span><ImageWithBasePath src="assets/img/icons/dash2.svg" alt="img" style={{ width: '24px', height: '24px' }} /></span>
+                </div>
+                <div className="dash-widgetcontent">
+                  <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? <span>Loading...</span> : (
+                      <CountUp start={0} end={xReportData.totalSales} duration={3} separator="," decimal="." decimals={2} />
+                    )}
+                  </h5>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Total Sales</h6>
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-widget w-100" style={{ borderLeft: '4px solid #28a745' }}>
+                <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
+                  <span style={{ background: '#e8f5e9', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <DollarSign size={18} color="#28a745" />
                   </span>
                 </div>
                 <div className="dash-widgetcontent">
                   <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
-                    {loading ? (
-                      <span>Loading...</span>
-                    ) : (
-                      <CountUp
-                        start={0}
-                        end={xReportData.totalSales}
-                        duration={3}
-                        separator=","
-                        decimal="."
-                        decimals={2}
-                      />
+                    {loading ? <span>Loading...</span> : (
+                      <CountUp start={0} end={xReportData.cashSales} duration={3} separator="," decimal="." decimals={2} />
                     )}
                   </h5>
-                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Total Sales</h6>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Cash Sales</h6>
+                </div>
+              </div>
+            </div>
+            <div className="col-xl-2-4 col-sm-6 col-12 d-flex dashboard-card">
+              <div className="dash-widget w-100" style={{ borderLeft: '4px solid #007bff' }}>
+                <div className="dash-widgetimg" style={{ marginRight: '8px' }}>
+                  <span style={{ background: '#e3f2fd', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CreditCard size={18} color="#007bff" />
+                  </span>
+                </div>
+                <div className="dash-widgetcontent">
+                  <h5 style={{ fontSize: '16px', marginBottom: '2px' }}>
+                    {loading ? <span>Loading...</span> : (
+                      <CountUp start={0} end={xReportData.cardSales} duration={3} separator="," decimal="." decimals={2} />
+                    )}
+                  </h5>
+                  <h6 style={{ fontSize: '12px', marginBottom: '0' }}>Card Sales</h6>
                 </div>
               </div>
             </div>

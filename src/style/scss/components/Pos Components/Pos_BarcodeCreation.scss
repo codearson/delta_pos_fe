@@ -49,19 +49,32 @@ $red-600: #dc2626;
   overflow-y: auto;
 
   &.dark-mode {
-    background-color: $light-bg; /* Keeping light-bg to match your preference */
-    color: $text-black;
-    border-color: #e2e8f0;
+    background-color: #2d2d2d;
+    color: $text-white;
+    border-color: #444;
 
-    .barcode-popup-input,
-    .barcode-popup-button {
-      border-color: $bg-gray-600;
-      background-color: $dark-bg;
-      color: $dark-text;
+    .barcode-popup-title {
+      color: $text-white;
+    }
+
+    .barcode-popup-input {
+      background-color: #3a3a3a !important;
+      color: #ffffff !important;
+      border-color: #666;
+      caret-color: #ffffff;
+
+      &::placeholder {
+        color: #aaa !important;
+      }
+
+      &:focus {
+        border-color: $blue-600;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+      }
     }
 
     .barcode-popup-status {
-      color: $text-gray-400;
+      color: #ccc;
     }
   }
 
@@ -189,6 +202,35 @@ $red-600: #dc2626;
           transform: scale(1.015);
         }
       }
+    }
+  }
+}
+
+/* Dark mode via POS container context — no prop needed */
+.pos-container.dark-mode {
+  .barcode-popup {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-color: #444;
+
+    .barcode-popup-title {
+      color: #ffffff;
+    }
+
+    .barcode-popup-input {
+      background-color: #3a3a3a !important;
+      color: #ffffff !important;
+      border-color: #666;
+      caret-color: #ffffff;
+
+      &::placeholder {
+        color: #aaa !important;
+        opacity: 1;
+      }
+    }
+
+    .barcode-popup-status {
+      color: #ccc;
     }
   }
 }
