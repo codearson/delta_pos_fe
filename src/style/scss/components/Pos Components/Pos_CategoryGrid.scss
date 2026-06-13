@@ -754,6 +754,18 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
+  @media (min-width: 769px) and (max-width: 900px) {
+    .grid-cols-5 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .category-btn,
+    .quick-access-btn {
+      min-height: 65px;
+      padding: 0.75rem;
+    }
+  }
+
   @media (max-width: 768px) {
     .grid-cols-5 {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -824,7 +836,6 @@
       }
     }
   }
-  height: 41vh;
 }
 
 .payout-popup-overlay {

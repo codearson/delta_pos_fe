@@ -79,21 +79,21 @@ const Pos_Numpad = ({ darkMode, onNumpadClick }) => {
       <div className="numpad-grid">
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
-          onClick={() => handleButtonClick("number", 7)}
+          onClick={() => handleButtonClick("number", 1)}
         >
-          7
+          1
         </button>
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
-          onClick={() => handleButtonClick("number", 8)}
+          onClick={() => handleButtonClick("number", 2)}
         >
-          8
+          2
         </button>
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
-          onClick={() => handleButtonClick("number", 9)}
+          onClick={() => handleButtonClick("number", 3)}
         >
-          9
+          3
         </button>
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
@@ -115,21 +115,21 @@ const Pos_Numpad = ({ darkMode, onNumpadClick }) => {
         </button>
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
-          onClick={() => handleButtonClick("number", 1)}
+          onClick={() => handleButtonClick("number", 7)}
         >
-          1
+          7
         </button>
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
-          onClick={() => handleButtonClick("number", 2)}
+          onClick={() => handleButtonClick("number", 8)}
         >
-          2
+          8
         </button>
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}
-          onClick={() => handleButtonClick("number", 3)}
+          onClick={() => handleButtonClick("number", 9)}
         >
-          3
+          9
         </button>
         <button
           className={`numpad-button ${darkMode ? "dark-button" : "light-button"}`}

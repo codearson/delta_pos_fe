@@ -11,7 +11,7 @@ const Pos_Function = ({
   onRecallTransaction,
 }) => {
   return (
-    <div className="col-span-4 grid grid-cols-2 gap-1 h-full">
+    <div className="grid grid-cols-2 gap-1 h-full" style={{gridColumn: "auto"}}>
       <button
         className="bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg text-xs font-bold transition-colors shadow-md hover:shadow-lg"
         onClick={onVoidLine}

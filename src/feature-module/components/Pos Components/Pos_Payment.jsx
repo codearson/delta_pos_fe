@@ -54,7 +54,7 @@ const Pos_Payment = ({
   };
 
   return (
-    <div className="col-span-3 grid grid-rows-2 gap-1">
+    <div className="grid grid-rows-2 gap-1" style={{gridColumn: "auto"}}>
       <button
         className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-lg text-base font-bold transition-colors shadow-md hover:shadow-lg border-0"
         onClick={() => handlePayment("Cash")}
