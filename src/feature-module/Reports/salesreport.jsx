@@ -3,9 +3,11 @@ import Breadcrumbs from "../../core/breadcrumbs";
 //import ImageWithBasePath from "../../core/img/imagewithbasebath";
 import { Link } from "react-router-dom";
 import { getAllByZReportsPages } from "../Api/SalesReport";
-import { Eye, Printer } from "react-feather";
+import { Eye, Printer, Calendar } from "react-feather";
 import Table from "../../core/pagination/datatable";
 import { Modal, Tabs, Tab } from "react-bootstrap";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 //import { Box, Zap } from "react-feather";
 //import Select from "react-select";
 
@@ -18,6 +20,8 @@ const SalesReport = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState("summary");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterFromDate, setFilterFromDate] = useState(null);
+  const [filterToDate, setFilterToDate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalElements, setTotalElements] = useState(0);
@@ -319,18 +323,44 @@ const SalesReport = () => {
     };
   };
 
+  const applyFilters = (search, from, to) => {
+    let filtered = reportData;
+    if (search) {
+      filtered = filtered.filter(item =>
+        item.reportGeneratedBy.toLowerCase().includes(search)
+      );
+    }
+    if (from) {
+      filtered = filtered.filter(item => new Date(item.startDate) >= from);
+    }
+    if (to) {
+      const toEnd = new Date(to);
+      toEnd.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(item => new Date(item.endDate) <= toEnd);
+    }
+    setFilteredData(filtered);
+  };
+
   const handleSearch = (e) => {
     const searchValue = e.target.value.trim().toLowerCase();
     setSearchTerm(searchValue);
-    
-    if (searchValue === "") {
-      setFilteredData(reportData);
-    } else {
-      const filtered = reportData.filter(item => 
-        item.reportGeneratedBy.toLowerCase().includes(searchValue)
-      );
-      setFilteredData(filtered);
-    }
+    applyFilters(searchValue, filterFromDate, filterToDate);
+  };
+
+  const handleFromDate = (date) => {
+    setFilterFromDate(date);
+    applyFilters(searchTerm, date, filterToDate);
+  };
+
+  const handleToDate = (date) => {
+    setFilterToDate(date);
+    applyFilters(searchTerm, filterFromDate, date);
+  };
+
+  const handleClearDates = () => {
+    setFilterFromDate(null);
+    setFilterToDate(null);
+    applyFilters(searchTerm, null, null);
   };
 
   const handleRefresh = async () => {
@@ -450,7 +480,7 @@ const SalesReport = () => {
         {/* /product list */}
         <div className="card table-list-card">
           <div className="card-body">
-            <div className="table-top">
+            <div className="table-top d-flex flex-wrap align-items-center gap-2">
               <div className="search-set">
                 <div className="search-input">
                   <input
@@ -464,6 +494,48 @@ const SalesReport = () => {
                     <i data-feather="search" className="feather-search" />
                   </Link>
                 </div>
+              </div>
+              <div className="d-flex align-items-center gap-2">
+                <div className="d-flex align-items-center gap-1">
+                  <label className="mb-0 text-nowrap" style={{ fontSize: '13px' }}>From:</label>
+                  <div className="input-group input-group-sm" style={{ width: '160px' }}>
+                    <span className="input-group-text px-2"><Calendar size={13} /></span>
+                    <DatePicker
+                      selected={filterFromDate}
+                      onChange={handleFromDate}
+                      dateFormat="dd/MM/yyyy"
+                      placeholderText="dd/mm/yyyy"
+                      className="form-control form-control-sm"
+                      selectsStart
+                      startDate={filterFromDate}
+                      endDate={filterToDate}
+                      isClearable
+                    />
+                  </div>
+                </div>
+                <div className="d-flex align-items-center gap-1">
+                  <label className="mb-0 text-nowrap" style={{ fontSize: '13px' }}>To:</label>
+                  <div className="input-group input-group-sm" style={{ width: '160px' }}>
+                    <span className="input-group-text px-2"><Calendar size={13} /></span>
+                    <DatePicker
+                      selected={filterToDate}
+                      onChange={handleToDate}
+                      dateFormat="dd/MM/yyyy"
+                      placeholderText="dd/mm/yyyy"
+                      className="form-control form-control-sm"
+                      selectsEnd
+                      startDate={filterFromDate}
+                      endDate={filterToDate}
+                      minDate={filterFromDate}
+                      isClearable
+                    />
+                  </div>
+                </div>
+                {(filterFromDate || filterToDate) && (
+                  <button className="btn btn-sm btn-outline-secondary" onClick={handleClearDates}>
+                    Clear
+                  </button>
+                )}
               </div>
               {/* <div className="search-path">
                 <Link

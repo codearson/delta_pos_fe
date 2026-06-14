@@ -225,6 +225,7 @@ const PurchasesList = () => {
                 <p>Branch Code: ${branchCode}</p>
                 <p>Address: ${address}</p>
                 <p>Contact: ${contactNumber}</p>
+                <p><strong>Back Office</strong></p>
               </div>
               <div class="receipt-details">
                 <p>Date: ${formattedDate}</p>

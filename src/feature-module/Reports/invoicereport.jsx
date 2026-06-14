@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Eye } from "react-feather";
+import { Eye, Printer } from "react-feather";
 import { fetchTransactions } from "../Api/TransactionApi";
 import { fetchBranches } from "../Api/BranchApi";
 import { fetchUsers } from "../Api/UserApi";
@@ -149,6 +149,111 @@ const Invoicereport = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedTransaction(null);
+  };
+
+  const handlePrintReceipt = () => {
+    if (!selectedTransaction) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Failed to open print window. Please allow popups for this site.");
+      return;
+    }
+
+    const shopName    = localStorage.getItem("shopName")     || "";
+    const branchName  = localStorage.getItem("branchName")   || "";
+    const branchCode  = localStorage.getItem("branchCode")   || "";
+    const address     = localStorage.getItem("branchAddress") || "";
+    const contactNumber = localStorage.getItem("branchContact") || "";
+    const tillName    = localStorage.getItem("tillName")     || "N/A";
+    const sym         = priceSymbol;
+
+    const t = selectedTransaction;
+    const dateTime = t.dateTime ? new Date(t.dateTime).toLocaleString() : "N/A";
+    const txId = String(t.id || "").padStart(10, "0");
+
+    const itemRows = (t.transactionItemList || []).map(item => `
+      <tr>
+        <td>${item.productDto?.productName || "N/A"}</td>
+        <td class="total-column">${item.qty || 1}</td>
+        <td class="total-column">${sym}${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+        <td class="total-column">${sym}${parseFloat(item.totalPrice || 0).toFixed(2)}</td>
+      </tr>`).join("");
+
+    const payRows = (t.transactionPaymentMethod || []).map(p => `
+      <tr>
+        <td>${p.paymentMethodDto?.type || "N/A"}</td>
+        <td class="total-column">${sym}${parseFloat(p.amount || 0).toFixed(2)}</td>
+      </tr>`).join("");
+
+    printWindow.document.write(`
+      <html><head><title>Receipt</title>
+      <style>
+        @media print {
+          @page { size: 72mm auto; margin: 0; }
+          body { margin: 0 auto; padding: 0 5px; font-family: 'Courier New', Courier, monospace; width: 72mm; min-height: 100%; box-sizing: border-box; font-weight: bold; color: #000; }
+          header, footer, nav, .print-header, .print-footer { display: none !important; }
+          html, body { width: 72mm; height: auto; margin: 0 auto; overflow: hidden; }
+        }
+        body { font-family: 'Courier New', Courier, monospace; width: 72mm; margin: 0 auto; padding: 0 5px; font-size: 12px; line-height: 1.2; box-sizing: border-box; text-align: center; }
+        .receipt-header { text-align: center; margin-bottom: 5px; }
+        .receipt-header h2 { margin: 0; font-size: 14px; font-weight: bold; }
+        .receipt-details { margin-bottom: 5px; text-align: left; }
+        .receipt-details p { margin: 2px 0; }
+        .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 5px; margin-left: auto; margin-right: auto; }
+        .receipt-items th, .receipt-items td { padding: 2px 0; font-weight: bold; text-align: left; font-size: 12px; }
+        .receipt-items th { border-bottom: 1px dashed #000; }
+        .total-column { text-align: right; }
+        .receipt-footer { text-align: center; margin-top: 5px; }
+        .receipt-footer p { margin: 2px 0; }
+        .divider { border-top: 1px dashed #000; margin: 5px 0; }
+        .spacing { height: 10px; }
+      </style></head><body>
+      <div class="receipt-header">
+        <h2>${shopName}</h2>
+        <p>${branchName}</p>
+        <p>Branch Code: ${branchCode}</p>
+        <p>Address: ${address}</p>
+        <p>Contact: ${contactNumber}</p>
+        <p><strong>Back Office</strong></p>
+      </div>
+      <div class="divider"></div>
+      <div class="receipt-details">
+        <p>Date: ${dateTime}</p>
+        <p>Trans ID: ${txId}</p>
+        <p>Till Name: ${tillName}</p>
+        <p>Cashier: ${t.userDto?.firstName || ""} ${t.userDto?.lastName || ""}</p>
+        <p>Customer: ${t.customerDto?.name || "Local Customer"}</p>
+      </div>
+      <div class="divider"></div>
+      <table class="receipt-items">
+        <thead><tr><th>Item</th><th class="total-column">Qty</th><th class="total-column">Price</th><th class="total-column">Total</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="receipt-details">
+        ${t.manualDiscount > 0 ? `<p>Discount: ${sym}${parseFloat(t.manualDiscount).toFixed(2)}</p>` : ""}
+        <p>Total: ${sym}${parseFloat(t.totalAmount || 0).toFixed(2)}</p>
+        <p>Balance: ${sym}${parseFloat(t.balanceAmount || 0).toFixed(2)}</p>
+      </div>
+      <div class="divider"></div>
+      <table class="receipt-items">
+        <thead><tr><th>Payment</th><th class="total-column">Amount</th></tr></thead>
+        <tbody>${payRows}</tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="receipt-footer">
+        <p>Status: ${t.status || "N/A"}</p>
+        <p>Thank You!</p>
+        <p>Powered by Delta POS</p>
+        <p>(deltapos.codearson@gmail.com)</p>
+        <p>(0094762963979)</p>
+        <p>================================================</p>
+      </div>
+      <script>setTimeout(() => { window.print(); window.close(); }, 500);</script>
+      </body></html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
   };
 
   const exportToPDF = () => {
@@ -446,6 +551,8 @@ const Invoicereport = () => {
                         setSelectedBranch(selected ? selected.value : "")
                       }
                       isClearable
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                     />
                   </div>
                   <div style={{ width: "200px" }}>
@@ -462,6 +569,8 @@ const Invoicereport = () => {
                         setSelectedUser(selected ? selected.value : "")
                       }
                       isClearable
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                     />
                   </div>
                 </div>
@@ -666,7 +775,10 @@ const Invoicereport = () => {
             <p>No transaction selected.</p>
           )}
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="d-flex justify-content-between">
+          <Button variant="primary" onClick={handlePrintReceipt}>
+            <Printer className="me-1" size={16} /> Print Receipt
+          </Button>
           <Button variant="secondary" onClick={handleCloseModal}>
             Close
           </Button>

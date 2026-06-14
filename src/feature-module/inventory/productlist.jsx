@@ -497,6 +497,8 @@ const ProductList = () => {
                   </div>
                   <div style={{ width: '200px' }}>
                     <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                       className="select"
                       options={categories}
                       placeholder="Select Category"
@@ -508,6 +510,8 @@ const ProductList = () => {
                   {isTaxEnabled && (
                     <div style={{ width: '200px' }}>
                       <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                         className="select"
                         options={taxes}
                         placeholder="Select Tax"

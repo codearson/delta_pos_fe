@@ -560,6 +560,8 @@ const Users = () => {
                                         {!isManager && (
                                             <div style={{ width: '200px' }}>
                                                 <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                                     className="select"
                                                     options={roleOptions}
                                                     placeholder="Select Role"
@@ -571,6 +573,8 @@ const Users = () => {
                                         )}
                                         <div style={{ width: '200px' }}>
                                             <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                                 className="select"
                                                 options={branchOptions}
                                                 placeholder="Select Branch"
