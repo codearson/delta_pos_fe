@@ -128,13 +128,8 @@ const AdminSettings = () => {
               if (manager.emailAddress) {
                 const emailBody =
                   `Dear Partner,\n\n` +
-                  `I hope you are doing well.\n\n` +
-                  `We are pleased to inform you that a new functional access has been enabled for your Delta POS account.\n\n` +
-                  `Functional Access: "${toggleName}"\n` +
-                  `You may now use the "${toggleName}" feature as part of your daily POS operations.\n\n` +
-                  `Please note: This is an automated system-generated email. Please do not reply to this email.\n` +
-                  `Should you have any questions or require further assistance, please contact the Delta Support Team through the appropriate support channels.\n\n` +
-                  `Thank you for your continued partnership.\n\n` +
+                  `I hope you are doing well. We are pleased to inform you that a new functional access, "${toggleName}," has been enabled for your Delta POS account. You may now use the ${toggleName} feature as part of your daily POS operations.\n\n` +
+                  `Please note that this is an automated system-generated email, and replies to this email are not monitored. If you have any questions or require further assistance, please contact the Delta Support Team through the appropriate support channels. Thank you for your continued partnership.\n\n` +
                   `Kind regards,\n` +
                   `Delta Support Team`;
                 await sendEmail(
@@ -156,7 +151,9 @@ const AdminSettings = () => {
             : "Admin toggle status has been updated successfully.",
           icon: "success",
           timer: 5000,
-          showConfirmButton: false
+          showConfirmButton: true,
+          confirmButtonText: "OK",
+          customClass: { confirmButton: "btn btn-success" }
         });
       }
     } catch (error) {
