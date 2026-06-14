@@ -303,6 +303,8 @@ const VoidHistory = () => {
                   </div>
                   <div style={{ width: '200px' }}>
                     <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                       className="select"
                       options={users}
                       placeholder="Select User"

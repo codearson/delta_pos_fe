@@ -412,6 +412,8 @@ const Holidays = () => {
                                     </div>
                                     <div style={{ width: '200px' }}>
                                         <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                             className="select"
                                             options={statusOptions}
                                             placeholder="Filter by Status"
@@ -422,6 +424,8 @@ const Holidays = () => {
                                     </div>
                                     <div style={{ width: '200px' }}>
                                         <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                             className="select"
                                             options={userOptions}
                                             placeholder="Filter by User"

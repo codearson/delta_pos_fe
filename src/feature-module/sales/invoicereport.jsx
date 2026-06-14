@@ -243,6 +243,8 @@ const InvoiceReport = () => {
                                 <div className="form-sort">
                                     <Sliders className="info-img" />
                                     <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                         className="select"
                                         options={oldandlatestvalue}
                                         placeholder="Newest"
@@ -262,6 +264,8 @@ const InvoiceReport = () => {
                                                 <User className="info-img" />
 
                                                 <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                                     className="select"
                                                     options={status}
                                                     placeholder="Choose Brand"
@@ -274,6 +278,8 @@ const InvoiceReport = () => {
                                                 <StopCircle className="info-img" />
 
                                                 <Select
+                      menuPortalTarget={document.body}
+                      styles={{ menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                                     className="select"
                                                     options={statusupdate}
                                                     placeholder="Choose Brand"

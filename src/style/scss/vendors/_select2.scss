@@ -83,3 +83,11 @@ span.select2-container.select2-container--default.select2-container--open {
     border-color: $info;
     color: $white;
 }
+
+// React-select: ensure dropdown menus always appear above Ant Design sticky table headers
+.react-select__menu {
+    z-index: 9999 !important;
+}
+.react-select__menu-portal {
+    z-index: 9999 !important;
+}

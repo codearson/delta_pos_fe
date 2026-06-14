@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { getAllPendingDevices, approveDevice, declineDevice, getAllDevices, blockDevice, updateTillName } from '../../Api/DeviceAuthApi';
 import { getAllManagerToggles, updateManagerToggleAdminStatus, saveManagerToggle, updateManagerToggleStatus, updateManagerToggle } from '../../Api/ManagerToggle';
+import { sendEmail } from '../../Api/HolidayApi';
+import { fetchAdmins } from '../../Api/UserApi';
 import Table from "../../../core/pagination/datatable";
 import { Edit, RotateCcw, ChevronUp, PlusCircle } from "feather-icons-react/build/IconComponents";
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -108,16 +110,52 @@ const AdminSettings = () => {
       if (result.isConfirmed) {
         const newStatus = !currentStatus;
         await updateManagerToggleAdminStatus(id, newStatus);
-        setManagerToggles(prevToggles => 
-          prevToggles.map(toggle => 
+        setManagerToggles(prevToggles =>
+          prevToggles.map(toggle =>
             toggle.id === id ? { ...toggle, adminActive: newStatus } : toggle
           )
         );
+
+        // When toggled ON, notify all active managers by email
+        if (newStatus === true) {
+          const toggleName = managerToggles.find(t => t.id === id)?.action || 'Unknown';
+          try {
+            const usersData = await fetchAdmins(1, 1000);
+            const managers = (usersData.payload || []).filter(
+              user => user.userRoleDto?.userRole === 'MANAGER'
+            );
+            for (const manager of managers) {
+              if (manager.emailAddress) {
+                const emailBody =
+                  `Dear Partner,\n\n` +
+                  `I hope you are doing well.\n\n` +
+                  `We are pleased to inform you that a new functional access has been enabled for your Delta POS account.\n\n` +
+                  `Functional Access: "${toggleName}"\n` +
+                  `You may now use the "${toggleName}" feature as part of your daily POS operations.\n\n` +
+                  `Please note: This is an automated system-generated email. Please do not reply to this email.\n` +
+                  `Should you have any questions or require further assistance, please contact the Delta Support Team through the appropriate support channels.\n\n` +
+                  `Thank you for your continued partnership.\n\n` +
+                  `Kind regards,\n` +
+                  `Delta Support Team`;
+                await sendEmail(
+                  manager.emailAddress,
+                  'New Functional Access - Delta POS',
+                  emailBody
+                );
+              }
+            }
+          } catch (emailErr) {
+            console.error('Failed to send manager notification emails:', emailErr);
+          }
+        }
+
         Swal.fire({
           title: "Success!",
-          text: "Admin toggle status has been updated successfully.",
+          text: newStatus === true
+            ? "Admin toggle status has been updated successfully. Email notification sent to all active managers."
+            : "Admin toggle status has been updated successfully.",
           icon: "success",
-          timer: 1500,
+          timer: 5000,
           showConfirmButton: false
         });
       }
